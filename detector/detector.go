@@ -4,7 +4,12 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strconv"
 
+	"github.com/gonum/plot"
+	"github.com/gonum/plot/plotter"
+	"github.com/gonum/plot/plotutil"
+	"github.com/gonum/plot/vg"
 	"github.com/gonum/stat"
 )
 
@@ -170,6 +175,56 @@ func (q *Quartet) Channels() [4]Channel {
 
 func (q *Quartet) Channel(iChannel uint8) *Channel {
 	return &q.channels[iChannel]
+}
+
+func (q *Quartet) PlotPedestals(plotStat bool) {
+	for i := range q.channels {
+		q.channels[i].PlotStat(plotStat)
+	}
+
+	p, err := plot.New()
+	if err != nil {
+		panic(err)
+	}
+
+	p.Title.Text = "Pedestal"
+	p.X.Label.Text = "capacitor"
+	switch plotStat {
+	case false:
+		p.Y.Label.Text = "mean +- variance"
+	case true:
+		p.Y.Label.Text = "number of samples"
+	}
+	p.Add(plotter.NewGrid())
+
+	err = plotutil.AddScatters(p,
+		q.channels[0].Name(), &q.channels[0],
+		q.channels[1].Name(), &q.channels[1],
+		q.channels[2].Name(), &q.channels[2],
+		q.channels[3].Name(), &q.channels[3])
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = plotutil.AddErrorBars(p,
+		&q.channels[0],
+		&q.channels[1],
+		&q.channels[2],
+		&q.channels[3])
+
+	if err != nil {
+		panic(err)
+	}
+
+	outFile := "output/pedestal_quartet_" + strconv.FormatUint(uint64(q.id), 10)
+	if plotStat {
+		outFile += "_Stat"
+	}
+	outFile += ".pdf"
+	if err := p.Save(14*vg.Inch, 5*vg.Inch, outFile); err != nil {
+		panic(err)
+	}
 }
 
 type DRS struct {

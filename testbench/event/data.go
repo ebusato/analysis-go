@@ -131,5 +131,5 @@ func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool, savePulses 
 
 func (d *Data) Plot() {
 	d.PlotDistribs()
-	d.PlotPulses(pulse.XaxisCapacitor, false, true)
+	d.PlotPulses(pulse.XaxisTime, false, true)
 }
