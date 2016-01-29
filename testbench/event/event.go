@@ -31,25 +31,6 @@ func NewEventFromID(id uint) *Event {
 	}
 }
 
-/*
-func NewEventFromPulses(pulses ...pulse.Pulse) *Event {
-	event := &Event{
-		Pulses: make([]pulse.Pulse, len(pulses)),
-	}
-	copy(event.Pulses, pulses)
-	return event
-}*/
-
-// func (e *Event) SRout() uint16 {
-// 	srout := e.Cluster.Pulses[0].SRout
-// 	for i := 1; i < len(e.Cluster.Pulses); i++ {
-// 		if srout != e.Cluster.Pulses[i].SRout {
-// 			log.Fatalf("not all pulses have the same SRout in this event")
-// 		}
-// 	}
-// 	return srout
-// }
-
 func (e *Event) Copy() *Event {
 	newevent := NewEventFromID(e.ID)
 	//newevent.Pulses = make([]pulse.Pulse, len(e.Pulses))
