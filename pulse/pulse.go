@@ -3,6 +3,7 @@ package pulse
 import (
 	"fmt"
 	"log"
+	"math"
 	"strconv"
 
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/detector"
@@ -32,15 +33,10 @@ func NewSample(amp float64, index uint16, time float64) *Sample {
 	return s
 }
 
-// func (s *Sample) Copy() *Sample {
-// 	newsample := &Sample{
-// 		Amplitude: s.Amplitude,
-// 		Index:     s.Index,
-// 		Time:      s.Time,
-// 		Capacitor: s.Capacitor,
-// 	}
-// 	return newsample
-// }
+func (s *Sample) Print() {
+	fmt.Printf("Printing sample: \n")
+	fmt.Printf("  -> Amplitude, Time, Index, Capacitor = %v, %v, %v, %p\n", s.Amplitude, s.Time, s.Index, s.Capacitor)
+}
 
 func (s *Sample) SubtractPedestal() {
 	s.Amplitude -= s.Capacitor.PedestalMean()
@@ -115,8 +111,8 @@ func (p *Pulse) AddSample(s *Sample) {
 	}
 	if noSamples >= 3 {
 		tStep := s.Time - p.Samples[noSamples-2].Time
-		if tStep != p.TimeStep {
-			panic("time step varies")
+		if math.Abs(tStep-p.TimeStep)/p.TimeStep > 0.0001 {
+			log.Fatalf("time step varies: tStep = %v, p.TimeStep = %v", tStep, p.TimeStep)
 		}
 	}
 }
@@ -143,13 +139,14 @@ func (p *Pulse) Charge() float64 {
 	for _, s := range p.Samples {
 		sum += s.Amplitude
 	}
-	return sum * p.TimeStep
+	return sum * float64(p.TimeStep)
 }
 
 type XaxisType byte
 
 const (
-	XaxisIndex XaxisType = iota
+	XaxisTime XaxisType = iota
+	XaxisIndex
 	XaxisCapacitor
 )
 
@@ -158,6 +155,8 @@ func (p *Pulse) MakeXY(x XaxisType) plotter.XYs {
 	for i, sample := range p.Samples {
 		var xval float64
 		switch x {
+		case XaxisTime:
+			xval = float64(sample.Time)
 		case XaxisIndex:
 			xval = float64(sample.Index)
 		case XaxisCapacitor:
@@ -211,7 +210,14 @@ func (c *Cluster) PlotPulses(ID uint, x XaxisType, pedestalRange bool) string {
 	}
 
 	p.Title.Text = "Pulse for event " + strconv.Itoa(int(ID)) + " (SRout = " + strconv.Itoa(int(c.SRout())) + ")"
-	p.X.Label.Text = "x"
+	switch x {
+	case XaxisTime:
+		p.X.Label.Text = "time (ns)"
+	case XaxisIndex:
+		p.X.Label.Text = "sample index"
+	case XaxisCapacitor:
+		p.X.Label.Text = "capacitor"
+	}
 	p.Y.Label.Text = "amplitude"
 	p.Legend.Top = true
 

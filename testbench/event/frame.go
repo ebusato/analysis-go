@@ -86,8 +86,8 @@ func (f *Frame) MakePulses() (*pulse.Pulse, *pulse.Pulse) {
 		ampl2 := float64(lineUI32 & 0xFFF)
 		ampl1 := float64(lineUI32 >> 16)
 
-		sample1 := pulse.NewSample(ampl1, uint16(i), float64(i))
-		sample2 := pulse.NewSample(ampl2, uint16(i), float64(i))
+		sample1 := pulse.NewSample(ampl1, uint16(i), float64(i)*tbdetector.Det.SamplingFreq())
+		sample2 := pulse.NewSample(ampl2, uint16(i), float64(i)*tbdetector.Det.SamplingFreq())
 
 		pulse1.AddSample(sample1)
 		pulse2.AddSample(sample2)
