@@ -59,15 +59,8 @@ func (e *Event) Copy() *Event {
 		*oldPulses[1].Copy(),
 		*oldPulses[2].Copy(),
 		*oldPulses[3].Copy()}
-	// 	for i, pulse := range e.Cluster.Pulses {
-	// 		newevent.Cluster.Pulses[i] = *pulse.Copy()
-	// 	}
 	return newevent
 }
-
-// func (e *Event) AddPulse(p *pulse.Pulse) {
-// 	e.Pulses = append(e.Pulses, *p)
-// }
 
 func (e *Event) PulseFromName(name string) *pulse.Pulse {
 	for i := range e.Cluster.Pulses {
