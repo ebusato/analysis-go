@@ -7,9 +7,9 @@ import (
 	"log"
 	"os"
 
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/detector"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/event"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/reader"
+	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/tbdetector"
 )
 
 func ComputePedestals(data *event.Data) {
@@ -31,7 +31,7 @@ func ComputePedestals(data *event.Data) {
 			}
 		}
 	}
-	detector.TBDet.ComputePedestalsMeanStdDevFromSamples()
+	tbdetector.Det.ComputePedestalsMeanStdDevFromSamples()
 }
 
 func main() {
@@ -76,10 +76,10 @@ func main() {
 
 	ComputePedestals(&data)
 
-	detector.TBDet.WritePedestalsToFile(*outfileName)
+	tbdetector.Det.WritePedestalsToFile(*outfileName)
 
-	detector.TBDet.PlotPedestals(0, true)
-	detector.TBDet.PlotPedestals(0, false)
+	tbdetector.Det.PlotPedestals(0, true)
+	tbdetector.Det.PlotPedestals(0, false)
 
 	// detector.TBDet.Print()
 

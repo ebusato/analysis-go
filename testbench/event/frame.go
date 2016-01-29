@@ -7,6 +7,7 @@ import (
 
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/detector"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
+	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/tbdetector"
 )
 
 type TypeOfFrame byte
@@ -60,11 +61,11 @@ func (f *Frame) MakePulses() (*pulse.Pulse, *pulse.Pulse) {
 	var chan2 *detector.Channel
 	switch f.frameType {
 	case FirstFrameOfEvent:
-		chan1 = detector.TBDet.Channel(0, 0)
-		chan2 = detector.TBDet.Channel(0, 1)
+		chan1 = tbdetector.Det.Channel(0)
+		chan2 = tbdetector.Det.Channel(1)
 	case SecondFrameOfEvent:
-		chan1 = detector.TBDet.Channel(0, 2)
-		chan2 = detector.TBDet.Channel(0, 3)
+		chan1 = tbdetector.Det.Channel(2)
+		chan2 = tbdetector.Det.Channel(3)
 	default:
 		panic("cannot make pulse, frame type not recognized")
 	}

@@ -7,10 +7,10 @@ import (
 	"log"
 	"os"
 
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/detector"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/applyCorrCalib"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/event"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/reader"
+	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/tbdetector"
 )
 
 func main() {
@@ -80,7 +80,7 @@ func main() {
 		}
 	}()
 
-	detector.TBDet.ReadPedestalsFile("../computePedestals/output/pedestals.txt")
+	tbdetector.Det.ReadPedestalsFile("../computePedestals/output/pedestals.txt")
 
 	s := reader.NewScanner(bufio.NewScanner(file))
 

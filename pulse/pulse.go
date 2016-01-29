@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/detector"
+	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/tbdetector"
 
 	"github.com/gonum/plot"
 	"github.com/gonum/plot/plotter"
@@ -102,7 +103,7 @@ func (p *Pulse) AddSample(s *Sample) {
 	if iCapa > 1023 {
 		iCapa -= 1024
 	}
-	s.Capacitor = detector.TBDet.Capacitor(0, p.Channel.ID(), iCapa)
+	s.Capacitor = tbdetector.Det.Capacitor(p.Channel.ID(), iCapa)
 	//fmt.Printf("capacitor address: %p\n", s.Capacitor)
 	p.Samples = append(p.Samples, *s)
 	if s.Amplitude > 1000 {

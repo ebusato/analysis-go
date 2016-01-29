@@ -1,19 +1,10 @@
 package detector
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"math"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 
-	"github.com/gonum/plot"
-	"github.com/gonum/plot/plotter"
-	"github.com/gonum/plot/plotutil"
-	"github.com/gonum/plot/vg"
 	"github.com/gonum/stat"
 )
 
@@ -25,11 +16,15 @@ type Capacitor struct {
 }
 
 func (c *Capacitor) Print() {
-	fmt.Printf("    - Capacitor: id = %v, pedestal mean = %v (address=%p)\n", c.id, c.pedestalMean, c)
+	fmt.Printf("    # Capacitor: id = %v, pedestal mean = %v (address=%p)\n", c.id, c.pedestalMean, c)
 }
 
 func (c *Capacitor) ID() uint16 {
 	return c.id
+}
+
+func (c *Capacitor) SetID(id uint16) {
+	c.id = id
 }
 
 func (c *Capacitor) NoPedestalSamples() int {
@@ -57,12 +52,33 @@ func (c *Capacitor) PedestalMean() float64 {
 	return c.pedestalMean
 }
 
+func (c *Capacitor) PedestalStdDev() float64 {
+	return c.pedestalStdDev
+}
+
+func (c *Capacitor) SetPedestalMeanStdDev(mean float64, stddev float64) {
+	c.pedestalMean = mean
+	c.pedestalStdDev = stddev
+}
+
 type Channel struct {
 	// A channel is made of 1024 capacitors
 	capacitors [1024]Capacitor
 	id         uint8
 	name       string
 	plotStat   bool
+}
+
+func (c *Channel) Capacitors() [1024]Capacitor {
+	return c.capacitors
+}
+
+func (c *Channel) Capacitor(iCapacitor uint16) *Capacitor {
+	return &c.capacitors[iCapacitor]
+}
+
+func (c *Channel) PlotStat(plotStat bool) {
+	c.plotStat = plotStat
 }
 
 // implement gonum/plot/plotter/XYer interface
@@ -113,28 +129,73 @@ func (c *Channel) Name() string {
 	return c.name
 }
 
+func (c *Channel) SetName(name string) {
+	c.name = name
+}
+
 func (c *Channel) ID() uint8 {
 	return c.id
 }
 
+func (c *Channel) SetID(id uint8) {
+	c.id = id
+}
+
 func (c *Channel) Print() {
-	fmt.Printf("  o Channel: id = %v (address=%p)\n", c.id, c)
+	fmt.Printf("   o Channel: id = %v (address=%p)\n", c.id, c)
 	for i := range c.capacitors {
 		c.capacitors[i].Print()
 	}
 }
 
+type Quartet struct {
+	channels [4]Channel
+	id       uint8
+}
+
+func (q *Quartet) SetID(id uint8) {
+	q.id = id
+}
+
+func (q *Quartet) Print() {
+	fmt.Printf("  - Quartet: id= %v (address=%p)\n", q.id, q)
+	for i := range q.channels {
+		q.channels[i].Print()
+	}
+}
+
+func (q *Quartet) Channels() [4]Channel {
+	return q.channels
+}
+
+func (q *Quartet) Channel(iChannel uint8) *Channel {
+	return &q.channels[iChannel]
+}
+
 type DRS struct {
 	// A DRS is made of 8 channels (in fact 9 but the 9-th is not used)
-	channels [8]Channel
+	// The first four and last four channels correspond to two different quartets
+	quartets [2]Quartet
 	id       uint8
 }
 
 func (d *DRS) Print() {
 	fmt.Printf(" * DRS: id = %v (address=%p)\n", d.id, d)
-	for i := range d.channels {
-		d.channels[i].Print()
+	for i := range d.quartets {
+		d.quartets[i].Print()
 	}
+}
+
+func (d *DRS) SetID(id uint8) {
+	d.id = id
+}
+
+func (d *DRS) Quartets() [2]Quartet {
+	return d.quartets
+}
+
+func (d *DRS) Quartet(iQuartet uint8) *Quartet {
+	return &d.quartets[iQuartet]
 }
 
 type ASMCard struct {
@@ -150,204 +211,10 @@ func (a *ASMCard) Print() {
 	}
 }
 
-type TestBench struct {
-	asm          ASMCard
-	scintillator string
+func (a *ASMCard) DRSs() [3]DRS {
+	return a.drss
 }
 
-func (t *TestBench) Print() {
-	fmt.Printf("Printing information for detector %v\n", t.scintillator)
-	t.asm.Print()
-}
-
-func (t *TestBench) Capacitor(iDRS uint8, iChannel uint8, iCapacitor uint16) *Capacitor {
-	return &t.asm.drss[iDRS].channels[iChannel].capacitors[iCapacitor]
-}
-
-func (t *TestBench) Channel(iDRS uint8, iChannel uint8) *Channel {
-	return &t.asm.drss[iDRS].channels[iChannel]
-}
-
-func (t *TestBench) WritePedestalsToFile(outfileName string) {
-	outFile, err := os.Create(outfileName)
-	if err != nil {
-		log.Fatalf("os.Create: %s", err)
-	}
-	defer func() {
-		err = outFile.Close()
-		if err != nil {
-			log.Fatalf("error closing file %q: %v\n", outfileName, err)
-		}
-	}()
-
-	w := bufio.NewWriter(outFile)
-	defer func() {
-		err = w.Flush()
-		if err != nil {
-			log.Fatalf("error flushing file %q: %v\n", outfileName, err)
-		}
-	}()
-
-	fmt.Fprintf(w, "# Test bench pedestal file (creation date: %v)\n", time.Now())
-	fmt.Fprintf(w, "# iDRS iChannel iCapacitor pedestalMean pedestalStdDev\n")
-
-	for iDRS := range t.asm.drss {
-		drs := &t.asm.drss[iDRS]
-		for iChannel := range drs.channels {
-			ch := &drs.channels[iChannel]
-			for iCapacitor := range ch.capacitors {
-				capa := &ch.capacitors[iCapacitor]
-				fmt.Fprint(w, iDRS, iChannel, iCapacitor, capa.pedestalMean, capa.pedestalStdDev, "\n")
-			}
-		}
-	}
-}
-
-func (t *TestBench) ComputePedestalsMeanStdDevFromSamples() {
-	for iDRS := range t.asm.drss {
-		drs := &t.asm.drss[iDRS]
-		for iChannel := range drs.channels {
-			ch := &drs.channels[iChannel]
-			for iCapacitor := range ch.capacitors {
-				capa := &ch.capacitors[iCapacitor]
-				capa.ComputePedestalMeanStdDevFromSamples()
-			}
-		}
-	}
-}
-
-func (t *TestBench) ReadPedestalsFile(fileName string) {
-	file, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("error opening file %v", err)
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		text := scanner.Text()
-		if strings.HasPrefix(text, "#") {
-			continue
-		}
-		fields := strings.Split(text, " ")
-		if len(fields) != 5 {
-			log.Fatalf("number of fields per line in file %v != 5", fileName)
-		}
-		iDRS, err := strconv.ParseUint(fields[0], 10, 8)
-		if err != nil {
-			log.Fatalf("error parsing %q: %v\n", text, err)
-		}
-		iChannel, err := strconv.ParseUint(fields[1], 10, 8)
-		if err != nil {
-			log.Fatalf("error parsing %q: %v\n", text, err)
-		}
-		iCapacitor, err := strconv.ParseUint(fields[2], 10, 16)
-		if err != nil {
-			log.Fatalf("error parsing %q: %v\n", text, err)
-		}
-		pedestalMean, err := strconv.ParseFloat(fields[3], 64)
-		if err != nil {
-			log.Fatalf("error parsing %q: %v\n", text, err)
-		}
-		pedestalVariance, err := strconv.ParseFloat(fields[4], 64)
-		if err != nil {
-			log.Fatalf("error parsing %q: %v\n", text, err)
-		}
-		capacitor := t.Capacitor(uint8(iDRS), uint8(iChannel), uint16(iCapacitor))
-		capacitor.pedestalMean = pedestalMean
-		capacitor.pedestalStdDev = pedestalVariance
-	}
-}
-
-func (t *TestBench) PlotPedestals(iDRS uint8, plotStat bool) {
-	for i := uint8(0); i < 8; i++ {
-		t.Channel(iDRS, i).plotStat = plotStat
-	}
-	channel0 := t.Channel(iDRS, 0)
-	channel1 := t.Channel(iDRS, 1)
-	channel2 := t.Channel(iDRS, 2)
-	channel3 := t.Channel(iDRS, 3)
-	channel4 := t.Channel(iDRS, 4)
-	channel5 := t.Channel(iDRS, 5)
-	channel6 := t.Channel(iDRS, 6)
-	channel7 := t.Channel(iDRS, 7)
-
-	p, err := plot.New()
-	if err != nil {
-		panic(err)
-	}
-
-	p.Title.Text = "Pedestal"
-	p.X.Label.Text = "capacitor"
-	switch plotStat {
-	case false:
-		p.Y.Label.Text = "mean +- variance"
-	case true:
-		p.Y.Label.Text = "number of samples"
-	}
-	p.Add(plotter.NewGrid())
-
-	err = plotutil.AddScatters(p,
-		channel0.name, channel0,
-		channel1.name, channel1,
-		channel2.name, channel2,
-		channel3.name, channel3,
-		channel4.name, channel4,
-		channel5.name, channel5,
-		channel6.name, channel6,
-		channel7.name, channel7)
-
-	if err != nil {
-		panic(err)
-	}
-
-	err = plotutil.AddErrorBars(p,
-		channel0,
-		channel1,
-		channel2,
-		channel3,
-		channel4,
-		channel5,
-		channel6,
-		channel7)
-
-	if err != nil {
-		panic(err)
-	}
-
-	outFile := "output/pedestal"
-	if plotStat {
-		outFile += "Stat"
-	}
-	outFile += ".pdf"
-	if err := p.Save(14*vg.Inch, 5*vg.Inch, outFile); err != nil {
-		panic(err)
-	}
-}
-
-func NewTestBenchDetector() *TestBench {
-	det := &TestBench{
-		scintillator: "LYSO",
-	}
-	asm := &det.asm
-	asm.id = 0
-	for iDRS := range asm.drss {
-		drs := &asm.drss[iDRS]
-		drs.id = uint8(iDRS)
-		for iChannel := range drs.channels {
-			ch := &drs.channels[iChannel]
-			ch.name = "PMT" + strconv.FormatUint(uint64(iChannel), 10)
-			ch.id = uint8(iChannel)
-			for iCapacitor := range ch.capacitors {
-				capa := &ch.capacitors[iCapacitor]
-				capa.id = uint16(iCapacitor)
-			}
-		}
-	}
-	return det
-}
-
-var TBDet *TestBench
-
-func init() {
-	TBDet = NewTestBenchDetector()
+func (a *ASMCard) DRS(iDRS uint8) *DRS {
+	return &a.drss[iDRS]
 }
