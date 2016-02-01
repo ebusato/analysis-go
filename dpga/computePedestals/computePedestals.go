@@ -1,5 +1,17 @@
 package computePedestals
 
+import (
+	"bufio"
+	"flag"
+	"fmt"
+	"log"
+	"os"
+
+	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/event"
+	"gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
+	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/tbdetector"
+	"gitlab.in2p3.fr/TestBench/TestBench-go/reader"
+)
 
 func ComputePedestals(data *event.Data) {
 	for iEvent := range *data {

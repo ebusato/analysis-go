@@ -249,7 +249,3 @@ func (c *Cluster) PlotPulses(ID uint, x XaxisType, pedestalRange bool) string {
 
 	return outFile
 }
-
-type Line struct {
-	Clusters [6]Cluster
-}

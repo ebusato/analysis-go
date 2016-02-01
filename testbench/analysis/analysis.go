@@ -80,7 +80,7 @@ func main() {
 		}
 	}()
 
-	tbdetector.Det.ReadPedestalsFile("../computePedestals/output/pedestals.txt")
+	tbdetector.Det.ReadPedestalsFile("../computePedestals/output/pedestals.csv")
 
 	s := reader.NewScanner(bufio.NewScanner(file))
 

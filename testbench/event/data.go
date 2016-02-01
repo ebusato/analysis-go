@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"log"
 	"os/exec"
 
@@ -35,19 +34,11 @@ func HbookToGonum(histo ...hbook.H1D) []plotter.Histogram {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("histo: %+v\n", h)
 		h.FillColor = nil //plotutil.Color(i)
 		h.Color = plotutil.Color(i)
 		output[i] = *h
 	}
 	return output
-}
-
-func PrintHbookH1D(h hbook.H1D) {
-	for i := 0; i < h.Len(); i++ {
-		x, y := h.XY(i)
-		fmt.Printf("%v %v\n", x, y)
-	}
 }
 
 func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
@@ -72,17 +63,20 @@ func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) 
 func (d *Data) PlotDistribs() {
 	const N = 4
 	hCharge := make([]hbook.H1D, N)
+	hAmplitude := make([]hbook.H1D, N)
 	hHasSignal := make([]hbook.H1D, N)
 	hSRout := *hbook.NewH1D(1024, 0, 1023)
 
 	for i := 0; i < N; i++ {
-		hCharge[i] = *hbook.NewH1D(100, -100e3, 600e3)
+		hCharge[i] = *hbook.NewH1D(100, -2e4, 100e3)
+		hAmplitude[i] = *hbook.NewH1D(100, 0, 4200)
 		hHasSignal[i] = *hbook.NewH1D(2, 0, 2)
 	}
 	for _, event := range *d {
 		for i := 0; i < N; i++ {
 			pulse := event.Cluster.Pulses[i]
 			hCharge[i].Fill(float64(pulse.Charge()), 1)
+			hAmplitude[i].Fill(float64(pulse.Amplitude()), 1)
 			hasSig := 0.
 			switch pulse.HasSignal {
 			case true:
@@ -97,8 +91,8 @@ func (d *Data) PlotDistribs() {
 		}
 	}
 
-	PrintHbookH1D(hHasSignal[0])
 	MakePlot("Charge", "Entries (A. U.)", "output/distribCharge.png", hCharge...)
+	MakePlot("Amplitude", "Entries (A. U.)", "output/distribAmplitude.png", hAmplitude...)
 	MakePlot("HasSignal", "Entries (A. U.)", "output/distribHasSignal.png", hHasSignal...)
 	MakePlot("SRout", "Entries (A. U.)", "output/distribSRout.png", hSRout)
 }
