@@ -78,6 +78,10 @@ func (p *Pulse) Print() {
 	fmt.Println("\n")
 }
 
+func (p *Pulse) NoSamples() uint16 {
+	return uint16(len(p.Samples))
+}
+
 func (p *Pulse) Copy() *Pulse {
 	newsamples := make([]Sample, len(p.Samples))
 	copy(newsamples, p.Samples)
@@ -191,6 +195,17 @@ func NewCluster(pulses [4]Pulse) *Cluster {
 	return &Cluster{
 		Pulses: pulses,
 	}
+}
+
+func (c *Cluster) NoSamples() uint16 {
+	noSamples := c.Pulses[0].NoSamples()
+	for i := 1; i < len(c.Pulses); i++ {
+		n := c.Pulses[i].NoSamples()
+		if n != noSamples {
+			log.Fatal("all pulses don't have the same number of samples")
+		}
+	}
+	return noSamples
 }
 
 func (c *Cluster) SRout() uint16 {

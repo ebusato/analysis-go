@@ -8,26 +8,44 @@ import (
 )
 
 type Event struct {
-	Cluster pulse.Cluster
-	ID      uint
+	Clusters [72]pulse.Cluster
+	ID       uint
+}
+
+func NewEventFromID(id uint) *Event {
+	return &Event{
+		ID: id,
+	}
 }
 
 func (e *Event) Copy() *Event {
+	newevent := NewEventFromID(e.ID)
+	for i := range e.Clusters {
+		oldPulses := e.Clusters.Pulses
+		newevent.Clusters[i].Pulses = [4]pulse.Pulse{
+			*oldPulses[0].Copy(),
+			*oldPulses[1].Copy(),
+			*oldPulses[2].Copy(),
+			*oldPulses[3].Copy()}
+	}
 }
 
 func (e *Event) CheckIntegrity() {
-	if len(e.Cluster.Pulses) == 0 {
-		panic("event has no pulse")
-	}
-	noSamples := e.NoSamples(0)
-	for i := 1; i < len(e.Cluster.Pulses); i++ {
-		n := e.NoSamples(i)
-		if n != noSamples {
-			panic("not all pulses have the same number of samples")
+	for i := range e.Clusters {
+		cluster := &e.Clusters[i]
+		if len(cluster.Pulses) == 0 {
+			log.Fatalf("cluster %v has no pulse", i)
 		}
-		pulse := &e.Cluster.Pulses[i]
-		if pulse.Channel == nil {
-			log.Fatal("pulse has not associated channel")
+		noSamples := e.Cluster[i].NoSamples(0)
+		for i := 1; i < len(e.Cluster.Pulses); i++ {
+			n := e.NoSamples(i)
+			if n != noSamples {
+				panic("not all pulses have the same number of samples")
+			}
+			pulse := &e.Cluster.Pulses[i]
+			if pulse.Channel == nil {
+				log.Fatal("pulse has not associated channel")
+			}
 		}
 	}
 }
