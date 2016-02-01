@@ -1,18 +1,17 @@
 package dpgadetector
 
 import (
-	"bufio"
 	"fmt"
 	"log"
-	"os"
 	"strconv"
-	"strings"
 	"time"
+
+	"github.com/go-hep/csvutil"
 
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/detector"
 )
 
-type HemisphereType byte
+type HemisphereType uint8
 
 const (
 	rightHemisphere HemisphereType = iota
@@ -68,6 +67,32 @@ func NewDetector() *Detector {
 	return det
 }
 
+func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
+	for iHemi := range d.hemisphere {
+		hemi := &d.hemisphere[iHemi]
+		for iASM := range hemi.asm {
+			asm := &hemi.asm[iASM]
+			for iDRS := range asm.DRSs() {
+				drs := asm.DRS(uint8(iDRS))
+				for iQuartet := range drs.Quartets() {
+					quartet := drs.Quartet(uint8(iQuartet))
+					for iChannel := range quartet.Channels() {
+						ch := quartet.Channel(uint8(iChannel))
+						for iCapacitor := range ch.Capacitors() {
+							capa := ch.Capacitor(uint16(iCapacitor))
+							capa.ComputePedestalMeanStdDevFromSamples()
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func (d *Detector) PlotPedestals(plotStat bool) {
+
+}
+
 func (d *Detector) Print() {
 	fmt.Printf("Printing information for detector %v (sampling freq = %v)\n", d.scintillator, d.samplingFreq)
 	for iHemi := range d.hemisphere {
@@ -91,51 +116,28 @@ func (d *Detector) Quartet(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8) 
 	return d.hemisphere[int(iHemi)].asm[int(iASM)].DRS(iDRS).Quartet(iQuartet)
 }
 
-func (d *Detector) WritePedestalsToFile(outfileName string) {
-	outFile, err := os.Create(outfileName)
-	if err != nil {
-		log.Fatalf("os.Create: %s", err)
-	}
-	defer func() {
-		err = outFile.Close()
-		if err != nil {
-			log.Fatalf("error closing file %q: %v\n", outfileName, err)
-		}
-	}()
-
-	w := bufio.NewWriter(outFile)
-	defer func() {
-		err = w.Flush()
-		if err != nil {
-			log.Fatalf("error flushing file %q: %v\n", outfileName, err)
-		}
-	}()
-
-	fmt.Fprintf(w, "# Test bench pedestal file (creation date: %v)\n", time.Now())
-	fmt.Fprintf(w, "# iHemi iASM iDRS iQuartet iChannel iCapacitor pedestalMean pedestalStdDev\n")
-
-	for iHemi := range d.hemisphere {
-		hemi := &d.hemisphere[iHemi]
-		for iASM := range hemi.asm {
-			asm := &hemi.asm[iASM]
-			for iDRS := range asm.DRSs() {
-				drs := asm.DRS(uint8(iDRS))
-				for iQuartet := range drs.Quartets() {
-					quartet := drs.Quartet(uint8(iQuartet))
-					for iChannel := range quartet.Channels() {
-						ch := quartet.Channel(uint8(iChannel))
-						for iCapacitor := range ch.Capacitors() {
-							capa := ch.Capacitor(uint16(iCapacitor))
-							fmt.Fprint(w, iChannel, iCapacitor, capa.PedestalMean(), capa.PedestalStdDev(), "\n")
-						}
-					}
-				}
-			}
-		}
-	}
+type PedestalFile struct {
+	IHemi      uint8
+	IASM       uint8
+	IDRS       uint8
+	IQuartet   uint8
+	IChannel   uint8
+	ICapacitor uint16
+	Mean       float64
+	StdDev     float64
 }
 
-func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
+func (d *Detector) WritePedestalsToFile(outFileName string) {
+	tbl, err := csvutil.Create(outFileName)
+	if err != nil {
+		log.Fatalf("could not create %s: %v\n", outFileName, err)
+	}
+	defer tbl.Close()
+	tbl.Writer.Comma = ' '
+
+	err = tbl.WriteHeader(fmt.Sprintf("# DPGA pedestal file (creation date: %v)\n", time.Now()))
+	err = tbl.WriteHeader("# iHemi iASM iDRS iQuartet iChannel iCapacitor pedestalMean pedestalStdDev")
+
 	for iHemi := range d.hemisphere {
 		hemi := &d.hemisphere[iHemi]
 		for iASM := range hemi.asm {
@@ -148,70 +150,62 @@ func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
 						ch := quartet.Channel(uint8(iChannel))
 						for iCapacitor := range ch.Capacitors() {
 							capa := ch.Capacitor(uint16(iCapacitor))
-							capa.ComputePedestalMeanStdDevFromSamples()
+							data := PedestalFile{
+								IHemi:      uint8(iHemi),
+								IASM:       uint8(iASM),
+								IDRS:       uint8(iDRS),
+								IQuartet:   uint8(iQuartet),
+								IChannel:   uint8(iChannel),
+								ICapacitor: uint16(iCapacitor),
+								Mean:       capa.PedestalMean(),
+								StdDev:     capa.PedestalStdDev(),
+							}
+							err = tbl.WriteRow(data)
+							if err != nil {
+								log.Fatalf("error writing row: %v\n", err)
+							}
 						}
 					}
 				}
 			}
 		}
+	}
+
+	err = tbl.Close()
+	if err != nil {
+		log.Fatalf("error closing table: %v\n", err)
 	}
 }
 
 func (d *Detector) ReadPedestalsFile(fileName string) {
-	file, err := os.Open(fileName)
+	tbl, err := csvutil.Open(fileName)
 	if err != nil {
-		log.Fatalf("error opening file %v", err)
+		log.Fatalf("could not open %s: %v\n", fileName, err)
 	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		text := scanner.Text()
-		if strings.HasPrefix(text, "#") {
-			continue
-		}
-		fields := strings.Split(text, " ")
-		if len(fields) != 8 {
-			log.Fatalf("number of fields per line in file %v != 5", fileName)
-		}
-		iHemi, err := strconv.ParseUint(fields[0], 10, 8)
-		if err != nil {
-			log.Fatalf("error parsing %q: %v\n", text, err)
-		}
-		iASM, err := strconv.ParseUint(fields[1], 10, 8)
-		if err != nil {
-			log.Fatalf("error parsing %q: %v\n", text, err)
-		}
-		iDRS, err := strconv.ParseUint(fields[2], 10, 8)
-		if err != nil {
-			log.Fatalf("error parsing %q: %v\n", text, err)
-		}
-		iQuartet, err := strconv.ParseUint(fields[3], 10, 8)
-		if err != nil {
-			log.Fatalf("error parsing %q: %v\n", text, err)
-		}
-		iChannel, err := strconv.ParseUint(fields[4], 10, 8)
-		if err != nil {
-			log.Fatalf("error parsing %q: %v\n", text, err)
-		}
-		iCapacitor, err := strconv.ParseUint(fields[5], 10, 16)
-		if err != nil {
-			log.Fatalf("error parsing %q: %v\n", text, err)
-		}
-		pedestalMean, err := strconv.ParseFloat(fields[6], 64)
-		if err != nil {
-			log.Fatalf("error parsing %q: %v\n", text, err)
-		}
-		pedestalVariance, err := strconv.ParseFloat(fields[7], 64)
-		if err != nil {
-			log.Fatalf("error parsing %q: %v\n", text, err)
-		}
-		capacitor := d.Capacitor(uint8(iHemi), uint8(iASM), uint8(iDRS), uint8(iQuartet), uint8(iChannel), uint16(iCapacitor))
-		capacitor.SetPedestalMeanStdDev(pedestalMean, pedestalVariance)
+	defer tbl.Close()
+	tbl.Reader.Comma = ' '
+	tbl.Reader.Comment = '#'
+
+	rows, err := tbl.ReadRows(0, -1)
+	if err != nil {
+		log.Fatalf("could read rows [0, -1): %v\n", err)
 	}
-}
+	defer rows.Close()
 
-func (d *Detector) PlotPedestals(plotStat bool) {
+	var data PedestalFile
 
+	for rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			log.Fatalf("error reading row: %v\n", err)
+		}
+		capacitor := d.Capacitor(data.IHemi, data.IASM, data.IDRS, data.IQuartet, data.IChannel, data.ICapacitor)
+		capacitor.SetPedestalMeanStdDev(data.Mean, data.StdDev)
+	}
+	err = rows.Err()
+	if err != nil && err.Error() != "EOF" {
+		log.Fatalf("error: %v\n", err)
+	}
 }
 
 var Det *Detector

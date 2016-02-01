@@ -37,7 +37,7 @@ func ComputePedestals(data *event.Data) {
 func main() {
 	var (
 		infileName  = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
-		outfileName = flag.String("o", "output/pedestals.txt", "Name of the output file")
+		outfileName = flag.String("o", "output/pedestals.csv", "Name of the output file")
 		noEvents    = flag.Uint("n", 10000000, "Number of events to process")
 		inputType   = reader.HexInput
 	)

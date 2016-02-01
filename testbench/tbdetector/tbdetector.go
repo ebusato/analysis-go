@@ -145,6 +145,7 @@ func (d *Detector) ReadPedestalsFile(fileName string) {
 	defer rows.Close()
 
 	var data PedestalFile
+	
 	for rows.Next() {
 		err = rows.Scan(&data)
 		if err != nil {
