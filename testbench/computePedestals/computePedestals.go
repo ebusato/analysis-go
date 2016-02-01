@@ -25,7 +25,7 @@ func ComputePedestals(data *event.Data) {
 				capacitor := sample.Capacitor
 				noSamples := capacitor.NoPedestalSamples()
 				if iEvent == 0 && noSamples != 0 {
-					log.Fatal("len(capacitor.Pedestal() != 0!")
+					log.Fatal("len(capacitor.Pedestal()) != 0!")
 				}
 				capacitor.AddPedestalSample(sample.Amplitude)
 			}

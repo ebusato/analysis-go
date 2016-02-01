@@ -66,17 +66,40 @@ func (d *Data) PlotDistribs() {
 	hAmplitude := make([]hbook.H1D, N)
 	hHasSignal := make([]hbook.H1D, N)
 	hSRout := *hbook.NewH1D(1024, 0, 1023)
+	hMultiplicity := *hbook.NewH1D(5, 0, 5)
+	hClusterCharge := *hbook.NewH1D(100, -2e4, 400e3)
+	hClusterChargeMultiplicityEq1 := *hbook.NewH1D(100, -2e4, 400e3)
+	hClusterChargeMultiplicityEq2 := *hbook.NewH1D(100, -2e4, 400e3)
+	hClusterAmplitude := *hbook.NewH1D(100, 0, 15000)
+	hClusterAmplitudeMultiplicityEq1 := *hbook.NewH1D(100, 0, 15000)
+	hClusterAmplitudeMultiplicityEq2 := *hbook.NewH1D(100, 0, 15000)
 
 	for i := 0; i < N; i++ {
 		hCharge[i] = *hbook.NewH1D(100, -2e4, 100e3)
 		hAmplitude[i] = *hbook.NewH1D(100, 0, 4200)
 		hHasSignal[i] = *hbook.NewH1D(2, 0, 2)
 	}
-	for _, event := range *d {
-		for i := 0; i < N; i++ {
-			pulse := event.Cluster.Pulses[i]
-			hCharge[i].Fill(float64(pulse.Charge()), 1)
-			hAmplitude[i].Fill(float64(pulse.Amplitude()), 1)
+	for i := range *d {
+		cluster := &(*d)[i].Cluster
+		hSRout.Fill(float64(cluster.SRout()), 1)
+		hClusterCharge.Fill(float64(cluster.Charge()), 1)
+		hClusterAmplitude.Fill(float64(cluster.Amplitude()), 1)
+
+		multi := len(cluster.PulsesWithSignal())
+		hMultiplicity.Fill(float64(multi), 1)
+		switch multi {
+		case 1:
+			hClusterChargeMultiplicityEq1.Fill(float64(cluster.Charge()), 1)
+			hClusterAmplitudeMultiplicityEq1.Fill(float64(cluster.Amplitude()), 1)
+		case 2:
+			hClusterChargeMultiplicityEq2.Fill(float64(cluster.Charge()), 1)
+			hClusterAmplitudeMultiplicityEq2.Fill(float64(cluster.Amplitude()), 1)
+		}
+
+		for j := range cluster.Pulses {
+			pulse := &cluster.Pulses[j]
+			hCharge[j].Fill(float64(pulse.Charge()), 1)
+			hAmplitude[j].Fill(float64(pulse.Amplitude()), 1)
 			hasSig := 0.
 			switch pulse.HasSignal {
 			case true:
@@ -84,10 +107,7 @@ func (d *Data) PlotDistribs() {
 			case false:
 				hasSig = 0
 			}
-			hHasSignal[i].Fill(hasSig, 1)
-			if i == 0 {
-				hSRout.Fill(float64(pulse.SRout), 1)
-			}
+			hHasSignal[j].Fill(hasSig, 1)
 		}
 	}
 
@@ -95,6 +115,13 @@ func (d *Data) PlotDistribs() {
 	MakePlot("Amplitude", "Entries (A. U.)", "output/distribAmplitude.png", hAmplitude...)
 	MakePlot("HasSignal", "Entries (A. U.)", "output/distribHasSignal.png", hHasSignal...)
 	MakePlot("SRout", "Entries (A. U.)", "output/distribSRout.png", hSRout)
+	MakePlot("Multiplicity", "Entries (A. U.)", "output/distribMultiplicity.png", hMultiplicity)
+	MakePlot("Cluster charge", "Entries (A. U.)", "output/distribClusterCharge.png", hClusterCharge)
+	MakePlot("Cluster charge (multiplicity = 1)", "Entries (A. U.)", "output/distribClusterChargeMultiplicityEq1.png", hClusterChargeMultiplicityEq1)
+	MakePlot("Cluster charge (multiplicity = 2)", "Entries (A. U.)", "output/distribClusterChargeMultiplicityEq2.png", hClusterChargeMultiplicityEq2)
+	MakePlot("Cluster amplitude", "Entries (A. U.)", "output/distribClusterAmplitude.png", hClusterAmplitude)
+	MakePlot("Cluster amplitude (multiplicity = 1)", "Entries (A. U.)", "output/distribClusterAmplitudeMultiplicityEq1.png", hClusterAmplitudeMultiplicityEq1)
+	MakePlot("Cluster amplitude (multiplicity = 2)", "Entries (A. U.)", "output/distribClusterAmplitudeMultiplicityEq2.png", hClusterAmplitudeMultiplicityEq2)
 }
 
 func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool, savePulses bool) {
@@ -121,6 +148,26 @@ func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool, savePulses 
 			}
 		}
 	}
+}
+
+func (d *Data) AmplitudeCorrelationWithinCluster() plotter.XYZs {
+	var data plotter.XYZs
+	for i := range *d {
+		cluster := (*d)[i].Cluster
+		pulses := cluster.PulsesWithSignal()
+		multiplicity := len(pulses)
+		if multiplicity == 2 {
+			mydata := struct {
+				X, Y, Z float64
+			}{
+				X: pulses[0].Amplitude(),
+				Y: pulses[1].Amplitude(),
+				Z: 1,
+			}
+			data = append(data, mydata)
+		}
+	}
+	return data
 }
 
 func (d *Data) Plot() {

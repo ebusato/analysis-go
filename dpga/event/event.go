@@ -1,7 +1,7 @@
 package event
 
 import (
-	"bufio"
+	"fmt"
 	"log"
 
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
@@ -21,28 +21,26 @@ func NewEventFromID(id uint) *Event {
 func (e *Event) Copy() *Event {
 	newevent := NewEventFromID(e.ID)
 	for i := range e.Clusters {
-		oldPulses := e.Clusters.Pulses
+		oldPulses := e.Clusters[i].Pulses
 		newevent.Clusters[i].Pulses = [4]pulse.Pulse{
 			*oldPulses[0].Copy(),
 			*oldPulses[1].Copy(),
 			*oldPulses[2].Copy(),
 			*oldPulses[3].Copy()}
 	}
+	return newevent
 }
 
 func (e *Event) CheckIntegrity() {
 	for i := range e.Clusters {
 		cluster := &e.Clusters[i]
-		if len(cluster.Pulses) == 0 {
-			log.Fatalf("cluster %v has no pulse", i)
-		}
-		noSamples := e.Cluster[i].NoSamples(0)
-		for i := 1; i < len(e.Cluster.Pulses); i++ {
-			n := e.NoSamples(i)
+		noSamples := e.Clusters[i].NoSamples()
+		for j := 1; j < len(e.Clusters[i].Pulses); j++ {
+			n := cluster.NoSamples()
 			if n != noSamples {
-				panic("not all pulses have the same number of samples")
+				log.Fatal("not all pulses have the same number of samples")
 			}
-			pulse := &e.Cluster.Pulses[i]
+			pulse := &cluster.Pulses[j]
 			if pulse.Channel == nil {
 				log.Fatal("pulse has not associated channel")
 			}
@@ -51,17 +49,24 @@ func (e *Event) CheckIntegrity() {
 }
 
 func (e *Event) Print(detailed bool) {
-
+	fmt.Println("-> Printing event", e.ID)
+	fmt.Println("    o number of clusters =", len(e.Clusters))
+	if detailed {
+		for i := range e.Clusters {
+			cluster := e.Clusters[i]
+			cluster.Print()
+		}
+	}
 }
 
-func (e *Event) PrintPulsesToFile(w *bufio.Writer) {
-
-}
-
-func (e *Event) PrintGlobalVarsToFile(w *bufio.Writer) {
-
-}
-
-func (e *Event) PlotPulses(x pulse.XaxisType, pedestalRange bool) string {
-
-}
+// func (e *Event) PrintPulsesToFile(w *bufio.Writer) {
+//
+// }
+//
+// func (e *Event) PrintGlobalVarsToFile(w *bufio.Writer) {
+//
+// }
+//
+// func (e *Event) PlotPulses(x pulse.XaxisType, pedestalRange bool) string {
+//
+// }

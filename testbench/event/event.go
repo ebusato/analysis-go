@@ -111,12 +111,6 @@ func (e *Event) PrintPulsesToFile(w *bufio.Writer) {
 }
 
 func (e *Event) PrintGlobalVarsToFile(w *bufio.Writer) {
-	// Take first pulse to retrieve time in the loop.
-	// It is assumed that CheckIntegrity() has been run
-	// (this ensures that there is at least one pulse
-	// and that all pulses have the same number
-	// of samples (but not that all samples of all pulses
-	// have the same time ... this will be implemented later))
 	for i, pulse := range e.Cluster.Pulses {
 		iHasSignal := 0
 		if pulse.HasSignal {
@@ -129,6 +123,7 @@ func (e *Event) PrintGlobalVarsToFile(w *bufio.Writer) {
 func (e *Event) PlotPulses(x pulse.XaxisType, pedestalRange bool) string {
 	return e.Cluster.PlotPulses(e.ID, x, pedestalRange)
 }
+
 
 func (e *Event) GlobalCorrelation(name1 string, name2 string) float64 {
 	pulse1 := e.PulseFromName(name1)

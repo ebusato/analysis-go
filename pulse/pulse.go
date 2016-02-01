@@ -197,6 +197,13 @@ func NewCluster(pulses [4]Pulse) *Cluster {
 	}
 }
 
+func (c *Cluster) Print() {
+	for i := range c.Pulses {
+		fmt.Printf("->Printing cluster")
+		c.Pulses[i].Print()
+	}
+}
+
 func (c *Cluster) NoSamples() uint16 {
 	noSamples := c.Pulses[0].NoSamples()
 	for i := 1; i < len(c.Pulses); i++ {
@@ -216,6 +223,32 @@ func (c *Cluster) SRout() uint16 {
 		}
 	}
 	return srout
+}
+
+func (c *Cluster) PulsesWithSignal() []*Pulse {
+	var pulses []*Pulse
+	for i := range c.Pulses {
+		if c.Pulses[i].HasSignal {
+			pulses = append(pulses, &c.Pulses[i])
+		}
+	}
+	return pulses
+}
+
+func (c *Cluster) Amplitude() float64 {
+	amp := 0.
+	for i := range c.Pulses {
+		amp += c.Pulses[i].Amplitude()
+	}
+	return amp
+}
+
+func (c *Cluster) Charge() float64 {
+	charge := 0.
+	for i := range c.Pulses {
+		charge += c.Pulses[i].Charge()
+	}
+	return charge
 }
 
 func (c *Cluster) PlotPulses(ID uint, x XaxisType, pedestalRange bool) string {

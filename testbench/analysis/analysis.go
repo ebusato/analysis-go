@@ -102,4 +102,5 @@ func main() {
 
 	data.CheckIntegrity()
 	data.Plot()
+	data.AmplitudeCorrelationWithinCluster()
 }
