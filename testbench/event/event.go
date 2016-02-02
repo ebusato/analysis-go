@@ -1,7 +1,6 @@
 package event
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 
@@ -19,7 +18,6 @@ func NewEvent(frame1 *Frame, frame2 *Frame, evtID uint) *Event {
 	event := &Event{
 		Cluster: *pulse.NewCluster([4]pulse.Pulse{*pulse1, *pulse2, *pulse3, *pulse4}),
 	}
-	//event := NewEventFromPulses(*pulse1, *pulse2, *pulse3, *pulse4)
 	event.ID = evtID
 	event.CheckIntegrity()
 	return event
@@ -94,36 +92,9 @@ func (e *Event) Print(detailed bool) {
 	}
 }
 
-func (e *Event) PrintPulsesToFile(w *bufio.Writer) {
-	// Take first pulse to retrieve time in the loop.
-	// It is assumed that CheckIntegrity() has been run
-	// (this ensures that there is at least one pulse
-	// and that all pulses have the same number
-	// of samples (but not that all samples of all pulses
-	// have the same time ... this will be implemented later))
-	for i, s := range e.Cluster.Pulses[0].Samples {
-		fmt.Fprint(w, e.ID, s.Time, " ")
-		for _, p := range e.Cluster.Pulses {
-			fmt.Fprint(w, p.Samples[i].Amplitude, " ")
-		}
-		fmt.Fprint(w, "\n")
-	}
-}
-
-func (e *Event) PrintGlobalVarsToFile(w *bufio.Writer) {
-	for i, pulse := range e.Cluster.Pulses {
-		iHasSignal := 0
-		if pulse.HasSignal {
-			iHasSignal = 1
-		}
-		fmt.Fprint(w, e.ID, " ", i, " ", iHasSignal, " ", pulse.Amplitude(), " ", pulse.Charge(), " ", pulse.SRout, "\n")
-	}
-}
-
 func (e *Event) PlotPulses(x pulse.XaxisType, pedestalRange bool) string {
 	return e.Cluster.PlotPulses(e.ID, x, pedestalRange)
 }
-
 
 func (e *Event) GlobalCorrelation(name1 string, name2 string) float64 {
 	pulse1 := e.PulseFromName(name1)

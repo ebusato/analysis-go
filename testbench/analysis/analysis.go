@@ -44,42 +44,6 @@ func main() {
 	}
 	defer file.Close()
 
-	outFilePulses, err := os.Create(*outFileNamePulses)
-	if err != nil {
-		log.Fatalf("os.Create: %s", err)
-	}
-	defer func() {
-		err = outFilePulses.Close()
-		if err != nil {
-			log.Fatalf("error closing file %q: %v\n", outFileNamePulses, err)
-		}
-	}()
-
-	outFileGlobal, err := os.Create(*outFileNameGlobal)
-	if err != nil {
-		log.Fatalf("os.Create: %s", err)
-	}
-	defer func() {
-		err = outFileGlobal.Close()
-		if err != nil {
-			log.Fatalf("error closing file %q: %v\n", outFileNameGlobal, err)
-		}
-	}()
-
-	wPulses := bufio.NewWriter(outFilePulses)
-	wGlobal := bufio.NewWriter(outFileGlobal)
-
-	defer func() {
-		err = wPulses.Flush()
-		if err != nil {
-			log.Fatalf("error flushing file %q: %v\n", outFileNamePulses, err)
-		}
-		err = wGlobal.Flush()
-		if err != nil {
-			log.Fatalf("error flushing file %q: %v\n", outFileNameGlobal, err)
-		}
-	}()
-
 	tbdetector.Det.ReadPedestalsFile("../computePedestals/output/pedestals.csv")
 
 	s := reader.NewScanner(bufio.NewScanner(file))
@@ -93,14 +57,14 @@ func main() {
 		if *applyCorrections {
 			event = applyCorrCalib.RemovePedestal(event)
 		}
-		event.PrintPulsesToFile(wPulses)
-		event.PrintGlobalVarsToFile(wGlobal)
 		//event.Print(true)
 		//fmt.Println("correlation=", event.GlobalCorrelation("PMT1", "PMT2"))
 		data = append(data, *event)
 	}
 
 	data.CheckIntegrity()
+	data.PrintPulsesToFile(*outFileNamePulses)
+	data.PrintGlobalVarsToFile(*outFileNameGlobal)
 	data.Plot()
 	data.AmplitudeCorrelationWithinCluster()
 }

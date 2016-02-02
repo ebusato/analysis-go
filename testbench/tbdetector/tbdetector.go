@@ -83,7 +83,7 @@ func (d *Detector) PlotPedestals(plotStat bool) {
 	d.Quartet().PlotPedestals(plotStat)
 }
 
-type PedestalFile struct {
+type PedestalCSV struct {
 	IChannel   uint8
 	ICapacitor uint16
 	Mean       float64
@@ -110,7 +110,7 @@ func (d *Detector) WritePedestalsToFile(outFileName string) {
 		ch := quartet.Channel(uint8(iChannel))
 		for iCapacitor := range ch.Capacitors() {
 			capa := ch.Capacitor(uint16(iCapacitor))
-			data := PedestalFile{
+			data := PedestalCSV{
 				IChannel:   uint8(iChannel),
 				ICapacitor: uint16(iCapacitor),
 				Mean:       capa.PedestalMean(),
@@ -144,8 +144,8 @@ func (d *Detector) ReadPedestalsFile(fileName string) {
 	}
 	defer rows.Close()
 
-	var data PedestalFile
-	
+	var data PedestalCSV
+
 	for rows.Next() {
 		err = rows.Scan(&data)
 		if err != nil {
@@ -160,43 +160,6 @@ func (d *Detector) ReadPedestalsFile(fileName string) {
 		log.Fatalf("error: %v\n", err)
 	}
 }
-
-// func (d *Detector) ReadPedestalsFile(fileName string) {
-// 	file, err := os.Open(fileName)
-// 	if err != nil {
-// 		log.Fatalf("error opening file %v", err)
-// 	}
-// 	defer file.Close()
-// 	scanner := bufio.NewScanner(file)
-// 	for scanner.Scan() {
-// 		text := scanner.Text()
-// 		if strings.HasPrefix(text, "#") {
-// 			continue
-// 		}
-// 		fields := strings.Split(text, " ")
-// 		if len(fields) != 4 {
-// 			log.Fatalf("number of fields per line in file %v != 5", fileName)
-// 		}
-// 		iChannel, err := strconv.ParseUint(fields[0], 10, 8)
-// 		if err != nil {
-// 			log.Fatalf("error parsing %q: %v\n", text, err)
-// 		}
-// 		iCapacitor, err := strconv.ParseUint(fields[1], 10, 16)
-// 		if err != nil {
-// 			log.Fatalf("error parsing %q: %v\n", text, err)
-// 		}
-// 		pedestalMean, err := strconv.ParseFloat(fields[2], 64)
-// 		if err != nil {
-// 			log.Fatalf("error parsing %q: %v\n", text, err)
-// 		}
-// 		pedestalVariance, err := strconv.ParseFloat(fields[3], 64)
-// 		if err != nil {
-// 			log.Fatalf("error parsing %q: %v\n", text, err)
-// 		}
-// 		capacitor := d.Capacitor(uint8(iChannel), uint16(iCapacitor))
-// 		capacitor.SetPedestalMeanStdDev(pedestalMean, pedestalVariance)
-// 	}
-// }
 
 var Det *Detector
 

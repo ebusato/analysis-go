@@ -1,7 +1,7 @@
 
 TProfile* getProfile(TNtuple *nt, string pmt, int event, int color, int markerstyle)
 {
-  nt->Draw(Form("%s : time >> p%s(999,0,999)",pmt.c_str(),pmt.c_str()),Form("event==%d", event),"profgoff");
+  nt->Draw(Form("%s : time >> p%s(999,0,200)",pmt.c_str(),pmt.c_str()),Form("event==%d", event),"profgoff");
   TProfile* p = (TProfile*) gDirectory->Get(Form("p%s",pmt.c_str()));
   p->SetLineColor(color);
   p->SetMarkerStyle(markerstyle);

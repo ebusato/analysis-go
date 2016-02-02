@@ -1,9 +1,13 @@
 package event
 
 import (
+	"fmt"
+	"image/color"
 	"log"
 	"os/exec"
+	"time"
 
+	"github.com/go-hep/csvutil"
 	"github.com/go-hep/hbook"
 	"github.com/gonum/plot"
 	"github.com/gonum/plot/plotter"
@@ -25,6 +29,108 @@ func (d *Data) CheckIntegrity() {
 			panic("not all events have the same number of pulses")
 		}
 	}
+}
+
+type PulsesCSV struct {
+	EventID uint
+	Time    float64
+	Ampl1   float64
+	Ampl2   float64
+	Ampl3   float64
+	Ampl4   float64
+}
+
+func (d *Data) PrintPulsesToFile(outFileName string) {
+	tbl, err := csvutil.Create(outFileName)
+	if err != nil {
+		log.Fatalf("could not create %s: %v\n", outFileName, err)
+	}
+	defer tbl.Close()
+	tbl.Writer.Comma = ' '
+
+	err = tbl.WriteHeader(fmt.Sprintf("# Pulses file (on line per sample) (creation date: %v)\n", time.Now()))
+	err = tbl.WriteHeader("# eventID time ampl1 ampl2 ampl3 ampl4")
+
+	if err != nil {
+		log.Fatalf("error writing header: %v\n", err)
+	}
+
+	for i := range *d {
+		e := &(*d)[i]
+		for j := range e.Cluster.Pulses[0].Samples {
+			data := PulsesCSV{
+				EventID: e.ID,
+				Time:    e.Cluster.Pulses[0].Samples[j].Time,
+				Ampl1:   e.Cluster.Pulses[0].Samples[j].Amplitude,
+				Ampl2:   e.Cluster.Pulses[1].Samples[j].Amplitude,
+				Ampl3:   e.Cluster.Pulses[2].Samples[j].Amplitude,
+				Ampl4:   e.Cluster.Pulses[3].Samples[j].Amplitude,
+			}
+			err = tbl.WriteRow(data)
+			if err != nil {
+				log.Fatalf("error writing row: %v\n", err)
+			}
+		}
+	}
+
+	err = tbl.Close()
+	if err != nil {
+		log.Fatalf("error closing table: %v\n", err)
+	}
+}
+
+type ClusterCSV struct {
+	EventID   uint
+	PulseID   uint
+	HasSignal uint8
+	Amplitude float64
+	Charge    float64
+	SRout     uint16
+}
+
+func (d *Data) PrintGlobalVarsToFile(outFileName string) {
+	tbl, err := csvutil.Create(outFileName)
+	if err != nil {
+		log.Fatalf("could not create %s: %v\n", outFileName, err)
+	}
+	defer tbl.Close()
+	tbl.Writer.Comma = ' '
+
+	err = tbl.WriteHeader(fmt.Sprintf("# Cluster file (on line per pulse) (creation date: %v)\n", time.Now()))
+	err = tbl.WriteHeader("# eventID PulseID HasSignal Amplitude Charge SRout")
+
+	if err != nil {
+		log.Fatalf("error writing header: %v\n", err)
+	}
+
+	for i := range *d {
+		e := &(*d)[i]
+		for j := range e.Cluster.Pulses {
+			pulse := &e.Cluster.Pulses[j]
+			hasSignal := uint8(0)
+			if pulse.HasSignal {
+				hasSignal = 1
+			}
+			data := ClusterCSV{
+				EventID:   e.ID,
+				PulseID:   uint(j),
+				HasSignal: hasSignal,
+				Amplitude: pulse.Amplitude(),
+				Charge:    pulse.Charge(),
+				SRout:     pulse.SRout,
+			}
+			err = tbl.WriteRow(data)
+			if err != nil {
+				log.Fatalf("error writing row: %v\n", err)
+			}
+		}
+	}
+
+	err = tbl.Close()
+	if err != nil {
+		log.Fatalf("error closing table: %v\n", err)
+	}
+
 }
 
 func HbookToGonum(histo ...hbook.H1D) []plotter.Histogram {
@@ -150,7 +256,7 @@ func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool, savePulses 
 	}
 }
 
-func (d *Data) AmplitudeCorrelationWithinCluster() plotter.XYZs {
+func (d *Data) AmplitudeCorrelationWithinCluster() {
 	var data plotter.XYZs
 	for i := range *d {
 		cluster := (*d)[i].Cluster
@@ -162,12 +268,29 @@ func (d *Data) AmplitudeCorrelationWithinCluster() plotter.XYZs {
 			}{
 				X: pulses[0].Amplitude(),
 				Y: pulses[1].Amplitude(),
-				Z: 1,
+				Z: 0.1,
 			}
 			data = append(data, mydata)
 		}
 	}
-	return data
+	p, err := plot.New()
+	if err != nil {
+		panic(err)
+	}
+	p.Title.Text = "Bubbles"
+	p.X.Label.Text = "X"
+	p.Y.Label.Text = "Y"
+
+	bs, err := plotter.NewBubbles(data, vg.Points(1), vg.Points(20))
+	if err != nil {
+		panic(err)
+	}
+	bs.Color = color.RGBA{R: 196, B: 128, A: 255}
+	p.Add(bs)
+
+	if err := p.Save(4*vg.Inch, 4*vg.Inch, "output/bubble.png"); err != nil {
+		panic(err)
+	}
 }
 
 func (d *Data) Plot() {
