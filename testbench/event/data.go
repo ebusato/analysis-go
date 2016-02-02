@@ -133,10 +133,11 @@ func (d *Data) PrintGlobalVarsToFile(outFileName string) {
 
 }
 
-func HbookToGonum(histo ...hbook.H1D) []plotter.Histogram {
-	output := make([]plotter.Histogram, len(histo))
+/*
+func H1dToHplot(histo ...hbook.H1D) []hplot.Histogram {
+	output := make([]hplot.Histogram, len(histo))
 	for i, h := range histo {
-		h, err := plotter.NewHistogram(&h, h.Axis().Bins())
+		h, err := hplot.NewHistogram(&h, h.Axis().Bins())
 		if err != nil {
 			panic(err)
 		}
@@ -148,24 +149,24 @@ func HbookToGonum(histo ...hbook.H1D) []plotter.Histogram {
 }
 
 func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
-	p, err := plot.New()
+	p, err := hplot.New()
 	if err != nil {
 		panic(err)
 	}
-
 	p.X.Label.Text = xTitle
 	p.Y.Label.Text = yTitle
 
-	hGonum := HbookToGonum(histo...)
-	for i := range hGonum {
-		p.Add(&hGonum[i])
+	hHplot := H1dToHplot(histo...)
+	for i := range hHplot {
+		p.Add(&hHplot[i])
 	}
+	// 	p.Add(hHplot)
 
 	if err := p.Save(4*vg.Inch, 4*vg.Inch, outFile); err != nil {
 		panic(err)
 	}
 }
-
+*/
 func (d *Data) PlotDistribs() {
 	const N = 4
 	hCharge := make([]hbook.H1D, N)
@@ -206,14 +207,15 @@ func (d *Data) PlotDistribs() {
 			pulse := &cluster.Pulses[j]
 			hCharge[j].Fill(float64(pulse.Charge()), 1)
 			hAmplitude[j].Fill(float64(pulse.Amplitude()), 1)
-			hasSig := 0.
+			hasSig := 0
 			switch pulse.HasSignal {
 			case true:
+				fmt.Println("here")
 				hasSig = 1
 			case false:
 				hasSig = 0
 			}
-			hHasSignal[j].Fill(hasSig, 1)
+			hHasSignal[j].Fill(float64(hasSig), 1)
 		}
 	}
 
@@ -228,6 +230,39 @@ func (d *Data) PlotDistribs() {
 	MakePlot("Cluster amplitude", "Entries (A. U.)", "output/distribClusterAmplitude.png", hClusterAmplitude)
 	MakePlot("Cluster amplitude (multiplicity = 1)", "Entries (A. U.)", "output/distribClusterAmplitudeMultiplicityEq1.png", hClusterAmplitudeMultiplicityEq1)
 	MakePlot("Cluster amplitude (multiplicity = 2)", "Entries (A. U.)", "output/distribClusterAmplitudeMultiplicityEq2.png", hClusterAmplitudeMultiplicityEq2)
+}
+
+func HbookToGonum(histo ...hbook.H1D) []plotter.Histogram {
+	output := make([]plotter.Histogram, len(histo))
+	for i, h := range histo {
+		h, err := plotter.NewHistogram(&h, h.Axis().Bins())
+		if err != nil {
+			panic(err)
+		}
+		h.FillColor = nil //plotutil.Color(i)
+		h.Color = plotutil.Color(i)
+		output[i] = *h
+	}
+	return output
+}
+
+func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
+	p, err := plot.New()
+	if err != nil {
+		panic(err)
+	}
+
+	p.X.Label.Text = xTitle
+	p.Y.Label.Text = yTitle
+
+	hGonum := HbookToGonum(histo...)
+	for i := range hGonum {
+		p.Add(&hGonum[i])
+	}
+
+	if err := p.Save(4*vg.Inch, 4*vg.Inch, outFile); err != nil {
+		panic(err)
+	}
 }
 
 func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool, savePulses bool) {

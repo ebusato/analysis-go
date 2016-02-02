@@ -18,8 +18,8 @@ func main() {
 
 	var (
 		infileName        = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
-		outFileNamePulses = flag.String("oP", "output/pulses.txt", "Name of the output file containing pulse data")
-		outFileNameGlobal = flag.String("oG", "output/globalEventVariables.txt", "Name of the output file containing global event variables")
+		outFileNamePulses = flag.String("oP", "output/pulses.csv", "Name of the output file containing pulse data")
+		outFileNameGlobal = flag.String("oG", "output/globalEventVariables.csv", "Name of the output file containing global event variables")
 		noEvents          = flag.Uint("n", 10, "Number of events to process")
 		applyCorrections  = flag.Bool("applyCorr", false, "Do corrections and calibration or not")
 		inputType         = reader.HexInput
