@@ -58,15 +58,3 @@ func (e *Event) Print(detailed bool) {
 		}
 	}
 }
-
-// func (e *Event) PrintPulsesToFile(w *bufio.Writer) {
-//
-// }
-//
-// func (e *Event) PrintGlobalVarsToFile(w *bufio.Writer) {
-//
-// }
-//
-// func (e *Event) PlotPulses(x pulse.XaxisType, pedestalRange bool) string {
-//
-// }

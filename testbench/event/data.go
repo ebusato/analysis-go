@@ -130,43 +130,45 @@ func (d *Data) PrintGlobalVarsToFile(outFileName string) {
 	if err != nil {
 		log.Fatalf("error closing table: %v\n", err)
 	}
-
 }
 
-/*
-func H1dToHplot(histo ...hbook.H1D) []hplot.Histogram {
-	output := make([]hplot.Histogram, len(histo))
-	for i, h := range histo {
-		h, err := hplot.NewHistogram(&h, h.Axis().Bins())
-		if err != nil {
-			panic(err)
-		}
-		h.FillColor = nil //plotutil.Color(i)
-		h.Color = plotutil.Color(i)
-		output[i] = *h
-	}
-	return output
-}
+// func H1dToHplot(histo ...hbook.H1D) []hplot.Histogram {
+// 	output := make([]hplot.Histogram, len(histo))
+// 	for i, h := range histo {
+// 		// 		hi, err := hplot.NewHistogram(&h, h.Axis().Bins())
+// 		// 		if err != nil {
+// 		// 			panic(err)
+// 		// 		}
+// 		hi, err := hplot.NewH1D(&h)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		hi.FillColor = nil //plotutil.Color(i)
+// 		hi.Color = plotutil.Color(i)
+// 		output[i] = *hi
+// 	}
+// 	return output
+// }
+//
+// func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
+// 	p, err := hplot.New()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	p.X.Label.Text = xTitle
+// 	p.Y.Label.Text = yTitle
+//
+// 	hHplot := H1dToHplot(histo...)
+// 	for i := range hHplot {
+// 		p.Add(&hHplot[i])
+// 	}
+// 	// 	p.Add(hHplot)
+//
+// 	if err := p.Save(4*vg.Inch, 4*vg.Inch, outFile); err != nil {
+// 		panic(err)
+// 	}
+// }
 
-func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
-	p, err := hplot.New()
-	if err != nil {
-		panic(err)
-	}
-	p.X.Label.Text = xTitle
-	p.Y.Label.Text = yTitle
-
-	hHplot := H1dToHplot(histo...)
-	for i := range hHplot {
-		p.Add(&hHplot[i])
-	}
-	// 	p.Add(hHplot)
-
-	if err := p.Save(4*vg.Inch, 4*vg.Inch, outFile); err != nil {
-		panic(err)
-	}
-}
-*/
 func (d *Data) PlotDistribs() {
 	const N = 4
 	hCharge := make([]hbook.H1D, N)
@@ -210,7 +212,6 @@ func (d *Data) PlotDistribs() {
 			hasSig := 0
 			switch pulse.HasSignal {
 			case true:
-				fmt.Println("here")
 				hasSig = 1
 			case false:
 				hasSig = 0
@@ -303,7 +304,7 @@ func (d *Data) AmplitudeCorrelationWithinCluster() {
 			}{
 				X: pulses[0].Amplitude(),
 				Y: pulses[1].Amplitude(),
-				Z: 0.1,
+				Z: 0,
 			}
 			data = append(data, mydata)
 		}
@@ -312,11 +313,11 @@ func (d *Data) AmplitudeCorrelationWithinCluster() {
 	if err != nil {
 		panic(err)
 	}
-	p.Title.Text = "Bubbles"
-	p.X.Label.Text = "X"
-	p.Y.Label.Text = "Y"
+	p.Title.Text = "Correlation of amplitudes for clusters with 2 pulses"
+	p.X.Label.Text = "amplitude 1"
+	p.Y.Label.Text = "amplitude 2"
 
-	bs, err := plotter.NewBubbles(data, vg.Points(1), vg.Points(20))
+	bs, err := plotter.NewBubbles(data, vg.Points(1), vg.Points(3))
 	if err != nil {
 		panic(err)
 	}
