@@ -14,6 +14,7 @@ import (
 )
 
 func ComputePedestals(data *event.Data) {
+
 	for iEvent := range *data {
 		event := &(*data)[iEvent]
 		for iPulse := range event.Cluster.Pulses {
