@@ -10,6 +10,7 @@ import (
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/event"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/reader"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/tbdetector"
+	"gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
 )
 
 func ComputePedestals(data *event.Data) {
@@ -73,7 +74,7 @@ func main() {
 	}
 
 	data.CheckIntegrity()
-	// 	data.PlotPulses(pulse.XaxisCapacitor, true, false)
+	data.PlotPulses(pulse.XaxisCapacitor, true, false)
 
 	ComputePedestals(&data)
 

@@ -221,7 +221,7 @@ func (q *Quartet) PlotPedestals(plotStat bool) {
 	if plotStat {
 		outFile += "_Stat"
 	}
-	outFile += ".pdf"
+	outFile += ".png"
 	if err := p.Save(14*vg.Inch, 5*vg.Inch, outFile); err != nil {
 		panic(err)
 	}

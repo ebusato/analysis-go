@@ -7,9 +7,9 @@ import (
 	"log"
 	"os"
 
+	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/event"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/reader"
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/tbdetector"
 )
 
 func ComputePedestals(data *event.Data) {
@@ -34,17 +34,15 @@ func ComputePedestals(data *event.Data) {
 			}
 		}
 	}
-	tbdetector.Det.ComputePedestalsMeanStdDevFromSamples()
+	dpgadetector.Det.ComputePedestalsMeanStdDevFromSamples()
 }
 
 func main() {
 	var (
-		infileName  = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
-		outfileName = flag.String("o", "output/pedestals.csv", "Name of the output file")
-		noEvents    = flag.Uint("n", 10000000, "Number of events to process")
-		inputType   = reader.HexInput
+		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
+		//outfileName = flag.String("o", "output/pedestals.csv", "Name of the output file")
+		noEvents = flag.Uint("n", 10000000, "Number of events to process")
 	)
-	flag.Var(&inputType, "inType", "Type of input file (possible values: Dec,Hex,Bin)")
 
 	flag.Parse()
 
@@ -64,27 +62,27 @@ func main() {
 	}
 	defer file.Close()
 
-	s := reader.NewScanner(bufio.NewScanner(file))
+	r, err := reader.NewReader(bufio.NewReader(file))
+	if err != nil {
+		log.Fatalf("could not open asm file: %v\n", err)
+	}
 
-	var data event.Data
+	//var data event.Data
 
-	for event, status := s.ReadNextEvent(inputType); status && event.ID < *noEvents; event, status = s.ReadNextEvent(inputType) {
+	for event, status := r.ReadNextEvent(); status && event.ID < *noEvents; event, status = r.ReadNextEvent() {
 		if event.ID%500 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
-		data = append(data, *event)
+		//data = append(data, *event)
 	}
 
-	data.CheckIntegrity()
+	//data.CheckIntegrity()
 	// 	data.PlotPulses(pulse.XaxisCapacitor, true, false)
+	/*
+		ComputePedestals(&data)
 
-	ComputePedestals(&data)
+		dpgadetector.Det.WritePedestalsToFile(*outfileName)
 
-	tbdetector.Det.WritePedestalsToFile(*outfileName)
-
-	tbdetector.Det.PlotPedestals(true)
-	tbdetector.Det.PlotPedestals(false)
-
-	// detector.TBDet.Print()
-
+		dpgadetector.Det.PlotPedestals(true)
+		dpgadetector.Det.PlotPedestals(false)*/
 }

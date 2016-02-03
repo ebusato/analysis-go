@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/detector"
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/tbdetector"
 
 	"github.com/gonum/plot"
 	"github.com/gonum/plot/plotter"
@@ -31,6 +30,14 @@ func NewSample(amp float64, index uint16, time float64) *Sample {
 		Capacitor: nil,
 	}
 	return s
+}
+
+func (s *Sample) CapaIndex(SRout uint16) uint16 {
+	iCapa := SRout + s.Index
+	if iCapa > 1023 {
+		iCapa -= 1024
+	}
+	return iCapa
 }
 
 func (s *Sample) Print() {
@@ -67,14 +74,18 @@ func (p *Pulse) Print() {
 	fmt.Printf("  o TimeStep = %v\n", p.TimeStep)
 	fmt.Printf("  o SRout = %v\n", p.SRout)
 	fmt.Printf("  o HasSignal = %v\n", p.HasSignal)
-	fmt.Printf("  o Channel name = %v\n", p.Channel.Name())
+	if p.Channel != nil {
+		fmt.Printf("  o Channel name = %v\n", p.Channel.Name())
+	}
 	fmt.Println("  o Capacitors = ")
 	for i := range p.Samples {
 		sample := &p.Samples[i]
-		if i == 0 {
-			fmt.Printf("%v", sample.Capacitor.ID())
-		} else {
-			fmt.Printf(", %v", sample.Capacitor.ID())
+		if sample.Capacitor != nil {
+			if i == 0 {
+				fmt.Printf("%v", sample.Capacitor.ID())
+			} else {
+				fmt.Printf(", %v", sample.Capacitor.ID())
+			}
 		}
 	}
 	fmt.Println("\n")
@@ -98,16 +109,11 @@ func (p *Pulse) Copy() *Pulse {
 	return newpulse
 }
 
-func (p *Pulse) AddSample(s *Sample) {
+func (p *Pulse) AddSample(s *Sample, capa *detector.Capacitor) {
 	if s.Capacitor != nil {
 		log.Fatal("capacitor is not nil")
 	}
-	iCapa := p.SRout + s.Index
-	if iCapa > 1023 {
-		iCapa -= 1024
-	}
-	s.Capacitor = tbdetector.Det.Capacitor(p.Channel.ID(), iCapa)
-	//fmt.Printf("capacitor address: %p\n", s.Capacitor)
+	s.Capacitor = capa
 	p.Samples = append(p.Samples, *s)
 	if s.Amplitude > 1000 {
 		p.HasSignal = true
