@@ -73,6 +73,7 @@ func main() {
 		if event.ID%500 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
+		event.Print(true)
 		//data = append(data, *event)
 	}
 

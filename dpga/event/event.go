@@ -4,22 +4,25 @@ import (
 	"fmt"
 	"log"
 
+	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
 )
 
 type Event struct {
-	Clusters [72]pulse.Cluster
+	Clusters []pulse.Cluster
 	ID       uint
 }
 
-func NewEventFromID(id uint) *Event {
+func NewEvent() *Event {
 	return &Event{
-		ID: id,
+		Clusters: make([]pulse.Cluster, dpgadetector.Det.NoClusters()),
+		ID:       0,
 	}
 }
 
 func (e *Event) Copy() *Event {
-	newevent := NewEventFromID(e.ID)
+	newevent := NewEvent()
+	newevent.ID = e.ID
 	for i := range e.Clusters {
 		oldPulses := e.Clusters[i].Pulses
 		newevent.Clusters[i].Pulses = [4]pulse.Pulse{

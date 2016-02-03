@@ -33,7 +33,7 @@ func (h *Hemisphere) Print() {
 type Detector struct {
 	scintillator string
 	samplingFreq float64 // sampling frequency in ns
-	hemisphere   [2]Hemisphere
+	hemispheres  [2]Hemisphere
 }
 
 func NewDetector() *Detector {
@@ -41,8 +41,8 @@ func NewDetector() *Detector {
 		scintillator: "LYSO",
 		samplingFreq: 0.200,
 	}
-	for iHemi := range det.hemisphere {
-		hemi := &det.hemisphere[iHemi]
+	for iHemi := range det.hemispheres {
+		hemi := &det.hemispheres[iHemi]
 		for iASM := range hemi.asm {
 			asm := &hemi.asm[iASM]
 			for iDRS := range asm.DRSs() {
@@ -68,8 +68,8 @@ func NewDetector() *Detector {
 }
 
 func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
-	for iHemi := range d.hemisphere {
-		hemi := &d.hemisphere[iHemi]
+	for iHemi := range d.hemispheres {
+		hemi := &d.hemispheres[iHemi]
 		for iASM := range hemi.asm {
 			asm := &hemi.asm[iASM]
 			for iDRS := range asm.DRSs() {
@@ -95,9 +95,13 @@ func (d *Detector) PlotPedestals(plotStat bool) {
 
 func (d *Detector) Print() {
 	fmt.Printf("Printing information for detector %v (sampling freq = %v)\n", d.scintillator, d.samplingFreq)
-	for iHemi := range d.hemisphere {
-		d.hemisphere[iHemi].Print()
+	for iHemi := range d.hemispheres {
+		d.hemispheres[iHemi].Print()
 	}
+}
+
+func (d *Detector) NoClusters() uint8 {
+	return uint8(5 * len(d.hemispheres) * len(d.hemispheres[0].asm))
 }
 
 func (d *Detector) SamplingFreq() float64 {
@@ -105,15 +109,15 @@ func (d *Detector) SamplingFreq() float64 {
 }
 
 func (d *Detector) Capacitor(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8, iCapacitor uint16) *detector.Capacitor {
-	return d.hemisphere[int(iHemi)].asm[int(iASM)].DRS(iDRS).Quartet(iQuartet).Channel(iChannel).Capacitor(iCapacitor)
+	return d.hemispheres[int(iHemi)].asm[int(iASM)].DRS(iDRS).Quartet(iQuartet).Channel(iChannel).Capacitor(iCapacitor)
 }
 
 func (d *Detector) Channel(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) *detector.Channel {
-	return d.hemisphere[int(iHemi)].asm[int(iASM)].DRS(iDRS).Quartet(iQuartet).Channel(iChannel)
+	return d.hemispheres[int(iHemi)].asm[int(iASM)].DRS(iDRS).Quartet(iQuartet).Channel(iChannel)
 }
 
 func (d *Detector) Quartet(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8) *detector.Quartet {
-	return d.hemisphere[int(iHemi)].asm[int(iASM)].DRS(iDRS).Quartet(iQuartet)
+	return d.hemispheres[int(iHemi)].asm[int(iASM)].DRS(iDRS).Quartet(iQuartet)
 }
 
 type PedestalFile struct {
@@ -138,8 +142,8 @@ func (d *Detector) WritePedestalsToFile(outFileName string) {
 	err = tbl.WriteHeader(fmt.Sprintf("# DPGA pedestal file (creation date: %v)\n", time.Now()))
 	err = tbl.WriteHeader("# iHemi iASM iDRS iQuartet iChannel iCapacitor pedestalMean pedestalStdDev")
 
-	for iHemi := range d.hemisphere {
-		hemi := &d.hemisphere[iHemi]
+	for iHemi := range d.hemispheres {
+		hemi := &d.hemispheres[iHemi]
 		for iASM := range hemi.asm {
 			asm := &hemi.asm[iASM]
 			for iDRS := range asm.DRSs() {
