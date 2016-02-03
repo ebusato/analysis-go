@@ -10,6 +10,7 @@ import (
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/event"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/reader"
+	"gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
 )
 
 func ComputePedestals(data *event.Data) {
@@ -38,6 +39,8 @@ func ComputePedestals(data *event.Data) {
 }
 
 func main() {
+	log.SetFlags(log.Llongfile | log.LstdFlags)
+
 	var (
 		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
 		//outfileName = flag.String("o", "output/pedestals.csv", "Name of the output file")
@@ -67,18 +70,18 @@ func main() {
 		log.Fatalf("could not open asm file: %v\n", err)
 	}
 
-	//var data event.Data
+	var data event.Data
 
 	for event, status := r.ReadNextEvent(); status && event.ID < *noEvents; event, status = r.ReadNextEvent() {
-		if event.ID%500 == 0 {
-			fmt.Printf("Processing event %v\n", event.ID)
-		}
-		event.Print(true)
-		//data = append(data, *event)
+		// 		if event.ID%1 == 0 {
+		fmt.Printf("Processing event %v\n", event.ID)
+		// 		}
+		//event.Print(true)
+		data = append(data, *event)
 	}
 
 	//data.CheckIntegrity()
-	// 	data.PlotPulses(pulse.XaxisCapacitor, true, false)
+	data.PlotPulses(pulse.XaxisCapacitor, true, false)
 	/*
 		ComputePedestals(&data)
 

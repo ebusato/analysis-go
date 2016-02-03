@@ -201,11 +201,13 @@ func (p *Pulse) Correlation(pu *Pulse) float64 {
 
 type Cluster struct {
 	Pulses [4]Pulse
+	ID     uint8
 }
 
-func NewCluster(pulses [4]Pulse) *Cluster {
+func NewCluster(id uint8, pulses [4]Pulse) *Cluster {
 	return &Cluster{
 		Pulses: pulses,
+		ID:     id,
 	}
 }
 
@@ -263,13 +265,13 @@ func (c *Cluster) Charge() float64 {
 	return charge
 }
 
-func (c *Cluster) PlotPulses(ID uint, x XaxisType, pedestalRange bool) string {
+func (c *Cluster) PlotPulses(evtID uint, x XaxisType, pedestalRange bool) string {
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
 	}
 
-	p.Title.Text = "Pulse for event " + strconv.Itoa(int(ID)) + " (SRout = " + strconv.Itoa(int(c.SRout())) + ")"
+	p.Title.Text = "Pulse for event " + strconv.Itoa(int(evtID)) + " cluster" + strconv.Itoa(int(c.ID)) + " (SRout = " + strconv.Itoa(int(c.SRout())) + ")"
 	switch x {
 	case XaxisTime:
 		p.X.Label.Text = "time (ns)"
@@ -301,7 +303,7 @@ func (c *Cluster) PlotPulses(ID uint, x XaxisType, pedestalRange bool) string {
 		p.Y.Max = 4096
 	}
 
-	outFile := "output/pulses_event" + strconv.Itoa(int(ID)) + ".png"
+	outFile := "output/pulses_event" + strconv.Itoa(int(evtID)) + "_cluster" + strconv.Itoa(int(c.ID)) + ".png"
 
 	if err := p.Save(14*vg.Inch, 5*vg.Inch, outFile); err != nil {
 		panic(err)

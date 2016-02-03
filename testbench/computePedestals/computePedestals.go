@@ -36,6 +36,8 @@ func ComputePedestals(data *event.Data) {
 }
 
 func main() {
+     	log.SetFlags(log.Llongfile | log.LstdFlags)
+
 	var (
 		infileName  = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
 		outfileName = flag.String("o", "output/pedestals.csv", "Name of the output file")

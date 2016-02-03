@@ -1,11 +1,13 @@
 package event
 
-import "log"
+import "gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
 
 type Data []Event
 
 func (d *Data) CheckIntegrity() {
-	log.Fatal("do not use, not implemented for the moment")
+	for i := range *d {
+		(*d)[i].CheckIntegrity()
+	}
 }
 
 // func HbookToGonum(histo ...hbook.H1D) []plotter.Histogram {
@@ -75,33 +77,16 @@ func (d *Data) CheckIntegrity() {
 // 	MakePlot("HasSignal", "Entries (A. U.)", "output/distribHasSignal.png", hHasSignal...)
 // 	MakePlot("SRout", "Entries (A. U.)", "output/distribSRout.png", hSRout)
 // }
-//
-// func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool, savePulses bool) {
-// 	var gsOptions = []string{"-dNOPAUSE", "-dBATCH", "-sDEVICE=pdfwrite", "-sOutputFile=output/merged.pdf"}
-// 	var outPulseFiles []string
-//
-// 	for i, event := range *d {
-// 		outPulseFiles = append(outPulseFiles, event.PlotPulses(xaxis, pedestalRange))
-// 		if i >= 20 {
-// 			break
-// 		}
-// 	}
-//
-// 	gsOptions = append(gsOptions, outPulseFiles...)
-// 	err := exec.Command("gs", gsOptions...).Run()
-// 	if err != nil {
-// 		log.Fatal("error merging files", err)
-// 	}
-// 	if !savePulses {
-// 		for _, fileName := range outPulseFiles {
-// 			err := exec.Command("rm", "-f", fileName).Run()
-// 			if err != nil {
-// 				log.Fatal("error removing file", err)
-// 			}
-// 		}
-// 	}
-// }
-//
+
+func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool, savePulses bool) {
+	for i := range *d {
+		(*d)[i].PlotPulses(xaxis, pedestalRange)
+		if i >= 4 {
+			break
+		}
+	}
+}
+
 // func (d *Data) Plot() {
 // 	d.PlotDistribs()
 // 	d.PlotPulses(pulse.XaxisTime, false, true)

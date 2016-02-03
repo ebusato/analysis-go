@@ -61,3 +61,9 @@ func (e *Event) Print(detailed bool) {
 		}
 	}
 }
+
+func (e *Event) PlotPulses(x pulse.XaxisType, pedestalRange bool) {
+	for i := range e.Clusters {
+		e.Clusters[i].PlotPulses(e.ID, x, pedestalRange)
+	}
+}
