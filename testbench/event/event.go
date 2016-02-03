@@ -88,7 +88,6 @@ func (e *Event) Print(detailed bool) {
 				fmt.Printf("      * sample %v: %v\n", s.Index, s.Amplitude)
 			}
 		}
-
 	}
 }
 

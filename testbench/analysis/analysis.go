@@ -57,7 +57,9 @@ func main() {
 		if *applyCorrections {
 			event = applyCorrCalib.RemovePedestal(event)
 		}
-		//event.Print(true)
+// 		if event.ID == 17 {
+// 			event.Print(true)
+// 		}
 		//fmt.Println("correlation=", event.GlobalCorrelation("PMT1", "PMT2"))
 		data = append(data, *event)
 	}

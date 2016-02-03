@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image/color"
 	"log"
-	"os/exec"
 	"time"
 
 	"github.com/go-hep/csvutil"
@@ -174,6 +173,7 @@ func (d *Data) PlotDistribs() {
 	hCharge := make([]hbook.H1D, N)
 	hAmplitude := make([]hbook.H1D, N)
 	hHasSignal := make([]hbook.H1D, N)
+	hHasSatSignal := make([]hbook.H1D, N)
 	hSRout := *hbook.NewH1D(1024, 0, 1023)
 	hMultiplicity := *hbook.NewH1D(5, 0, 5)
 	hClusterCharge := *hbook.NewH1D(100, -2e4, 400e3)
@@ -187,6 +187,7 @@ func (d *Data) PlotDistribs() {
 		hCharge[i] = *hbook.NewH1D(100, -2e4, 100e3)
 		hAmplitude[i] = *hbook.NewH1D(100, 0, 4200)
 		hHasSignal[i] = *hbook.NewH1D(2, 0, 2)
+		hHasSatSignal[i] = *hbook.NewH1D(2, 0, 2)
 	}
 	for i := range *d {
 		cluster := &(*d)[i].Cluster
@@ -217,12 +218,21 @@ func (d *Data) PlotDistribs() {
 				hasSig = 0
 			}
 			hHasSignal[j].Fill(float64(hasSig), 1)
+			hasSatSig := 0
+			switch pulse.HasSatSignal {
+			case true:
+				hasSatSig = 1
+			case false:
+				hasSatSig = 0
+			}
+			hHasSatSignal[j].Fill(float64(hasSatSig), 1)
 		}
 	}
 
 	MakePlot("Charge", "Entries (A. U.)", "output/distribCharge.png", hCharge...)
 	MakePlot("Amplitude", "Entries (A. U.)", "output/distribAmplitude.png", hAmplitude...)
 	MakePlot("HasSignal", "Entries (A. U.)", "output/distribHasSignal.png", hHasSignal...)
+	MakePlot("HasSatSignal", "Entries (A. U.)", "output/distribHasSatSignal.png", hHasSatSignal...)
 	MakePlot("SRout", "Entries (A. U.)", "output/distribSRout.png", hSRout)
 	MakePlot("Multiplicity", "Entries (A. U.)", "output/distribMultiplicity.png", hMultiplicity)
 	MakePlot("Cluster charge", "Entries (A. U.)", "output/distribClusterCharge.png", hClusterCharge)
@@ -266,8 +276,8 @@ func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) 
 	}
 }
 
-func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool, savePulses bool) {
-	var gsOptions = []string{"-dNOPAUSE", "-dBATCH", "-sDEVICE=pdfwrite", "-sOutputFile=output/merged.pdf"}
+func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool, savePulses bool) { /*
+		var gsOptions = []string{"-dNOPAUSE", "-dBATCH", "-sDEVICE=pdfwrite", "-sOutputFile=output/merged.pdf"}*/
 	var outPulseFiles []string
 
 	for i, event := range *d {
@@ -277,19 +287,19 @@ func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool, savePulses 
 		}
 	}
 
-	gsOptions = append(gsOptions, outPulseFiles...)
-	err := exec.Command("gs", gsOptions...).Run()
-	if err != nil {
-		log.Fatal("error merging files", err)
-	}
-	if !savePulses {
-		for _, fileName := range outPulseFiles {
-			err := exec.Command("rm", "-f", fileName).Run()
-			if err != nil {
-				log.Fatal("error removing file", err)
-			}
-		}
-	}
+	// 	gsOptions = append(gsOptions, outPulseFiles...)
+	// 	err := exec.Command("gs", gsOptions...).Run()
+	// 	if err != nil {
+	// 		log.Fatal("error merging files", err)
+	// 	}
+	// 	if !savePulses {
+	// 		for _, fileName := range outPulseFiles {
+	// 			err := exec.Command("rm", "-f", fileName).Run()
+	// 			if err != nil {
+	// 				log.Fatal("error removing file", err)
+	// 			}
+	// 		}
+	// 	}
 }
 
 func (d *Data) AmplitudeCorrelationWithinCluster() {

@@ -43,19 +43,21 @@ func (s *Sample) SubtractPedestal() {
 }
 
 type Pulse struct {
-	Samples   []Sample
-	TimeStep  float64
-	SRout     uint16 // SRout is the number of the first capacitor for this pulse, it can take 1024 values (0 -> 1023)
-	HasSignal bool
-	Channel   *detector.Channel
+	Samples      []Sample
+	TimeStep     float64
+	SRout        uint16 // SRout is the number of the first capacitor for this pulse, it can take 1024 values (0 -> 1023)
+	HasSignal    bool
+	HasSatSignal bool
+	Channel      *detector.Channel
 }
 
 func NewPulse(channel *detector.Channel) *Pulse {
 	return &Pulse{
-		TimeStep:  0.0,
-		SRout:     0,
-		HasSignal: false,
-		Channel:   channel,
+		TimeStep:     0.0,
+		SRout:        0,
+		HasSignal:    false,
+		HasSatSignal: false,
+		Channel:      channel,
 	}
 }
 
@@ -86,11 +88,12 @@ func (p *Pulse) Copy() *Pulse {
 	newsamples := make([]Sample, len(p.Samples))
 	copy(newsamples, p.Samples)
 	newpulse := &Pulse{
-		Samples:   newsamples,
-		TimeStep:  p.TimeStep,
-		SRout:     p.SRout,
-		HasSignal: p.HasSignal,
-		Channel:   p.Channel,
+		Samples:      newsamples,
+		TimeStep:     p.TimeStep,
+		SRout:        p.SRout,
+		HasSignal:    p.HasSignal,
+		HasSatSignal: p.HasSatSignal,
+		Channel:      p.Channel,
 	}
 	return newpulse
 }
@@ -108,6 +111,9 @@ func (p *Pulse) AddSample(s *Sample) {
 	p.Samples = append(p.Samples, *s)
 	if s.Amplitude > 1000 {
 		p.HasSignal = true
+		if s.Amplitude == 4095 {
+			p.HasSatSignal = true
+		}
 	}
 	noSamples := len(p.Samples)
 	if noSamples == 2 {
@@ -271,10 +277,10 @@ func (c *Cluster) PlotPulses(ID uint, x XaxisType, pedestalRange bool) string {
 
 	p.Add(plotter.NewGrid())
 	err = plotutil.AddLinePoints(p,
-		c.Pulses[0].Channel.Name()+" (HasSignal = "+strconv.FormatBool(c.Pulses[0].HasSignal)+")", c.Pulses[0].MakeXY(x),
-		c.Pulses[1].Channel.Name()+" (HasSignal = "+strconv.FormatBool(c.Pulses[1].HasSignal)+")", c.Pulses[1].MakeXY(x),
-		c.Pulses[2].Channel.Name()+" (HasSignal = "+strconv.FormatBool(c.Pulses[2].HasSignal)+")", c.Pulses[2].MakeXY(x),
-		c.Pulses[3].Channel.Name()+" (HasSignal = "+strconv.FormatBool(c.Pulses[3].HasSignal)+")", c.Pulses[3].MakeXY(x))
+		c.Pulses[0].Channel.Name()+" (HasSignal = "+strconv.FormatBool(c.Pulses[0].HasSignal)+", Sat = "+strconv.FormatBool(c.Pulses[0].HasSatSignal)+")", c.Pulses[0].MakeXY(x),
+		c.Pulses[1].Channel.Name()+" (HasSignal = "+strconv.FormatBool(c.Pulses[1].HasSignal)+", Sat = "+strconv.FormatBool(c.Pulses[1].HasSatSignal)+")", c.Pulses[1].MakeXY(x),
+		c.Pulses[2].Channel.Name()+" (HasSignal = "+strconv.FormatBool(c.Pulses[2].HasSignal)+", Sat = "+strconv.FormatBool(c.Pulses[2].HasSatSignal)+")", c.Pulses[2].MakeXY(x),
+		c.Pulses[3].Channel.Name()+" (HasSignal = "+strconv.FormatBool(c.Pulses[3].HasSignal)+", Sat = "+strconv.FormatBool(c.Pulses[3].HasSatSignal)+")", c.Pulses[3].MakeXY(x))
 
 	if err != nil {
 		panic(err)
@@ -289,7 +295,7 @@ func (c *Cluster) PlotPulses(ID uint, x XaxisType, pedestalRange bool) string {
 		p.Y.Max = 4096
 	}
 
-	outFile := "output/pulses_event" + strconv.Itoa(int(ID)) + ".pdf"
+	outFile := "output/pulses_event" + strconv.Itoa(int(ID)) + ".png"
 
 	if err := p.Save(14*vg.Inch, 5*vg.Inch, outFile); err != nil {
 		panic(err)
