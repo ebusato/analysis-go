@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"strconv"
 
 	"github.com/gonum/plot"
 	"github.com/gonum/plot/plotter"
@@ -162,6 +161,10 @@ func (q *Quartet) SetID(id uint8) {
 	q.id = id
 }
 
+func (q *Quartet) ID() uint8 {
+	return q.id
+}
+
 func (q *Quartet) Print() {
 	fmt.Printf("  - Quartet: id= %v (address=%p)\n", q.id, q)
 	for i := range q.channels {
@@ -177,7 +180,7 @@ func (q *Quartet) Channel(iChannel uint8) *Channel {
 	return &q.channels[iChannel]
 }
 
-func (q *Quartet) PlotPedestals(plotStat bool) {
+func (q *Quartet) PlotPedestals(plotStat bool, text string) {
 	for i := range q.channels {
 		q.channels[i].PlotStat(plotStat)
 	}
@@ -187,7 +190,7 @@ func (q *Quartet) PlotPedestals(plotStat bool) {
 		panic(err)
 	}
 
-	p.Title.Text = "Pedestal"
+	p.Title.Text = "Pedestal " + text
 	p.X.Label.Text = "capacitor"
 	switch plotStat {
 	case false:
@@ -217,7 +220,8 @@ func (q *Quartet) PlotPedestals(plotStat bool) {
 		panic(err)
 	}
 
-	outFile := "output/pedestal_quartet_" + strconv.FormatUint(uint64(q.id), 10)
+	//outFile := "output/pedestal_quartet_" + strconv.FormatUint(uint64(q.id), 10)
+	outFile := "output/pedestal_quartet_" + text
 	if plotStat {
 		outFile += "_Stat"
 	}

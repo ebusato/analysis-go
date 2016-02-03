@@ -80,7 +80,7 @@ func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
 }
 
 func (d *Detector) PlotPedestals(plotStat bool) {
-	d.Quartet().PlotPedestals(plotStat)
+	d.Quartet().PlotPedestals(plotStat, strconv.FormatUint(uint64(d.Quartet().ID()), 10))
 }
 
 type PedestalCSV struct {

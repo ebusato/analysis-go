@@ -90,7 +90,21 @@ func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
 }
 
 func (d *Detector) PlotPedestals(plotStat bool) {
-
+	for iHemi := range d.hemispheres {
+		for iASM := range d.hemispheres[iHemi].asm {
+			for iDRS := range d.hemispheres[iHemi].asm[iASM].DRSs() {
+				for iQuartet := range d.hemispheres[iHemi].asm[iASM].DRS(uint8(iDRS)).Quartets() {
+					quartet := d.Quartet(uint8(iHemi), uint8(iASM), uint8(iDRS), uint8(iQuartet))
+					text := fmt.Sprintf("iHemi%v_iASM%v_iDRS%v_iQuartet%v",
+						strconv.FormatUint(uint64(iHemi), 10),
+						strconv.FormatUint(uint64(iASM), 10),
+						strconv.FormatUint(uint64(iDRS), 10),
+						strconv.FormatUint(uint64(iQuartet), 10))
+					quartet.PlotPedestals(plotStat, text)
+				}
+			}
+		}
+	}
 }
 
 func (d *Detector) Print() {

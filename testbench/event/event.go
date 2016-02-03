@@ -16,7 +16,7 @@ func NewEvent(frame1 *Frame, frame2 *Frame, evtID uint) *Event {
 	pulse1, pulse2 := frame1.MakePulses()
 	pulse3, pulse4 := frame2.MakePulses()
 	event := &Event{
-		Cluster: *pulse.NewCluster([4]pulse.Pulse{*pulse1, *pulse2, *pulse3, *pulse4}),
+		Cluster: *pulse.NewCluster(0, [4]pulse.Pulse{*pulse1, *pulse2, *pulse3, *pulse4}),
 	}
 	event.ID = evtID
 	event.CheckIntegrity()

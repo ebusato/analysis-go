@@ -10,7 +10,6 @@ import (
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/event"
 	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/reader"
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
 )
 
 func ComputePedestals(data *event.Data) {
@@ -42,9 +41,9 @@ func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
-		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
-		//outfileName = flag.String("o", "output/pedestals.csv", "Name of the output file")
-		noEvents = flag.Uint("n", 10000000, "Number of events to process")
+		infileName  = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
+		outfileName = flag.String("o", "output/pedestals.csv", "Name of the output file")
+		noEvents    = flag.Uint("n", 10000000, "Number of events to process")
 	)
 
 	flag.Parse()
@@ -73,20 +72,20 @@ func main() {
 	var data event.Data
 
 	for event, status := r.ReadNextEvent(); status && event.ID < *noEvents; event, status = r.ReadNextEvent() {
-		// 		if event.ID%1 == 0 {
-		fmt.Printf("Processing event %v\n", event.ID)
-		// 		}
+		if event.ID%1 == 0 {
+			fmt.Printf("Processing event %v\n", event.ID)
+		}
 		//event.Print(true)
 		data = append(data, *event)
 	}
 
 	//data.CheckIntegrity()
-	data.PlotPulses(pulse.XaxisCapacitor, true, false)
-	/*
-		ComputePedestals(&data)
+	//data.PlotPulses(pulse.XaxisCapacitor, true, false)
 
-		dpgadetector.Det.WritePedestalsToFile(*outfileName)
+	ComputePedestals(&data)
 
-		dpgadetector.Det.PlotPedestals(true)
-		dpgadetector.Det.PlotPedestals(false)*/
+	dpgadetector.Det.WritePedestalsToFile(*outfileName)
+
+	//dpgadetector.Det.PlotPedestals(true)
+	dpgadetector.Det.PlotPedestals(false)
 }

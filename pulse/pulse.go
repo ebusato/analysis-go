@@ -271,7 +271,7 @@ func (c *Cluster) PlotPulses(evtID uint, x XaxisType, pedestalRange bool) string
 		panic(err)
 	}
 
-	p.Title.Text = "Pulse for event " + strconv.Itoa(int(evtID)) + " cluster" + strconv.Itoa(int(c.ID)) + " (SRout = " + strconv.Itoa(int(c.SRout())) + ")"
+	p.Title.Text = "Pulse for event " + strconv.Itoa(int(evtID)) + " cluster " + strconv.Itoa(int(c.ID)) + " (SRout = " + strconv.Itoa(int(c.SRout())) + ")"
 	switch x {
 	case XaxisTime:
 		p.X.Label.Text = "time (ns)"
