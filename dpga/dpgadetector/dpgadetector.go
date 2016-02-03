@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-hep/csvutil"
 
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/detector"
+	"gitlab.in2p3.fr/avirm/analysis-go/detector"
 )
 
 type HemisphereType uint8

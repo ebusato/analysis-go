@@ -5,9 +5,9 @@ import (
 	"log"
 	"strconv"
 
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/detector"
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/tbdetector"
+	"gitlab.in2p3.fr/avirm/analysis-go/detector"
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
 )
 
 type TypeOfFrame byte

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
 type Event struct {

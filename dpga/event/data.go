@@ -1,6 +1,6 @@
 package event
 
-import "gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
+import "gitlab.in2p3.fr/avirm/analysis-go/pulse"
 
 type Data []Event
 

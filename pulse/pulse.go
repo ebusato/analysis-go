@@ -6,7 +6,7 @@ import (
 	"math"
 	"strconv"
 
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/detector"
+	"gitlab.in2p3.fr/avirm/analysis-go/detector"
 
 	"github.com/gonum/plot"
 	"github.com/gonum/plot/plotter"

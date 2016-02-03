@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/testbench/event"
 
 	//"io"
 )

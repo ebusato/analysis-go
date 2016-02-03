@@ -7,10 +7,10 @@ import (
 	"log"
 	"os"
 
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/event"
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/reader"
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/tbdetector"
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/testbench/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/testbench/reader"
+	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
 )
 
 func ComputePedestals(data *event.Data) {
@@ -36,7 +36,7 @@ func ComputePedestals(data *event.Data) {
 }
 
 func main() {
-     	log.SetFlags(log.Llongfile | log.LstdFlags)
+	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
 		infileName  = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")

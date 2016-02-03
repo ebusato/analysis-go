@@ -6,9 +6,9 @@ import (
 	"io"
 	"log"
 
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/dpgadetector"
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/event"
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
 const (
@@ -24,7 +24,7 @@ type Block struct {
 	Evt uint32 // event id
 	ID  uint32 // block ID
 
-	Data     []uint32 
+	Data     []uint32
 	SRout    uint32
 	Counters [17]uint32
 }

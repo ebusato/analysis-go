@@ -2,7 +2,7 @@
 
 package applyCorrCalib
 
-import "gitlab.in2p3.fr/AVIRM/Analysis-go/testbench/event"
+import "gitlab.in2p3.fr/avirm/analysis-go/testbench/event"
 
 func RemovePedestal(e *event.Event) *event.Event {
 	newevent := e.Copy()

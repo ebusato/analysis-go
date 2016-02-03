@@ -13,7 +13,7 @@ import (
 	"github.com/gonum/plot/plotter"
 	"github.com/gonum/plot/plotutil"
 	"github.com/gonum/plot/vg"
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
 type Data []Event

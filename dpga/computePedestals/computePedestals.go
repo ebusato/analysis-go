@@ -7,9 +7,9 @@ import (
 	"log"
 	"os"
 
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/dpgadetector"
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/event"
-	"gitlab.in2p3.fr/AVIRM/Analysis-go/dpga/reader"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/reader"
 )
 
 func ComputePedestals(data *event.Data) {
