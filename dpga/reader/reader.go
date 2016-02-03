@@ -24,7 +24,7 @@ type Block struct {
 	Evt uint32 // event id
 	ID  uint32 // block ID
 
-	Data     []uint32 // raw waveforms
+	Data     []uint32 
 	SRout    uint32
 	Counters [17]uint32
 }

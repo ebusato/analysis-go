@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-hep/csvutil"
 	"github.com/go-hep/hbook"
+	"github.com/go-hep/hplot"
 	"github.com/gonum/plot"
 	"github.com/gonum/plot/plotter"
 	"github.com/gonum/plot/plotutil"
@@ -131,42 +132,42 @@ func (d *Data) PrintGlobalVarsToFile(outFileName string) {
 	}
 }
 
-// func H1dToHplot(histo ...hbook.H1D) []hplot.Histogram {
-// 	output := make([]hplot.Histogram, len(histo))
-// 	for i, h := range histo {
-// 		// 		hi, err := hplot.NewHistogram(&h, h.Axis().Bins())
-// 		// 		if err != nil {
-// 		// 			panic(err)
-// 		// 		}
-// 		hi, err := hplot.NewH1D(&h)
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 		hi.FillColor = nil //plotutil.Color(i)
-// 		hi.Color = plotutil.Color(i)
-// 		output[i] = *hi
-// 	}
-// 	return output
-// }
-//
-// func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
-// 	p, err := hplot.New()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	p.X.Label.Text = xTitle
-// 	p.Y.Label.Text = yTitle
-//
-// 	hHplot := H1dToHplot(histo...)
-// 	for i := range hHplot {
-// 		p.Add(&hHplot[i])
-// 	}
-// 	// 	p.Add(hHplot)
-//
-// 	if err := p.Save(4*vg.Inch, 4*vg.Inch, outFile); err != nil {
-// 		panic(err)
-// 	}
-// }
+func H1dToHplot(histo ...hbook.H1D) []hplot.Histogram {
+	output := make([]hplot.Histogram, len(histo))
+	for i, h := range histo {
+		// 		hi, err := hplot.NewHistogram(&h, h.Axis().Bins())
+		// 		if err != nil {
+		// 			panic(err)
+		// 		}
+		hi, err := hplot.NewH1D(&h)
+		if err != nil {
+			panic(err)
+		}
+		hi.FillColor = nil //plotutil.Color(i)
+		hi.Color = plotutil.Color(i)
+		output[i] = *hi
+	}
+	return output
+}
+
+func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
+	p, err := hplot.New()
+	if err != nil {
+		panic(err)
+	}
+	p.X.Label.Text = xTitle
+	p.Y.Label.Text = yTitle
+
+	hHplot := H1dToHplot(histo...)
+	for i := range hHplot {
+		p.Add(&hHplot[i])
+	}
+	// 	p.Add(hHplot)
+
+	if err := p.Save(4*vg.Inch, 4*vg.Inch, outFile); err != nil {
+		panic(err)
+	}
+}
 
 func (d *Data) PlotDistribs() {
 	const N = 4
@@ -243,6 +244,7 @@ func (d *Data) PlotDistribs() {
 	MakePlot("Cluster amplitude (multiplicity = 2)", "Entries (A. U.)", "output/distribClusterAmplitudeMultiplicityEq2.png", hClusterAmplitudeMultiplicityEq2)
 }
 
+/*
 func HbookToGonum(histo ...hbook.H1D) []plotter.Histogram {
 	output := make([]plotter.Histogram, len(histo))
 	for i, h := range histo {
@@ -274,7 +276,7 @@ func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) 
 	if err := p.Save(4*vg.Inch, 4*vg.Inch, outFile); err != nil {
 		panic(err)
 	}
-}
+}*/
 
 func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool, savePulses bool) { /*
 		var gsOptions = []string{"-dNOPAUSE", "-dBATCH", "-sDEVICE=pdfwrite", "-sOutputFile=output/merged.pdf"}*/

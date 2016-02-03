@@ -49,7 +49,7 @@ func (c *Capacitor) ComputePedestalMeanStdDevFromSamples() {
 		variance = 0
 	}
 	c.pedestalMean = mean
-	c.pedestalStdDev = math.Sqrt(variance)
+	c.pedestalStdDev = math.Sqrt(variance / float64(c.NoPedestalSamples()))
 }
 
 func (c *Capacitor) PedestalMean() float64 {
