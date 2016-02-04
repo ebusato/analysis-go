@@ -6,13 +6,12 @@ import (
 	"math"
 	"strconv"
 
-	"gitlab.in2p3.fr/avirm/analysis-go/detector"
-
 	"github.com/gonum/plot"
 	"github.com/gonum/plot/plotter"
 	"github.com/gonum/plot/plotutil"
 	"github.com/gonum/plot/vg"
 	"github.com/gonum/stat"
+	"gitlab.in2p3.fr/avirm/analysis-go/detector"
 )
 
 type Sample struct {
