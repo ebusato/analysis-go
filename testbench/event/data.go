@@ -21,6 +21,8 @@ type Data struct {
 	HAmplitude                       []hbook.H1D
 	HHasSignal                       []hbook.H1D
 	HHasSatSignal                    []hbook.H1D
+	HFrequency                       *hbook.H1D
+	HSatFrequency                    *hbook.H1D
 	HSRout                           *hbook.H1D
 	HMultiplicity                    *hbook.H1D
 	HClusterCharge                   *hbook.H1D
@@ -38,6 +40,8 @@ func NewData() *Data {
 		HAmplitude:                       make([]hbook.H1D, N),
 		HHasSignal:                       make([]hbook.H1D, N),
 		HHasSatSignal:                    make([]hbook.H1D, N),
+		HFrequency:                       hbook.NewH1D(4, 0, 4),
+		HSatFrequency:                    hbook.NewH1D(4, 0, 4),
 		HSRout:                           hbook.NewH1D(1024, 0, 1023),
 		HMultiplicity:                    hbook.NewH1D(5, 0, 5),
 		HClusterCharge:                   hbook.NewH1D(100, -2e4, 400e3),
@@ -96,6 +100,7 @@ func (d *Data) FillHistos(event *Event) {
 		switch pulse.HasSignal {
 		case true:
 			hasSig = 1
+			d.HFrequency.Fill(float64(j), 1)
 		case false:
 			hasSig = 0
 		}
@@ -104,6 +109,7 @@ func (d *Data) FillHistos(event *Event) {
 		switch pulse.HasSatSignal {
 		case true:
 			hasSatSig = 1
+			d.HSatFrequency.Fill(float64(j), 1)
 		case false:
 			hasSatSig = 0
 		}
@@ -125,7 +131,7 @@ func HbookToGonum(histo ...hbook.H1D) []plotter.Histogram {
 	return output
 }
 
-func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
+func MakePlot(xTitle string, yTitle string, outFile string, normalize bool, histo ...hbook.H1D) {
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
@@ -136,6 +142,9 @@ func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) 
 
 	hGonum := HbookToGonum(histo...)
 	for i := range hGonum {
+		if normalize {
+			hGonum[i].Normalize(1)
+		}
 		p.Add(&hGonum[i])
 	}
 
@@ -184,18 +193,20 @@ func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) 
 // }
 
 func (d *Data) WriteHistosToFile() {
-	MakePlot("Charge", "Entries (A. U.)", "output/distribCharge.png", d.HCharge...)
-	MakePlot("Amplitude", "Entries (A. U.)", "output/distribAmplitude.png", d.HAmplitude...)
-	MakePlot("HasSignal", "Entries (A. U.)", "output/distribHasSignal.png", d.HHasSignal...)
-	MakePlot("HasSatSignal", "Entries (A. U.)", "output/distribHasSatSignal.png", d.HHasSatSignal...)
-	MakePlot("SRout", "Entries (A. U.)", "output/distribSRout.png", *d.HSRout)
-	MakePlot("Multiplicity", "Entries (A. U.)", "output/distribMultiplicity.png", *d.HMultiplicity)
-	MakePlot("Cluster charge", "Entries (A. U.)", "output/distribClusterCharge.png", *d.HClusterCharge)
-	MakePlot("Cluster charge (multiplicity = 1)", "Entries (A. U.)", "output/distribClusterChargeMultiplicityEq1.png", *d.HClusterChargeMultiplicityEq1)
-	MakePlot("Cluster charge (multiplicity = 2)", "Entries (A. U.)", "output/distribClusterChargeMultiplicityEq2.png", *d.HClusterChargeMultiplicityEq2)
-	MakePlot("Cluster amplitude", "Entries (A. U.)", "output/distribClusterAmplitude.png", *d.HClusterAmplitude)
-	MakePlot("Cluster amplitude (multiplicity = 1)", "Entries (A. U.)", "output/distribClusterAmplitudeMultiplicityEq1.png", *d.HClusterAmplitudeMultiplicityEq1)
-	MakePlot("Cluster amplitude (multiplicity = 2)", "Entries (A. U.)", "output/distribClusterAmplitudeMultiplicityEq2.png", *d.HClusterAmplitudeMultiplicityEq2)
+	MakePlot("Charge", "Entries", "output/distribCharge.png", false, d.HCharge...)
+	MakePlot("Amplitude", "Entries", "output/distribAmplitude.png", false, d.HAmplitude...)
+	MakePlot("HasSignal", "Entries", "output/distribHasSignal.png", false, d.HHasSignal...)
+	MakePlot("HasSatSignal", "Entries", "output/distribHasSatSignal.png", false, d.HHasSatSignal...)
+	MakePlot("Channel", "Frequency", "output/distribFrequency.png", true, *d.HFrequency)
+	MakePlot("Channel", "Saturation frequency", "output/distribSatFrequency.png", true, *d.HSatFrequency)
+	MakePlot("SRout", "Entries", "output/distribSRout.png", false, *d.HSRout)
+	MakePlot("Multiplicity", "Entries", "output/distribMultiplicity.png", false, *d.HMultiplicity)
+	MakePlot("Cluster charge", "Entries", "output/distribClusterCharge.png", false, *d.HClusterCharge)
+	MakePlot("Cluster charge (multiplicity = 1)", "Entries", "output/distribClusterChargeMultiplicityEq1.png", false, *d.HClusterChargeMultiplicityEq1)
+	MakePlot("Cluster charge (multiplicity = 2)", "Entries", "output/distribClusterChargeMultiplicityEq2.png", false, *d.HClusterChargeMultiplicityEq2)
+	MakePlot("Cluster amplitude", "Entries", "output/distribClusterAmplitude.png", false, *d.HClusterAmplitude)
+	MakePlot("Cluster amplitude (multiplicity = 1)", "Entries", "output/distribClusterAmplitudeMultiplicityEq1.png", false, *d.HClusterAmplitudeMultiplicityEq1)
+	MakePlot("Cluster amplitude (multiplicity = 2)", "Entries", "output/distribClusterAmplitudeMultiplicityEq2.png", false, *d.HClusterAmplitudeMultiplicityEq2)
 }
 
 type PulsesCSV struct {
