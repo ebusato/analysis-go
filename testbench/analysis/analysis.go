@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/applyCorrCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/reader"
@@ -49,7 +50,9 @@ func main() {
 
 	s := reader.NewScanner(bufio.NewScanner(file))
 
-	data := event.NewData()
+	var data event.Data
+
+	clusterplot := pulse.NewClusterPlot()
 
 	for event, status := s.ReadNextEvent(inputType); status && event.ID < *noEvents; event, status = s.ReadNextEvent(inputType) {
 		if event.ID%500 == 0 {
@@ -63,13 +66,13 @@ func main() {
 		// 		}
 		//fmt.Println("correlation=", event.GlobalCorrelation("PMT1", "PMT2"))
 		data.Events = append(data.Events, *event)
-		data.FillHistos(event)
+		clusterplot.FillHistos(&event.Cluster)
 	}
 
 	data.CheckIntegrity()
 	//data.PrintPulsesToFile(*outFileNamePulses)
 	//data.PrintGlobalVarsToFile(*outFileNameGlobal)
-	data.WriteHistosToFile()
-	data.Plot()
+	clusterplot.WriteHistosToFile()
+	data.PlotPulses(pulse.XaxisTime, false, true)
 	data.PlotAmplitudeCorrelationWithinCluster()
 }

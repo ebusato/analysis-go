@@ -7,59 +7,14 @@ import (
 	"time"
 
 	"github.com/go-hep/csvutil"
-	"github.com/go-hep/hbook"
 	"github.com/gonum/plot"
 	"github.com/gonum/plot/plotter"
-	"github.com/gonum/plot/plotutil"
 	"github.com/gonum/plot/vg"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
 type Data struct {
-	Events                           []Event
-	HCharge                          []hbook.H1D
-	HAmplitude                       []hbook.H1D
-	HHasSignal                       []hbook.H1D
-	HHasSatSignal                    []hbook.H1D
-	HFrequency                       *hbook.H1D
-	HSatFrequency                    *hbook.H1D
-	HSRout                           *hbook.H1D
-	HMultiplicity                    *hbook.H1D
-	HClusterCharge                   *hbook.H1D
-	HClusterChargeMultiplicityEq1    *hbook.H1D
-	HClusterChargeMultiplicityEq2    *hbook.H1D
-	HClusterAmplitude                *hbook.H1D
-	HClusterAmplitudeMultiplicityEq1 *hbook.H1D
-	HClusterAmplitudeMultiplicityEq2 *hbook.H1D
-}
-
-func NewData() *Data {
-	const N = 4
-	data := &Data{
-		HCharge:                          make([]hbook.H1D, N),
-		HAmplitude:                       make([]hbook.H1D, N),
-		HHasSignal:                       make([]hbook.H1D, N),
-		HHasSatSignal:                    make([]hbook.H1D, N),
-		HFrequency:                       hbook.NewH1D(4, 0, 4),
-		HSatFrequency:                    hbook.NewH1D(4, 0, 4),
-		HSRout:                           hbook.NewH1D(1024, 0, 1023),
-		HMultiplicity:                    hbook.NewH1D(5, 0, 5),
-		HClusterCharge:                   hbook.NewH1D(100, -2e4, 400e3),
-		HClusterChargeMultiplicityEq1:    hbook.NewH1D(100, -2e4, 400e3),
-		HClusterChargeMultiplicityEq2:    hbook.NewH1D(100, -2e4, 400e3),
-		HClusterAmplitude:                hbook.NewH1D(100, 0, 15000),
-		HClusterAmplitudeMultiplicityEq1: hbook.NewH1D(100, 0, 15000),
-		HClusterAmplitudeMultiplicityEq2: hbook.NewH1D(100, 0, 15000),
-	}
-
-	for i := 0; i < N; i++ {
-		data.HCharge[i] = *hbook.NewH1D(100, -2e4, 100e3)
-		data.HAmplitude[i] = *hbook.NewH1D(100, 0, 4200)
-		data.HHasSignal[i] = *hbook.NewH1D(2, 0, 2)
-		data.HHasSatSignal[i] = *hbook.NewH1D(2, 0, 2)
-	}
-
-	return data
+	Events []Event
 }
 
 func (d *Data) CheckIntegrity() {
@@ -73,140 +28,6 @@ func (d *Data) CheckIntegrity() {
 			panic("not all events have the same number of pulses")
 		}
 	}
-}
-
-func (d *Data) FillHistos(event *Event) {
-	cluster := &event.Cluster
-	d.HSRout.Fill(float64(cluster.SRout()), 1)
-	d.HClusterCharge.Fill(float64(cluster.Charge()), 1)
-	d.HClusterAmplitude.Fill(float64(cluster.Amplitude()), 1)
-
-	multi := len(cluster.PulsesWithSignal())
-	d.HMultiplicity.Fill(float64(multi), 1)
-	switch multi {
-	case 1:
-		d.HClusterChargeMultiplicityEq1.Fill(float64(cluster.Charge()), 1)
-		d.HClusterAmplitudeMultiplicityEq1.Fill(float64(cluster.Amplitude()), 1)
-	case 2:
-		d.HClusterChargeMultiplicityEq2.Fill(float64(cluster.Charge()), 1)
-		d.HClusterAmplitudeMultiplicityEq2.Fill(float64(cluster.Amplitude()), 1)
-	}
-
-	for j := range cluster.Pulses {
-		pulse := &cluster.Pulses[j]
-		d.HCharge[j].Fill(float64(pulse.Charge()), 1)
-		d.HAmplitude[j].Fill(float64(pulse.Amplitude()), 1)
-		hasSig := 0
-		switch pulse.HasSignal {
-		case true:
-			hasSig = 1
-			d.HFrequency.Fill(float64(j), 1)
-		case false:
-			hasSig = 0
-		}
-		d.HHasSignal[j].Fill(float64(hasSig), 1)
-		hasSatSig := 0
-		switch pulse.HasSatSignal {
-		case true:
-			hasSatSig = 1
-			d.HSatFrequency.Fill(float64(j), 1)
-		case false:
-			hasSatSig = 0
-		}
-		d.HHasSatSignal[j].Fill(float64(hasSatSig), 1)
-	}
-}
-
-func HbookToGonum(histo ...hbook.H1D) []plotter.Histogram {
-	output := make([]plotter.Histogram, len(histo))
-	for i, h := range histo {
-		h, err := plotter.NewHistogram(&h, h.Axis().Bins())
-		if err != nil {
-			panic(err)
-		}
-		h.FillColor = nil //plotutil.Color(i)
-		h.Color = plotutil.Color(i)
-		output[i] = *h
-	}
-	return output
-}
-
-func MakePlot(xTitle string, yTitle string, outFile string, normalize bool, histo ...hbook.H1D) {
-	p, err := plot.New()
-	if err != nil {
-		panic(err)
-	}
-
-	p.X.Label.Text = xTitle
-	p.Y.Label.Text = yTitle
-
-	hGonum := HbookToGonum(histo...)
-	for i := range hGonum {
-		if normalize {
-			hGonum[i].Normalize(1)
-		}
-		p.Add(&hGonum[i])
-	}
-
-	if err := p.Save(4*vg.Inch, 4*vg.Inch, outFile); err != nil {
-		panic(err)
-	}
-}
-
-// func H1dToHplot(histo ...hbook.H1D) []hplot.Histogram {
-// 	output := make([]hplot.Histogram, len(histo))
-// 	for i, h := range histo {
-// 		// 		hi, err := hplot.NewHistogram(&h, h.Axis().Bins())
-// 		// 		if err != nil {
-// 		// 			panic(err)
-// 		// 		}
-// 		hi, err := hplot.NewH1D(&h)
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 		//hi.FillColor = nil //plotutil.Color(i)
-// 		hi.Color = plotutil.Color(i)
-// 		output[i] = *hi
-// 	}
-// 	return output
-// }
-//
-// func MakePlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
-// 	p, err := hplot.New()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	p.X.Label.Text = xTitle
-// 	p.Y.Label.Text = yTitle
-//
-// 	p.Y.Min = 0
-//
-// 	hHplot := H1dToHplot(histo...)
-// 	for i := range hHplot {
-// 		p.Add(&hHplot[i])
-// 	}
-// 	// 	p.Add(hHplot)
-//
-// 	if err := p.Save(4*vg.Inch, 4*vg.Inch, outFile); err != nil {
-// 		panic(err)
-// 	}
-// }
-
-func (d *Data) WriteHistosToFile() {
-	MakePlot("Charge", "Entries", "output/distribCharge.png", false, d.HCharge...)
-	MakePlot("Amplitude", "Entries", "output/distribAmplitude.png", false, d.HAmplitude...)
-	MakePlot("HasSignal", "Entries", "output/distribHasSignal.png", false, d.HHasSignal...)
-	MakePlot("HasSatSignal", "Entries", "output/distribHasSatSignal.png", false, d.HHasSatSignal...)
-	MakePlot("Channel", "Frequency", "output/distribFrequency.png", true, *d.HFrequency)
-	MakePlot("Channel", "Saturation frequency", "output/distribSatFrequency.png", true, *d.HSatFrequency)
-	MakePlot("SRout", "Entries", "output/distribSRout.png", false, *d.HSRout)
-	MakePlot("Multiplicity", "Entries", "output/distribMultiplicity.png", false, *d.HMultiplicity)
-	MakePlot("Cluster charge", "Entries", "output/distribClusterCharge.png", false, *d.HClusterCharge)
-	MakePlot("Cluster charge (multiplicity = 1)", "Entries", "output/distribClusterChargeMultiplicityEq1.png", false, *d.HClusterChargeMultiplicityEq1)
-	MakePlot("Cluster charge (multiplicity = 2)", "Entries", "output/distribClusterChargeMultiplicityEq2.png", false, *d.HClusterChargeMultiplicityEq2)
-	MakePlot("Cluster amplitude", "Entries", "output/distribClusterAmplitude.png", false, *d.HClusterAmplitude)
-	MakePlot("Cluster amplitude (multiplicity = 1)", "Entries", "output/distribClusterAmplitudeMultiplicityEq1.png", false, *d.HClusterAmplitudeMultiplicityEq1)
-	MakePlot("Cluster amplitude (multiplicity = 2)", "Entries", "output/distribClusterAmplitudeMultiplicityEq2.png", false, *d.HClusterAmplitudeMultiplicityEq2)
 }
 
 type PulsesCSV struct {
@@ -371,9 +192,4 @@ func (d *Data) PlotAmplitudeCorrelationWithinCluster() {
 	if err := p.Save(4*vg.Inch, 4*vg.Inch, "output/bubble.png"); err != nil {
 		panic(err)
 	}
-}
-
-func (d *Data) Plot() {
-	//d.PlotDistribs()
-	d.PlotPulses(pulse.XaxisCapacitor, false, true)
 }
