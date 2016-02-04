@@ -14,9 +14,8 @@ import (
 )
 
 func ComputePedestals(data *event.Data) {
-
-	for iEvent := range *data {
-		event := &(*data)[iEvent]
+	for iEvent := range data.Events {
+		event := &data.Events[iEvent]
 		for iPulse := range event.Cluster.Pulses {
 			pulse := &event.Cluster.Pulses[iPulse]
 			if pulse.HasSignal {
@@ -67,19 +66,20 @@ func main() {
 
 	s := reader.NewScanner(bufio.NewScanner(file))
 
-	var data event.Data
+	data := event.NewData()
 
 	for event, status := s.ReadNextEvent(inputType); status && event.ID < *noEvents; event, status = s.ReadNextEvent(inputType) {
 		if event.ID%500 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
-		data = append(data, *event)
+		data.Events = append(data.Events, *event)
 	}
 
 	data.CheckIntegrity()
+
 	data.PlotPulses(pulse.XaxisCapacitor, true, false)
 
-	ComputePedestals(&data)
+	ComputePedestals(data)
 
 	tbdetector.Det.WritePedestalsToFile(*outfileName)
 

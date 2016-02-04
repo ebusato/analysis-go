@@ -200,7 +200,7 @@ func (q *Quartet) PlotPedestals(plotStat bool, text string) {
 	}
 	p.Add(plotter.NewGrid())
 
-	err = plotutil.AddScatters(p,
+	err = plotutil.AddLinePoints(p, //AddScatters(p,
 		q.channels[0].Name(), &q.channels[0],
 		q.channels[1].Name(), &q.channels[1],
 		q.channels[2].Name(), &q.channels[2],

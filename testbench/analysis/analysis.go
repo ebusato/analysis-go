@@ -49,7 +49,7 @@ func main() {
 
 	s := reader.NewScanner(bufio.NewScanner(file))
 
-	var data event.Data
+	data := event.NewData()
 
 	for event, status := s.ReadNextEvent(inputType); status && event.ID < *noEvents; event, status = s.ReadNextEvent(inputType) {
 		if event.ID%500 == 0 {
@@ -62,12 +62,14 @@ func main() {
 		// 			event.Print(true)
 		// 		}
 		//fmt.Println("correlation=", event.GlobalCorrelation("PMT1", "PMT2"))
-		data = append(data, *event)
+		data.Events = append(data.Events, *event)
+		data.FillHistos(event)
 	}
 
 	data.CheckIntegrity()
 	//data.PrintPulsesToFile(*outFileNamePulses)
 	//data.PrintGlobalVarsToFile(*outFileNameGlobal)
+	data.WriteHistosToFile()
 	data.Plot()
-	data.AmplitudeCorrelationWithinCluster()
+	data.PlotAmplitudeCorrelationWithinCluster()
 }
