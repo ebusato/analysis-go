@@ -9,7 +9,7 @@ import (
 	"github.com/gonum/plot/vg"
 )
 
-func HbookToGonum(histo ...hbook.H1D) []plotter.Histogram {
+func H1DToGonum(histo ...hbook.H1D) []plotter.Histogram {
 	output := make([]plotter.Histogram, len(histo))
 	for i, h := range histo {
 		h, err := plotter.NewHistogram(&h, h.Axis().Bins())
@@ -34,14 +34,14 @@ func H1dToHplot(histo ...hbook.H1D) []hplot.Histogram {
 		if err != nil {
 			panic(err)
 		}
-		//hi.FillColor = nil //plotutil.Color(i)
+		hi.FillColor = nil //plotutil.Color(i)
 		hi.Color = plotutil.Color(i)
 		output[i] = *hi
 	}
 	return output
 }
 
-func MakeHPlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
+func MakeHPlot(xTitle string, yTitle string, outFile string, normalize bool, histo ...hbook.H1D) {
 	p, err := hplot.New()
 	if err != nil {
 		panic(err)
@@ -71,7 +71,7 @@ func MakeGonumPlot(xTitle string, yTitle string, outFile string, normalize bool,
 	p.X.Label.Text = xTitle
 	p.Y.Label.Text = yTitle
 
-	hGonum := HbookToGonum(histo...)
+	hGonum := H1DToGonum(histo...)
 	for i := range hGonum {
 		if normalize {
 			hGonum[i].Normalize(1)

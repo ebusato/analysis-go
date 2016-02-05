@@ -93,18 +93,21 @@ func (c *ClusterPlot) FillHistos(cluster *Cluster) {
 }
 
 func (c *ClusterPlot) WriteHistosToFile() {
-	utils.MakeGonumPlot("Charge", "Entries", "output/distribCharge.png", false, c.HCharge...)
-	utils.MakeGonumPlot("Amplitude", "Entries", "output/distribAmplitude.png", false, c.HAmplitude...)
-	utils.MakeGonumPlot("HasSignal", "Entries", "output/distribHasSignal.png", false, c.HHasSignal...)
-	utils.MakeGonumPlot("HasSatSignal", "Entries", "output/distribHasSatSignal.png", false, c.HHasSatSignal...)
-	utils.MakeGonumPlot("Channel", "Frequency", "output/distribFrequency.png", true, *c.HFrequency)
-	utils.MakeGonumPlot("Channel", "Saturation frequency", "output/distribSatFrequency.png", true, *c.HSatFrequency)
-	utils.MakeGonumPlot("SRout", "Entries", "output/distribSRout.png", false, *c.HSRout)
-	utils.MakeGonumPlot("Multiplicity", "Entries", "output/distribMultiplicity.png", false, *c.HMultiplicity)
-	utils.MakeGonumPlot("Cluster charge", "Entries", "output/distribClusterCharge.png", false, *c.HClusterCharge)
-	utils.MakeGonumPlot("Cluster charge (multiplicity = 1)", "Entries", "output/distribClusterChargeMultiplicityEq1.png", false, *c.HClusterChargeMultiplicityEq1)
-	utils.MakeGonumPlot("Cluster charge (multiplicity = 2)", "Entries", "output/distribClusterChargeMultiplicityEq2.png", false, *c.HClusterChargeMultiplicityEq2)
-	utils.MakeGonumPlot("Cluster amplitude", "Entries", "output/distribClusterAmplitude.png", false, *c.HClusterAmplitude)
-	utils.MakeGonumPlot("Cluster amplitude (multiplicity = 1)", "Entries", "output/distribClusterAmplitudeMultiplicityEq1.png", false, *c.HClusterAmplitudeMultiplicityEq1)
-	utils.MakeGonumPlot("Cluster amplitude (multiplicity = 2)", "Entries", "output/distribClusterAmplitudeMultiplicityEq2.png", false, *c.HClusterAmplitudeMultiplicityEq2)
+	doplot := utils.MakeHPlot
+	// doplot := utils.MakeGonumPlot
+	doplot("Charge", "Entries", "output/distribCharge.png", false, c.HCharge...)
+	doplot("Amplitude", "Entries", "output/distribAmplitude.png", false, c.HAmplitude...)
+	doplot("HasSignal", "Entries", "output/distribHasSignal.png", false, c.HHasSignal...)
+	doplot("HasSatSignal", "Entries", "output/distribHasSatSignal.png", false, c.HHasSatSignal...)
+	doplot("Channel", "Frequency", "output/distribFrequency.png", true, *c.HFrequency)
+	doplot("Channel", "Saturation frequency", "output/distribSatFrequency.png", true, *c.HSatFrequency)
+	doplot("SRout", "Entries", "output/distribSRout.png", false, *c.HSRout)
+	doplot("Multiplicity", "Entries", "output/distribMultiplicity.png", false, *c.HMultiplicity)
+	doplot("Cluster charge", "Entries", "output/distribClusterCharge.png", false, *c.HClusterCharge)
+	doplot("Cluster charge (multiplicity = 1)", "Entries", "output/distribClusterChargeMultiplicityEq1.png", false, *c.HClusterChargeMultiplicityEq1)
+	doplot("Cluster charge (multiplicity = 2)", "Entries", "output/distribClusterChargeMultiplicityEq2.png", false, *c.HClusterChargeMultiplicityEq2)
+	doplot("Cluster amplitude", "Entries", "output/distribClusterAmplitude.png", false, *c.HClusterAmplitude)
+	doplot("Cluster amplitude (multiplicity = 1)", "Entries", "output/distribClusterAmplitudeMultiplicityEq1.png", false, *c.HClusterAmplitudeMultiplicityEq1)
+	doplot("Cluster amplitude (multiplicity = 2)", "Entries", "output/distribClusterAmplitudeMultiplicityEq2.png", false, *c.HClusterAmplitudeMultiplicityEq2)
+
 }
