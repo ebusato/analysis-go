@@ -25,23 +25,21 @@ func H1DToGonum(histo ...hbook.H1D) []plotter.Histogram {
 
 func H1dToHplot(histo ...hbook.H1D) []hplot.Histogram {
 	output := make([]hplot.Histogram, len(histo))
-	for i, h := range histo {
-		// 		hi, err := hplot.NewHistogram(&h, h.Axis().Bins())
-		// 		if err != nil {
-		// 			panic(err)
-		// 		}
-		hi, err := hplot.NewH1D(&h)
+	for i := range histo {
+		// 		h := histo[i]
+		hi, err := hplot.NewH1D(&histo[i])
 		if err != nil {
 			panic(err)
 		}
 		hi.FillColor = nil //plotutil.Color(i)
 		hi.Color = plotutil.Color(i)
+		hi.Infos.Style = hplot.HInfoSummary
 		output[i] = *hi
 	}
 	return output
 }
 
-func MakeHPlot(xTitle string, yTitle string, outFile string, normalize bool, histo ...hbook.H1D) {
+func MakeHPlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
 	p, err := hplot.New()
 	if err != nil {
 		panic(err)
@@ -55,14 +53,18 @@ func MakeHPlot(xTitle string, yTitle string, outFile string, normalize bool, his
 	for i := range hHplot {
 		p.Add(&hHplot[i])
 	}
-	// 	p.Add(hHplot)
+	/*
+		p.Add(&hHplot[0])
+		if len(hHplot) >= 3 {
+			p.Add(&hHplot[2])
+		}*/
 
 	if err := p.Save(4*vg.Inch, 4*vg.Inch, outFile); err != nil {
 		panic(err)
 	}
 }
 
-func MakeGonumPlot(xTitle string, yTitle string, outFile string, normalize bool, histo ...hbook.H1D) {
+func MakeGonumPlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
@@ -73,9 +75,6 @@ func MakeGonumPlot(xTitle string, yTitle string, outFile string, normalize bool,
 
 	hGonum := H1DToGonum(histo...)
 	for i := range hGonum {
-		if normalize {
-			hGonum[i].Normalize(1)
-		}
 		p.Add(&hGonum[i])
 	}
 

@@ -72,6 +72,7 @@ func main() {
 	data.CheckIntegrity()
 	//data.PrintPulsesToFile(*outFileNamePulses)
 	//data.PrintGlobalVarsToFile(*outFileNameGlobal)
+	clusterplot.Finalize()
 	clusterplot.WriteHistosToFile()
 	data.PlotPulses(pulse.XaxisTime, false, true)
 	data.PlotAmplitudeCorrelationWithinCluster()
