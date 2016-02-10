@@ -72,7 +72,7 @@ func main() {
 	var data event.Data
 
 	for event, status := r.ReadNextEvent(); status && event.ID < *noEvents; event, status = r.ReadNextEvent() {
-		if event.ID%1 == 0 {
+		if event.ID%500 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
 		//event.Print(true)

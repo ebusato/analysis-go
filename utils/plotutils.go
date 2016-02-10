@@ -26,14 +26,15 @@ func H1DToGonum(histo ...hbook.H1D) []plotter.Histogram {
 func H1dToHplot(histo ...hbook.H1D) []hplot.Histogram {
 	output := make([]hplot.Histogram, len(histo))
 	for i := range histo {
-		// 		h := histo[i]
 		hi, err := hplot.NewH1D(&histo[i])
 		if err != nil {
 			panic(err)
 		}
 		hi.FillColor = nil //plotutil.Color(i)
 		hi.Color = plotutil.Color(i)
-		hi.Infos.Style = hplot.HInfoSummary
+		if len(histo) == 1 {
+			hi.Infos.Style = hplot.HInfoSummary
+		}
 		output[i] = *hi
 	}
 	return output
@@ -53,11 +54,6 @@ func MakeHPlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D)
 	for i := range hHplot {
 		p.Add(&hHplot[i])
 	}
-	/*
-		p.Add(&hHplot[0])
-		if len(hHplot) >= 3 {
-			p.Add(&hHplot[2])
-		}*/
 
 	if err := p.Save(4*vg.Inch, 4*vg.Inch, outFile); err != nil {
 		panic(err)

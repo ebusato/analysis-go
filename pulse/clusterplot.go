@@ -97,11 +97,6 @@ func (c *ClusterPlot) WriteHistosToFile() {
 	doplot("Channel", "# pulses with saturation / cluster", "output/distribSatFrequency.png", *c.HSatFrequency, *c.HSatFrequencyTot)
 	doplot("SRout", "Entries", "output/distribSRout.png", *c.HSRout)
 	doplot("Multiplicity", "Entries", "output/distribMultiplicity.png", *c.HMultiplicity)
-	doplot("Cluster charge", "Entries", "output/distribClusterCharge.png", *c.HClusterCharge)
-	doplot("Cluster charge (multiplicity = 1)", "Entries", "output/distribClusterChargeMultiplicityEq1.png", *c.HClusterChargeMultiplicityEq1)
-	doplot("Cluster charge (multiplicity = 2)", "Entries", "output/distribClusterChargeMultiplicityEq2.png", *c.HClusterChargeMultiplicityEq2)
-	doplot("Cluster amplitude", "Entries", "output/distribClusterAmplitude.png", *c.HClusterAmplitude)
-	doplot("Cluster amplitude (multiplicity = 1)", "Entries", "output/distribClusterAmplitudeMultiplicityEq1.png", *c.HClusterAmplitudeMultiplicityEq1)
-	doplot("Cluster amplitude (multiplicity = 2)", "Entries", "output/distribClusterAmplitudeMultiplicityEq2.png", *c.HClusterAmplitudeMultiplicityEq2)
-
+	doplot("Cluster charge", "Entries", "output/distribClusterCharge.png", *c.HClusterCharge, *c.HClusterChargeMultiplicityEq1, *c.HClusterChargeMultiplicityEq2)
+	doplot("Cluster amplitude", "Entries", "output/distribClusterAmplitude.png", *c.HClusterAmplitude, *c.HClusterAmplitudeMultiplicityEq1, *c.HClusterAmplitudeMultiplicityEq2)
 }
