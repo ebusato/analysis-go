@@ -90,6 +90,7 @@ func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
 }
 
 func (d *Detector) PlotPedestals(plotStat bool) {
+	fmt.Println("Plotting pedestals")
 	for iHemi := range d.hemispheres {
 		for iASM := range d.hemispheres[iHemi].asm {
 			for iDRS := range d.hemispheres[iHemi].asm[iASM].DRSs() {
@@ -146,6 +147,7 @@ type PedestalFile struct {
 }
 
 func (d *Detector) WritePedestalsToFile(outFileName string) {
+	fmt.Println("Writing pedestals to", outFileName)
 	tbl, err := csvutil.Create(outFileName)
 	if err != nil {
 		log.Fatalf("could not create %s: %v\n", outFileName, err)

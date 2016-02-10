@@ -20,7 +20,7 @@ type Capacitor struct {
 }
 
 func (c *Capacitor) Print() {
-	fmt.Printf("    # Capacitor: id = %v, pedestal mean = %v (address=%p)\n", c.id, c.pedestalMean, c)
+	fmt.Printf("    # Capacitor: id = %v, pedestal mean = %v, stddev = %v (address=%p)\n", c.id, c.pedestalMean, c.pedestalStdDev, c)
 }
 
 func (c *Capacitor) ID() uint16 {
@@ -49,7 +49,12 @@ func (c *Capacitor) ComputePedestalMeanStdDevFromSamples() {
 		variance = 0
 	}
 	c.pedestalMean = mean
-	c.pedestalStdDev = math.Sqrt(variance / float64(c.NoPedestalSamples()))
+	switch c.NoPedestalSamples() != 0 {
+	case true:
+		c.pedestalStdDev = math.Sqrt(variance / float64(c.NoPedestalSamples()))
+	default:
+		c.pedestalStdDev = 0
+	}
 }
 
 func (c *Capacitor) PedestalMean() float64 {
