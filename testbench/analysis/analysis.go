@@ -23,7 +23,7 @@ func main() {
 		//outFileNamePulses = flag.String("oP", "output/pulses.csv", "Name of the output file containing pulse data")
 		//outFileNameGlobal = flag.String("oG", "output/globalEventVariables.csv", "Name of the output file containing global event variables")
 		noEvents         = flag.Uint("n", 10, "Number of events to process")
-		applyCorrections = flag.Bool("applyCorr", false, "Do corrections and calibration or not")
+		applyCorrections = flag.Bool("corr", false, "Do corrections and calibration or not")
 		inputType        = reader.HexInput
 	)
 	flag.Var(&inputType, "inType", "Type of input file (possible values: Dec,Hex,Bin)")
@@ -46,7 +46,7 @@ func main() {
 	}
 	defer file.Close()
 
-	tbdetector.Det.ReadPedestalsFile("../computePedestals/output/pedestals.csv")
+	tbdetector.Det.ReadPedestalsFile("../calibConstants/pedestals.csv")
 
 	s := reader.NewScanner(bufio.NewScanner(file))
 

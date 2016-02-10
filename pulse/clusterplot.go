@@ -9,10 +9,10 @@ type ClusterPlot struct {
 	Nclusters                        uint
 	HCharge                          []hbook.H1D
 	HAmplitude                       []hbook.H1D
-	HHasSignal                       []hbook.H1D
-	HHasSatSignal                    []hbook.H1D
 	HFrequency                       *hbook.H1D
 	HSatFrequency                    *hbook.H1D
+	HFrequencyTot                    *hbook.H1D
+	HSatFrequencyTot                 *hbook.H1D
 	HSRout                           *hbook.H1D
 	HMultiplicity                    *hbook.H1D
 	HClusterCharge                   *hbook.H1D
@@ -28,10 +28,10 @@ func NewClusterPlot() *ClusterPlot {
 	cp := &ClusterPlot{
 		HCharge:                          make([]hbook.H1D, N),
 		HAmplitude:                       make([]hbook.H1D, N),
-		HHasSignal:                       make([]hbook.H1D, N),
-		HHasSatSignal:                    make([]hbook.H1D, N),
 		HFrequency:                       hbook.NewH1D(4, 0, 4),
 		HSatFrequency:                    hbook.NewH1D(4, 0, 4),
+		HFrequencyTot:                    hbook.NewH1D(1, 0, 4),
+		HSatFrequencyTot:                 hbook.NewH1D(1, 0, 4),
 		HSRout:                           hbook.NewH1D(1024, 0, 1023),
 		HMultiplicity:                    hbook.NewH1D(5, 0, 5),
 		HClusterCharge:                   hbook.NewH1D(100, -2e4, 400e3),
@@ -44,8 +44,6 @@ func NewClusterPlot() *ClusterPlot {
 	for i := 0; i < N; i++ {
 		cp.HCharge[i] = *hbook.NewH1D(100, -2e4, 100e3)
 		cp.HAmplitude[i] = *hbook.NewH1D(100, 0, 4200)
-		cp.HHasSignal[i] = *hbook.NewH1D(2, 0, 2)
-		cp.HHasSatSignal[i] = *hbook.NewH1D(2, 0, 2)
 	}
 
 	return cp
@@ -72,34 +70,22 @@ func (c *ClusterPlot) FillHistos(cluster *Cluster) {
 		pulse := &cluster.Pulses[j]
 		c.HCharge[j].Fill(float64(pulse.Charge()), 1)
 		c.HAmplitude[j].Fill(float64(pulse.Amplitude()), 1)
-		hasSig, hasSatSig := 0, 0
-		switch pulse.HasSignal {
-		case true:
-			hasSig = 1
+		if pulse.HasSignal {
 			c.HFrequency.Fill(float64(j), 1)
-		case false:
-			hasSig = 0
+			c.HFrequencyTot.Fill(1, 1)
 		}
-		c.HHasSignal[j].Fill(float64(hasSig), 1)
-		switch pulse.HasSatSignal {
-		case true:
-			hasSatSig = 1
+		if pulse.HasSatSignal {
 			c.HSatFrequency.Fill(float64(j), 1)
-		case false:
-			hasSatSig = 0
+			c.HSatFrequencyTot.Fill(1, 1)
 		}
-		c.HHasSatSignal[j].Fill(float64(hasSatSig), 1)
 	}
 }
 
 func (c *ClusterPlot) Finalize() {
 	c.HFrequency.Scale(1 / float64(c.Nclusters))
 	c.HSatFrequency.Scale(1 / float64(c.Nclusters))
-	N := 4
-	for i := 0; i < N; i++ {
-		c.HHasSignal[i].Scale(1 / c.HHasSignal[i].Integral())
-		c.HHasSatSignal[i].Scale(1 / c.HHasSatSignal[i].Integral())
-	}
+	c.HFrequencyTot.Scale(1 / float64(c.Nclusters))
+	c.HSatFrequencyTot.Scale(1 / float64(c.Nclusters))
 }
 
 func (c *ClusterPlot) WriteHistosToFile() {
@@ -107,10 +93,8 @@ func (c *ClusterPlot) WriteHistosToFile() {
 	// 	doplot := utils.MakeGonumPlot
 	doplot("Charge", "Entries", "output/distribCharge.png", c.HCharge...)
 	doplot("Amplitude", "Entries", "output/distribAmplitude.png", c.HAmplitude...)
-	doplot("HasSignal", "Entries", "output/distribHasSignal.png", c.HHasSignal...)
-	doplot("HasSatSignal", "Entries", "output/distribHasSatSignal.png", c.HHasSatSignal...)
-	doplot("Channel", "Frequency", "output/distribFrequency.png", *c.HFrequency)
-	doplot("Channel", "Saturation frequency", "output/distribSatFrequency.png", *c.HSatFrequency)
+	doplot("Channel", "# pulses / cluster", "output/distribFrequency.png", *c.HFrequency, *c.HFrequencyTot)
+	doplot("Channel", "# pulses with saturation / cluster", "output/distribSatFrequency.png", *c.HSatFrequency, *c.HSatFrequencyTot)
 	doplot("SRout", "Entries", "output/distribSRout.png", *c.HSRout)
 	doplot("Multiplicity", "Entries", "output/distribMultiplicity.png", *c.HMultiplicity)
 	doplot("Cluster charge", "Entries", "output/distribClusterCharge.png", *c.HClusterCharge)
