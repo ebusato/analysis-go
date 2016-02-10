@@ -251,6 +251,16 @@ func (c *Cluster) PulsesWithSignal() []*Pulse {
 	return pulses
 }
 
+func (c *Cluster) PulsesWithSatSignal() []*Pulse {
+	var pulses []*Pulse
+	for i := range c.Pulses {
+		if c.Pulses[i].HasSatSignal {
+			pulses = append(pulses, &c.Pulses[i])
+		}
+	}
+	return pulses
+}
+
 func (c *Cluster) Amplitude() float64 {
 	amp := 0.
 	for i := range c.Pulses {
