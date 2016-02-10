@@ -30,6 +30,7 @@ func (e *Event) Copy() *Event {
 			*oldPulses[1].Copy(),
 			*oldPulses[2].Copy(),
 			*oldPulses[3].Copy()}
+		newevent.Clusters[i].ID = e.Clusters[i].ID
 	}
 	return newevent
 }

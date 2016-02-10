@@ -10,10 +10,10 @@ func (d *Data) CheckIntegrity() {
 	}
 }
 
-func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool, savePulses bool) {
+func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool) {
 	for i := range *d {
 		(*d)[i].PlotPulses(xaxis, pedestalRange)
-		if i >= 4 {
+		if i >= 3 {
 			break
 		}
 	}

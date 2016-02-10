@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/applyCorrCalib"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/reader"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
@@ -16,8 +18,9 @@ func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
-		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
-		noEvents   = flag.Uint("n", 10000000, "Number of events to process")
+		infileName       = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
+		noEvents         = flag.Uint("n", 10000000, "Number of events to process")
+		applyCorrections = flag.Bool("corr", false, "Do corrections and calibration or not")
 	)
 
 	flag.Parse()
@@ -43,16 +46,22 @@ func main() {
 		log.Fatalf("could not open asm file: %v\n", err)
 	}
 
+	dpgadetector.Det.ReadPedestalsFile("../calibConstants/pedestals.csv")
+
 	var data event.Data
 
 	for event, status := r.ReadNextEvent(); status && event.ID < *noEvents; event, status = r.ReadNextEvent() {
-		if event.ID%1 == 0 {
+		if event.ID%50 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
+		if *applyCorrections {
+			event = applyCorrCalib.RemovePedestal(event)
+		}
+
 		//event.Print(true)
 		data = append(data, *event)
 	}
 
-	//data.CheckIntegrity()
-	data.PlotPulses(pulse.XaxisCapacitor, true, false)
+	data.CheckIntegrity()
+	data.PlotPulses(pulse.XaxisTime, false)
 }
