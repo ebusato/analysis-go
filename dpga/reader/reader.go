@@ -192,11 +192,26 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 		iChannel2 = 3
 	}
 
-	//fmt.Print("iCluster= ", iCluster)
-	//fmt.Println(" ", iHemi, iASM, iDRS, iQuartet, iChannel1, iChannel2)
+	iChannelAbs1 := uint16(2 * f.Block.ID)
+	iChannelAbs2 := uint16(iChannelAbs1 + 1)
 
-	pulse1 := pulse.NewPulse(dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel1))
-	pulse2 := pulse.NewPulse(dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel2))
+	detChannel1 := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel1)
+	detChannel2 := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel2)
+
+	// Sanity check
+	absid1 := detChannel1.AbsID()
+	absid2 := detChannel2.AbsID()
+
+	if iChannelAbs1 != absid1 {
+		panic("reader: iChannelAbs1 != absid1")
+	}
+	if iChannelAbs2 != absid2 {
+		panic("reader: iChannelAbs2 != absid2")
+	}
+	// Enf of sanity check
+
+	pulse1 := pulse.NewPulse(detChannel1)
+	pulse2 := pulse.NewPulse(detChannel2)
 
 	b := &f.Block
 	pulse1.SRout = uint16(b.SRout)

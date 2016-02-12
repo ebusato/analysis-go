@@ -55,6 +55,16 @@ func NewDetector() *Detector {
 						ch := quartet.Channel(uint8(iChannel))
 						ch.SetName("PMT" + strconv.FormatUint(uint64(iChannel), 10))
 						ch.SetID(uint8(iChannel))
+						_, iChannelAbs288 := RelIdxToAbsIdx288(uint8(iHemi), uint8(iASM), uint8(iDRS), uint8(iQuartet), uint8(iChannel))
+						ch.SetAbsID(iChannelAbs288)
+						/*switch iDRS == 2 && iQuartet == 1 {
+						case false:
+							_, iChannelAbs240 := RelIdxToAbsIdx240(uint8(iHemi), uint8(iASM), uint8(iDRS), uint8(iQuartet), uint8(iChannel))
+							fmt.Printf("iChannelAbs = %v %v (iDRS, iQuartet) = (%v, %v)\n", iChannelAbs240, iChannelAbs288, iDRS, iQuartet)
+							ch.SetAbsID(iChannelAbs288)
+						case true: // channel not used in DPGA (one of the four channels per ASM card which is not used)
+							ch.SetAbsID(math.MaxUint16)
+						}*/
 						for iCapacitor := range ch.Capacitors() {
 							capa := ch.Capacitor(uint16(iCapacitor))
 							capa.SetID(uint16(iCapacitor))
@@ -82,13 +92,34 @@ func ChannelAbsIdxToRelIdx(iChannelAbs uint16) (iHemi uint8, iASM uint8, iDRS ui
 	return
 }
 
-func RelIdxToAbsIdx(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {
-	if iDRS == 2 && iQuartet == 1 {
-		panic("dpgadetector: iDRS == 2 && iQuartet == 1")
-	}
+func RelIdxToAbsIdx240(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {
+	// 	if iDRS == 2 && iQuartet == 1 {
+	// 		panic("dpgadetector: iDRS == 2 && iQuartet == 1")
+	// 	}
 	iQuartetAbs = iQuartet + iHemi*30 + iASM*5 + iDRS*2
 	iChannelAbs = uint16(iQuartetAbs)*4 + uint16(iChannel)
 	return
+}
+
+func RelIdxToAbsIdx288(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {
+	// 	if iDRS == 2 && iQuartet == 1 {
+	// 		panic("dpgadetector: iDRS == 2 && iQuartet == 1")
+	// 	}
+	iQuartetAbs = iQuartet + iHemi*36 + iASM*6 + iDRS*2
+	iChannelAbs = uint16(iQuartetAbs)*4 + uint16(iChannel)
+	return
+}
+
+type MappingCSV struct {
+	IChannelAbs288Unmapped uint16 // ID that is read out of the input binary files
+	IChannelAbs288         uint16 // ID used in the geometry file
+}
+
+type GeomCSV struct {
+}
+
+func (d *Detector) ReadGeom() {
+
 }
 
 func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
@@ -256,4 +287,5 @@ var Det *Detector
 
 func init() {
 	Det = NewDetector()
+	//Det.Print()
 }

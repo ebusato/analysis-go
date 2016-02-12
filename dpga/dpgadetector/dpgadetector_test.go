@@ -29,7 +29,7 @@ func TestChannelAbsIdxToRelIdx(t *testing.T) {
 	for iChannelAbs := uint16(0); iChannelAbs < 240; iChannelAbs++ {
 		iHemi, iASM, iDRS, iQuartet, iChannel := dpgadetector.ChannelAbsIdxToRelIdx(iChannelAbs)
 		// closure test
-		_, iChannelAbs2 := dpgadetector.RelIdxToAbsIdx(iHemi, iASM, iDRS, iQuartet, iChannel)
+		_, iChannelAbs2 := dpgadetector.RelIdxToAbsIdx240(iHemi, iASM, iDRS, iQuartet, iChannel)
 		if iChannelAbs2 != iChannelAbs {
 			t.Errorf("closure test fails")
 		}

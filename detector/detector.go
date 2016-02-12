@@ -77,7 +77,8 @@ type Coord struct {
 type Channel struct {
 	// A channel is made of 1024 capacitors
 	capacitors [1024]Capacitor
-	id         uint8
+	id         uint8  // relative id: 0 -> 3 (because there are 4 channels per quartet)
+	absid      uint16 // absolute id: 0 -> 239 for DPGA, 0 -> 3 for TestBench
 	name       string
 	coord      Coord
 	plotStat   bool
@@ -155,8 +156,16 @@ func (c *Channel) SetID(id uint8) {
 	c.id = id
 }
 
+func (c *Channel) AbsID() uint16 {
+	return c.absid
+}
+
+func (c *Channel) SetAbsID(id uint16) {
+	c.absid = id
+}
+
 func (c *Channel) Print() {
-	fmt.Printf("   o Channel: id = %v (address=%p)\n", c.id, c)
+	fmt.Printf("   o Channel: id = %v absid = %v (address=%p)\n", c.id, c.absid, c)
 	for i := range c.capacitors {
 		c.capacitors[i].Print()
 	}
