@@ -67,6 +67,30 @@ func NewDetector() *Detector {
 	return det
 }
 
+func QuartetAbsIdxToRelIdx(iQuartetAbs uint8) (iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8) {
+	iHemi = iQuartetAbs / 30
+	iASM = iQuartetAbs/5 - iHemi*6
+	iDRS = (iQuartetAbs - iASM*5 - iHemi*30) / 2
+	iQuartet = iQuartetAbs - iASM*5 - iHemi*30 - iDRS*2
+	return
+}
+
+func ChannelAbsIdxToRelIdx(iChannelAbs uint16) (iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) {
+	iQuartetAbs := uint8(iChannelAbs / 4)
+	iHemi, iASM, iDRS, iQuartet = QuartetAbsIdxToRelIdx(iQuartetAbs)
+	iChannel = uint8(iChannelAbs % 4)
+	return
+}
+
+func RelIdxToAbsIdx(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {
+	if iDRS == 2 && iQuartet == 1 {
+		panic("dpgadetector: iDRS == 2 && iQuartet == 1")
+	}
+	iQuartetAbs = iQuartet + iHemi*30 + iASM*5 + iDRS*2
+	iChannelAbs = uint16(iQuartetAbs)*4 + uint16(iChannel)
+	return
+}
+
 func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
 	for iHemi := range d.hemispheres {
 		hemi := &d.hemispheres[iHemi]

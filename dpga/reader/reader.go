@@ -179,16 +179,8 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 	}
 }
 
-func DetIndicesFromClusterIndex(iCluster uint8) (iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8) {
-	iHemi = iCluster / 30
-	iASM = iCluster/5 - iHemi*6
-	iDRS = (iCluster - iASM*5 - iHemi*30) / 2
-	iQuartet = iCluster - iASM*5 - iHemi*30 - iDRS*2
-	return
-}
-
 func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
-	iHemi, iASM, iDRS, iQuartet := DetIndicesFromClusterIndex(iCluster)
+	iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdxToRelIdx(iCluster)
 	var iChannel1 uint8
 	var iChannel2 uint8
 	switch f.typeOfFrame {
@@ -239,6 +231,9 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			log.Fatal("error not nil")
 		}
 		frame2.typeOfFrame = SecondFrameOfCluster
+
+		//frame1.Print()
+		//frame2.Print()
 
 		evtID := uint(frame1.Block.Evt)
 		if evtID != uint(frame2.Block.Evt) {

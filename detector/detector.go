@@ -70,11 +70,16 @@ func (c *Capacitor) SetPedestalMeanStdDev(mean float64, stddev float64) {
 	c.pedestalStdDev = stddev
 }
 
+type Coord struct {
+	x, y, z float64
+}
+
 type Channel struct {
 	// A channel is made of 1024 capacitors
 	capacitors [1024]Capacitor
 	id         uint8
 	name       string
+	coord      Coord
 	plotStat   bool
 }
 
