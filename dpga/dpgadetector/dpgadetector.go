@@ -115,16 +115,43 @@ func RelIdxToAbsIdx288(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iCha
 	return
 }
 
-type MappingCSV struct {
-	IChannelAbs288Unmapped uint16 // ID that is read out of the input binary files
-	IChannelAbs288         uint16 // ID used in the geometry file
-}
-
 type GeomCSV struct {
+	IChannelAbs240 uint16
+	X              float64
+	Y              float64
+	Z              float64
 }
 
 func (d *Detector) ReadGeom() {
+	fileName := "../dpgadetector/mapping_IDchanneltoCoordinates_Arnaud.txt"
+	tbl, err := csvutil.Open(fileName)
+	if err != nil {
+		log.Fatalf("could not open %s: %v\n", fileName, err)
+	}
+	defer tbl.Close()
+	tbl.Reader.Comma = ' '
+	tbl.Reader.Comment = '#'
 
+	rows, err := tbl.ReadRows(0, -1)
+	if err != nil {
+		log.Fatalf("could read rows [0, -1): %v\n", err)
+	}
+	defer rows.Close()
+
+	var data GeomCSV
+
+	for rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			log.Fatalf("error reading row: %v\n", err)
+		}
+		channel := d.ChannelFromIdAbs240(data.IChannelAbs240)
+		channel.SetCoord(data.X, data.Y, data.Z)
+	}
+	err = rows.Err()
+	if err != nil && err.Error() != "EOF" {
+		log.Fatalf("error: %v\n", err)
+	}
 }
 
 func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
@@ -188,6 +215,11 @@ func (d *Detector) Capacitor(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8
 }
 
 func (d *Detector) Channel(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) *detector.Channel {
+	return d.hemispheres[int(iHemi)].asm[int(iASM)].DRS(iDRS).Quartet(iQuartet).Channel(iChannel)
+}
+
+func (d *Detector) ChannelFromIdAbs240(iChannelAbs240 uint16) *detector.Channel {
+	iHemi, iASM, iDRS, iQuartet, iChannel := ChannelAbsIdx240ToRelIdx(iChannelAbs240)
 	return d.hemispheres[int(iHemi)].asm[int(iASM)].DRS(iDRS).Quartet(iQuartet).Channel(iChannel)
 }
 
@@ -292,5 +324,6 @@ var Det *Detector
 
 func init() {
 	Det = NewDetector()
-	//Det.Print()
+	Det.ReadGeom()
+	Det.Print()
 }

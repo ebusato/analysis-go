@@ -199,8 +199,8 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 	detChannel2 := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel2)
 
 	// Sanity check
-	absid1 := detChannel1.AbsID()
-	absid2 := detChannel2.AbsID()
+	absid1 := detChannel1.AbsID288()
+	absid2 := detChannel2.AbsID288()
 
 	if iChannelAbs1 != absid1 {
 		panic("reader: iChannelAbs1 != absid1")

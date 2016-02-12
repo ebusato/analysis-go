@@ -173,8 +173,14 @@ func (c *Channel) SetAbsID240(id uint16) {
 	c.absid240 = id
 }
 
+func (c *Channel) SetCoord(x, y, z float64) {
+	c.coord.x = x
+	c.coord.y = y
+	c.coord.z = z
+}
+
 func (c *Channel) Print() {
-	fmt.Printf("   o Channel: id = %v absid288 = %v absid240 = %v (address=%p)\n", c.id, c.absid288, c.absid240, c)
+	fmt.Printf("   o Channel: id = %v absid288 = %v absid240 = %v coord = (%v, %v, %v) (address=%p)\n", c.id, c.absid288, c.absid240, c.coord.x, c.coord.y, c.coord.z, c)
 	for i := range c.capacitors {
 		c.capacitors[i].Print()
 	}
