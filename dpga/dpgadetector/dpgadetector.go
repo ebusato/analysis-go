@@ -3,6 +3,7 @@ package dpgadetector
 import (
 	"fmt"
 	"log"
+	"math"
 	"strconv"
 	"time"
 
@@ -30,6 +31,9 @@ func (h *Hemisphere) Print() {
 	}
 }
 
+// Detector describes the 288 channels of the 12 ASM cards used the DPGA acquisition
+// Out of these 288 channels, 240 are associated to the DPGA physical channels.
+// The 48 remaining ones are not associated to any physical object.
 type Detector struct {
 	scintillator string
 	samplingFreq float64 // sampling frequency in ns
@@ -56,15 +60,14 @@ func NewDetector() *Detector {
 						ch.SetName("PMT" + strconv.FormatUint(uint64(iChannel), 10))
 						ch.SetID(uint8(iChannel))
 						_, iChannelAbs288 := RelIdxToAbsIdx288(uint8(iHemi), uint8(iASM), uint8(iDRS), uint8(iQuartet), uint8(iChannel))
-						ch.SetAbsID(iChannelAbs288)
-						/*switch iDRS == 2 && iQuartet == 1 {
+						ch.SetAbsID288(iChannelAbs288)
+						switch iDRS == 2 && iQuartet == 1 {
 						case false:
 							_, iChannelAbs240 := RelIdxToAbsIdx240(uint8(iHemi), uint8(iASM), uint8(iDRS), uint8(iQuartet), uint8(iChannel))
-							fmt.Printf("iChannelAbs = %v %v (iDRS, iQuartet) = (%v, %v)\n", iChannelAbs240, iChannelAbs288, iDRS, iQuartet)
-							ch.SetAbsID(iChannelAbs288)
+							ch.SetAbsID240(iChannelAbs240)
 						case true: // channel not used in DPGA (one of the four channels per ASM card which is not used)
-							ch.SetAbsID(math.MaxUint16)
-						}*/
+							ch.SetAbsID240(math.MaxUint16)
+						}
 						for iCapacitor := range ch.Capacitors() {
 							capa := ch.Capacitor(uint16(iCapacitor))
 							capa.SetID(uint16(iCapacitor))
@@ -77,6 +80,7 @@ func NewDetector() *Detector {
 	return det
 }
 
+// iQuartetAbs can go from 0 to 59
 func QuartetAbsIdxToRelIdx(iQuartetAbs uint8) (iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8) {
 	iHemi = iQuartetAbs / 30
 	iASM = iQuartetAbs/5 - iHemi*6
@@ -85,7 +89,8 @@ func QuartetAbsIdxToRelIdx(iQuartetAbs uint8) (iHemi uint8, iASM uint8, iDRS uin
 	return
 }
 
-func ChannelAbsIdxToRelIdx(iChannelAbs uint16) (iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) {
+// iChannelAbs can go from 0 to 239
+func ChannelAbsIdx240ToRelIdx(iChannelAbs uint16) (iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) {
 	iQuartetAbs := uint8(iChannelAbs / 4)
 	iHemi, iASM, iDRS, iQuartet = QuartetAbsIdxToRelIdx(iQuartetAbs)
 	iChannel = uint8(iChannelAbs % 4)

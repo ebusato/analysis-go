@@ -27,7 +27,7 @@ func TestChannelAbsIdxToRelIdx(t *testing.T) {
 	w.Init(os.Stdout, 0, 8, 0, '\t', 0)
 	fmt.Fprintln(w, "iChannelAbs\tiHemi\tiASM\tiDRS\tiQuartet\tiChannel")
 	for iChannelAbs := uint16(0); iChannelAbs < 240; iChannelAbs++ {
-		iHemi, iASM, iDRS, iQuartet, iChannel := dpgadetector.ChannelAbsIdxToRelIdx(iChannelAbs)
+		iHemi, iASM, iDRS, iQuartet, iChannel := dpgadetector.ChannelAbsIdx240ToRelIdx(iChannelAbs)
 		// closure test
 		_, iChannelAbs2 := dpgadetector.RelIdxToAbsIdx240(iHemi, iASM, iDRS, iQuartet, iChannel)
 		if iChannelAbs2 != iChannelAbs {
