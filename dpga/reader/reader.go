@@ -20,9 +20,10 @@ const (
 )
 
 // Block is a single data frame in an ASM stream
+// Each block is associated to one fifo
 type Block struct {
 	Evt uint32 // event id
-	ID  uint32 // block ID
+	ID  uint32 // ID of fifo (0 -> 143)
 
 	Data     []uint32
 	SRout    uint32
@@ -180,7 +181,19 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 }
 
 func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
-	iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdxToRelIdx(iCluster)
+	iChannelAbs288_1 := uint16(2 * f.Block.ID)
+	iChannelAbs288_2 := uint16(iChannelAbs288_1 + 1)
+
+	if iChannelAbs288_1 >= 288 || iChannelAbs288_2 >= 288 {
+		panic("reader: iChannelAbs288_1 >= 288 || iChannelAbs288_2 >= 288")
+	}
+
+	detChannel1 := dpgadetector.Det.ChannelFromIdAbs288(iChannelAbs288_1)
+	detChannel2 := dpgadetector.Det.ChannelFromIdAbs288(iChannelAbs288_2)
+
+	///////////////////////////////////////////////////////////////////////////////////
+	// Sanity check
+	iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx60ToRelIdx(iCluster)
 	var iChannel1 uint8
 	var iChannel2 uint8
 	switch f.typeOfFrame {
@@ -192,23 +205,30 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 		iChannel2 = 3
 	}
 
-	iChannelAbs1 := uint16(2 * f.Block.ID)
-	iChannelAbs2 := uint16(iChannelAbs1 + 1)
+	detChannel1debug := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel1)
+	detChannel2debug := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel2)
 
-	detChannel1 := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel1)
-	detChannel2 := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel2)
+	//fmt.Printf(" %p %p\n", detChannel1debug, detChannel1)
+	//fmt.Printf(" %p %p\n", detChannel2debug, detChannel2)
 
-	// Sanity check
-	absid1 := detChannel1.AbsID288()
-	absid2 := detChannel2.AbsID288()
+	if detChannel1debug != detChannel1 {
+		panic("reader: detChannel1debug != detChannel1")
+	}
+	if detChannel2debug != detChannel2 {
+		panic("reader: detChannel2debug != detChannel2")
+	}
 
-	if iChannelAbs1 != absid1 {
+	absid1 := detChannel1debug.AbsID288()
+	absid2 := detChannel2debug.AbsID288()
+
+	if iChannelAbs288_1 != absid1 {
 		panic("reader: iChannelAbs1 != absid1")
 	}
-	if iChannelAbs2 != absid2 {
+	if iChannelAbs288_2 != absid2 {
 		panic("reader: iChannelAbs2 != absid2")
 	}
 	// Enf of sanity check
+	////////////////////////////////////////////////////////////////////////////////////
 
 	pulse1 := pulse.NewPulse(detChannel1)
 	pulse2 := pulse.NewPulse(detChannel2)
@@ -247,8 +267,8 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 		}
 		frame2.typeOfFrame = SecondFrameOfCluster
 
-		//frame1.Print()
-		//frame2.Print()
+		// 		frame1.Print()
+		// 		frame2.Print()
 
 		evtID := uint(frame1.Block.Evt)
 		if evtID != uint(frame2.Block.Evt) {

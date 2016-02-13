@@ -81,7 +81,7 @@ func NewDetector() *Detector {
 }
 
 // iQuartetAbs can go from 0 to 59
-func QuartetAbsIdxToRelIdx(iQuartetAbs uint8) (iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8) {
+func QuartetAbsIdx60ToRelIdx(iQuartetAbs uint8) (iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8) {
 	iHemi = iQuartetAbs / 30
 	iASM = iQuartetAbs/5 - iHemi*6
 	iDRS = (iQuartetAbs - iASM*5 - iHemi*30) / 2
@@ -89,10 +89,27 @@ func QuartetAbsIdxToRelIdx(iQuartetAbs uint8) (iHemi uint8, iASM uint8, iDRS uin
 	return
 }
 
+// iQuartetAbs can go from 0 to 72
+func QuartetAbsIdx72ToRelIdx(iQuartetAbs uint8) (iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8) {
+	iHemi = iQuartetAbs / 36
+	iASM = iQuartetAbs/6 - iHemi*6
+	iDRS = (iQuartetAbs - iASM*6 - iHemi*36) / 2
+	iQuartet = iQuartetAbs - iASM*6 - iHemi*36 - iDRS*2
+	return
+}
+
 // iChannelAbs can go from 0 to 239
 func ChannelAbsIdx240ToRelIdx(iChannelAbs uint16) (iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) {
 	iQuartetAbs := uint8(iChannelAbs / 4)
-	iHemi, iASM, iDRS, iQuartet = QuartetAbsIdxToRelIdx(iQuartetAbs)
+	iHemi, iASM, iDRS, iQuartet = QuartetAbsIdx60ToRelIdx(iQuartetAbs)
+	iChannel = uint8(iChannelAbs % 4)
+	return
+}
+
+// iChannelAbs can go from 0 to 287
+func ChannelAbsIdx288ToRelIdx(iChannelAbs uint16) (iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) {
+	iQuartetAbs := uint8(iChannelAbs / 4)
+	iHemi, iASM, iDRS, iQuartet = QuartetAbsIdx72ToRelIdx(iQuartetAbs)
 	iChannel = uint8(iChannelAbs % 4)
 	return
 }
@@ -223,6 +240,11 @@ func (d *Detector) ChannelFromIdAbs240(iChannelAbs240 uint16) *detector.Channel 
 	return d.hemispheres[int(iHemi)].asm[int(iASM)].DRS(iDRS).Quartet(iQuartet).Channel(iChannel)
 }
 
+func (d *Detector) ChannelFromIdAbs288(iChannelAbs288 uint16) *detector.Channel {
+	iHemi, iASM, iDRS, iQuartet, iChannel := ChannelAbsIdx288ToRelIdx(iChannelAbs288)
+	return d.hemispheres[int(iHemi)].asm[int(iASM)].DRS(iDRS).Quartet(iQuartet).Channel(iChannel)
+}
+
 func (d *Detector) Quartet(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8) *detector.Quartet {
 	return d.hemispheres[int(iHemi)].asm[int(iASM)].DRS(iDRS).Quartet(iQuartet)
 }
@@ -325,5 +347,5 @@ var Det *Detector
 func init() {
 	Det = NewDetector()
 	Det.ReadGeom()
-	Det.Print()
+	//Det.Print()
 }
