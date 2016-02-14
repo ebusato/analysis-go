@@ -74,7 +74,7 @@ func main() {
 	//data.PrintPulsesToFile(*outFileNamePulses)
 	//data.PrintGlobalVarsToFile(*outFileNameGlobal)
 	dqplot.Finalize()
-	dqplot.WriteHistosToFile("../dqref/dqplots_ref.gob")
+	dqplot.WriteHistosToFile() //"../dqref/dqplots_ref.gob")
 	//dqplot.WriteGob("dqplots.gob")
 	//dqtest := dq.NewDQPlotFromGob("test.gob")
 	data.PlotPulses(pulse.XaxisTime, false, true)

@@ -42,6 +42,26 @@ func H1dToHplot(lineStyle draw.LineStyle, histo ...hbook.H1D) []hplot.Histogram 
 	return output
 }
 
+func H1dptrToHplot(lineStyle draw.LineStyle, histos ...*hbook.H1D) []hplot.Histogram {
+	var output []hplot.Histogram
+	for i := range histos {
+		histo := histos[i]
+		if histo != nil {
+			hi, err := hplot.NewH1D(histo)
+			if err != nil {
+				panic(err)
+			}
+			hi.Infos.Style = hplot.HInfoSummary
+
+			hi.LineStyle = lineStyle
+			hi.FillColor = nil //plotutil.Color(i)
+			hi.Color = plotutil.Color(i)
+			output = append(output, *hi)
+		}
+	}
+	return output
+}
+
 func MakeHPlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
 	p, err := hplot.New()
 	if err != nil {
