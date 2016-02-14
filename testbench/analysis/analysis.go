@@ -9,6 +9,7 @@ import (
 
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/applyCorrCalib"
+	"gitlab.in2p3.fr/avirm/analysis-go/testbench/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/reader"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
@@ -52,7 +53,7 @@ func main() {
 
 	var data event.Data
 
-	clusterplot := pulse.NewClusterPlot()
+	dqplot := dq.NewDQPlot()
 
 	for event, status := s.ReadNextEvent(inputType); status && event.ID < *noEvents; event, status = s.ReadNextEvent(inputType) {
 		if event.ID%500 == 0 {
@@ -66,14 +67,14 @@ func main() {
 		// 		}
 		//fmt.Println("correlation=", event.GlobalCorrelation("PMT1", "PMT2"))
 		data.Events = append(data.Events, *event)
-		clusterplot.FillHistos(&event.Cluster)
+		dqplot.FillHistos(event)
 	}
 
 	data.CheckIntegrity()
 	//data.PrintPulsesToFile(*outFileNamePulses)
 	//data.PrintGlobalVarsToFile(*outFileNameGlobal)
-	clusterplot.Finalize()
-	clusterplot.WriteHistosToFile()
+	dqplot.Finalize()
+	dqplot.WriteHistosToFile()
 	data.PlotPulses(pulse.XaxisTime, false, true)
 	data.PlotAmplitudeCorrelationWithinCluster()
 }
