@@ -1,6 +1,10 @@
 package dq
 
 import (
+	"encoding/gob"
+	"fmt"
+	"os"
+
 	"github.com/go-hep/hbook"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
@@ -90,15 +94,63 @@ func (d *DQPlot) Finalize() {
 	d.HSatFrequencyTot.Scale(1 / float64(d.Nevents))
 }
 
-func (d *DQPlot) WriteHistosToFile() {
+func (d *DQPlot) WriteHistosToFile(suffix string) {
 	doplot := utils.MakeHPlot
 	// 	doplot := utils.MakeGonumPlot
-	doplot("Charge", "Entries", "output/distribCharge.png", d.HCharge...)
-	doplot("Amplitude", "Entries", "output/distribAmplitude.png", d.HAmplitude...)
-	doplot("Channel", "# pulses / cluster", "output/distribFrequency.png", *d.HFrequency, *d.HFrequencyTot)
-	doplot("Channel", "# pulses with saturation / cluster", "output/distribSatFrequency.png", *d.HSatFrequency, *d.HSatFrequencyTot)
-	doplot("SRout", "Entries", "output/distribSRout.png", *d.HSRout)
-	doplot("Multiplicity", "Entries", "output/distribMultiplicity.png", *d.HMultiplicity)
-	doplot("Cluster charge", "Entries", "output/distribClusterCharge.png", *d.HClusterCharge, *d.HClusterChargeMultiplicityEq1, *d.HClusterChargeMultiplicityEq2)
-	doplot("Cluster amplitude", "Entries", "output/distribClusterAmplitude.png", *d.HClusterAmplitude, *d.HClusterAmplitudeMultiplicityEq1, *d.HClusterAmplitudeMultiplicityEq2)
+	doplot("Charge", "Entries", "output/distribCharge"+suffix+".png", d.HCharge...)
+	doplot("Amplitude", "Entries", "output/distribAmplitude"+suffix+".png", d.HAmplitude...)
+	doplot("Channel", "# pulses / cluster", "output/distribFrequency"+suffix+".png", *d.HFrequency, *d.HFrequencyTot)
+	doplot("Channel", "# pulses with saturation / cluster", "output/distribSatFrequency"+suffix+".png", *d.HSatFrequency, *d.HSatFrequencyTot)
+	doplot("SRout", "Entries", "output/distribSRout"+suffix+".png", *d.HSRout)
+	doplot("Multiplicity", "Entries", "output/distribMultiplicity"+suffix+".png", *d.HMultiplicity)
+	doplot("Cluster charge", "Entries", "output/distribClusterCharge"+suffix+".png", *d.HClusterCharge, *d.HClusterChargeMultiplicityEq1, *d.HClusterChargeMultiplicityEq2)
+	doplot("Cluster amplitude", "Entries", "output/distribClusterAmplitude"+suffix+".png", *d.HClusterAmplitude, *d.HClusterAmplitudeMultiplicityEq1, *d.HClusterAmplitudeMultiplicityEq2)
+}
+
+func (d *DQPlot) WriteGob(fileName string) error {
+	fmt.Printf("Creating gob file %s\n", fileName)
+	f, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	enc := gob.NewEncoder(f)
+	fmt.Printf("Saving DQplot to %s\n", fileName)
+	err = enc.Encode(d)
+	if err != nil {
+		return err
+	}
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func ReadGob(fileName string) *DQPlot {
+	fmt.Printf("Opening gob file %s\n", fileName)
+	f, err := os.Open(fileName)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	dec := gob.NewDecoder(f)
+
+	fmt.Printf("Loading DQ from %s\n", fileName)
+
+	dqplot := NewDQPlot()
+
+	err = dec.Decode(dqplot)
+	if err != nil {
+		panic(err)
+	}
+
+	err = f.Close()
+	if err != nil {
+		panic(err)
+	}
+	return dqplot
 }

@@ -74,7 +74,10 @@ func main() {
 	//data.PrintPulsesToFile(*outFileNamePulses)
 	//data.PrintGlobalVarsToFile(*outFileNameGlobal)
 	dqplot.Finalize()
-	dqplot.WriteHistosToFile()
+	dqplot.WriteHistosToFile("")
+	dqplot.WriteGob("test.gob")
+	dqtest := dq.ReadGob("test.gob")
+	dqtest.WriteHistosToFile("_test")
 	data.PlotPulses(pulse.XaxisTime, false, true)
 	data.PlotAmplitudeCorrelationWithinCluster()
 }
