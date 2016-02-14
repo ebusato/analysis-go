@@ -122,17 +122,60 @@ func (d *DQPlot) Finalize() {
 	d.HSatFrequencyTot.Scale(1 / float64(d.Nevents))
 }
 
-func (d *DQPlot) WriteHistosToFile(suffix string) {
+func (d *DQPlot) WriteHistosToFile(refs ...string) {
 	doplot := utils.MakeHPl
 	// 	doplot := utils.MakeGonumPlot
-	doplot("Charge", "Entries", "output/distribCharge"+suffix+".png", utils.H1dToHplot(draw.LineStyle{Width: vg.Points(10)}, d.HCharge...)...)
-	/*doplot("Amplitude", "Entries", "output/distribAmplitude"+suffix+".png", d.HAmplitude...)
-	doplot("Channel", "# pulses / cluster", "output/distribFrequency"+suffix+".png", *d.HFrequency, *d.HFrequencyTot)
-	doplot("Channel", "# pulses with saturation / cluster", "output/distribSatFrequency"+suffix+".png", *d.HSatFrequency, *d.HSatFrequencyTot)
-	doplot("SRout", "Entries", "output/distribSRout"+suffix+".png", *d.HSRout)
-	doplot("Multiplicity", "Entries", "output/distribMultiplicity"+suffix+".png", *d.HMultiplicity)
-	doplot("Cluster charge", "Entries", "output/distribClusterCharge"+suffix+".png", *d.HClusterCharge, *d.HClusterChargeMultiplicityEq1, *d.HClusterChargeMultiplicityEq2)
-	doplot("Cluster amplitude", "Entries", "output/distribClusterAmplitude"+suffix+".png", *d.HClusterAmplitude, *d.HClusterAmplitudeMultiplicityEq1, *d.HClusterAmplitudeMultiplicityEq2)*/
+
+	dqplotref := NewDQPlot()
+
+	if len(refs) != 0 {
+		dqplotref = NewDQPlotFromGob(refs[0])
+	}
+
+	linestyle := draw.LineStyle{Width: vg.Points(2)}
+	linestyleref := draw.LineStyle{Width: vg.Points(1), Dashes: []vg.Length{vg.Points(5), vg.Points(5)}}
+
+	//doplot("Charge", "Entries", "output/distribCharge.png", utils.H1dToHplot(linestyle, d.HCharge...)...) //, utils.H1dToHplot(linestyleref, dqplotref.HCharge...)...)
+	doplot("Charge",
+		"Entries",
+		"output/distribCharge.png",
+		append(utils.H1dToHplot(linestyle, d.HCharge...),
+			utils.H1dToHplot(linestyleref, dqplotref.HCharge...)...)...)
+	doplot("Amplitude",
+		"Entries",
+		"output/distribAmplitude.png",
+		append(utils.H1dToHplot(linestyle, d.HAmplitude...),
+			utils.H1dToHplot(linestyleref, dqplotref.HAmplitude...)...)...)
+	doplot("Channel",
+		"# pulses / cluster",
+		"output/distribFrequency.png",
+		append(utils.H1dToHplot(linestyle, *d.HFrequency, *d.HFrequencyTot),
+			utils.H1dToHplot(linestyleref, *dqplotref.HFrequency, *dqplotref.HFrequencyTot)...)...)
+	doplot("Channel",
+		"# pulses with saturation / cluster",
+		"output/distribSatFrequency.png",
+		append(utils.H1dToHplot(linestyle, *d.HSatFrequency, *d.HSatFrequencyTot),
+			utils.H1dToHplot(linestyleref, *dqplotref.HSatFrequency, *dqplotref.HSatFrequencyTot)...)...)
+	doplot("SRout",
+		"Entries",
+		"output/distribSRout.png",
+		append(utils.H1dToHplot(linestyle, *d.HSRout),
+			utils.H1dToHplot(linestyleref, *dqplotref.HSRout)...)...)
+	doplot("Multiplicity",
+		"Entries",
+		"output/distribMultiplicity.png",
+		append(utils.H1dToHplot(linestyle, *d.HMultiplicity),
+			utils.H1dToHplot(linestyleref, *dqplotref.HMultiplicity)...)...)
+	doplot("Cluster charge",
+		"Entries",
+		"output/distribClusterCharge.png",
+		append(utils.H1dToHplot(linestyle, *d.HClusterCharge, *d.HClusterChargeMultiplicityEq1, *d.HClusterChargeMultiplicityEq2),
+			utils.H1dToHplot(linestyleref, *dqplotref.HClusterCharge, *dqplotref.HClusterChargeMultiplicityEq1, *dqplotref.HClusterChargeMultiplicityEq2)...)...)
+	doplot("Cluster amplitude",
+		"Entries",
+		"output/distribClusterAmplitude.png",
+		append(utils.H1dToHplot(linestyle, *d.HClusterAmplitude, *d.HClusterAmplitudeMultiplicityEq1, *d.HClusterAmplitudeMultiplicityEq2),
+			utils.H1dToHplot(linestyleref, *dqplotref.HClusterAmplitude, *dqplotref.HClusterAmplitudeMultiplicityEq1, *dqplotref.HClusterAmplitudeMultiplicityEq2)...)...)
 }
 
 func (d *DQPlot) WriteGob(fileName string) error {

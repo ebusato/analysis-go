@@ -37,8 +37,6 @@ func H1dToHplot(lineStyle draw.LineStyle, histo ...hbook.H1D) []hplot.Histogram 
 		hi.LineStyle = lineStyle
 		hi.FillColor = nil //plotutil.Color(i)
 		hi.Color = plotutil.Color(i)
-		//hi.LineStyle.Width = vg.Points(2)
-		//hi.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(5)}
 		output[i] = *hi
 	}
 	return output
