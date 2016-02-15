@@ -132,17 +132,14 @@ func (w *Writer) writeBlockData(blk *Block) {
 }
 
 func (w *Writer) WriteEvent(event *event.Event) {
-	// Build frames for this event
-	// One event is made of 120 frames
-	frames := make([]Frame, 120)
 	iframe := 0
 	for i := range event.Clusters {
 		if iframe >= 120 {
 			log.Fatalf("rw: iframe out of range")
 		}
 
-		frame1 := &frames[iframe]
-		frame2 := &frames[iframe+1]
+		frame1 := Frame{}
+		frame2 := Frame{}
 
 		block1 := &frame1.Block
 		block2 := &frame2.Block
@@ -152,6 +149,9 @@ func (w *Writer) WriteEvent(event *event.Event) {
 
 		cluster := &event.Clusters[i]
 
+		block1.SRout = uint32(cluster.SRout())
+		block2.SRout = block1.SRout
+
 		if cluster.NoSamples() != numSamples {
 			log.Fatalf("rw: cluster.NoSamples() != numSamples")
 		}
@@ -160,21 +160,16 @@ func (w *Writer) WriteEvent(event *event.Event) {
 
 		for j := uint16(0); j < numSamples; j++ {
 			// Make block1 data from pulse[0] and pulse[1]
-			amp0, amp1 := uint16(pulses[0].Samples[j].Amplitude), uint16(pulses[1].Samples[j].Amplitude)
-			var word uint32
-
+			amp0, amp1 := uint32(pulses[0].Samples[j].Amplitude), uint32(pulses[1].Samples[j].Amplitude)
+			word := (amp0&0x111)<<16 | (amp1 & 0x111)
 			block1.Data = append(block1.Data, word)
 			// Make block2 data from pulse[2] and pulse[3]
-			block2.Data = append(block2.Data, uint32(0))
+			amp2, amp3 := uint32(pulses[2].Samples[j].Amplitude), uint32(pulses[3].Samples[j].Amplitude)
+			word = (amp2&0x111)<<16 | (amp3 & 0x111)
+			block2.Data = append(block2.Data, word)
 		}
-
-		frames = append(frames, *frame1, *frame2)
-
+		w.Frame(frame1)
+		w.Frame(frame2)
 		iframe += 2
-	}
-
-	// write frames
-	if len(frames) != 120 {
-		log.Fatalf("rw: number of frames not correct, expect 120, get %v", len(frames))
 	}
 }
