@@ -1,4 +1,4 @@
-package reader
+package rw
 
 import (
 	"bufio"
@@ -65,7 +65,7 @@ func TestReader(t *testing.T) {
 	}
 }
 
-func testReadWrite(t *testing.T) {
+func TestReadWrite(t *testing.T) {
 	const (
 		rname = "testdata/data-03-frames.bin"
 		wname = "testdata/wdata-03-frames.bin"
@@ -78,7 +78,7 @@ func testReadWrite(t *testing.T) {
 		t.Fatalf("could not create data file: %v\n", err)
 	}
 	defer f.Close()
-	defer os.Remove(wname)
+	//defer os.Remove(wname)
 
 	w := NewWriter(bufio.NewWriter(f))
 	if err != nil {
@@ -138,7 +138,7 @@ func testRead(t *testing.T, name string) (Header, []Frame) {
 
 	for {
 		frame, err := r.Frame()
-		frames = append(frames, frame)
+		frames = append(frames, *frame)
 		if err != nil {
 			if err != io.EOF {
 				t.Fatalf("[%s]: error loading frame: %v\n", name, err)

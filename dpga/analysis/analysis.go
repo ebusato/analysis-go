@@ -11,7 +11,7 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/event"
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/reader"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
@@ -42,7 +42,7 @@ func main() {
 	}
 	defer file.Close()
 
-	r, err := reader.NewReader(bufio.NewReader(file))
+	r, err := rw.NewReader(bufio.NewReader(file))
 	if err != nil {
 		log.Fatalf("could not open asm file: %v\n", err)
 	}

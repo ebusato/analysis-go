@@ -1,10 +1,13 @@
-package reader
+package rw
 
 import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
+
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/event"
 )
 
 // Writer wraps an io.Writer and writes an ASM stream.
@@ -66,8 +69,8 @@ func (w *Writer) Frame(f Frame) error {
 			return w.err
 		}
 	}
-	n := int(w.hdr.Size)
-	if n != len(f.Block.Data) {
+
+	if int(numSamples) != len(f.Block.Data) {
 		return fmt.Errorf("asm: inconsistent number of samples")
 	}
 	w.writeFrame(&f)
@@ -125,5 +128,30 @@ func (w *Writer) writeBlockData(blk *Block) {
 	w.write(blk.SRout)
 	for _, v := range blk.Counters {
 		w.write(v)
+	}
+}
+
+func (w *Writer) WriteNextEvent(event *event.Event) {
+	// Build frames for this event
+	// One event is made of 120 frames
+	var frames []Frame
+	for i := range event.Clusters {
+		cluster := &event.Clusters[i]
+
+		frame1 := &Frame{ID: 0}
+		frame2 := &Frame{ID: 0}
+
+		block1 := &frame1.Block
+		block2 := &frame2.Block
+
+		block1.Evt = event.ID
+		block2.Evt = event.ID
+
+		frames = append(frames, *frame1, *frame2)
+	}
+
+	// write frames
+	if len(frames) != 120 {
+		log.Fatalf("rw: number of frames not correct, expect 120, get %v", len(frames))
 	}
 }
