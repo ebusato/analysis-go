@@ -68,7 +68,7 @@ func main() {
 	data.CheckIntegrity()
 
 	dqplots.Finalize()
-	dqplots.WriteHistosToFile()
-
+	dqplots.WriteHistosToFile("../dqref/dqplots.gob")
+	dqplots.WriteGob("dqplots.gob")
 	data.PlotPulses(pulse.XaxisTime, false)
 }

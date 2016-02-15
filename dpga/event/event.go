@@ -73,6 +73,9 @@ func (e *Event) Multiplicity() uint8 {
 
 func (e *Event) PlotPulses(x pulse.XaxisType, pedestalRange bool) {
 	for i := range e.Clusters {
-		e.Clusters[i].PlotPulses(e.ID, x, pedestalRange)
+		cluster := &e.Clusters[i]
+		if len(cluster.PulsesWithSignal()) > 0 {
+			cluster.PlotPulses(e.ID, x, pedestalRange)
+		}
 	}
 }
