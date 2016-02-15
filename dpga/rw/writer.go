@@ -5,9 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
-
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/event"
 )
 
 // Writer wraps an io.Writer and writes an ASM stream.
@@ -131,6 +128,7 @@ func (w *Writer) writeBlockData(blk *Block) {
 	}
 }
 
+/*
 func (w *Writer) WriteNextEvent(event *event.Event) {
 	// Build frames for this event
 	// One event is made of 120 frames
@@ -155,3 +153,4 @@ func (w *Writer) WriteNextEvent(event *event.Event) {
 		log.Fatalf("rw: number of frames not correct, expect 120, get %v", len(frames))
 	}
 }
+*/
