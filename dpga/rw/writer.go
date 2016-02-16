@@ -179,6 +179,16 @@ func (w *Writer) Event(event *event.Event) {
 			word = (amp2&0xFFF)<<16 | (amp3 & 0xFFF)
 			block2.Data = append(block2.Data, word)
 		}
+
+		if uint8(len(cluster.Counters)) != numCounters {
+			log.Fatalf("rw: len(cluster.Counters) = %v, numCounters = %v", len(cluster.Counters), numCounters)
+		}
+
+		for j := 0; j < int(numCounters); j++ {
+			block1.Counters[j] = cluster.Counter(j)
+			block2.Counters[j] = cluster.Counter(j)
+		}
+
 		w.Frame(frame1)
 		w.Frame(frame2)
 		iframe += 2

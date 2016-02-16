@@ -202,8 +202,9 @@ func (p *Pulse) Correlation(pu *Pulse) float64 {
 }
 
 type Cluster struct {
-	Pulses [4]Pulse
-	ID     uint8
+	Pulses   [4]Pulse
+	ID       uint8
+	Counters []uint32 // Counters stores the counters present in the binary/hexa/decimal files
 }
 
 func NewCluster(id uint8, pulses [4]Pulse) *Cluster {
@@ -275,6 +276,13 @@ func (c *Cluster) Charge() float64 {
 		charge += c.Pulses[i].Charge()
 	}
 	return charge
+}
+
+func (c *Cluster) Counter(i int) uint32 {
+	if i >= len(c.Counters) {
+		log.Fatalf("pulse: counter index out of range")
+	}
+	return c.Counters[i]
 }
 
 func (c *Cluster) PlotPulses(evtID uint, x XaxisType, pedestalRange bool) string {

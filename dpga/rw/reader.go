@@ -231,6 +231,15 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 		pulse2, pulse3 := MakePulses(frame2, iCluster)
 
 		event.Clusters[iCluster] = *pulse.NewCluster(iCluster, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
+		event.Clusters[iCluster].Counters = make([]uint32, numCounters)
+		for i := uint8(0); i < numCounters; i++ {
+			counterf1 := frame1.Block.Counters[i]
+			counterf2 := frame2.Block.Counters[i]
+			if counterf1 != counterf2 {
+				log.Fatalf("rw: countersf1 != countersf2")
+			}
+			event.Clusters[iCluster].Counters[i] = counterf1
+		}
 	}
 
 	return event, true

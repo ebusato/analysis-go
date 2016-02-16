@@ -34,7 +34,7 @@ type Block struct {
 
 	Data     []uint32
 	SRout    uint32
-	Counters [17]uint32
+	Counters [numCounters]uint32
 }
 
 func (b *Block) Print(s string) {
