@@ -68,6 +68,7 @@ func NewDetector() *Detector {
 						case true: // channel not used in DPGA (one of the four channels per ASM card which is not used)
 							ch.SetAbsID240(math.MaxUint16)
 						}
+						ch.SetFifoID(ChannelAbsIdx288ToFifoID(iChannelAbs288))
 						for iCapacitor := range ch.Capacitors() {
 							capa := ch.Capacitor(uint16(iCapacitor))
 							capa.SetID(uint16(iCapacitor))
@@ -112,6 +113,11 @@ func ChannelAbsIdx288ToRelIdx(iChannelAbs uint16) (iHemi uint8, iASM uint8, iDRS
 	iHemi, iASM, iDRS, iQuartet = QuartetAbsIdx72ToRelIdx(iQuartetAbs)
 	iChannel = uint8(iChannelAbs % 4)
 	return
+}
+
+// iChannelAbs can go from 0 to 287
+func ChannelAbsIdx288ToFifoID(iChannelAbs uint16) uint16 {
+	return iChannelAbs / 2
 }
 
 func RelIdxToAbsIdx240(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {

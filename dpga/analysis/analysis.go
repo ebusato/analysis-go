@@ -50,8 +50,7 @@ func main() {
 	}
 
 	// Writer
-	w := &rw.Writer{}
-	w = nil
+	var w *rw.Writer
 	if *outfileName != "" {
 		filew, err := os.Create(*outfileName)
 		if err != nil {

@@ -80,6 +80,7 @@ type Channel struct {
 	id         uint8  // relative id: 0 -> 3 (because there are 4 channels per quartet)
 	absid288   uint16 // absolute id: 0 -> 287 for DPGA, irrelevant for test bench
 	absid240   uint16 // absolute id: 0 -> 239 for DPGA, irrelevant for test bench
+	fifoid     uint16 // fifo id: 0 -> 143
 	name       string
 	coord      Coord
 	plotStat   bool
@@ -171,6 +172,14 @@ func (c *Channel) AbsID240() uint16 {
 
 func (c *Channel) SetAbsID240(id uint16) {
 	c.absid240 = id
+}
+
+func (c *Channel) FifoID() uint16 {
+	return c.fifoid
+}
+
+func (c *Channel) SetFifoID(id uint16) {
+	c.fifoid = id
 }
 
 func (c *Channel) SetCoord(x, y, z float64) {

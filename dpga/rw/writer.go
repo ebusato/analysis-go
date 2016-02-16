@@ -99,8 +99,6 @@ func (w *Writer) writeFrame(f *Frame) {
 		w.err = io.EOF
 		return
 	}
-
-	// FIXME(sbinet): frame-id seems to always be 0...
 	w.writeBlock(&f.Block, 0)
 }
 
@@ -153,14 +151,23 @@ func (w *Writer) Event(event *event.Event) {
 
 		cluster := &event.Clusters[i]
 
-		block1.SRout = uint32(cluster.SRout())
-		block2.SRout = block1.SRout
-
 		if cluster.NoSamples() != numSamples {
 			log.Fatalf("rw: cluster.NoSamples() != numSamples")
 		}
 
 		pulses := &cluster.Pulses
+
+		if pulses[0].Channel.FifoID() != pulses[1].Channel.FifoID() {
+			log.Fatalf("pulses[0].Channel.FifoID() != pulses[1].Channel.FifoID()")
+		}
+		if pulses[2].Channel.FifoID() != pulses[3].Channel.FifoID() {
+			log.Fatalf("pulses[2].Channel.FifoID() != pulses[3].Channel.FifoID()")
+		}
+		block1.ID = uint32(pulses[0].Channel.FifoID())
+		block2.ID = uint32(pulses[2].Channel.FifoID())
+
+		block1.SRout = uint32(cluster.SRout())
+		block2.SRout = block1.SRout
 
 		for j := uint16(0); j < numSamples; j++ {
 			// Make block1 data from pulse[0] and pulse[1]
