@@ -80,6 +80,7 @@ func (r *Reader) readFrame(f *Frame) {
 func (r *Reader) readHeader(hdr *Header) {
 	r.read(&hdr.Size)
 	r.read(&hdr.NumFrame)
+	//fmt.Printf("rw: reading header %v %v\n", hdr.Size, hdr.NumFrame)
 }
 
 func (r *Reader) readBlock(blk *Block) {
@@ -99,6 +100,7 @@ func (r *Reader) readBlockHeader(blk *Block) {
 	if ctrl != blockHeader && r.err == nil {
 		r.err = fmt.Errorf("asm: missing 0xCAFEDECA magic")
 	}
+	//fmt.Printf("rw: reading block header %v %v %x\n", blk.Evt, blk.ID, ctrl)
 }
 
 func (r *Reader) readBlockData(blk *Block) {

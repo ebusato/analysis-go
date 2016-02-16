@@ -22,8 +22,8 @@ type Header struct {
 
 func (h *Header) Print() {
 	fmt.Println("Printing header:")
-	fmt.Printf(" Size = %v\n", h.Size)
-	fmt.Printf(" NumFrame = %v\n", h.NumFrame)
+	fmt.Printf("   Size = %v\n", h.Size)
+	fmt.Printf("   NumFrame = %v\n", h.NumFrame)
 }
 
 // Block is a single data frame in an ASM stream
@@ -37,16 +37,42 @@ type Block struct {
 	Counters [17]uint32
 }
 
-func (b *Block) Print() {
-	fmt.Println("Printing block:")
-	fmt.Printf(" Evt = %v\n", b.Evt)
-	fmt.Printf(" ID = %v\n", b.ID)
-	for i := range b.Data {
-		fmt.Printf(" Data %v = %x\n", i, b.Data[i])
-	}
-	fmt.Printf(" SRout = %v\n", b.SRout)
-	for i := range b.Counters {
-		fmt.Printf(" Counter %v = %v\n", i, b.Counters[i])
+func (b *Block) Print(s string) {
+	fmt.Printf(" Printing block Evt = %v, ID = %v\n", b.Evt, b.ID)
+
+	switch s {
+	case "short":
+		// do nothing
+	case "medium":
+		fmt.Printf("  Data %v = %x\n", 0, b.Data[0])
+		fmt.Printf("  Data %v = %x\n", 1, b.Data[1])
+		fmt.Println("\t.\n\t.")
+		fmt.Printf("  Data %v = %x\n", len(b.Data)-1, b.Data[len(b.Data)-1])
+		fmt.Printf("  SRout = %v\n", b.SRout)
+		fmt.Printf("  Counter %v = %v\n", 0, b.Counters[0])
+		fmt.Println("\t.\n\t.")
+		fmt.Printf("  Counter %v = %v\n", len(b.Counters)-1, b.Counters[len(b.Counters)-1])
+	case "long":
+		fmt.Printf("  Data %v = %x\n", 0, b.Data[0])
+		fmt.Printf("  Data %v = %x\n", 1, b.Data[1])
+		fmt.Printf("  Data %v = %x\n", 2, b.Data[2])
+		fmt.Printf("  Data %v = %x\n", 3, b.Data[3])
+		fmt.Println("\t.\n\t.")
+		fmt.Printf("  Data %v = %x\n", len(b.Data)-3, b.Data[len(b.Data)-3])
+		fmt.Printf("  Data %v = %x\n", len(b.Data)-2, b.Data[len(b.Data)-2])
+		fmt.Printf("  Data %v = %x\n", len(b.Data)-1, b.Data[len(b.Data)-1])
+		fmt.Printf("  SRout = %v\n", b.SRout)
+		for i := range b.Counters {
+			fmt.Printf("  Counter %v = %v\n", i, b.Counters[i])
+		}
+	case "full":
+		for i := range b.Data {
+			fmt.Printf("  Data %v = %x\n", i, b.Data[i])
+		}
+		fmt.Printf("  SRout = %v\n", b.SRout)
+		for i := range b.Counters {
+			fmt.Printf("  Counter %v = %v\n", i, b.Counters[i])
+		}
 	}
 }
 
@@ -64,8 +90,7 @@ type Frame struct {
 	typeOfFrame TypeOfFrame
 }
 
-func (f *Frame) Print() {
-	fmt.Println("Printing frame:")
-	fmt.Printf(" ID = %v\n", f.ID)
-	f.Block.Print()
+func (f *Frame) Print(s string) {
+	fmt.Printf("Printing frame ID = %v\n", f.ID)
+	f.Block.Print(s)
 }

@@ -20,6 +20,7 @@ func main() {
 
 	var (
 		infileName       = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
+		outfileName      = flag.String("o", "", "Name of the output file")
 		noEvents         = flag.Uint("n", 10000000, "Number of events to process")
 		applyCorrections = flag.Bool("corr", false, "Do corrections and calibration or not")
 	)
@@ -36,17 +37,36 @@ func main() {
 		log.Fatalf("error creating output directory", err)
 	}
 
-	file, err := os.Open(*infileName)
+	// Reader
+	filer, err := os.Open(*infileName)
 	if err != nil {
 		log.Fatalf("error opening file %v", err)
 	}
-	defer file.Close()
+	defer filer.Close()
 
-	r, err := rw.NewReader(bufio.NewReader(file))
+	r, err := rw.NewReader(bufio.NewReader(filer))
 	if err != nil {
 		log.Fatalf("could not open asm file: %v\n", err)
 	}
 
+	// Writer
+	w := &rw.Writer{}
+	w = nil
+	if *outfileName != "" {
+		filew, err := os.Create(*outfileName)
+		if err != nil {
+			log.Fatalf("could not create data file: %v\n", err)
+		}
+		defer filew.Close()
+
+		w = rw.NewWriter(bufio.NewWriter(filew))
+		if err != nil {
+			log.Fatalf("could not open asm file: %v\n", err)
+		}
+		w.Header(r.Header())
+	}
+
+	// Start analysis
 	dpgadetector.Det.ReadPedestalsFile("../calibConstants/pedestals.csv")
 
 	var data event.Data
@@ -62,7 +82,11 @@ func main() {
 		}
 		dqplots.FillHistos(event)
 		//event.Print(true)
-		data = append(data, *event)
+		data.Events = append(data.Events, *event)
+
+		if w != nil {
+			w.Event(event)
+		}
 	}
 
 	data.CheckIntegrity()
@@ -71,4 +95,11 @@ func main() {
 	dqplots.WriteHistosToFile("../dqref/dqplots.gob")
 	dqplots.WriteGob("dqplots.gob")
 	data.PlotPulses(pulse.XaxisTime, false)
+
+	if w != nil {
+		err = w.Close()
+		if err != nil {
+			log.Fatalf("error closing asm-stream: %v\n", err)
+		}
+	}
 }

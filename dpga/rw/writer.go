@@ -12,9 +12,10 @@ import (
 
 // Writer wraps an io.Writer and writes an ASM stream.
 type Writer struct {
-	w   io.Writer
-	err error
-	hdr Header
+	w            io.Writer
+	err          error
+	hdr          Header
+	frameCounter uint32
 }
 
 // NewWriter returns a new ASM stream in write mode.
@@ -113,6 +114,7 @@ func (w *Writer) writeBlockHeader(blk *Block) {
 	if w.err != nil {
 		return
 	}
+	//fmt.Printf("rw: writing block header: %v %v %x\n", blk.Evt, blk.ID, blockHeader)
 	w.write(blk.Evt)
 	w.write(blk.ID)
 	w.write(blockHeader)
@@ -131,15 +133,17 @@ func (w *Writer) writeBlockData(blk *Block) {
 	}
 }
 
-func (w *Writer) WriteEvent(event *event.Event) {
+func (w *Writer) Event(event *event.Event) {
 	iframe := 0
 	for i := range event.Clusters {
 		if iframe >= 120 {
 			log.Fatalf("rw: iframe out of range")
 		}
 
-		frame1 := Frame{}
-		frame2 := Frame{}
+		frame1 := Frame{ID: w.frameCounter}
+		w.frameCounter++
+		frame2 := Frame{ID: w.frameCounter}
+		w.frameCounter++
 
 		block1 := &frame1.Block
 		block2 := &frame2.Block
@@ -161,11 +165,11 @@ func (w *Writer) WriteEvent(event *event.Event) {
 		for j := uint16(0); j < numSamples; j++ {
 			// Make block1 data from pulse[0] and pulse[1]
 			amp0, amp1 := uint32(pulses[0].Samples[j].Amplitude), uint32(pulses[1].Samples[j].Amplitude)
-			word := (amp0&0x111)<<16 | (amp1 & 0x111)
+			word := (amp0&0xFFF)<<16 | (amp1 & 0xFFF)
 			block1.Data = append(block1.Data, word)
 			// Make block2 data from pulse[2] and pulse[3]
 			amp2, amp3 := uint32(pulses[2].Samples[j].Amplitude), uint32(pulses[3].Samples[j].Amplitude)
-			word = (amp2&0x111)<<16 | (amp3 & 0x111)
+			word = (amp2&0xFFF)<<16 | (amp3 & 0xFFF)
 			block2.Data = append(block2.Data, word)
 		}
 		w.Frame(frame1)
