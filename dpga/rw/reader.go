@@ -62,6 +62,7 @@ func (r *Reader) read(v interface{}) {
 
 func (r *Reader) readFrame(f *Frame) {
 	r.read(&f.ID)
+	//fmt.Printf("rw: frame id = %v\n", f.ID)
 	if f.ID == lastFrame {
 		r.err = io.EOF
 		return
@@ -111,6 +112,7 @@ func (r *Reader) readBlockData(blk *Block) {
 		r.read(&blk.Data[i])
 	}
 	r.read(&blk.SRout)
+	//fmt.Printf("rw: srout = %v\n", blk.SRout)
 	for i := range blk.Counters {
 		r.read(&blk.Counters[i])
 	}
@@ -119,6 +121,7 @@ func (r *Reader) readBlockData(blk *Block) {
 func (r *Reader) readBlockTrailer(blk *Block) {
 	var ctrl uint32
 	r.read(&ctrl)
+	//fmt.Printf("rw: block trailer = %x\n", ctrl)
 	if (ctrl>>4) != blockTrailer && r.err == nil {
 		r.err = fmt.Errorf("asm: missing 0xBADCAFEF magic")
 	}
