@@ -15,6 +15,7 @@ func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
+		noEvents = flag.Uint("n", 1000, "Number of events")
 		outfileName = flag.String("o", "out.bin", "Name of the output file")
 	)
 
@@ -57,7 +58,8 @@ func main() {
 		log.Fatalf("error writing header: %v\n", err)
 	}
 
-	for {
+	nFrames := uint(0)
+	for nFrames / 120 < *noEvents {
 		frame, err := r.Frame()
 		if err != nil {
 			if err != io.EOF {
@@ -72,6 +74,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("error writing frame: %v\n", err)
 		}
+		nFrames++
 	}
 }
 
