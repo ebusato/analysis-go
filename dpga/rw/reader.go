@@ -205,7 +205,10 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 	for iCluster := uint8(0); iCluster < dpgadetector.Det.NoClusters(); iCluster++ {
 		frame1, err := r.Frame()
 		if err != nil {
-			log.Fatal("error not nil")
+		        if err == io.EOF {
+			       return nil, false
+			}
+			log.Fatal("error not nil", err)
 		}
 		frame1.typeOfFrame = FirstFrameOfCluster
 		frame2, err := r.Frame()
