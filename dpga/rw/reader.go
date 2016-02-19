@@ -73,7 +73,7 @@ func (r *Reader) readFrame(f *Frame) {
 			log.Fatalf("error loading frame: %v\n", r.err)
 		}
 		if f.ID != lastFrame {
-			log.Fatalf("invalid last frame id. got=%d. want=%d", f.ID, lastFrame)
+			log.Fatalf("invalid last frame id. got=%x. want=%x", f.ID, lastFrame)
 		}
 	}
 }

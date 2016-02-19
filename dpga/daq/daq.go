@@ -123,22 +123,6 @@ func command(stopRun chan bool, wg *sync.WaitGroup) {
 }
 
 /*
-func command(e interface{}) {
-	for {
-		switch e := e.(type) {
-		case key.Event:
-			switch e.Code {
-			case key.CodeEscape, key.CodeQ:
-				if e.Direction == key.DirPress {
-					return
-				}
-			}
-		}
-	}
-}
-*/
-
-/*
 // OLD STUFF, TO BE REMOVED
 	word := make([]byte, 4)
 	n, err := tcp.Read(word)
