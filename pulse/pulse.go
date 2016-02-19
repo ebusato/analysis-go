@@ -1,3 +1,4 @@
+// Package pulse defines the physical signals recorded by the ASM cards.
 package pulse
 
 import (
@@ -14,6 +15,7 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/detector"
 )
 
+// Sample describes the signal recorded by a DRS capacitor
 type Sample struct {
 	Amplitude float64
 	Time      float64
@@ -21,6 +23,7 @@ type Sample struct {
 	Capacitor *detector.Capacitor
 }
 
+// NewSample constructs a new sample
 func NewSample(amp float64, index uint16, time float64) *Sample {
 	s := &Sample{
 		Amplitude: amp,
@@ -31,6 +34,7 @@ func NewSample(amp float64, index uint16, time float64) *Sample {
 	return s
 }
 
+// CapaIndex returns the index of the capacitor associated the the sample (from 0 to 1023)
 func (s *Sample) CapaIndex(SRout uint16) uint16 {
 	iCapa := SRout + s.Index
 	if iCapa > 1023 {
@@ -39,11 +43,14 @@ func (s *Sample) CapaIndex(SRout uint16) uint16 {
 	return iCapa
 }
 
+// Print prints sample informations
 func (s *Sample) Print() {
 	fmt.Printf("Printing sample: \n")
 	fmt.Printf("  -> Amplitude, Time, Index, Capacitor = %v, %v, %v, %p\n", s.Amplitude, s.Time, s.Index, s.Capacitor)
 }
 
+// SubtractPedestal subtracts pedestal for the sample.
+// This assumes that pedestals have been computed before.
 func (s *Sample) SubtractPedestal() {
 	if s.Capacitor == nil {
 		log.Fatal("Error ! no capacitor associated to this sample")
@@ -51,6 +58,8 @@ func (s *Sample) SubtractPedestal() {
 	s.Amplitude -= s.Capacitor.PedestalMean()
 }
 
+// Pulse describes a DRS channel.
+// A pulse is made of several samples
 type Pulse struct {
 	Samples      []Sample
 	TimeStep     float64
@@ -60,6 +69,7 @@ type Pulse struct {
 	Channel      *detector.Channel
 }
 
+// NewPulse constructs a new pulse
 func NewPulse(channel *detector.Channel) *Pulse {
 	return &Pulse{
 		TimeStep:     0.0,
@@ -70,6 +80,7 @@ func NewPulse(channel *detector.Channel) *Pulse {
 	}
 }
 
+// Print prints pulse informations
 func (p *Pulse) Print() {
 	fmt.Println("-> Printing pulse informations")
 	fmt.Printf("  o len(Samples) = %v\n", len(p.Samples))
@@ -93,10 +104,12 @@ func (p *Pulse) Print() {
 	fmt.Println("\n")
 }
 
+// NoSamples return the number of samples the pulse is made of
 func (p *Pulse) NoSamples() uint16 {
 	return uint16(len(p.Samples))
 }
 
+// Copy makes a copy of the pulse
 func (p *Pulse) Copy() *Pulse {
 	newsamples := make([]Sample, len(p.Samples))
 	copy(newsamples, p.Samples)
@@ -111,6 +124,7 @@ func (p *Pulse) Copy() *Pulse {
 	return newpulse
 }
 
+// AddSample adds a sample to the pulse
 func (p *Pulse) AddSample(s *Sample, capa *detector.Capacitor) {
 	if s.Capacitor != nil {
 		log.Fatal("capacitor is not nil")
@@ -135,6 +149,7 @@ func (p *Pulse) AddSample(s *Sample, capa *detector.Capacitor) {
 	}
 }
 
+// SubtractPedestal subtracts pedestals for all the samples of the pulse
 func (p *Pulse) SubtractPedestal() {
 	for i := range p.Samples {
 		sample := &p.Samples[i]
@@ -142,6 +157,7 @@ func (p *Pulse) SubtractPedestal() {
 	}
 }
 
+// Amplitude returns the amplitude of the sample having the highest amplitude
 func (p *Pulse) Amplitude() float64 {
 	var ampl float64 = 0
 	for _, s := range p.Samples {
@@ -152,6 +168,7 @@ func (p *Pulse) Amplitude() float64 {
 	return ampl
 }
 
+// Charge returns the area under the pulse
 func (p *Pulse) Charge() float64 {
 	var sum float64 = 0
 	for _, s := range p.Samples {
@@ -160,6 +177,7 @@ func (p *Pulse) Charge() float64 {
 	return sum * float64(p.TimeStep)
 }
 
+// XaxisType defines the x axis type for plotting
 type XaxisType byte
 
 const (
@@ -168,6 +186,7 @@ const (
 	XaxisCapacitor
 )
 
+// MakeXY returns a plotter.XYs used for plotting
 func (p *Pulse) MakeXY(x XaxisType) plotter.XYs {
 	pts := make(plotter.XYs, len(p.Samples))
 	for i, sample := range p.Samples {
@@ -186,6 +205,7 @@ func (p *Pulse) MakeXY(x XaxisType) plotter.XYs {
 	return pts
 }
 
+// MakeAmpSlice makes a slice containing amplitudes of all samples
 func (p *Pulse) MakeAmpSlice() []float64 {
 	var amps []float64
 	for _, samp := range p.Samples {
@@ -194,6 +214,7 @@ func (p *Pulse) MakeAmpSlice() []float64 {
 	return amps
 }
 
+// Correlation computes the correlation between two pulses
 func (p *Pulse) Correlation(pu *Pulse) float64 {
 	amplitudes1 := p.MakeAmpSlice()
 	amplitudes2 := pu.MakeAmpSlice()
@@ -201,12 +222,14 @@ func (p *Pulse) Correlation(pu *Pulse) float64 {
 	return stat.Correlation(amplitudes1, amplitudes2, weights)
 }
 
+// Cluster describes a quartet.
 type Cluster struct {
 	Pulses   [4]Pulse
 	ID       uint8
 	Counters []uint32 // Counters stores the counters present in the binary/hexa/decimal files
 }
 
+// NewCluster constructs a new cluster
 func NewCluster(id uint8, pulses [4]Pulse) *Cluster {
 	return &Cluster{
 		Pulses: pulses,
@@ -214,6 +237,7 @@ func NewCluster(id uint8, pulses [4]Pulse) *Cluster {
 	}
 }
 
+// Print prints cluster informations
 func (c *Cluster) Print() {
 	for i := range c.Pulses {
 		fmt.Printf("->Printing cluster")
@@ -221,6 +245,7 @@ func (c *Cluster) Print() {
 	}
 }
 
+// NoSamples returns the number of samples of the pulses in the cluster
 func (c *Cluster) NoSamples() uint16 {
 	noSamples := c.Pulses[0].NoSamples()
 	for i := 1; i < len(c.Pulses); i++ {
@@ -232,6 +257,7 @@ func (c *Cluster) NoSamples() uint16 {
 	return noSamples
 }
 
+// SRout returns the srout (common to all pulses in the cluster)
 func (c *Cluster) SRout() uint16 {
 	srout := c.Pulses[0].SRout
 	for i := 1; i < len(c.Pulses); i++ {
@@ -242,6 +268,7 @@ func (c *Cluster) SRout() uint16 {
 	return srout
 }
 
+// PulsesWithSignal returns a slice with pointers to pulses with signal
 func (c *Cluster) PulsesWithSignal() []*Pulse {
 	var pulses []*Pulse
 	for i := range c.Pulses {
@@ -252,6 +279,7 @@ func (c *Cluster) PulsesWithSignal() []*Pulse {
 	return pulses
 }
 
+// PulsesWithSignal returns a slice with pointers to pulses with saturating signal
 func (c *Cluster) PulsesWithSatSignal() []*Pulse {
 	var pulses []*Pulse
 	for i := range c.Pulses {
@@ -262,6 +290,7 @@ func (c *Cluster) PulsesWithSatSignal() []*Pulse {
 	return pulses
 }
 
+// Amplitude returns the sum of the pulse amplitudes
 func (c *Cluster) Amplitude() float64 {
 	amp := 0.
 	for i := range c.Pulses {
@@ -270,6 +299,7 @@ func (c *Cluster) Amplitude() float64 {
 	return amp
 }
 
+// Charge returns the sum of the pulse charges
 func (c *Cluster) Charge() float64 {
 	charge := 0.
 	for i := range c.Pulses {
@@ -278,6 +308,7 @@ func (c *Cluster) Charge() float64 {
 	return charge
 }
 
+// Counter return the value of counter for the given index
 func (c *Cluster) Counter(i int) uint32 {
 	if i >= len(c.Counters) {
 		log.Fatalf("pulse: counter index out of range")
@@ -285,6 +316,7 @@ func (c *Cluster) Counter(i int) uint32 {
 	return c.Counters[i]
 }
 
+// PlotPulses plots the four pulses of the cluster in one canvas
 func (c *Cluster) PlotPulses(evtID uint, x XaxisType, pedestalRange bool) string {
 	p, err := plot.New()
 	if err != nil {

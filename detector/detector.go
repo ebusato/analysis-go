@@ -1,3 +1,4 @@
+// Package detector describes the physical structure of the detector and its electronics.
 package detector
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/gonum/stat"
 )
 
+// Capacitor describes a DRS capacitor.
 type Capacitor struct {
 	id              uint16 // possible values: 0, 1, ..., 1023 (1024 capacitors per channel)
 	pedestalSamples []float64
@@ -19,26 +21,32 @@ type Capacitor struct {
 	pedestalStdDev  float64
 }
 
+// Print prints capacitor informations.
 func (c *Capacitor) Print() {
 	fmt.Printf("    # Capacitor: id = %v, pedestal mean = %v, stddev = %v (address=%p)\n", c.id, c.pedestalMean, c.pedestalStdDev, c)
 }
 
+// ID returns the capacitor id.
 func (c *Capacitor) ID() uint16 {
 	return c.id
 }
 
+// SetID sets capacitor id to the given value.
 func (c *Capacitor) SetID(id uint16) {
 	c.id = id
 }
 
+// NoPedestalSamples returns the number of samples used for the pedestal calculation.
 func (c *Capacitor) NoPedestalSamples() int {
 	return len(c.pedestalSamples)
 }
 
+// AddPedestalSample adds a sample for pedestal calculation.
 func (c *Capacitor) AddPedestalSample(n float64) {
 	c.pedestalSamples = append(c.pedestalSamples, n)
 }
 
+// ComputePedestalMeanStdDevFromSamples computes the pedestal mean and standard deviation on mean.
 func (c *Capacitor) ComputePedestalMeanStdDevFromSamples() {
 	var weights []float64
 	mean, variance := stat.MeanVariance(c.pedestalSamples, weights)
@@ -57,25 +65,31 @@ func (c *Capacitor) ComputePedestalMeanStdDevFromSamples() {
 	}
 }
 
+// PedestalMean returns the pedestal mean.
 func (c *Capacitor) PedestalMean() float64 {
 	return c.pedestalMean
 }
 
+// PedestalStdDev returns the pedestal standard deviation.
 func (c *Capacitor) PedestalStdDev() float64 {
 	return c.pedestalStdDev
 }
 
+// SetPedestalMeanStdDev sets the pedestal mean and standard deviation to the given values.
 func (c *Capacitor) SetPedestalMeanStdDev(mean float64, stddev float64) {
 	c.pedestalMean = mean
 	c.pedestalStdDev = stddev
 }
 
+// Coord describes the coordinates of a scintillator cristal.
+// The coordinates are those of the center of the front face of the cristal.
 type Coord struct {
 	x, y, z float64
 }
 
+// Channel describes a DRS channel.
+// A channel is made of 1024 capacitors.
 type Channel struct {
-	// A channel is made of 1024 capacitors
 	capacitors [1024]Capacitor
 	id         uint8  // relative id: 0 -> 3 (because there are 4 channels per quartet)
 	absid288   uint16 // absolute id: 0 -> 287 for DPGA, irrelevant for test bench
@@ -86,23 +100,31 @@ type Channel struct {
 	plotStat   bool
 }
 
+// Capacitors returns the capacitors for this channel
 func (c *Channel) Capacitors() [1024]Capacitor {
 	return c.capacitors
 }
 
+// Capacitor return a pointer to the capacitor corresponding to the given index
 func (c *Channel) Capacitor(iCapacitor uint16) *Capacitor {
 	return &c.capacitors[iCapacitor]
 }
 
+// PlotStat should be used to set Channel.plotStat to true (by default to false).
+// When set to true, the number of samples used to compute pedestals is plotted rather 
+// the pedestal mean and standard deviation of the pedestals. 
 func (c *Channel) PlotStat(plotStat bool) {
 	c.plotStat = plotStat
 }
 
-// implement gonum/plot/plotter/XYer interface
+// Len return the number of capacitors.
+// It implements gonum/plot/plotter/XYer interface
 func (c *Channel) Len() int {
 	return len(c.capacitors)
 }
 
+// XY return an x, y pair for the capacitor corresponding to the given index
+// It implements gonum/plot/plotter/XYer interface
 func (c *Channel) XY(iCapacitor int) (x, y float64) {
 	if iCapacitor > 1023 {
 		log.Fatal("iCapacitor out of range")
@@ -120,7 +142,8 @@ func (c *Channel) XY(iCapacitor int) (x, y float64) {
 	return
 }
 
-// implement gonum/plot/plotter/YErrorer interface
+// YError returns a pair of errors corresponding respectively to the downward and upward error of the pedestal mean.
+// It implements the gonum/plot/plotter/YErrorer interface.
 func (c *Channel) YError(iCapacitor int) (down float64, up float64) {
 	if iCapacitor > 1023 {
 		log.Fatal("iCapacitor out of range")
@@ -137,31 +160,38 @@ func (c *Channel) YError(iCapacitor int) (down float64, up float64) {
 	return down, up
 }
 
-// implement gonum/plot/plotter/XErrorer interface
+// XError returns a pair of errors in the x direction.
+// It implements the gonum/plot/plotter/XErrorer interface.
 func (c *Channel) XError(iCapacitor int) (down float64, up float64) {
 	return 0, 0
 }
 
+// Name returns the name of the channel.
 func (c *Channel) Name() string {
 	return c.name
 }
 
+// SetName sets the channel name to the given value.
 func (c *Channel) SetName(name string) {
 	c.name = name
 }
 
+// ID returns the channel id.
 func (c *Channel) ID() uint8 {
 	return c.id
 }
 
+// SetID sets the channel id to the given value.
 func (c *Channel) SetID(id uint8) {
 	c.id = id
 }
 
+// AbsID288 return the channel absolute id (0 -> 287)
 func (c *Channel) AbsID288() uint16 {
 	return c.absid288
 }
 
+// SetAbsID288 sets the channel absolute id
 func (c *Channel) SetAbsID288(id uint16) {
 	c.absid288 = id
 }
