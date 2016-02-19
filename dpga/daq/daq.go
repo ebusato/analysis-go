@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 	"sync"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
@@ -19,13 +20,14 @@ func main() {
 	var (
 		noEvents    = flag.Uint("n", 1000, "Number of events")
 		outfileName = flag.String("o", "out.bin", "Name of the output file")
+		ip          = flag.String("ip", "192.168.100.11", "IP address")
 		port        = flag.String("p", "1024", "Port number")
 	)
 
 	flag.Parse()
 
 	// Reader
-	laddr, err := net.ResolveTCPAddr("tcp", "192.168.100.11:"+*port)
+	laddr, err := net.ResolveTCPAddr("tcp", *ip+":"+*port)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,7 +35,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	r, err := rw.NewReader(bufio.NewReader(tcp))
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
@@ -65,19 +67,21 @@ func main() {
 	const N = 2
 	var wg sync.WaitGroup
 	wg.Add(N)
-	go stream(r, w, noEvents, &wg)
-	go command(&wg)
+
+	stopRun := make(chan bool)
+	go stream(r, w, noEvents, stopRun, &wg)
+	go command(stopRun, &wg)
 	wg.Wait()
 }
 
-func stream(r *rw.Reader, w *rw.Writer, noEvents *uint, wg *sync.WaitGroup) {
+func stream(r *rw.Reader, w *rw.Writer, noEvents *uint, stopRun chan bool, wg *sync.WaitGroup) {
 	defer wg.Done()
 	nFrames := uint(0)
 	for nFrames/120 < *noEvents {
 		//start := time.Now()
 		frame, err := r.Frame()
 		//duration := time.Since(start)
-// 		time.Sleep(1 * time.Millisecond)
+		//time.Sleep(1 * time.Millisecond)
 		if err != nil {
 			if err != io.EOF {
 				log.Fatalf("error loading frame: %v\n", err)
@@ -91,11 +95,17 @@ func stream(r *rw.Reader, w *rw.Writer, noEvents *uint, wg *sync.WaitGroup) {
 		if err != nil {
 			log.Fatalf("error writing frame: %v\n", err)
 		}
+		select {
+		case <-stopRun:
+			*noEvents = nFrames/120 + 1
+		default:
+			// do nothing
+		}
 		nFrames++
 	}
 }
 
-func command(wg *sync.WaitGroup) {
+func command(stopRun chan bool, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for {
 		in := bufio.NewReader(os.Stdin) //Scanner
@@ -103,9 +113,10 @@ func command(wg *sync.WaitGroup) {
 		word = strings.Replace(word, "\n", "", -1)
 		switch word {
 		default:
-			fmt.Println("do nothing !", word)
-		case "q":
-			fmt.Println("quit !")
+			fmt.Println("-> Command not known, what do you mean ?", word)
+		case "stop":
+			fmt.Println("-> Stopping run")
+			stopRun <- true
 			return
 		}
 	}
