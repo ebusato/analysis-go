@@ -15,7 +15,7 @@ func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
-		infileName = flag.String("i", "../rw/testdata/data-03-frames.bin", "Name of the input file")
+		infileName = flag.String("i", "", "Name of the input file")
 	)
 
 	flag.Parse()

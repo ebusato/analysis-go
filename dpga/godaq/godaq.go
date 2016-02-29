@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net"
 	"os"
 	"strings"
@@ -18,7 +19,7 @@ func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
-		noEvents    = flag.Uint("n", 1000, "Number of events")
+		noEvents    = flag.Uint("n", 100000, "Number of events")
 		outfileName = flag.String("o", "out.bin", "Name of the output file")
 		ip          = flag.String("ip", "192.168.100.11", "IP address")
 		port        = flag.String("p", "1024", "Port number")
@@ -78,6 +79,10 @@ func stream(r *rw.Reader, w *rw.Writer, noEvents *uint, stopRun chan bool, wg *s
 	defer wg.Done()
 	nFrames := uint(0)
 	for nFrames/120 < *noEvents {
+		iEvent := float64(nFrames) / 120.
+		if math.Mod(iEvent, 100) == 0 {
+			fmt.Printf("event %v\n", iEvent)
+		}
 		//start := time.Now()
 		frame, err := r.Frame()
 		//duration := time.Since(start)

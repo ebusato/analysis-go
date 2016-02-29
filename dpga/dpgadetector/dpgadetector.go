@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"strconv"
 	"time"
 
@@ -146,7 +147,7 @@ type GeomCSV struct {
 }
 
 func (d *Detector) ReadGeom() {
-	fileName := "../dpgadetector/mapping_IDchanneltoCoordinates_Arnaud.txt"
+	fileName := os.Getenv("GOPATH") + "/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector/mapping_IDchanneltoCoordinates_Arnaud.txt"
 	tbl, err := csvutil.Open(fileName)
 	if err != nil {
 		log.Fatalf("could not open %s: %v\n", fileName, err)

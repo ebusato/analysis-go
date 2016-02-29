@@ -1,4 +1,4 @@
-package sendtosocket
+package main
 
 import (
 	"bufio"
@@ -16,8 +16,8 @@ func main() {
 
 	var (
 		fileName = flag.String("i", "", "Input file name")
-		ip       = flag.String("ip", "192.168.100.11", "IP address")
-		port     = flag.String("p", "1024", "Port number")
+		ip       = flag.String("ip", "localhost", "IP address")
+		port     = flag.String("p", "5555", "Port number")
 	)
 
 	flag.Parse()
@@ -34,16 +34,18 @@ func main() {
 	}
 
 	// Writer
-	laddr, err := net.ResolveTCPAddr("tcp", *ip+":"+*port)
+	// 	laddr, err := net.ResolveTCPAddr("tcp", *ip+":"+*port)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	//tcp, err := net.DialTCP("tcp", nil, laddr)
+	ln, err := net.Listen("tcp", *ip+":"+*port)
 	if err != nil {
 		log.Fatal(err)
 	}
-	tcp, err := net.DialTCP("tcp", nil, laddr)
-	if err != nil {
-		log.Fatal(err)
-	}
+	conn, err := ln.Accept()
 
-	w := rw.NewWriter(bufio.NewWriter(tcp))
+	w := rw.NewWriter(bufio.NewWriter(conn))
 	if err != nil {
 		log.Fatalf("could not open file: %v\n", err)
 	}
@@ -60,8 +62,6 @@ func main() {
 
 	for {
 		frame, err := r.Frame()
-		//duration := time.Since(start)
-		//time.Sleep(1 * time.Millisecond)
 		if err != nil {
 			if err != io.EOF {
 				log.Fatalf("error loading frame: %v\n", err)
