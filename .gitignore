@@ -21,3 +21,7 @@ testbench/computePedestals/output/
 testbench/data/
 testbench/dqref/
 testbench/tmp/
+dpga/godaq/out
+dpga/godaq/out.bin
+out
+
