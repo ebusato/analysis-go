@@ -65,16 +65,108 @@ func main() {
 	}
 
 	// Start goroutines
-	const N = 2
+	const N = 3
 	var wg sync.WaitGroup
 	wg.Add(N)
 
-	stopRun := make(chan bool)
-	go stream(r, w, noEvents, stopRun, &wg)
-	go command(stopRun, &wg)
+	go control(&wg)
+	go stream(r, w, noEvents, &wg)
+	go command(&wg)
 	wg.Wait()
 }
 
+var (
+	endStream  chan bool
+	endCommand chan bool
+	stopAll    chan bool
+)
+
+func control(wg *sync.WaitGroup) {
+	defer wg.Done()
+	streamIsEnded := false
+	commandIsEnded := false
+	for {
+		select {
+		case <-endStream:
+			streamIsEnded = true
+		case <-endCommand:
+			commandIsEnded = true
+		default:
+			// do nothing
+		}
+		if streamIsEnded || commandIsEnded {
+			fmt.Printf("endStream = %v or endCommand = %v\n", streamIsEnded, commandIsEnded)
+			stopAll <- true
+		}
+
+		// 		fmt.Println("here")
+		// 		if <-endStream || <-endCommand {
+		// 			stopAll <- true
+		// 		}
+	}
+}
+
+func stream(r *rw.Reader, w *rw.Writer, noEvents *uint, wg *sync.WaitGroup) {
+	defer wg.Done()
+	nFrames := uint(0)
+	for {
+		switch {
+		case nFrames/120 >= *noEvents:
+			fmt.Println("specified number of events reached -> stopping acquisition")
+			endStream <- true
+			return
+		default:
+			iEvent := nFrames / 120
+			if math.Mod(float64(nFrames)/120., 1) == 0 {
+				fmt.Printf("event %v\n", iEvent)
+			}
+			//start := time.Now()
+			frame, err := r.Frame()
+			//duration := time.Since(start)
+			//time.Sleep(1 * time.Millisecond)
+			if err != nil {
+				if err != io.EOF {
+					log.Fatalf("error loading frame: %v\n", err)
+				}
+				if frame.ID != rw.LastFrame() {
+					log.Fatalf("invalid last frame id. got=%d. want=%d", frame.ID, rw.LastFrame())
+				}
+				break
+			}
+			err = w.Frame(*frame)
+			if err != nil {
+				log.Fatalf("error writing frame: %v\n", err)
+			}
+			select {
+			case <-stopAll:
+				fmt.Printf("got stopAll %v %v\n", iEvent, *noEvents)
+				*noEvents = iEvent + 1
+			default:
+				// do nothing
+			}
+			nFrames++
+		}
+	}
+}
+
+func command(wg *sync.WaitGroup) {
+	defer wg.Done()
+	for {
+		in := bufio.NewReader(os.Stdin) //Scanner
+		word, _ := in.ReadString('\n')
+		word = strings.Replace(word, "\n", "", -1)
+		switch word {
+		default:
+			fmt.Println("-> Command not known, what do you mean ?", word)
+		case "stop":
+			fmt.Println("-> Stopping run")
+			endCommand <- true
+			return
+		}
+	}
+}
+
+/*
 func stream(r *rw.Reader, w *rw.Writer, noEvents *uint, stopRun chan bool, wg *sync.WaitGroup) {
 	defer wg.Done()
 	nFrames := uint(0)
@@ -126,16 +218,4 @@ func command(stopRun chan bool, wg *sync.WaitGroup) {
 		}
 	}
 }
-
-/*
-// OLD STUFF, TO BE REMOVED
-	word := make([]byte, 4)
-	n, err := tcp.Read(word)
-	wordu32 := binary.BigEndian.Uint32(word)
-	fmt.Printf("Word from server: %v %x\n", n, wordu32)
-	if err != nil {
-		if err != io.EOF {
-			log.Fatalf("error reading word")
-		}
-	}
 */
