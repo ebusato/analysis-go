@@ -3,8 +3,10 @@ package main
 import (
 	"bufio"
 	"flag"
+	"fmt"
 	"io"
 	"log"
+	"math"
 	"net"
 	"os"
 
@@ -34,11 +36,6 @@ func main() {
 	}
 
 	// Writer
-	// 	laddr, err := net.ResolveTCPAddr("tcp", *ip+":"+*port)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	//tcp, err := net.DialTCP("tcp", nil, laddr)
 	ln, err := net.Listen("tcp", *ip+":"+*port)
 	if err != nil {
 		log.Fatal(err)
@@ -60,7 +57,12 @@ func main() {
 		log.Fatalf("error writing header: %v\n", err)
 	}
 
+	nFrames := uint(0)
 	for {
+		iEvent := float64(nFrames) / 120.
+		if math.Mod(iEvent, 100) == 0 {
+			fmt.Printf("event %v\n", iEvent)
+		}
 		frame, err := r.Frame()
 		if err != nil {
 			if err != io.EOF {
@@ -75,6 +77,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("error writing frame: %v\n", err)
 		}
+		nFrames++
 	}
 
 }
