@@ -1,3 +1,5 @@
+// Package dpgadetector describes the physical structure of the test bench detector and its electronics.
+// It is based on package detector.
 package tbdetector
 
 import (

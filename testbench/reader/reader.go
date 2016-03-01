@@ -1,3 +1,4 @@
+// Package reader implements structures and functions to read test bench data.
 package reader
 
 import (
