@@ -1,9 +1,7 @@
-avirm/analysis-go
+avirm/analysis-go [![GoDoc](https://godoc.org/github.com/ebusato/analysis-go?status.svg)](https://godoc.org/github.com/ebusato/analysis-go)
 =================
 
-`analysis-go` is a set of packages used for the acquisition and the analysis of avirm data. 
-
-`analysis-go` can be used both for test bench and dpga data. 
+`analysis-go` is a set of packages used for the acquisition and the analysis of avirm data. It can be used both for dpga and test bench data. 
 
 `analysis-go` is developped using the go langage. It is based on the `gonum` and `go-hep` packages.
 
@@ -13,10 +11,35 @@ avirm/analysis-go
 $ go get gitlab.in2p3.fr/avirm/analysis-go
 ```
 
-## Documentation
+## Structure and usage
 
-Documentation can be found here (it is under construction): 
-[![GoDoc](https://godoc.org/github.com/ebusato/analysis-go?status.svg)](https://godoc.org/github.com/ebusato/analysis-go)
+`analysis-go` contains several packages.
+
+Packages specific to the `dpga` are in the dpga directory.
+
+Packages specific to the test bench are in the `testbench` directory.
+
+Packages `detector` and `pulse` are common to the dpga and test bench.
+
+## DPGA
+
+* The DAQ of the dpga detector is performed using the `dpga/godaq` package. 
+
+  This package implements an executable that can be run the retrieve the data delivered by the CPU card and write them on disk. 
+  While doing this, several cross checks are performed to check the data integrity.
+
+  For testing and development purposes, it can retrieve data produced by the `dpga/rw/sendtosocket` executable.
+
+* The Pedestals of the dpga detector are computed using the `dpga/computePedestals` package.
+
+* The analysis of the dpga data is performed using the `dpga/analysis` package.
+
+## Test bench
+
+* The Pedestals of the test bench detector are computed using the `testbench/computePedestals` package.
+
+* The analysis of the dpga data is performed using the `testbench/analysis` package.
+
 
 
 
