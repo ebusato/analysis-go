@@ -11,7 +11,7 @@ avirm/analysis-go [![GoDoc](https://godoc.org/github.com/ebusato/analysis-go?sta
 $ go get gitlab.in2p3.fr/avirm/analysis-go
 ```
 
-## Structure and usage
+## Package structure
 
 `analysis-go` contains several packages.
 
@@ -21,7 +21,7 @@ Packages specific to the test bench are in the `testbench` directory.
 
 Packages `detector` and `pulse` are common to the dpga and test bench.
 
-## DPGA
+## DPGA packages
 
 * The DAQ of the dpga detector is performed using the `dpga/godaq` package. 
   This package implements an executable that can be run the retrieve the data delivered by the CPU card and write them on disk. 
@@ -33,12 +33,18 @@ Packages `detector` and `pulse` are common to the dpga and test bench.
 
 * The analysis of the dpga data is performed using the `dpga/analysis` package.
 
-## Test bench
+## Test bench packages
 
 * The Pedestals of the test bench detector are computed using the `testbench/computePedestals` package.
 
 * The analysis of the dpga data is performed using the `testbench/analysis` package.
 
+## Common packages
+
+* `pulse` implements structures and functions for analysing and plotting pulses.
+
+* `detector` describes the detector compononents common to the dpga and test bench apparatus: capacitors, channels, quartets, drs, etc.
+  Components specific to the dpga and test bench apparatus are defined in the `dpga/dpgadetector` and `testbench/tbdetector` respectively.
 
 
 
