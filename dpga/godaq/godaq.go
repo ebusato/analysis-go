@@ -65,39 +65,32 @@ func main() {
 	}
 
 	// Start goroutines
-	const N = 2
+	const N = 1
 	var wg sync.WaitGroup
 	wg.Add(N)
 
 	terminateStream := make(chan bool)
-	streamIsEnded := make(chan bool)
 	commandIsEnded := make(chan bool)
 
-	go control(terminateStream, streamIsEnded, commandIsEnded, &wg)
-	go stream(terminateStream, streamIsEnded, r, w, noEvents, &wg)
+	go control(terminateStream, commandIsEnded)
+	go stream(terminateStream, r, w, noEvents, &wg)
 	go command(commandIsEnded)
 	wg.Wait()
 }
 
-func control(terminateStream chan bool, streamIsEnded chan bool, commandIsEnded chan bool, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func control(terminateStream chan bool, commandIsEnded chan bool) {
 	for {
 		select {
-		case <-streamIsEnded:
-			fmt.Printf("stream is stopped, terminating.\n")
-			return
 		case <-commandIsEnded:
 			fmt.Printf("command is ended, terminating stream.\n")
 			terminateStream <- true
-			//return
 		default:
 			// do nothing
 		}
 	}
 }
 
-func stream(terminateStream chan bool, streamIsEnded chan bool, r *rw.Reader, w *rw.Writer, noEvents *uint, wg *sync.WaitGroup) {
+func stream(terminateStream chan bool, r *rw.Reader, w *rw.Writer, noEvents *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
 	nFrames := uint(0)
 	for {
@@ -132,10 +125,7 @@ func stream(terminateStream chan bool, streamIsEnded chan bool, r *rw.Reader, w 
 				nFrames++
 			case false:
 				fmt.Println("reaching specified number of events, stopping.")
-				streamIsEnded <- true
 				return
-				//	*noEvents = iEvent + 1
-
 			}
 		}
 	}
@@ -152,7 +142,6 @@ func command(commandIsEnded chan bool) {
 		case "stop":
 			fmt.Println("stopping run")
 			commandIsEnded <- true
-			return
 		}
 	}
 }
