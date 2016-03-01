@@ -1,7 +1,11 @@
 avirm/analysis-go [![GoDoc](https://godoc.org/github.com/ebusato/analysis-go?status.svg)](https://godoc.org/github.com/ebusato/analysis-go)
 =================
 
-`analysis-go` is a set of packages used for the acquisition and the analysis of avirm data. It can be used both for dpga and test bench data. 
+`analysis-go` is a set of packages used for the acquisition and the analysis of avirm data. 
+
+It can be used both for dpga and test bench data. 
+It has been developped in order to be as general as possible.
+It should be easy to implement the acquisition and analysis of future detectors (MCPPMT or any other) using this package.
 
 `analysis-go` is developped using the go langage. It is based on the `gonum` and `go-hep` packages.
 
