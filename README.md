@@ -7,6 +7,9 @@ It can be used both for dpga and test bench data.
 It has been developped in order to be as general as possible.
 It should be easy to implement the acquisition and analysis of future detectors (MCPPMT or any other) using this package.
 
+Also, `analysis-go` is independent of the acquisition system. 
+It is currently used for data acquired with the VME system but can also be used for data acquired with the microTCA system whenever it's ready.
+
 `analysis-go` is developped using the go langage. It is based on the `gonum` and `go-hep` packages.
 
 ## Installation
