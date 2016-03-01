@@ -24,7 +24,6 @@ Packages `detector` and `pulse` are common to the dpga and test bench.
 ## DPGA
 
 * The DAQ of the dpga detector is performed using the `dpga/godaq` package. 
-
   This package implements an executable that can be run the retrieve the data delivered by the CPU card and write them on disk. 
   While doing this, several cross checks are performed to check the data integrity.
 
