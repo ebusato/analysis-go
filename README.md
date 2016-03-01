@@ -13,6 +13,8 @@ $ go get gitlab.in2p3.fr/avirm/analysis-go
 
 ## Documentation
 
-Documentation will soon be made available
+Documentation can be found here (it is under construction): 
+[![GoDoc](https://godoc.org/github.com/ebusato/analysis-go?status.svg)](https://godoc.org/github.com/ebusato/analysis-go)
+
 
 
