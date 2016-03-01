@@ -111,8 +111,8 @@ func (c *Channel) Capacitor(iCapacitor uint16) *Capacitor {
 }
 
 // PlotStat should be used to set Channel.plotStat to true (by default to false).
-// When set to true, the number of samples used to compute pedestals is plotted rather 
-// the pedestal mean and standard deviation of the pedestals. 
+// When set to true, the number of samples used to compute pedestals is plotted rather
+// the pedestal mean and standard deviation of the pedestals.
 func (c *Channel) PlotStat(plotStat bool) {
 	c.plotStat = plotStat
 }
@@ -186,38 +186,44 @@ func (c *Channel) SetID(id uint8) {
 	c.id = id
 }
 
-// AbsID288 return the channel absolute id (0 -> 287)
+// AbsID288 returns the channel absolute id (0 -> 287).
 func (c *Channel) AbsID288() uint16 {
 	return c.absid288
 }
 
-// SetAbsID288 sets the channel absolute id
+// SetAbsID288 sets the channel absolute id (0 -> 287).
 func (c *Channel) SetAbsID288(id uint16) {
 	c.absid288 = id
 }
 
+// AbsID240 returns the channel absolute id (0 -> 239).
 func (c *Channel) AbsID240() uint16 {
 	return c.absid240
 }
 
+// SetAbsID240 sets the channel absolute id (0 -> 239).
 func (c *Channel) SetAbsID240(id uint16) {
 	c.absid240 = id
 }
 
+// FifoID returns the fifo id.
 func (c *Channel) FifoID() uint16 {
 	return c.fifoid
 }
 
+// SetFifoID sets the fifo id.
 func (c *Channel) SetFifoID(id uint16) {
 	c.fifoid = id
 }
 
+// SetCoord sets the cartesian coordinates for this channel.
 func (c *Channel) SetCoord(x, y, z float64) {
 	c.coord.x = x
 	c.coord.y = y
 	c.coord.z = z
 }
 
+// Print print channel informations.
 func (c *Channel) Print() {
 	fmt.Printf("   o Channel: id = %v absid288 = %v absid240 = %v coord = (%v, %v, %v) (address=%p)\n", c.id, c.absid288, c.absid240, c.coord.x, c.coord.y, c.coord.z, c)
 	for i := range c.capacitors {
@@ -225,19 +231,24 @@ func (c *Channel) Print() {
 	}
 }
 
+// Quartet describes a quartet.
+// A quartet is made of 4 channels.
 type Quartet struct {
 	channels [4]Channel
 	id       uint8
 }
 
+// SetID sets the quartet id.
 func (q *Quartet) SetID(id uint8) {
 	q.id = id
 }
 
+// ID returns the quartet id.
 func (q *Quartet) ID() uint8 {
 	return q.id
 }
 
+// Print prints quartet informations.
 func (q *Quartet) Print() {
 	fmt.Printf("  - Quartet: id= %v (address=%p)\n", q.id, q)
 	for i := range q.channels {
@@ -245,14 +256,19 @@ func (q *Quartet) Print() {
 	}
 }
 
+// Channels returns an array with the four channels for this quartet.
 func (q *Quartet) Channels() [4]Channel {
 	return q.channels
 }
 
+// Channel returns the channel corresponding to the given index.
 func (q *Quartet) Channel(iChannel uint8) *Channel {
 	return &q.channels[iChannel]
 }
 
+// PlotPedestals plots pedestals for this quartet.
+// If plotStat is true, the statistics used to compute pedestals are plotted.
+// Otherwise the pedestals are plotted.
 func (q *Quartet) PlotPedestals(plotStat bool, text string) {
 	for i := range q.channels {
 		q.channels[i].PlotStat(plotStat)
@@ -304,6 +320,8 @@ func (q *Quartet) PlotPedestals(plotStat bool, text string) {
 	}
 }
 
+// DRS describes a DRS chip of the ASM cards.
+// A DRS treats signals of 2 quartets.
 type DRS struct {
 	// A DRS is made of 8 channels (in fact 9 but the 9-th is not used)
 	// The first four and last four channels correspond to two different quartets
@@ -311,6 +329,7 @@ type DRS struct {
 	id       uint8
 }
 
+// Print prints DRS informations.
 func (d *DRS) Print() {
 	fmt.Printf(" * DRS: id = %v (address=%p)\n", d.id, d)
 	for i := range d.quartets {
@@ -318,24 +337,30 @@ func (d *DRS) Print() {
 	}
 }
 
+// SetID sets the DRS id.
 func (d *DRS) SetID(id uint8) {
 	d.id = id
 }
 
+// Quartets returns an array with the 2 quartets of this DRS.
 func (d *DRS) Quartets() [2]Quartet {
 	return d.quartets
 }
 
+// Quartet returns the quartet corresponding to the given index.
 func (d *DRS) Quartet(iQuartet uint8) *Quartet {
 	return &d.quartets[iQuartet]
 }
 
+// ASMCard describes an ASM card.
+// An ASMCard is made of 3 DRS.
 type ASMCard struct {
 	// An ASM card is made of 3 DRS, one on each mezzanine
 	drss [3]DRS
 	id   uint8
 }
 
+// Print prints the ASMCard informations.
 func (a *ASMCard) Print() {
 	fmt.Printf("+ ASM: id = %v (address=%p)\n", a.id, a)
 	for i := range a.drss {
@@ -343,10 +368,12 @@ func (a *ASMCard) Print() {
 	}
 }
 
+// DRSs returns an array with the 3 DRS for this ASMCard.
 func (a *ASMCard) DRSs() [3]DRS {
 	return a.drss
 }
 
+// DRS returns the DRS corresponding to the given index.
 func (a *ASMCard) DRS(iDRS uint8) *DRS {
 	return &a.drss[iDRS]
 }

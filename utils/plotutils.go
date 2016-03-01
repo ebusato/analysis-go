@@ -1,3 +1,4 @@
+// Package utils defines a few utilities for plotting.
 package utils
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/gonum/plot/vg/draw"
 )
 
+// H1DToGonum converts hbook.H1D objects to plotter.Histogram objects.
 func H1DToGonum(histo ...hbook.H1D) []plotter.Histogram {
 	output := make([]plotter.Histogram, len(histo))
 	for i, h := range histo {
@@ -24,6 +26,7 @@ func H1DToGonum(histo ...hbook.H1D) []plotter.Histogram {
 	return output
 }
 
+// H1dToHplot converts hbook.H1D objects to hplot.Histogram objects.
 func H1dToHplot(lineStyle draw.LineStyle, histo ...hbook.H1D) []hplot.Histogram {
 	output := make([]hplot.Histogram, len(histo))
 	for i := range histo {
@@ -42,6 +45,7 @@ func H1dToHplot(lineStyle draw.LineStyle, histo ...hbook.H1D) []hplot.Histogram 
 	return output
 }
 
+// H1dptrToHplot converts hbook.H1D objects to hplot.Histogram objects.
 func H1dptrToHplot(lineStyle draw.LineStyle, histos ...*hbook.H1D) []hplot.Histogram {
 	var output []hplot.Histogram
 	for i := range histos {
@@ -62,6 +66,7 @@ func H1dptrToHplot(lineStyle draw.LineStyle, histos ...*hbook.H1D) []hplot.Histo
 	return output
 }
 
+// MakeHPlot makes a hplot with hbook.H1D objects.
 func MakeHPlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
 	p, err := hplot.New()
 	if err != nil {
@@ -82,6 +87,7 @@ func MakeHPlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D)
 	}
 }
 
+// MakeHPl makes a hplot with hplot.Histogram objects.
 func MakeHPl(xTitle string, yTitle string, outFile string, hHplot ...hplot.Histogram) {
 	p, err := hplot.New()
 	if err != nil {
@@ -101,6 +107,7 @@ func MakeHPl(xTitle string, yTitle string, outFile string, hHplot ...hplot.Histo
 	}
 }
 
+// MakeGonumPlot makes a plot with hbook.H1D objects.
 func MakeGonumPlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
 	p, err := plot.New()
 	if err != nil {
