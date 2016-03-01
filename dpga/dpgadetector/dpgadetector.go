@@ -1,3 +1,5 @@
+// Package dpgadetector describes the physical structure of the dpga detector and its electronics.
+// It is based on package detector.
 package dpgadetector
 
 import (
