@@ -1,3 +1,4 @@
+// Package analysis is used to perform the dpga data analysis.
 package main
 
 import (
