@@ -35,7 +35,7 @@ Packages `detector` and `pulse` are common to the dpga and test bench.
   While doing this, several cross checks are performed to check the data integrity.
   For testing and development purposes, it can retrieve data produced by the `dpga/rw/sendtosocket` executable.
 
-* The Pedestals of the dpga detector are computed using the `dpga/computePedestals` package.
+* The pedestals of the dpga detector are computed using the `dpga/computePedestals` package.
 
 * The analysis of the dpga data is performed using the `dpga/analysis` package.
 
