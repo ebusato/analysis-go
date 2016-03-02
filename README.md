@@ -22,7 +22,7 @@ $ go get gitlab.in2p3.fr/avirm/analysis-go
 
 `analysis-go` contains several packages.
 
-Packages specific to the `dpga` are in the dpga directory.
+Packages specific to the dpga are in the `dpga` directory.
 
 Packages specific to the test bench are in the `testbench` directory.
 
@@ -31,7 +31,7 @@ Packages `detector` and `pulse` are common to the dpga and test bench.
 ## DPGA packages
 
 * The DAQ of the dpga detector is performed using the `dpga/godaq` package. 
-  This package implements an executable that can be run the retrieve the data delivered by the CPU card and write them on disk. 
+  This package implements an executable that can be run to retrieve the data delivered by the CPU card and write them on disk. 
   While doing this, several cross checks are performed to check the data integrity.
   For testing and development purposes, it can retrieve data produced by the `dpga/rw/sendtosocket` executable.
 
