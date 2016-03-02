@@ -41,7 +41,7 @@ Packages `detector` and `pulse` are common to the dpga and test bench.
 
 ## Test bench packages
 
-* The Pedestals of the test bench detector are computed using the `testbench/computePedestals` package.
+* The pedestals of the test bench detector are computed using the `testbench/computePedestals` package.
 
 * The analysis of the dpga data is performed using the `testbench/analysis` package.
 
@@ -50,7 +50,7 @@ Packages `detector` and `pulse` are common to the dpga and test bench.
 * `pulse` implements structures and functions for analysing and plotting pulses.
 
 * `detector` describes the detector compononents common to the dpga and test bench apparatus: capacitors, channels, quartets, drs, etc.
-  Components specific to the dpga and test bench apparatus are defined in the `dpga/dpgadetector` and `testbench/tbdetector` respectively.
+  Components specific to the dpga and test bench apparatus are defined in the `dpga/dpgadetector` and `testbench/tbdetector` packages respectively.
 
 
 
