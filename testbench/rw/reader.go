@@ -169,6 +169,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 		frame1, err := r.Frame()
 		if err != nil {
 			if err == io.EOF {
+				fmt.Println("reached EOF")
 				return nil, false
 			}
 			log.Fatal("error not nil", err)
