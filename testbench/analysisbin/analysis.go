@@ -11,7 +11,7 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/applyCorrCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/event"
-	"gitlab.in2p3.fr/avirm/analysis-go/testbench/reader"
+	"gitlab.in2p3.fr/avirm/analysis-go/testbench/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
 )
 
@@ -25,9 +25,7 @@ func main() {
 		//outFileNameGlobal = flag.String("oG", "output/globalEventVariables.csv", "Name of the output file containing global event variables")
 		noEvents         = flag.Uint("n", 10, "Number of events to process")
 		applyCorrections = flag.Bool("corr", false, "Do corrections and calibration or not")
-		inputType        = reader.HexInput
 	)
-	flag.Var(&inputType, "inType", "Type of input file (possible values: Dec,Hex,Bin)")
 
 	flag.Parse()
 
@@ -51,13 +49,16 @@ func main() {
 		tbdetector.Det.ReadPedestalsFile("../calibConstants/pedestals.csv")
 	}
 
-	s := reader.NewScanner(bufio.NewScanner(file))
+	r, err := rw.NewReader(bufio.NewReader(file))
+	if err != nil {
+		log.Fatalf("could not open asm file: %v\n", err)
+	}
 
 	var data event.Data
 
 	dqplot := dq.NewDQPlot()
 
-	for event, status := s.ReadNextEvent(inputType); status && event.ID < *noEvents; event, status = s.ReadNextEvent(inputType) {
+	for event, status := r.ReadNextEvent(); status && event.ID < *noEvents; event, status = r.ReadNextEvent() {
 		if event.ID%500 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
@@ -76,8 +77,8 @@ func main() {
 	//data.PrintPulsesToFile(*outFileNamePulses)
 	//data.PrintGlobalVarsToFile(*outFileNameGlobal)
 	dqplot.Finalize()
-	dqplot.WriteHistosToFile("../dqref/dqplots_ref.gob")
-	dqplot.WriteGob("dqplots.gob")
+	//dqplot.WriteHistosToFile("../dqref/dqplots_ref.gob")
+	//dqplot.WriteGob("dqplots.gob")
 	data.PlotPulses(pulse.XaxisTime, false, true)
 	data.PlotAmplitudeCorrelationWithinCluster()
 }
