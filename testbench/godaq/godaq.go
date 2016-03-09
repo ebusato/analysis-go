@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/rw"
 )
 
@@ -23,6 +24,7 @@ func main() {
 		outfileName = flag.String("o", "out.bin", "Name of the output file")
 		ip          = flag.String("ip", "192.168.100.11", "IP address")
 		port        = flag.String("p", "1024", "Port number")
+		monFreq     = flag.Uint("f", 1500, "Monitoring frequency")
 	)
 
 	flag.Parse()
@@ -71,10 +73,13 @@ func main() {
 
 	terminateStream := make(chan bool)
 	commandIsEnded := make(chan bool)
+	cframe1 := make(chan rw.Frame)
+	cframe2 := make(chan rw.Frame)
 
 	go control(terminateStream, commandIsEnded)
-	go stream(terminateStream, r, w, noEvents, &wg)
+	go stream(terminateStream, cframe1, cframe2, r, w, noEvents, monFreq, &wg)
 	go command(commandIsEnded)
+	go monitoring(cframe1, cframe2)
 	wg.Wait()
 }
 
@@ -90,7 +95,7 @@ func control(terminateStream chan bool, commandIsEnded chan bool) {
 	}
 }
 
-func stream(terminateStream chan bool, r *rw.Reader, w *rw.Writer, noEvents *uint, wg *sync.WaitGroup) {
+func stream(terminateStream chan bool, cframe1 chan rw.Frame, cframe2 chan rw.Frame, r *rw.Reader, w *rw.Writer, noEvents *uint, monFreq *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
 	nFrames := uint(0)
 	for {
@@ -102,7 +107,7 @@ func stream(terminateStream chan bool, r *rw.Reader, w *rw.Writer, noEvents *uin
 		default:
 			switch iEvent < *noEvents {
 			case true:
-				if math.Mod(float64(nFrames)/2., 100) == 0 {
+				if math.Mod(float64(nFrames)/2., 1) == 0 {
 					fmt.Printf("event %v\n", iEvent)
 				}
 				//start := time.Now()
@@ -122,6 +127,18 @@ func stream(terminateStream chan bool, r *rw.Reader, w *rw.Writer, noEvents *uin
 				err = w.Frame(*frame)
 				if err != nil {
 					log.Fatalf("error writing frame: %v\n", err)
+				}
+				// monitoring
+				if iEvent%*monFreq == 0 {
+					if nFrames%2 == 0 {
+						//fmt.Printf("sending to cframe1; iEvent = %v, nFrames=%v\n", iEvent, nFrames)
+						cframe1 <- *frame
+						//fmt.Println("sent to cframe1", iEvent)
+					} else {
+						//fmt.Printf("sending to cframe2; iEvent = %v, nFrames=%v\n", iEvent, nFrames)
+						cframe2 <- *frame
+						//fmt.Println("sent to cframe2", iEvent)
+					}
 				}
 				nFrames++
 			case false:
@@ -144,5 +161,18 @@ func command(commandIsEnded chan bool) {
 			fmt.Println("stopping run")
 			commandIsEnded <- true
 		}
+	}
+}
+
+func monitoring(cframe1 chan rw.Frame, cframe2 chan rw.Frame) {
+	for {
+		//fmt.Println("receiving from cframe1")
+		frame1 := <-cframe1
+		//fmt.Println("receiving from cframe2")
+		frame2 := <-cframe2
+		//fmt.Println("received everything from frames")
+
+		event := rw.MakeEventFromFrames(&frame1, &frame2)
+		event.PlotPulses(pulse.XaxisTime, false)
 	}
 }

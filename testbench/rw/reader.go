@@ -127,12 +127,12 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 	}
 }
 
-func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
-	iChannel_1 := uint8(2 * f.Block.ID)
-	iChannel_2 := uint8(iChannel_1 + 1)
+func MakePulses(f *Frame) (*pulse.Pulse, *pulse.Pulse) {
+	iChannel_1 := uint8(0) //uint8(2 * f.Block.ID)
+	iChannel_2 := uint8(1) //uint8(iChannel_1 + 1)
 
 	if iChannel_1 >= 4 || iChannel_2 >= 4 {
-		panic("reader: iChannel_1 >= 4 || iChannel_2 >= 4")
+		log.Fatalf("reader: iChannel_1 >= 4 || iChannel_2 >= 4 (iChannel_1 = %v, iChannel_2 = %v)\n", iChannel_1, iChannel_2)
 	}
 
 	//fmt.Printf("iChannel_1=%v iChannel_2=%v\n", iChannel_1, iChannel_2)
@@ -163,54 +163,50 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 	return pulse1, pulse2
 }
 
-func (r *Reader) ReadNextEvent() (*event.Event, bool) {
+func MakeEventFromFrames(frame1 *Frame, frame2 *Frame) *event.Event {
 	event := event.NewEventFromID(0)
-	for iCluster := uint8(0); iCluster < tbdetector.Det.NoClusters(); iCluster++ {
-		frame1, err := r.Frame()
-		if err != nil {
-			if err == io.EOF {
-				fmt.Println("reached EOF")
-				return nil, false
-			}
-			log.Fatal("error not nil", err)
-		}
-		frame1.typeOfFrame = FirstFrameOfCluster
-		frame2, err := r.Frame()
-		if err != nil {
-			log.Fatal("error not nil")
-		}
-		frame2.typeOfFrame = SecondFrameOfCluster
+	pulse0, pulse1 := MakePulses(frame1)
+	pulse2, pulse3 := MakePulses(frame2)
 
-		// 		frame1.Print()
-		// 		frame2.Print()
-
-		evtID := uint(frame1.Block.Evt)
-		if evtID != uint(frame2.Block.Evt) {
-			log.Fatal("event IDs of two consecutive frames differ")
+	event.Cluster = *pulse.NewCluster(0, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
+	event.Cluster.Counters = make([]uint32, numCounters)
+	for i := uint8(0); i < numCounters; i++ {
+		counterf1 := frame1.Block.Counters[i]
+		counterf2 := frame2.Block.Counters[i]
+		if counterf1 != counterf2 {
+			log.Fatalf("rw: countersf1 != countersf2")
 		}
-		switch iCluster == 0 {
-		case true:
-			event.ID = evtID
-		case false:
-			if evtID != event.ID {
-				log.Fatal("error: switched to next event")
-			}
-		}
-
-		pulse0, pulse1 := MakePulses(frame1, iCluster)
-		pulse2, pulse3 := MakePulses(frame2, iCluster)
-
-		event.Cluster = *pulse.NewCluster(iCluster, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
-		event.Cluster.Counters = make([]uint32, numCounters)
-		for i := uint8(0); i < numCounters; i++ {
-			counterf1 := frame1.Block.Counters[i]
-			counterf2 := frame2.Block.Counters[i]
-			if counterf1 != counterf2 {
-				log.Fatalf("rw: countersf1 != countersf2")
-			}
-			event.Cluster.Counters[i] = counterf1
-		}
+		event.Cluster.Counters[i] = counterf1
 	}
+	return event
+}
+
+func (r *Reader) ReadNextEvent() (*event.Event, bool) {
+	frame1, err := r.Frame()
+	if err != nil {
+		if err == io.EOF {
+			fmt.Println("reached EOF")
+			return nil, false
+		}
+		log.Fatal("error not nil", err)
+	}
+	frame1.typeOfFrame = FirstFrameOfCluster
+	frame2, err := r.Frame()
+	if err != nil {
+		log.Fatal("error not nil")
+	}
+	frame2.typeOfFrame = SecondFrameOfCluster
+
+	event := MakeEventFromFrames(frame1, frame2)
+
+	// 		frame1.Print()
+	// 		frame2.Print()
+
+	evtID := uint(frame1.Block.Evt)
+	if evtID != uint(frame2.Block.Evt) {
+		log.Fatal("event IDs of two consecutive frames differ")
+	}
+	event.ID = evtID
 
 	return event, true
 }

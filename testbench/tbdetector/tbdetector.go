@@ -49,10 +49,6 @@ func (d *Detector) Print() {
 	d.asm.Print()
 }
 
-func (d *Detector) NoClusters() uint8 {
-        return uint8(1)
-}
-
 func (d *Detector) SamplingFreq() float64 {
 	return d.samplingFreq
 }
