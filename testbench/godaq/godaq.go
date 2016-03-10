@@ -23,10 +23,16 @@ var (
 	datac = make(chan Data)
 )
 
+// type Data struct {
+// 	X   float64 `json:"x"`
+// 	Sin float64 `json:"sin"`
+// 	Cos float64 `json:"cos"`
+// }
+
 type Data struct {
-	X   float64 `json:"x"`
-	Sin float64 `json:"sin"`
-	Cos float64 `json:"cos"`
+	N     int       `json:"n"`
+	Ampl1 []float64 `json:"ampl1"`
+	Ampl2 []float64 `json:"ampl2"`
 }
 
 func main() {
@@ -165,9 +171,16 @@ func stream(terminateStream chan bool, cframe1 chan rw.Frame, cframe2 chan rw.Fr
 
 					// webserver data
 					//datac <- Data{float64(frame.ID), math.Sin(float64(frame.ID)), math.Cos(float64(frame.ID))}
+					data := Data{N: len(frame.Block.Data)}
+					ampl1 := make([]float64, data.N)
+					ampl2 := make([]float64, data.N)
 					for i := range frame.Block.Data {
-						datac <- Data{float64(i), float64(frame.Block.Data[i] & 0xFFF), float64(frame.Block.Data[i] >> 16)}
+						ampl1[i] = float64(frame.Block.Data[i] & 0xFFF)
+						ampl2[i] = float64(frame.Block.Data[i] >> 16)
 					}
+					data.Ampl1 = ampl1
+					data.Ampl2 = ampl2
+					datac <- data
 				}
 				nFrames++
 			case false:
@@ -253,7 +266,9 @@ const page = `
 			sock.onmessage = function(event) {
 				var data = JSON.parse(event.data);
 				console.log("data: "+JSON.stringify(data));
-				sinplot.data.push([data.x, data.sin]);
+				for (var i = 0; i < data.n; i += 1) {
+					sinplot.data.push([i, data.ampl1(i)])
+				}
 				cosplot.data.push([data.x, data.cos]);
 				update();
 			};
@@ -284,6 +299,8 @@ const page = `
 	</body>
 </html>
 `
+
+//sinplot.data.push([data.x, data.sin]);
 
 /*
 // google chart
