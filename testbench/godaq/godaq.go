@@ -8,13 +8,26 @@ import (
 	"log"
 	"math"
 	"net"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
 
+	"golang.org/x/net/websocket"
+
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/rw"
 )
+
+var (
+	datac = make(chan Data)
+)
+
+type Data struct {
+	X   float64 `json:"x"`
+	Sin float64 `json:"sin"`
+	Cos float64 `json:"cos"`
+}
 
 func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
@@ -25,6 +38,7 @@ func main() {
 		ip          = flag.String("ip", "192.168.100.11", "IP address")
 		port        = flag.String("p", "1024", "Port number")
 		monFreq     = flag.Uint("f", 1500, "Monitoring frequency")
+		webad       = flag.String("webad", ":5555", "server address:port")
 	)
 
 	flag.Parse()
@@ -80,6 +94,15 @@ func main() {
 	go stream(terminateStream, cframe1, cframe2, r, w, noEvents, monFreq, &wg)
 	go command(commandIsEnded)
 	go monitoring(cframe1, cframe2)
+
+	// web server
+	http.HandleFunc("/", plotHandle)
+	http.Handle("/data", websocket.Handler(dataHandler))
+	err = http.ListenAndServe(*webad, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	wg.Wait()
 }
 
@@ -107,7 +130,7 @@ func stream(terminateStream chan bool, cframe1 chan rw.Frame, cframe2 chan rw.Fr
 		default:
 			switch iEvent < *noEvents {
 			case true:
-				if math.Mod(float64(nFrames)/2., 1) == 0 {
+				if math.Mod(float64(nFrames)/2., 100) == 0 {
 					fmt.Printf("event %v\n", iEvent)
 				}
 				//start := time.Now()
@@ -138,6 +161,12 @@ func stream(terminateStream chan bool, cframe1 chan rw.Frame, cframe2 chan rw.Fr
 						//fmt.Printf("sending to cframe2; iEvent = %v, nFrames=%v\n", iEvent, nFrames)
 						cframe2 <- *frame
 						//fmt.Println("sent to cframe2", iEvent)
+					}
+
+					// webserver data
+					//datac <- Data{float64(frame.ID), math.Sin(float64(frame.ID)), math.Cos(float64(frame.ID))}
+					for i := range frame.Block.Data {
+						datac <- Data{float64(i), float64(frame.Block.Data[i] & 0xFFF), float64(frame.Block.Data[i] >> 16)}
 					}
 				}
 				nFrames++
@@ -173,6 +202,200 @@ func monitoring(cframe1 chan rw.Frame, cframe2 chan rw.Frame) {
 		//fmt.Println("received everything from frames")
 
 		event := rw.MakeEventFromFrames(&frame1, &frame2)
-		event.PlotPulses(pulse.XaxisCapacitor, false)
+		event.PlotPulses(pulse.XaxisTime, false)
 	}
 }
+
+func plotHandle(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, page)
+}
+
+func dataHandler(ws *websocket.Conn) {
+	for data := range datac {
+		err := websocket.JSON.Send(ws, data)
+		if err != nil {
+			log.Printf("error sending data: %v\n", err)
+			return
+		}
+	}
+}
+
+const page = `
+<html>
+	<head>
+		<title>Plotting stuff with Flot</title>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
+		<script type="text/javascript">
+		var sock = null;
+		var sinplot = {
+			label: "sin(x)",
+			data: [],
+		};
+		var cosplot = {
+			label: "cos(x)",
+			data: [],
+		};
+
+		function update() {
+			var p1 = $.plot("#my-sin-plot", [sinplot]);
+			p1.setupGrid(); // needed as x-axis changes
+			p1.draw();
+
+			var cos = $.plot("#my-cos-plot", [cosplot]);
+			cos.setupGrid();
+			cos.draw();
+		};
+
+		window.onload = function() {
+			sock = new WebSocket("ws://localhost:5555/data");
+
+			sock.onmessage = function(event) {
+				var data = JSON.parse(event.data);
+				console.log("data: "+JSON.stringify(data));
+				sinplot.data.push([data.x, data.sin]);
+				cosplot.data.push([data.x, data.cos]);
+				update();
+			};
+		};
+
+		</script>
+
+		<style>
+		.my-plot-style {
+			width: 400px;
+			height: 200px;
+			font-size: 14px;
+			line-height: 1.2em;
+		}
+		</style>
+	</head>
+
+	<body>
+		<div id="header">
+			<h2>My plot</h2>
+		</div>
+
+		<div id="content">
+			<div id="my-sin-plot" class="my-plot-style"></div>
+			<br>
+			<div id="my-cos-plot" class="my-plot-style"></div>
+		</div>
+	</body>
+</html>
+`
+
+/*
+// google chart
+const page = `
+<html>
+	<head>
+		<title>Plotting stuff with Google-Charts</title>
+		<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+		<script type="text/javascript">
+			google.charts.load('current', {packages: ['corechart', 'line']});
+			google.charts.setOnLoadCallback(initDrawSin);
+			google.charts.setOnLoadCallback(initDrawCos);
+
+			var sindata = null;
+			var sinplot = null;
+			function initDrawSin() {
+				sindata = new google.visualization.DataTable();
+				sindata.addColumn("number", "time");
+				sindata.addColumn("number", "sine");
+
+				sinplot = new google.charts.Line(document.getElementById("my-sin-plot"));
+				drawSin();
+			};
+
+			var cosdata = null;
+			var cosplot = null;
+			function initDrawCos() {
+				cosdata = new google.visualization.DataTable();
+				cosdata.addColumn("number", "time");
+				cosdata.addColumn("number", "cosine");
+
+				cosplot = new google.charts.Line(document.getElementById("my-cos-plot"));
+				drawCos();
+			};
+
+			function drawSin() {
+				sinplot.draw(sindata, {
+					hAxis: {
+						title: "Time",
+					},
+					vAxis: {
+						title: "Sine",
+					},
+					legend: {
+						position: "none",
+					},
+					chart: {
+						title: "Sine",
+					},
+				});
+			};
+
+			function drawCos() {
+				cosplot.draw(cosdata, {
+					hAxis: {
+						title: "Time",
+					},
+					vAxis: {
+						title: "Cosine",
+					},
+					legend: {
+						position: "none",
+					},
+					chart: {
+						title: "Cosine",
+					},
+				});
+			};
+
+
+			var sock = null;
+
+			function update() {
+				drawSin();
+				drawCos();
+			};
+
+			window.onload = function() {
+				sock = new WebSocket("ws://localhost:5555/data");
+
+				sock.onmessage = function(event) {
+					var data = JSON.parse(event.data);
+					console.log("data: "+JSON.stringify(data));
+					sindata.addRows([[data.x, data.sin]]);
+					cosdata.addRows([[data.x, data.cos]]);
+					update();
+				};
+			};
+
+		</script>
+
+		<style>
+		.my-plot-style {
+			width: 400px;
+			height: 200px;
+			font-size: 14px;
+			line-height: 1.2em;
+		}
+		</style>
+	</head>
+
+	<body>
+		<div id="header">
+			<h2>My plot</h2>
+		</div>
+
+		<div id="content">
+			<div id="my-sin-plot" class="my-plot-style"></div>
+			<br>
+			<div id="my-cos-plot" class="my-plot-style"></div>
+		</div>
+	</body>
+</html>
+`
+*/

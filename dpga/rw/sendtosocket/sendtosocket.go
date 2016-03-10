@@ -20,6 +20,7 @@ func main() {
 		fileName = flag.String("i", "", "Input file name")
 		ip       = flag.String("ip", "localhost", "IP address")
 		port     = flag.String("p", "5555", "Port number")
+		freq     = flag.Uint("freq", 100, "Event number printing frequency")
 	)
 
 	flag.Parse()
@@ -60,7 +61,7 @@ func main() {
 	nFrames := uint(0)
 	for {
 		iEvent := float64(nFrames) / 120.
-		if math.Mod(iEvent, 100) == 0 {
+		if math.Mod(iEvent, float64(*freq)) == 0 {
 			fmt.Printf("event %v\n", iEvent)
 		}
 		frame, err := r.Frame()

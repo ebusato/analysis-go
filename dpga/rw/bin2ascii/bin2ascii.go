@@ -29,7 +29,7 @@ func main() {
 
 	r, err := rw.NewReader(bufio.NewReader(f))
 	if err != nil {
-		log.Fatalf("could not open asm file: %v\n", err)
+		log.Fatalf("could not create reader: %v\n", err)
 	}
 
 	hdr := r.Header()
