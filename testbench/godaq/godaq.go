@@ -173,6 +173,6 @@ func monitoring(cframe1 chan rw.Frame, cframe2 chan rw.Frame) {
 		//fmt.Println("received everything from frames")
 
 		event := rw.MakeEventFromFrames(&frame1, &frame2)
-		event.PlotPulses(pulse.XaxisTime, false)
+		event.PlotPulses(pulse.XaxisCapacitor, false)
 	}
 }

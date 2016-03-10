@@ -23,6 +23,7 @@ func NewDetector() *Detector {
 	det := &Detector{
 		scintillator: "LYSO",
 		samplingFreq: 0.200,
+		//samplingFreq: 1,
 	}
 	for iDRS := range det.asm.DRSs() {
 		drs := det.asm.DRS(uint8(iDRS))
