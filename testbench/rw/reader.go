@@ -59,6 +59,9 @@ func (r *Reader) read(v interface{}) {
 		return
 	}
 	r.err = binary.Read(r.r, binary.BigEndian, v)
+	if r.Debug {
+		fmt.Printf("word = %x\n", *(v.(*uint32)))
+	}
 }
 
 func (r *Reader) readFrame(f *Frame) {
@@ -66,9 +69,6 @@ func (r *Reader) readFrame(f *Frame) {
 		fmt.Printf("rw: start reading frame\n")
 	}
 	r.read(&f.ID)
-	if r.Debug {
-		fmt.Printf("rw: frame id = %v\n", f.ID)
-	}
 	if f.ID == lastFrame {
 		r.err = io.EOF
 		return
@@ -106,9 +106,6 @@ func (r *Reader) readBlockHeader(blk *Block) {
 	r.read(&ctrl)
 	if ctrl != blockHeader && r.err == nil {
 		r.err = fmt.Errorf("asm: missing 0xCAFEDECA magic")
-	}
-	if r.Debug {
-		fmt.Printf("rw: reading block header %v %v %x\n", blk.Evt, blk.ID, ctrl)
 	}
 }
 

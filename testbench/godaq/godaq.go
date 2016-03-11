@@ -43,8 +43,10 @@ func main() {
 		outfileName = flag.String("o", "out.bin", "Name of the output file")
 		ip          = flag.String("ip", "192.168.100.11", "IP address")
 		port        = flag.String("p", "1024", "Port number")
-		monFreq     = flag.Uint("f", 1500, "Monitoring frequency")
-		webad       = flag.String("webad", ":5555", "server address:port")
+		monFreq     = flag.Uint("mf", 1500, "Monitoring frequency")
+		evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
+		debug       = flag.Bool("d", false, "If set, debugging informations are printed")
+		//webad       = flag.String("webad", ":5555", "server address:port")
 	)
 
 	flag.Parse()
@@ -96,18 +98,22 @@ func main() {
 	cframe1 := make(chan rw.Frame)
 	cframe2 := make(chan rw.Frame)
 
+	if *debug {
+		r.Debug = true
+	}
+
 	go control(terminateStream, commandIsEnded)
-	go stream(terminateStream, cframe1, cframe2, r, w, noEvents, monFreq, &wg)
+	go stream(terminateStream, cframe1, cframe2, r, w, noEvents, monFreq, evtFreq, &wg)
 	go command(commandIsEnded)
 	go monitoring(cframe1, cframe2)
 
 	// web server
-	http.HandleFunc("/", plotHandle)
-	http.Handle("/data", websocket.Handler(dataHandler))
-	err = http.ListenAndServe(*webad, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// 	http.HandleFunc("/", plotHandle)
+	// 	http.Handle("/data", websocket.Handler(dataHandler))
+	// 	err = http.ListenAndServe(*webad, nil)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
 
 	wg.Wait()
 }
@@ -124,7 +130,7 @@ func control(terminateStream chan bool, commandIsEnded chan bool) {
 	}
 }
 
-func stream(terminateStream chan bool, cframe1 chan rw.Frame, cframe2 chan rw.Frame, r *rw.Reader, w *rw.Writer, noEvents *uint, monFreq *uint, wg *sync.WaitGroup) {
+func stream(terminateStream chan bool, cframe1 chan rw.Frame, cframe2 chan rw.Frame, r *rw.Reader, w *rw.Writer, noEvents *uint, monFreq *uint, evtFreq *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
 	nFrames := uint(0)
 	for {
@@ -136,7 +142,7 @@ func stream(terminateStream chan bool, cframe1 chan rw.Frame, cframe2 chan rw.Fr
 		default:
 			switch iEvent < *noEvents {
 			case true:
-				if math.Mod(float64(nFrames)/2., 100) == 0 {
+				if math.Mod(float64(nFrames)/2., float64(*evtFreq)) == 0 {
 					fmt.Printf("event %v\n", iEvent)
 				}
 				//start := time.Now()
@@ -171,16 +177,16 @@ func stream(terminateStream chan bool, cframe1 chan rw.Frame, cframe2 chan rw.Fr
 
 					// webserver data
 					//datac <- Data{float64(frame.ID), math.Sin(float64(frame.ID)), math.Cos(float64(frame.ID))}
-					data := Data{N: len(frame.Block.Data)}
-					ampl1 := make([]float64, data.N)
-					ampl2 := make([]float64, data.N)
-					for i := range frame.Block.Data {
-						ampl1[i] = float64(frame.Block.Data[i] & 0xFFF)
-						ampl2[i] = float64(frame.Block.Data[i] >> 16)
-					}
-					data.Ampl1 = ampl1
-					data.Ampl2 = ampl2
-					datac <- data
+					// 					data := Data{N: len(frame.Block.Data)}
+					// 					ampl1 := make([]float64, data.N)
+					// 					ampl2 := make([]float64, data.N)
+					// 					for i := range frame.Block.Data {
+					// 						ampl1[i] = float64(frame.Block.Data[i] & 0xFFF)
+					// 						ampl2[i] = float64(frame.Block.Data[i] >> 16)
+					// 					}
+					// 					data.Ampl1 = ampl1
+					// 					data.Ampl2 = ampl2
+					// 					datac <- data
 				}
 				nFrames++
 			case false:
