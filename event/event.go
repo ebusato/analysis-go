@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
@@ -13,15 +12,15 @@ type Event struct {
 	ID       uint
 }
 
-func NewEvent() *Event {
+func NewEvent(noClusters uint8) *Event {
 	return &Event{
-		Clusters: make([]pulse.Cluster, dpgadetector.Det.NoClusters()),
+		Clusters: make([]pulse.Cluster, noClusters),
 		ID:       0,
 	}
 }
 
 func (e *Event) Copy() *Event {
-	newevent := NewEvent()
+	newevent := NewEvent(uint8(e.NoClusters()))
 	newevent.ID = e.ID
 	for i := range e.Clusters {
 		oldPulses := e.Clusters[i].Pulses
@@ -52,6 +51,10 @@ func (e *Event) CheckIntegrity() {
 			}
 		}
 	}
+}
+
+func (e *Event) NoClusters() int {
+	return len(e.Clusters)
 }
 
 func (e *Event) Print(detailed bool) {

@@ -50,8 +50,8 @@ func main() {
 	fmt.Printf("Informations for file %v\n", *infileName)
 	fmt.Printf("  -> number of frames = %v", nFrames)
 	if nFrames%2 != 0 {
-		fmt.Printf(" (WARNING: not a multiple of 2)")
+		fmt.Printf(" (WARNING: not a multiple of 12)")
 	}
 	fmt.Printf("\n")
-	fmt.Printf("  -> number of events = %v\n", nFrames/2)
+	fmt.Printf("  -> number of events = %v\n", nFrames/12)
 }

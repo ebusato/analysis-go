@@ -35,6 +35,7 @@ func NewDetector() *Detector {
 				ch := quartet.Channel(uint8(iChannel))
 				ch.SetName("PMT" + strconv.FormatUint(uint64(iChannel), 10))
 				ch.SetID(uint8(iChannel))
+				ch.SetFifoID(FifoID(uint8(iDRS), uint8(iQuartet), uint8(iChannel)))
 				for iCapacitor := range ch.Capacitors() {
 					capa := ch.Capacitor(uint16(iCapacitor))
 					capa.SetID(uint16(iCapacitor))
@@ -54,6 +55,10 @@ func (d *Detector) NoClusters() uint8 {
 	return uint8(6)
 }
 
+func FifoID(iDRS uint8, iQuartet uint8, iChannel uint8) uint16 {
+	return uint16(iChannel/2 + iQuartet*2 + iDRS*4)
+}
+
 func (d *Detector) SamplingFreq() float64 {
 	return d.samplingFreq
 }
@@ -62,12 +67,12 @@ func (d *Detector) Capacitor(iChannel uint8, iCapacitor uint16) *detector.Capaci
 	return d.asm.DRS(0).Quartet(0).Channel(iChannel).Capacitor(iCapacitor)
 }
 
-func (d *Detector) Channel(iChannel uint8) *detector.Channel {
-	return d.asm.DRS(0).Quartet(0).Channel(iChannel)
+func (d *Detector) Channel(iDRS uint8, iQuartet uint8, iChannel uint8) *detector.Channel {
+	return d.asm.DRS(iDRS).Quartet(iQuartet).Channel(iChannel)
 }
 
-func (d *Detector) Quartet() *detector.Quartet {
-	return d.asm.DRS(0).Quartet(0)
+func (d *Detector) Quartet(iDRS uint8, iQuartet uint8) *detector.Quartet {
+	return d.asm.DRS(iDRS).Quartet(iQuartet)
 }
 
 func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
@@ -87,10 +92,21 @@ func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
 }
 
 func (d *Detector) PlotPedestals(plotStat bool) {
-	d.Quartet().PlotPedestals(plotStat, strconv.FormatUint(uint64(d.Quartet().ID()), 10))
+	for iDRS := range d.asm.DRSs() {
+		drs := d.asm.DRS(uint8(iDRS))
+		for iQuartet := range drs.Quartets() {
+			quartet := drs.Quartet(uint8(iQuartet))
+			text := fmt.Sprintf("iDRS%v_iQuartet%v",
+				strconv.FormatUint(uint64(iDRS), 10),
+				strconv.FormatUint(uint64(iQuartet), 10))
+			quartet.PlotPedestals(plotStat, text)
+		}
+	}
 }
 
 type PedestalCSV struct {
+	IDRS       uint8
+	IQuartet   uint8
 	IChannel   uint8
 	ICapacitor uint16
 	Mean       float64
@@ -112,20 +128,25 @@ func (d *Detector) WritePedestalsToFile(outFileName string) {
 		log.Fatalf("error writing header: %v\n", err)
 	}
 
-	for iChannel := range d.Quartet().Channels() {
-		quartet := d.Quartet()
-		ch := quartet.Channel(uint8(iChannel))
-		for iCapacitor := range ch.Capacitors() {
-			capa := ch.Capacitor(uint16(iCapacitor))
-			data := PedestalCSV{
-				IChannel:   uint8(iChannel),
-				ICapacitor: uint16(iCapacitor),
-				Mean:       capa.PedestalMean(),
-				StdDev:     capa.PedestalStdDev(),
-			}
-			err = tbl.WriteRow(data)
-			if err != nil {
-				log.Fatalf("error writing row: %v\n", err)
+	for iDRS := range d.asm.DRSs() {
+		drs := d.asm.DRS(uint8(iDRS))
+		for iQuartet := range drs.Quartets() {
+			quartet := drs.Quartet(uint8(iQuartet))
+			for iChannel := range quartet.Channels() {
+				ch := quartet.Channel(uint8(iChannel))
+				for iCapacitor := range ch.Capacitors() {
+					capa := ch.Capacitor(uint16(iCapacitor))
+					data := PedestalCSV{
+						IChannel:   uint8(iChannel),
+						ICapacitor: uint16(iCapacitor),
+						Mean:       capa.PedestalMean(),
+						StdDev:     capa.PedestalStdDev(),
+					}
+					err = tbl.WriteRow(data)
+					if err != nil {
+						log.Fatalf("error writing row: %v\n", err)
+					}
+				}
 			}
 		}
 	}

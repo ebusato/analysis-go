@@ -7,7 +7,7 @@ import (
 	"log"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
@@ -201,12 +201,12 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 }
 
 func (r *Reader) ReadNextEvent() (*event.Event, bool) {
-	event := event.NewEvent()
-	for iCluster := uint8(0); iCluster < dpgadetector.Det.NoClusters(); iCluster++ {
+	event := event.NewEvent(dpgadetector.Det.NoClusters())
+	for iCluster := uint8(0); iCluster < event.NoClusters(); iCluster++ {
 		frame1, err := r.Frame()
 		if err != nil {
-		        if err == io.EOF {
-			       return nil, false
+			if err == io.EOF {
+				return nil, false
 			}
 			log.Fatal("error not nil", err)
 		}

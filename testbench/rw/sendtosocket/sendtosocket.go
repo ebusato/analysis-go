@@ -60,7 +60,7 @@ func main() {
 
 	nFrames := uint(0)
 	for {
-		iEvent := float64(nFrames) / 2.
+		iEvent := float64(nFrames) / 12.
 		if math.Mod(iEvent, float64(*freq)) == 0 {
 			fmt.Printf("event %v\n", iEvent)
 		}

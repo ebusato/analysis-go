@@ -59,7 +59,7 @@ func main() {
 	dqplot := dq.NewDQPlot()
 
 	for event, status := r.ReadNextEvent(); status && event.ID < *noEvents; event, status = r.ReadNextEvent() {
-		if event.ID%500 == 0 {
+		if event.ID%100 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
 		if *applyCorrections {

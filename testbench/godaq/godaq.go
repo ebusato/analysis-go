@@ -4,9 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"io"
 	"log"
-	"math"
 	"net"
 	"net/http"
 	"os"
@@ -15,6 +13,8 @@ import (
 
 	"golang.org/x/net/websocket"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/rw"
 )
 
@@ -94,17 +94,16 @@ func main() {
 
 	terminateStream := make(chan bool)
 	commandIsEnded := make(chan bool)
-	cframe1 := make(chan rw.Frame)
-	cframe2 := make(chan rw.Frame)
+	cevent := make(chan event.Event)
 
 	if *debug {
 		r.Debug = true
 	}
 
 	go control(terminateStream, commandIsEnded)
-	go stream(terminateStream, cframe1, cframe2, r, w, noEvents, monFreq, evtFreq, &wg)
+	go stream(terminateStream, cevent, r, w, noEvents, monFreq, evtFreq, &wg)
 	go command(commandIsEnded)
-	//go monitoring(cframe1, cframe2)
+	go monitoring(cevent)
 
 	// web server
 	// 	http.HandleFunc("/", plotHandle)
@@ -129,11 +128,12 @@ func control(terminateStream chan bool, commandIsEnded chan bool) {
 	}
 }
 
-func stream(terminateStream chan bool, cframe1 chan rw.Frame, cframe2 chan rw.Frame, r *rw.Reader, w *rw.Writer, noEvents *uint, monFreq *uint, evtFreq *uint, wg *sync.WaitGroup) {
+func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w *rw.Writer, noEvents *uint, monFreq *uint, evtFreq *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
-	nFrames := uint(0)
+	//nFrames := uint(0)
+	iEvent := uint(0)
 	for {
-		iEvent := nFrames / 12
+		//iEvent := nFrames / 12
 		select {
 		case <-terminateStream:
 			*noEvents = iEvent + 1
@@ -141,55 +141,61 @@ func stream(terminateStream chan bool, cframe1 chan rw.Frame, cframe2 chan rw.Fr
 		default:
 			switch iEvent < *noEvents {
 			case true:
-				if math.Mod(float64(nFrames)/12., float64(*evtFreq)) == 0 {
+				if iEvent%*evtFreq == 0 {
 					fmt.Printf("event %v\n", iEvent)
 				}
-				//start := time.Now()
-				frame, err := r.Frame()
-				//frame.Print("short")
-				//duration := time.Since(start)
-				// 				//time.Sleep(1 * time.Millisecond)S
-				if err != nil {
-					if err != io.EOF {
-						log.Fatalf("error loading frame: %v\n", err)
-					}
-					if frame.ID != rw.LastFrame() {
-						log.Fatalf("invalid last frame id. got=%d. want=%d", frame.ID, rw.LastFrame())
-					}
-					break
+				event, status := r.ReadNextEvent()
+				if status == false {
+					panic("error: status is false\n")
 				}
-				err = w.Frame(*frame)
-				if err != nil {
-					log.Fatalf("error writing frame: %v\n", err)
-				}
-				// monitoring
-				/*
-					if iEvent%*monFreq == 0 {
-						if nFrames%2 == 0 {
-							//fmt.Printf("sending to cframe1; iEvent = %v, nFrames=%v\n", iEvent, nFrames)
-							cframe1 <- *frame
-							//fmt.Println("sent to cframe1", iEvent)
-						} else {
-							//fmt.Printf("sending to cframe2; iEvent = %v, nFrames=%v\n", iEvent, nFrames)
-							cframe2 <- *frame
-							//fmt.Println("sent to cframe2", iEvent)
-						}
+				w.Event(event)
 
-						// webserver data
-						//datac <- Data{float64(frame.ID), math.Sin(float64(frame.ID)), math.Cos(float64(frame.ID))}
-						// 					data := Data{N: len(frame.Block.Data)}
-						// 					ampl1 := make([]float64, data.N)
-						// 					ampl2 := make([]float64, data.N)
-						// 					for i := range frame.Block.Data {
-						// 						ampl1[i] = float64(frame.Block.Data[i] & 0xFFF)
-						// 						ampl2[i] = float64(frame.Block.Data[i] >> 16)
-						// 					}
-						// 					data.Ampl1 = ampl1
-						// 					data.Ampl2 = ampl2
-						// 					datac <- data
-					}
+				/*
+					 // old stuff, could eventually be removed
+						if math.Mod(float64(nFrames)/12., float64(*evtFreq)) == 0 {
+							fmt.Printf("event %v\n", iEvent)
+						}
+						//start := time.Now()
+						frame, err := r.Frame()
+						//frame.Print("short")
+						//duration := time.Since(start)
+						// 				//time.Sleep(1 * time.Millisecond)S
+						if err != nil {
+							if err != io.EOF {
+								log.Fatalf("error loading frame: %v\n", err)
+							}
+							if frame.ID != rw.LastFrame() {
+								log.Fatalf("invalid last frame id. got=%d. want=%d", frame.ID, rw.LastFrame())
+							}
+							break
+						}
+						err = w.Frame(*frame)
+						if err != nil {
+							log.Fatalf("error writing frame: %v\n", err)
+						}
 				*/
-				nFrames++
+				// monitoring
+
+				if iEvent%*monFreq == 0 {
+					cevent <- *event
+
+					// webserver data
+					//datac <- Data{float64(frame.ID), math.Sin(float64(frame.ID)), math.Cos(float64(frame.ID))}
+					// 					data := Data{N: len(frame.Block.Data)}
+					// 					ampl1 := make([]float64, data.N)
+					// 					ampl2 := make([]float64, data.N)
+					// 					for i := range frame.Block.Data {
+					// 						ampl1[i] = float64(frame.Block.Data[i] & 0xFFF)
+					// 						ampl2[i] = float64(frame.Block.Data[i] >> 16)
+					// 					}
+					// 					data.Ampl1 = ampl1
+					// 					data.Ampl2 = ampl2
+					// 					datac <- data
+				}
+
+				// old stuff, could eventually be removed
+				//nFrames++
+				iEvent++
 			case false:
 				fmt.Println("reaching specified number of events, stopping.")
 				return
@@ -213,20 +219,13 @@ func command(commandIsEnded chan bool) {
 	}
 }
 
-/*
-func monitoring(cframe1 chan rw.Frame, cframe2 chan rw.Frame) {
+func monitoring(cevent chan event.Event) {
 	for {
 		//fmt.Println("receiving from cframe1")
-		frame1 := <-cframe1
-		//fmt.Println("receiving from cframe2")
-		frame2 := <-cframe2
-		//fmt.Println("received everything from frames")
-
-		event := rw.MakeEventFromFrames(&frame1, &frame2)
-		event.PlotPulses(pulse.XaxisTime, false)
+		event := <-cevent
+		event.Clusters[0].PlotPulses(0, pulse.XaxisCapacitor, false)
 	}
 }
-*/
 
 func plotHandle(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, page)

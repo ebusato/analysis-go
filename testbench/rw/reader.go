@@ -142,8 +142,36 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 
 	//fmt.Printf("iChannel_1=%v iChannel_2=%v\n", iChannel_1, iChannel_2)
 
-	detChannel1 := tbdetector.Det.Channel(iChannel_1)
-	detChannel2 := tbdetector.Det.Channel(iChannel_2)
+	iDRS := uint8(0)
+	iQuartet := uint8(0)
+	if iChannel_1 >= 4 && iChannel_1 <= 7 {
+		iChannel_1 -= 4
+		iChannel_2 -= 4
+		iQuartet = 1
+	} else if iChannel_1 >= 8 && iChannel_1 <= 11 {
+		iChannel_1 -= 8
+		iChannel_2 -= 8
+		iQuartet = 0
+		iDRS = 1
+	} else if iChannel_1 >= 12 && iChannel_1 <= 15 {
+		iChannel_1 -= 12
+		iChannel_2 -= 12
+		iQuartet = 1
+		iDRS = 1
+	} else if iChannel_1 >= 16 && iChannel_1 <= 19 {
+		iChannel_1 -= 16
+		iChannel_2 -= 16
+		iQuartet = 0
+		iDRS = 2
+	} else if iChannel_1 >= 20 && iChannel_1 <= 23 {
+		iChannel_1 -= 20
+		iChannel_2 -= 20
+		iQuartet = 1
+		iDRS = 2
+	}
+
+	detChannel1 := tbdetector.Det.Channel(iDRS, iQuartet, iChannel_1)
+	detChannel2 := tbdetector.Det.Channel(iDRS, iQuartet, iChannel_2)
 
 	pulse1 := pulse.NewPulse(detChannel1)
 	pulse2 := pulse.NewPulse(detChannel2)
@@ -169,8 +197,8 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 }
 
 func (r *Reader) ReadNextEvent() (*event.Event, bool) {
-	event := event.NewEvent()
-	for iCluster := uint8(0); iCluster < tbdetector.Det.NoClusters(); iCluster++ {
+	event := event.NewEvent(tbdetector.Det.NoClusters())
+	for iCluster := uint8(0); iCluster < uint8(event.NoClusters()); iCluster++ {
 		frame1, err := r.Frame()
 		if err != nil {
 			if err == io.EOF {
@@ -185,8 +213,8 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 		}
 		frame2.typeOfFrame = SecondFrameOfCluster
 
-		// 		frame1.Print()
-		// 		frame2.Print()
+		//frame1.Print("medium")
+		//frame2.Print("medium")
 
 		evtID := uint(frame1.Block.Evt)
 		if evtID != uint(frame2.Block.Evt) {
@@ -206,14 +234,14 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 
 		event.Clusters[iCluster] = *pulse.NewCluster(iCluster, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
 		event.Clusters[iCluster].Counters = make([]uint32, numCounters)
-		for i := uint8(0); i < numCounters; i++ {
-			counterf1 := frame1.Block.Counters[i]
-			counterf2 := frame2.Block.Counters[i]
-			if counterf1 != counterf2 {
-				log.Fatalf("rw: countersf1 != countersf2")
-			}
-			event.Clusters[iCluster].Counters[i] = counterf1
-		}
+		// 		for i := uint8(0); i < numCounters; i++ {
+		// 			counterf1 := frame1.Block.Counters[i]
+		// 			counterf2 := frame2.Block.Counters[i]
+		// 			if counterf1 != counterf2 {
+		// 				log.Fatalf("rw: countersf1 != countersf2")
+		// 			}
+		// 			event.Clusters[iCluster].Counters[i] = counterf1
+		// 		}
 	}
 
 	return event, true

@@ -30,7 +30,7 @@ func (h *Header) Print() {
 // Each block is associated to one fifo
 type Block struct {
 	Evt uint32 // event id
-	ID  uint32 // ID of fifo (0 -> 143)
+	ID  uint32 // ID of fifo
 
 	Data     []uint32
 	SRout    uint32

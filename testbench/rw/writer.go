@@ -5,9 +5,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	//"log"
+	"log"
 
-	//"gitlab.in2p3.fr/avirm/analysis-go/testbench/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 )
 
 // Writer wraps an io.Writer and writes an ASM stream.
@@ -131,12 +131,10 @@ func (w *Writer) writeBlockData(blk *Block) {
 	}
 }
 
-/*
 func (w *Writer) Event(event *event.Event) {
-	iframe := 0
 	for i := range event.Clusters {
-		if iframe >= 2 {
-			log.Fatalf("rw: iframe out of range")
+		if i >= 6 {
+			log.Fatalf("rw: i out of range (=%v)", i)
 		}
 
 		frame1 := Frame{ID: w.frameCounter}
@@ -192,7 +190,5 @@ func (w *Writer) Event(event *event.Event) {
 
 		w.Frame(frame1)
 		w.Frame(frame2)
-		iframe += 2
 	}
 }
-*/
