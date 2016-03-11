@@ -223,7 +223,7 @@ func monitoring(cevent chan event.Event) {
 	for {
 		//fmt.Println("receiving from cframe1")
 		event := <-cevent
-		event.Clusters[0].PlotPulses(0, pulse.XaxisCapacitor, false)
+		event.Clusters[0].PlotPulses(0, pulse.XaxisIndex, false)
 	}
 }
 

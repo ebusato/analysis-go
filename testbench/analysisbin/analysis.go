@@ -79,6 +79,6 @@ func main() {
 	dqplot.Finalize()
 	//dqplot.WriteHistosToFile("../dqref/dqplots_ref.gob")
 	//dqplot.WriteGob("dqplots.gob")
-	data.PlotPulses(pulse.XaxisCapacitor, false)
+	data.PlotPulses(pulse.XaxisIndex, false)
 	data.PlotAmplitudeCorrelationWithinCluster()
 }
