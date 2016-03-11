@@ -2,7 +2,7 @@
 // For the moment, only the pedestal correction is implemented.
 package applyCorrCalib
 
-import "gitlab.in2p3.fr/avirm/analysis-go/dpga/event"
+import "gitlab.in2p3.fr/avirm/analysis-go/event"
 
 func RemovePedestal(e *event.Event) *event.Event {
 	newevent := e.Copy()

@@ -8,7 +8,7 @@ import (
 	"github.com/go-hep/hbook"
 	"github.com/gonum/plot/vg"
 	"github.com/gonum/plot/vg/draw"
-	"gitlab.in2p3.fr/avirm/analysis-go/testbench/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
@@ -81,7 +81,7 @@ func NewDQPlotFromGob(fileName string) *DQPlot {
 }
 
 func (d *DQPlot) FillHistos(event *event.Event) {
-	cluster := &event.Cluster
+	cluster := &event.Clusters[0]
 	d.Nevents++
 	d.HSRout.Fill(float64(cluster.SRout()), 1)
 	d.HClusterCharge.Fill(float64(cluster.Charge()), 1)

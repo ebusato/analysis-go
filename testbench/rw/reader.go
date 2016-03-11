@@ -6,8 +6,8 @@ import (
 	"io"
 	"log"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
-	"gitlab.in2p3.fr/avirm/analysis-go/testbench/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
 )
 
@@ -132,12 +132,12 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 	}
 }
 
-func MakePulses(f *Frame) (*pulse.Pulse, *pulse.Pulse) {
-	iChannel_1 := uint8(0) //uint8(2 * f.Block.ID)
-	iChannel_2 := uint8(1) //uint8(iChannel_1 + 1)
+func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
+	iChannel_1 := uint8(2 * f.Block.ID)
+	iChannel_2 := uint8(iChannel_1 + 1)
 
-	if iChannel_1 >= 4 || iChannel_2 >= 4 {
-		log.Fatalf("reader: iChannel_1 >= 4 || iChannel_2 >= 4 (iChannel_1 = %v, iChannel_2 = %v)\n", iChannel_1, iChannel_2)
+	if iChannel_1 >= 24 || iChannel_2 >= 24 {
+		log.Fatalf("reader: iChannel_1 >= 24 || iChannel_2 >= 24 (iChannel_1 = %v, iChannel_2 = %v)\n", iChannel_1, iChannel_2)
 	}
 
 	//fmt.Printf("iChannel_1=%v iChannel_2=%v\n", iChannel_1, iChannel_2)
@@ -168,7 +168,100 @@ func MakePulses(f *Frame) (*pulse.Pulse, *pulse.Pulse) {
 	return pulse1, pulse2
 }
 
-func MakeEventFromFrames(frame1 *Frame, frame2 *Frame) *event.Event {
+func (r *Reader) ReadNextEvent() (*event.Event, bool) {
+	event := event.NewEvent()
+	for iCluster := uint8(0); iCluster < tbdetector.Det.NoClusters(); iCluster++ {
+		frame1, err := r.Frame()
+		if err != nil {
+			if err == io.EOF {
+				return nil, false
+			}
+			log.Fatal("error not nil", err)
+		}
+		frame1.typeOfFrame = FirstFrameOfCluster
+		frame2, err := r.Frame()
+		if err != nil {
+			log.Fatal("error not nil")
+		}
+		frame2.typeOfFrame = SecondFrameOfCluster
+
+		// 		frame1.Print()
+		// 		frame2.Print()
+
+		evtID := uint(frame1.Block.Evt)
+		if evtID != uint(frame2.Block.Evt) {
+			log.Fatal("event IDs of two consecutive frames differ")
+		}
+		switch iCluster == 0 {
+		case true:
+			event.ID = evtID
+		case false:
+			if evtID != event.ID {
+				log.Fatal("error: switched to next event")
+			}
+		}
+
+		pulse0, pulse1 := MakePulses(frame1, iCluster)
+		pulse2, pulse3 := MakePulses(frame2, iCluster)
+
+		event.Clusters[iCluster] = *pulse.NewCluster(iCluster, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
+		event.Clusters[iCluster].Counters = make([]uint32, numCounters)
+		for i := uint8(0); i < numCounters; i++ {
+			counterf1 := frame1.Block.Counters[i]
+			counterf2 := frame2.Block.Counters[i]
+			if counterf1 != counterf2 {
+				log.Fatalf("rw: countersf1 != countersf2")
+			}
+			event.Clusters[iCluster].Counters[i] = counterf1
+		}
+	}
+
+	return event, true
+}
+
+/*
+// Old stuff used when tb considered only 4 channels
+// Could eventually be removed
+func MakePulses(f *Frame) (*pulse.Pulse, *pulse.Pulse) {
+	//iChannel_1 := uint8(0)
+	//iChannel_2 := uint8(1)
+	iChannel_1 := uint8(2 * f.Block.ID)
+	iChannel_2 := uint8(iChannel_1 + 1)
+
+	if iChannel_1 >= 24 || iChannel_2 >= 24 {
+		log.Fatalf("reader: iChannel_1 >= 24 || iChannel_2 >= 24 (iChannel_1 = %v, iChannel_2 = %v)\n", iChannel_1, iChannel_2)
+	}
+
+	//fmt.Printf("iChannel_1=%v iChannel_2=%v\n", iChannel_1, iChannel_2)
+
+	detChannel1 := tbdetector.Det.Channel(iChannel_1)
+	detChannel2 := tbdetector.Det.Channel(iChannel_2)
+
+	pulse1 := pulse.NewPulse(detChannel1)
+	pulse2 := pulse.NewPulse(detChannel2)
+
+	b := &f.Block
+	pulse1.SRout = uint16(b.SRout)
+	pulse2.SRout = uint16(b.SRout)
+
+	for i := range b.Data {
+		word := b.Data[i]
+
+		ampl2 := float64(word & 0xFFF)
+		ampl1 := float64(word >> 16)
+
+		sample1 := pulse.NewSample(ampl1, uint16(i), float64(i)*tbdetector.Det.SamplingFreq())
+		sample2 := pulse.NewSample(ampl2, uint16(i), float64(i)*tbdetector.Det.SamplingFreq())
+
+		pulse1.AddSample(sample1, tbdetector.Det.Capacitor(pulse1.Channel.ID(), sample1.CapaIndex(pulse1.SRout)))
+		pulse2.AddSample(sample2, tbdetector.Det.Capacitor(pulse2.Channel.ID(), sample2.CapaIndex(pulse2.SRout)))
+	}
+
+	return pulse1, pulse2
+}
+
+
+func MakeEventFromFrames(frames *[12]Frame) *event.Event {
 	event := event.NewEventFromID(0)
 	pulse0, pulse1 := MakePulses(frame1)
 	pulse2, pulse3 := MakePulses(frame2)
@@ -215,3 +308,4 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 
 	return event, true
 }
+*/

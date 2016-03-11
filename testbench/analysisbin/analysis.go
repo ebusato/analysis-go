@@ -7,10 +7,10 @@ import (
 	"log"
 	"os"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
-	"gitlab.in2p3.fr/avirm/analysis-go/testbench/applyCorrCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/dq"
-	"gitlab.in2p3.fr/avirm/analysis-go/testbench/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
 )
@@ -79,6 +79,6 @@ func main() {
 	dqplot.Finalize()
 	//dqplot.WriteHistosToFile("../dqref/dqplots_ref.gob")
 	//dqplot.WriteGob("dqplots.gob")
-	data.PlotPulses(pulse.XaxisTime, false, true)
+	data.PlotPulses(pulse.XaxisCapacitor, false)
 	data.PlotAmplitudeCorrelationWithinCluster()
 }
