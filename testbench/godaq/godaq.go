@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math"
 	"net"
 	"net/http"
 	"os"
@@ -23,17 +22,18 @@ var (
 	datac = make(chan Data)
 )
 
-/*
-type XY struct {
-	XX float64 `json:"xx"`
-	Y  float64 `json:"y"`
-}*/
+// type Data struct {
+// 	X    float64      `json:"x"`
+// 	Sin  float64      `json:"sin"`
+// 	Cos  float64      `json:"cos"`
+// 	SinF [][2]float64 `json:"sinf"`
+// }
 
 type Data struct {
-	X    float64      `json:"x"`
-	Sin  float64      `json:"sin"`
-	Cos  float64      `json:"cos"`
-	SinF [][2]float64 `json:"sinf"`
+	Pulse0 [][2]float64 `json:"pulse0"`
+	Pulse1 [][2]float64 `json:"pulse1"`
+	Pulse2 [][2]float64 `json:"pulse2"`
+	Pulse3 [][2]float64 `json:"pulse3"`
 }
 
 func main() {
@@ -105,7 +105,7 @@ func main() {
 	go control(terminateStream, commandIsEnded)
 	go stream(terminateStream, cevent, r, w, noEvents, monFreq, evtFreq, &wg)
 	go command(commandIsEnded)
-	go monitoring(cevent)
+	//go monitoring(cevent)
 
 	//web server
 	http.HandleFunc("/", plotHandle)
@@ -187,20 +187,13 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 
 				// monitoring
 				if iEvent%*monFreq == 0 {
-					cevent <- *event
-
+					//cevent <- *event
 					// webserver data
-					// 					xy := make([]XY, 10)
-					// 					for index := range xy {
-					// 						xy[index] = XY{float64(index), math.Sin(float64(index))}
-					// 					}
-					// 					datac <- Data{float64(event.ID), math.Sin(float64(event.ID)), math.Cos(float64(event.ID)), xy}
-					/*sinf := make([][2]float64, 999)
-					for index := range sinf {
-						sinf[index] = [2]float64{float64(index), math.Sin(float64(index))}
-					}*/
-					myd := GetMonData(event.Clusters[0].Pulses[0])
-					datac <- Data{float64(event.ID), math.Sin(float64(event.ID)), math.Cos(float64(event.ID)), myd}
+					pulse0 := GetMonData(event.Clusters[0].Pulses[0])
+					pulse1 := GetMonData(event.Clusters[0].Pulses[1])
+					pulse2 := GetMonData(event.Clusters[0].Pulses[2])
+					pulse3 := GetMonData(event.Clusters[0].Pulses[3])
+					datac <- Data{Pulse0: pulse0, Pulse1: pulse1, Pulse2: pulse2, Pulse3: pulse3}
 				}
 
 				// old stuff, could eventually be removed
@@ -259,23 +252,67 @@ const page = `
 		<script src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
 		<script type="text/javascript">
 		var sock = null;
-		var sinplot = {
-			label: "sin(x)",
+		var pulse0plot = {
+			label: "channel 0",
 			data: [],
 		};
-		var cosplot = {
-			label: "cos(x)",
+		var pulse1plot = {
+			label: "channel 1",
 			data: [],
 		};
-
+		var pulse2plot = {
+			label: "channel 2",
+			data: [],
+		};
+		var pulse3plot = {
+			label: "channel 3",
+			data: [],
+		};
+		var optionspulse0 = {
+			series: {
+				stack: true,
+			},
+			yaxis: { min: 0, max: 4096 },
+			xaxis: { tickDecimals: 0 }
+		};
+		optionspulse0.colors = ['blue'];
+		var optionspulse1 = {
+			series: {
+				stack: true,
+			},
+			yaxis: { min: 0, max: 4096 },
+			xaxis: { tickDecimals: 0 }
+		};
+		optionspulse1.colors = ['red'];
+		var optionspulse2 = {
+			series: {
+				stack: true,
+			},
+			yaxis: { min: 0, max: 4096 },
+			xaxis: { tickDecimals: 0 }
+		};
+		optionspulse2.colors = ['black'];
+		var optionspulse3 = {
+			series: {
+				stack: true,
+			},
+			yaxis: { min: 0, max: 4096 },
+			xaxis: { tickDecimals: 0 }
+		};
+		optionspulse3.colors = ['green'];
 		function update() {
-			var p1 = $.plot("#my-sin-plot", [sinplot]);
-			p1.setupGrid(); // needed as x-axis changes
+			var p0 = $.plot("#my-pulse0-plot", [pulse0plot], optionspulse0);
+			p0.setupGrid(); // needed as x-axis changes
+			p0.draw();
+			var p1 = $.plot("#my-pulse1-plot", [pulse1plot], optionspulse1);
+			p1.setupGrid();
 			p1.draw();
-
-			var cos = $.plot("#my-cos-plot", [cosplot]);
-			cos.setupGrid();
-			cos.draw();
+			var p2 = $.plot("#my-pulse2-plot", [pulse2plot], optionspulse2);
+			p2.setupGrid();
+			p2.draw();
+			var p3 = $.plot("#my-pulse3-plot", [pulse3plot], optionspulse3);
+			p3.setupGrid();
+			p3.draw();
 		};
 
 		window.onload = function() {
@@ -285,11 +322,16 @@ const page = `
 				var data = JSON.parse(event.data);
 				console.log("data: "+JSON.stringify(data));
 				for (var i = 0; i < 999; i += 1) {
-					sinplot.data.push([data.sinf[i][0], data.sinf[i][1]]);
+					pulse0plot.data.push([data.pulse0[i][0], data.pulse0[i][1]]);
+					pulse1plot.data.push([data.pulse1[i][0], data.pulse1[i][1]]);
+					pulse2plot.data.push([data.pulse2[i][0], data.pulse2[i][1]]);
+					pulse3plot.data.push([data.pulse3[i][0], data.pulse3[i][1]]);
 				}
-				cosplot.data.push([data.x, data.cos]);
 				update();
-				sinplot.data = []
+				pulse0plot.data = []
+				pulse1plot.data = []
+				pulse2plot.data = []
+				pulse3plot.data = []
 			};
 		};
 
@@ -307,13 +349,17 @@ const page = `
 
 	<body>
 		<div id="header">
-			<h2>My plot</h2>
+			<h2>Test bench monitoring</h2>
 		</div>
 
 		<div id="content">
-			<div id="my-sin-plot" class="my-plot-style"></div>
+			<div id="my-pulse0-plot" class="my-plot-style"></div>
 			<br>
-			<div id="my-cos-plot" class="my-plot-style"></div>
+			<div id="my-pulse1-plot" class="my-plot-style"></div>
+			<br>
+			<div id="my-pulse2-plot" class="my-plot-style"></div>
+			<br>
+			<div id="my-pulse3-plot" class="my-plot-style"></div>
 		</div>
 	</body>
 </html>
