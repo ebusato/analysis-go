@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/net/websocket"
 
@@ -30,6 +31,8 @@ var (
 // }
 
 type Data struct {
+	Time   float64      `json:"time"` // time at which monitoring data are taken
+	Freq   float64      `json:"freq"` // number of events processed per second
 	Pulse0 [][2]float64 `json:"pulse0"`
 	Pulse1 [][2]float64 `json:"pulse1"`
 	Pulse2 [][2]float64 `json:"pulse2"`
@@ -142,6 +145,9 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 	defer wg.Done()
 	//nFrames := uint(0)
 	iEvent := uint(0)
+	noEventsForMon := uint64(0)
+	start := time.Now()
+	startabs := start
 	for {
 		//iEvent := nFrames / 12
 		select {
@@ -188,17 +194,28 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				// monitoring
 				if iEvent%*monFreq == 0 {
 					//cevent <- *event
-					// webserver data
+					// Webserver data
+					stop := time.Now()
+					duration := stop.Sub(start).Seconds()
+					start = stop
+					time := stop.Sub(startabs).Seconds()
+					freq := float64(noEventsForMon) / duration
+					if iEvent == 0 {
+						freq = 0
+					}
+					//fmt.Println("data:", time, noEventsForMon, duration, freq)
 					pulse0 := GetMonData(event.Clusters[0].Pulses[0])
 					pulse1 := GetMonData(event.Clusters[0].Pulses[1])
 					pulse2 := GetMonData(event.Clusters[0].Pulses[2])
 					pulse3 := GetMonData(event.Clusters[0].Pulses[3])
-					datac <- Data{Pulse0: pulse0, Pulse1: pulse1, Pulse2: pulse2, Pulse3: pulse3}
+					datac <- Data{Time: time, Freq: freq, Pulse0: pulse0, Pulse1: pulse1, Pulse2: pulse2, Pulse3: pulse3}
+					noEventsForMon = 0
 				}
 
 				// old stuff, could eventually be removed
 				//nFrames++
 				iEvent++
+				noEventsForMon++
 			case false:
 				fmt.Println("reaching specified number of events, stopping.")
 				return
@@ -252,20 +269,24 @@ const page = `
 		<script src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
 		<script type="text/javascript">
 		var sock = null;
+		var freqplot = {
+			label: "frequency (Hz)",
+			data: [],
+		};
 		var pulse0plot = {
-			label: "channel 0",
+			label: "channel 0 (ampl. vs sample index)",
 			data: [],
 		};
 		var pulse1plot = {
-			label: "channel 1",
+			label: "channel 1 (ampl. vs sample index)",
 			data: [],
 		};
 		var pulse2plot = {
-			label: "channel 2",
+			label: "channel 2 (ampl. vs sample index)",
 			data: [],
 		};
 		var pulse3plot = {
-			label: "channel 3",
+			label: "channel 3 (ampl. vs sample index)",
 			data: [],
 		};
 		var optionspulse0 = {
@@ -301,8 +322,11 @@ const page = `
 		};
 		optionspulse3.colors = ['green'];
 		function update() {
+			var freq = $.plot("#my-freq-plot", [freqplot]);
+			freq.setupGrid(); // needed as x-axis changes
+			freq.draw();
 			var p0 = $.plot("#my-pulse0-plot", [pulse0plot], optionspulse0);
-			p0.setupGrid(); // needed as x-axis changes
+			p0.setupGrid();
 			p0.draw();
 			var p1 = $.plot("#my-pulse1-plot", [pulse1plot], optionspulse1);
 			p1.setupGrid();
@@ -321,6 +345,9 @@ const page = `
 			sock.onmessage = function(event) {
 				var data = JSON.parse(event.data);
 				console.log("data: "+JSON.stringify(data));
+				//if (data.freq != 0) {	
+					freqplot.data.push([data.time, data.freq])
+				//}
 				for (var i = 0; i < 999; i += 1) {
 					pulse0plot.data.push([data.pulse0[i][0], data.pulse0[i][1]]);
 					pulse1plot.data.push([data.pulse1[i][0], data.pulse1[i][1]]);
@@ -351,6 +378,7 @@ const page = `
 		<div id="header">
 			<h2>Test bench monitoring</h2>
 		</div>
+		<div id="my-freq-plot" class="my-plot-style"></div>
 		<table>
 			<tr>
 				<td>
