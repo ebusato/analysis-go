@@ -23,10 +23,17 @@ var (
 	datac = make(chan Data)
 )
 
+/*
+type XY struct {
+	XX float64 `json:"xx"`
+	Y  float64 `json:"y"`
+}*/
+
 type Data struct {
-	X   float64 `json:"x"`
-	Sin float64 `json:"sin"`
-	Cos float64 `json:"cos"`
+	X    float64      `json:"x"`
+	Sin  float64      `json:"sin"`
+	Cos  float64      `json:"cos"`
+	SinF [][2]float64 `json:"sinf"`
 }
 
 func main() {
@@ -123,6 +130,14 @@ func control(terminateStream chan bool, commandIsEnded chan bool) {
 	}
 }
 
+func GetMonData(pulse pulse.Pulse) [][2]float64 {
+	data := make([][2]float64, pulse.NoSamples())
+	for i := range data {
+		data[i] = [2]float64{float64(pulse.Samples[i].Index), pulse.Samples[i].Amplitude}
+	}
+	return data
+}
+
 func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w *rw.Writer, noEvents *uint, monFreq *uint, evtFreq *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
 	//nFrames := uint(0)
@@ -175,17 +190,17 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 					cevent <- *event
 
 					// webserver data
-					datac <- Data{float64(event.ID), math.Sin(float64(event.ID)), math.Cos(float64(event.ID))}
-					// 					data := Data{N: len(frame.Block.Data)}
-					// 					ampl1 := make([]float64, data.N)
-					// 					ampl2 := make([]float64, data.N)
-					// 					for i := range frame.Block.Data {
-					// 						ampl1[i] = float64(frame.Block.Data[i] & 0xFFF)
-					// 						ampl2[i] = float64(frame.Block.Data[i] >> 16)
+					// 					xy := make([]XY, 10)
+					// 					for index := range xy {
+					// 						xy[index] = XY{float64(index), math.Sin(float64(index))}
 					// 					}
-					// 					data.Ampl1 = ampl1
-					// 					data.Ampl2 = ampl2
-					// 					datac <- data
+					// 					datac <- Data{float64(event.ID), math.Sin(float64(event.ID)), math.Cos(float64(event.ID)), xy}
+					/*sinf := make([][2]float64, 999)
+					for index := range sinf {
+						sinf[index] = [2]float64{float64(index), math.Sin(float64(index))}
+					}*/
+					myd := GetMonData(event.Clusters[0].Pulses[0])
+					datac <- Data{float64(event.ID), math.Sin(float64(event.ID)), math.Cos(float64(event.ID)), myd}
 				}
 
 				// old stuff, could eventually be removed
@@ -269,9 +284,12 @@ const page = `
 			sock.onmessage = function(event) {
 				var data = JSON.parse(event.data);
 				console.log("data: "+JSON.stringify(data));
-				sinplot.data.push([data.x, data.sin]);
+				for (var i = 0; i < 999; i += 1) {
+					sinplot.data.push([data.sinf[i][0], data.sinf[i][1]]);
+				}
 				cosplot.data.push([data.x, data.cos]);
 				update();
+				sinplot.data = []
 			};
 		};
 
