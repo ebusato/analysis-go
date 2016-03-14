@@ -351,16 +351,24 @@ const page = `
 		<div id="header">
 			<h2>Test bench monitoring</h2>
 		</div>
-
-		<div id="content">
-			<div id="my-pulse0-plot" class="my-plot-style"></div>
-			<br>
-			<div id="my-pulse1-plot" class="my-plot-style"></div>
-			<br>
-			<div id="my-pulse2-plot" class="my-plot-style"></div>
-			<br>
-			<div id="my-pulse3-plot" class="my-plot-style"></div>
-		</div>
+		<table>
+			<tr>
+				<td>
+				<div id="my-pulse0-plot" class="my-plot-style"></div>
+				</td>
+				<td>
+				<div id="my-pulse1-plot" class="my-plot-style"></div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+				<div id="my-pulse2-plot" class="my-plot-style"></div>
+				</td>
+				<td>
+				<div id="my-pulse3-plot" class="my-plot-style"></div>
+				</td>
+			</tr>
+		</table>
 	</body>
 </html>
 `
