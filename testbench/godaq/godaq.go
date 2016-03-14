@@ -351,9 +351,9 @@ const page = `
 			sock.onmessage = function(event) {
 				var data = JSON.parse(event.data);
 				console.log("data: "+JSON.stringify(data));
-				//if (data.freq != 0) {	
+				if (data.freq != 0) {	
 					freqplot.data.push([data.time, data.freq])
-				//}
+				}
 				for (var i = 0; i < 999; i += 1) {
 					pulse0plot.data.push([data.pulse0[i][0], data.pulse0[i][1]]);
 					pulse1plot.data.push([data.pulse1[i][0], data.pulse1[i][1]]);
