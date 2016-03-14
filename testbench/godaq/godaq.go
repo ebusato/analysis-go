@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/toqueteos/webbrowser"
+
 	"golang.org/x/net/websocket"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
@@ -50,7 +52,7 @@ func main() {
 		monFreq     = flag.Uint("mf", 1500, "Monitoring frequency")
 		evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
 		debug       = flag.Bool("d", false, "If set, debugging informations are printed")
-		webad       = flag.String("webad", ":5555", "server address:port")
+		webad       = flag.String("webad", "localhost:5555", "server address:port")
 	)
 
 	flag.Parse()
@@ -109,6 +111,10 @@ func main() {
 	go stream(terminateStream, cevent, r, w, noEvents, monFreq, evtFreq, &wg)
 	go command(commandIsEnded)
 	//go monitoring(cevent)
+
+	url := "http://" + *webad
+	fmt.Println(url)
+	webbrowser.Open(url)
 
 	//web server
 	http.HandleFunc("/", plotHandle)
@@ -264,7 +270,7 @@ func dataHandler(ws *websocket.Conn) {
 const page = `
 <html>
 	<head>
-		<title>Plotting stuff with Flot</title>
+		<title>Test bench monitoring</title>
 		<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 		<script src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
 		<script type="text/javascript">
