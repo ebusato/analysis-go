@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -22,16 +23,10 @@ var (
 	datac = make(chan Data)
 )
 
-// type Data struct {
-// 	X   float64 `json:"x"`
-// 	Sin float64 `json:"sin"`
-// 	Cos float64 `json:"cos"`
-// }
-
 type Data struct {
-	N     int       `json:"n"`
-	Ampl1 []float64 `json:"ampl1"`
-	Ampl2 []float64 `json:"ampl2"`
+	X   float64 `json:"x"`
+	Sin float64 `json:"sin"`
+	Cos float64 `json:"cos"`
 }
 
 func main() {
@@ -45,7 +40,7 @@ func main() {
 		monFreq     = flag.Uint("mf", 1500, "Monitoring frequency")
 		evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
 		debug       = flag.Bool("d", false, "If set, debugging informations are printed")
-		//webad       = flag.String("webad", ":5555", "server address:port")
+		webad       = flag.String("webad", ":5555", "server address:port")
 	)
 
 	flag.Parse()
@@ -105,13 +100,13 @@ func main() {
 	go command(commandIsEnded)
 	go monitoring(cevent)
 
-	// web server
-	// 	http.HandleFunc("/", plotHandle)
-	// 	http.Handle("/data", websocket.Handler(dataHandler))
-	// 	err = http.ListenAndServe(*webad, nil)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
+	//web server
+	http.HandleFunc("/", plotHandle)
+	http.Handle("/data", websocket.Handler(dataHandler))
+	err = http.ListenAndServe(*webad, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	wg.Wait()
 }
@@ -149,7 +144,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 					panic("error: status is false\n")
 				}
 				w.Event(event)
-
+				// 				time.Sleep(1 * time.Second)
 				/*
 					 // old stuff, could eventually be removed
 						if math.Mod(float64(nFrames)/12., float64(*evtFreq)) == 0 {
@@ -174,13 +169,13 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							log.Fatalf("error writing frame: %v\n", err)
 						}
 				*/
-				// monitoring
 
+				// monitoring
 				if iEvent%*monFreq == 0 {
 					cevent <- *event
 
 					// webserver data
-					//datac <- Data{float64(frame.ID), math.Sin(float64(frame.ID)), math.Cos(float64(frame.ID))}
+					datac <- Data{float64(event.ID), math.Sin(float64(event.ID)), math.Cos(float64(event.ID))}
 					// 					data := Data{N: len(frame.Block.Data)}
 					// 					ampl1 := make([]float64, data.N)
 					// 					ampl2 := make([]float64, data.N)
@@ -274,9 +269,7 @@ const page = `
 			sock.onmessage = function(event) {
 				var data = JSON.parse(event.data);
 				console.log("data: "+JSON.stringify(data));
-				for (var i = 0; i < data.n; i += 1) {
-					sinplot.data.push([i, data.ampl1(i)])
-				}
+				sinplot.data.push([data.x, data.sin]);
 				cosplot.data.push([data.x, data.cos]);
 				update();
 			};
@@ -307,120 +300,3 @@ const page = `
 	</body>
 </html>
 `
-
-//sinplot.data.push([data.x, data.sin]);
-
-/*
-// google chart
-const page = `
-<html>
-	<head>
-		<title>Plotting stuff with Google-Charts</title>
-		<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-		<script type="text/javascript">
-			google.charts.load('current', {packages: ['corechart', 'line']});
-			google.charts.setOnLoadCallback(initDrawSin);
-			google.charts.setOnLoadCallback(initDrawCos);
-
-			var sindata = null;
-			var sinplot = null;
-			function initDrawSin() {
-				sindata = new google.visualization.DataTable();
-				sindata.addColumn("number", "time");
-				sindata.addColumn("number", "sine");
-
-				sinplot = new google.charts.Line(document.getElementById("my-sin-plot"));
-				drawSin();
-			};
-
-			var cosdata = null;
-			var cosplot = null;
-			function initDrawCos() {
-				cosdata = new google.visualization.DataTable();
-				cosdata.addColumn("number", "time");
-				cosdata.addColumn("number", "cosine");
-
-				cosplot = new google.charts.Line(document.getElementById("my-cos-plot"));
-				drawCos();
-			};
-
-			function drawSin() {
-				sinplot.draw(sindata, {
-					hAxis: {
-						title: "Time",
-					},
-					vAxis: {
-						title: "Sine",
-					},
-					legend: {
-						position: "none",
-					},
-					chart: {
-						title: "Sine",
-					},
-				});
-			};
-
-			function drawCos() {
-				cosplot.draw(cosdata, {
-					hAxis: {
-						title: "Time",
-					},
-					vAxis: {
-						title: "Cosine",
-					},
-					legend: {
-						position: "none",
-					},
-					chart: {
-						title: "Cosine",
-					},
-				});
-			};
-
-
-			var sock = null;
-
-			function update() {
-				drawSin();
-				drawCos();
-			};
-
-			window.onload = function() {
-				sock = new WebSocket("ws://localhost:5555/data");
-
-				sock.onmessage = function(event) {
-					var data = JSON.parse(event.data);
-					console.log("data: "+JSON.stringify(data));
-					sindata.addRows([[data.x, data.sin]]);
-					cosdata.addRows([[data.x, data.cos]]);
-					update();
-				};
-			};
-
-		</script>
-
-		<style>
-		.my-plot-style {
-			width: 400px;
-			height: 200px;
-			font-size: 14px;
-			line-height: 1.2em;
-		}
-		</style>
-	</head>
-
-	<body>
-		<div id="header">
-			<h2>My plot</h2>
-		</div>
-
-		<div id="content">
-			<div id="my-sin-plot" class="my-plot-style"></div>
-			<br>
-			<div id="my-cos-plot" class="my-plot-style"></div>
-		</div>
-	</body>
-</html>
-`
-*/

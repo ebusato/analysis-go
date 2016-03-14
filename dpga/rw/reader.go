@@ -202,7 +202,7 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 
 func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 	event := event.NewEvent(dpgadetector.Det.NoClusters())
-	for iCluster := uint8(0); iCluster < event.NoClusters(); iCluster++ {
+	for iCluster := uint8(0); iCluster < uint8(event.NoClusters()); iCluster++ {
 		frame1, err := r.Frame()
 		if err != nil {
 			if err == io.EOF {

@@ -7,7 +7,7 @@ import (
 	"io"
 	"log"
 
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 )
 
 // Writer wraps an io.Writer and writes an ASM stream.
