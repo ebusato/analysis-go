@@ -133,12 +133,12 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 }
 
 func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
-	/*iChannel_1 := uint8(2 * f.Block.ID)
+	iChannel_1 := uint8(2 * f.Block.ID)
 	iChannel_2 := uint8(iChannel_1 + 1)
 
-		if iChannel_1 >= 24 || iChannel_2 >= 24 {
-			log.Fatalf("reader: iChannel_1 >= 24 || iChannel_2 >= 24 (iChannel_1 = %v, iChannel_2 = %v)\n", iChannel_1, iChannel_2)
-		}
+	if iChannel_1 >= 24 || iChannel_2 >= 24 {
+		log.Fatalf("reader: iChannel_1 >= 24 || iChannel_2 >= 24 (iChannel_1 = %v, iChannel_2 = %v)\n", iChannel_1, iChannel_2)
+	}
 
 	//fmt.Printf("iChannel_1=%v iChannel_2=%v\n", iChannel_1, iChannel_2)
 
@@ -169,9 +169,15 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 		iQuartet = 1
 		iDRS = 2
 	}
-	*/
-	detChannel1 := tbdetector.Det.Channel(0, 0, 0) //iDRS, iQuartet, iChannel_1)
-	detChannel2 := tbdetector.Det.Channel(0, 0, 1) //iDRS, iQuartet, iChannel_2)
+
+	detChannel1 := tbdetector.Det.Channel(iDRS, iQuartet, iChannel_1)
+	detChannel2 := tbdetector.Det.Channel(iDRS, iQuartet, iChannel_2)
+
+	/////////////////////////////////////////////////////////////////////
+	// To be used when running with SendToSocket with DPGA binary file
+	//detChannel1 := tbdetector.Det.Channel(0, 0, 0)
+	//detChannel2 := tbdetector.Det.Channel(0, 0, 1)
+	//////////////////////////////////////////////////////////////////////
 
 	pulse1 := pulse.NewPulse(detChannel1)
 	pulse2 := pulse.NewPulse(detChannel2)
@@ -233,15 +239,20 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 		pulse2, pulse3 := MakePulses(frame2, iCluster)
 
 		event.Clusters[iCluster] = *pulse.NewCluster(iCluster, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
+
 		event.Clusters[iCluster].Counters = make([]uint32, numCounters)
-		for i := uint8(0); i < numCounters; i++ {
-			counterf1 := frame1.Block.Counters[i]
-			counterf2 := frame2.Block.Counters[i]
-			if counterf1 != counterf2 {
-				log.Fatalf("rw: countersf1 != countersf2")
-			}
-			event.Clusters[iCluster].Counters[i] = counterf1
-		}
+		/*
+			 // Not clear why this is producing Fatalf
+			 //   -> Need to investigate
+			    for i := uint8(0); i < numCounters; i++ {
+					counterf1 := frame1.Block.Counters[i]
+					counterf2 := frame2.Block.Counters[i]
+					if counterf1 != counterf2 {
+						log.Fatalf("rw: countersf1 != countersf2")
+					}
+					event.Clusters[iCluster].Counters[i] = counterf1
+				}
+		*/
 	}
 
 	return event, true

@@ -49,7 +49,7 @@ func main() {
 		outfileName = flag.String("o", "out.bin", "Name of the output file")
 		ip          = flag.String("ip", "192.168.100.11", "IP address")
 		port        = flag.String("p", "1024", "Port number")
-		monFreq     = flag.Uint("mf", 1500, "Monitoring frequency")
+		monFreq     = flag.Uint("mf", 50, "Monitoring frequency")
 		evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
 		debug       = flag.Bool("d", false, "If set, debugging informations are printed")
 		webad       = flag.String("webad", "localhost:5555", "server address:port")
@@ -110,21 +110,20 @@ func main() {
 	go control(terminateStream, commandIsEnded)
 	go stream(terminateStream, cevent, r, w, noEvents, monFreq, evtFreq, &wg)
 	go command(commandIsEnded)
+	go webserver(webad)
 	//go monitoring(cevent)
 
-	url := "http://" + *webad
-	fmt.Println(url)
-	webbrowser.Open(url)
+	wg.Wait()
+}
 
-	//web server
+func webserver(webad *string) {
+	webbrowser.Open("http://" + *webad)
 	http.HandleFunc("/", plotHandle)
 	http.Handle("/data", websocket.Handler(dataHandler))
-	err = http.ListenAndServe(*webad, nil)
+	err := http.ListenAndServe(*webad, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	wg.Wait()
 }
 
 func control(terminateStream chan bool, commandIsEnded chan bool) {
@@ -198,6 +197,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				*/
 
 				// monitoring
+
 				if iEvent%*monFreq == 0 {
 					//cevent <- *event
 					// Webserver data
@@ -223,7 +223,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				iEvent++
 				noEventsForMon++
 			case false:
-				fmt.Println("reaching specified number of events, stopping.")
+				fmt.Println("reached specified number of events, stopping.")
 				return
 			}
 		}
