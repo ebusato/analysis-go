@@ -262,7 +262,8 @@ func (c *Cluster) SRout() uint16 {
 	srout := c.Pulses[0].SRout
 	for i := 1; i < len(c.Pulses); i++ {
 		if srout != c.Pulses[i].SRout {
-			log.Fatalf("not all pulses have the same SRout in this event")
+			fmt.Printf("not all pulses have the same SRout in this cluster. Mismatching SRouts are %v and %v.\n", srout, c.Pulses[i].SRout)
+			log.Fatalf(" -> quitting")
 		}
 	}
 	return srout

@@ -169,59 +169,34 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				if status == false {
 					panic("error: status is false\n")
 				}
-				w.Event(event)
-				// 				time.Sleep(1 * time.Second)
-				/*
-					 // old stuff, could eventually be removed
-						if math.Mod(float64(nFrames)/12., float64(*evtFreq)) == 0 {
-							fmt.Printf("event %v\n", iEvent)
+				switch event.IsCorrupted {
+				case false:
+					w.Event(event)
+					if iEvent%*monFreq == 0 {
+						//cevent <- *event
+						// Webserver data
+						stop := time.Now()
+						duration := stop.Sub(start).Seconds()
+						start = stop
+						time := stop.Sub(startabs).Seconds()
+						freq := float64(noEventsForMon) / duration
+						if iEvent == 0 {
+							freq = 0
 						}
-						//start := time.Now()
-						frame, err := r.Frame()
-						//frame.Print("short")
-						//duration := time.Since(start)
-						// 				//time.Sleep(1 * time.Millisecond)S
-						if err != nil {
-							if err != io.EOF {
-								log.Fatalf("error loading frame: %v\n", err)
-							}
-							if frame.ID != rw.LastFrame() {
-								log.Fatalf("invalid last frame id. got=%d. want=%d", frame.ID, rw.LastFrame())
-							}
-							break
-						}
-						err = w.Frame(*frame)
-						if err != nil {
-							log.Fatalf("error writing frame: %v\n", err)
-						}
-				*/
-
-				// monitoring
-
-				if iEvent%*monFreq == 0 {
-					//cevent <- *event
-					// Webserver data
-					stop := time.Now()
-					duration := stop.Sub(start).Seconds()
-					start = stop
-					time := stop.Sub(startabs).Seconds()
-					freq := float64(noEventsForMon) / duration
-					if iEvent == 0 {
-						freq = 0
+						//fmt.Println("data:", time, noEventsForMon, duration, freq)
+						pulse0 := GetMonData(event.Clusters[0].Pulses[0])
+						pulse1 := GetMonData(event.Clusters[0].Pulses[1])
+						pulse2 := GetMonData(event.Clusters[0].Pulses[2])
+						pulse3 := GetMonData(event.Clusters[0].Pulses[3])
+						datac <- Data{Time: time, Freq: freq, Pulse0: pulse0, Pulse1: pulse1, Pulse2: pulse2, Pulse3: pulse3}
+						noEventsForMon = 0
 					}
-					//fmt.Println("data:", time, noEventsForMon, duration, freq)
-					pulse0 := GetMonData(event.Clusters[0].Pulses[0])
-					pulse1 := GetMonData(event.Clusters[0].Pulses[1])
-					pulse2 := GetMonData(event.Clusters[0].Pulses[2])
-					pulse3 := GetMonData(event.Clusters[0].Pulses[3])
-					datac <- Data{Time: time, Freq: freq, Pulse0: pulse0, Pulse1: pulse1, Pulse2: pulse2, Pulse3: pulse3}
-					noEventsForMon = 0
+					iEvent++
+					noEventsForMon++
+				case true:
+					fmt.Println("warning, event is corrupted and therefore not written to output file.")
+					log.Fatalf(" -> quitting")
 				}
-
-				// old stuff, could eventually be removed
-				//nFrames++
-				iEvent++
-				noEventsForMon++
 			case false:
 				fmt.Println("reached specified number of events, stopping.")
 				return

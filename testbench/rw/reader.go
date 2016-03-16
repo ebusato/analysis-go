@@ -2,6 +2,7 @@ package rw
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +11,9 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
 )
+
+var MissCAFEDECA = errors.New("missing 0xCAFEDECA")
+var MissBADCAFEi = errors.New("missing 0xBADCAFEi")
 
 // Reader wraps an io.Reader and reads avirm data files
 type Reader struct {
@@ -38,6 +42,24 @@ func (r *Reader) Read(data []byte) (int, error) {
 	return r.r.Read(data)
 }
 
+// read reads words from the binary file
+func (r *Reader) read(v interface{}) {
+	if r.err != nil {
+		return
+	}
+	r.err = binary.Read(r.r, binary.BigEndian, v)
+	if r.Debug {
+		fmt.Printf("word = %x\n", *(v.(*uint32)))
+	}
+}
+
+// readHeader reads the header of the binary files
+func (r *Reader) readHeader(hdr *Header) {
+	r.read(&hdr.Size)
+	r.read(&hdr.NumFrame)
+	//fmt.Printf("rw: reading header %v %v\n", hdr.Size, hdr.NumFrame)
+}
+
 // Frame reads a single frame from the underlying io.Reader.
 //
 // Frame returns io.EOF when there are no more frame to read.
@@ -54,16 +76,6 @@ func (r *Reader) Frame() (*Frame, error) {
 	return f, r.err
 }
 
-func (r *Reader) read(v interface{}) {
-	if r.err != nil {
-		return
-	}
-	r.err = binary.Read(r.r, binary.BigEndian, v)
-	if r.Debug {
-		fmt.Printf("word = %x\n", *(v.(*uint32)))
-	}
-}
-
 func (r *Reader) readFrame(f *Frame) {
 	if r.Debug {
 		fmt.Printf("rw: start reading frame\n")
@@ -75,6 +87,9 @@ func (r *Reader) readFrame(f *Frame) {
 	}
 	r.readBlock(&f.Block)
 	if r.err != nil {
+		if r.err == MissCAFEDECA || r.err == MissBADCAFEi {
+			return
+		}
 		if r.err != io.EOF {
 			log.Fatalf("error loading frame: %v\n", r.err)
 		}
@@ -82,12 +97,6 @@ func (r *Reader) readFrame(f *Frame) {
 			log.Fatalf("invalid last frame id. got=%x. want=%x", f.ID, lastFrame)
 		}
 	}
-}
-
-func (r *Reader) readHeader(hdr *Header) {
-	r.read(&hdr.Size)
-	r.read(&hdr.NumFrame)
-	//fmt.Printf("rw: reading header %v %v\n", hdr.Size, hdr.NumFrame)
 }
 
 func (r *Reader) readBlock(blk *Block) {
@@ -104,15 +113,17 @@ func (r *Reader) readBlockHeader(blk *Block) {
 	r.read(&blk.ID)
 	var ctrl uint32
 	r.read(&ctrl)
-	if ctrl != blockHeader && r.err == nil {
-		r.err = fmt.Errorf("asm: missing 0xCAFEDECA magic")
+	if ctrl != blockHeader { // && r.err == nil {
+		fmt.Println("warning: missing 0xCAFEDECA")
+		//r.err = fmt.Errorf("missing 0xCAFEDECA")
+		r.err = MissCAFEDECA
 	}
 }
 
 func (r *Reader) readBlockData(blk *Block) {
-	if r.err != nil {
-		return
-	}
+	// 	if r.err != nil {
+	// 		return
+	// 	}
 	for i := range blk.Data {
 		r.read(&blk.Data[i])
 	}
@@ -127,8 +138,10 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 	var ctrl uint32
 	r.read(&ctrl)
 	//fmt.Printf("rw: block trailer = %x\n", ctrl)
-	if (ctrl>>4) != blockTrailer && r.err == nil {
-		r.err = fmt.Errorf("asm: missing 0xBADCAFEF magic")
+	if (ctrl >> 4) != blockTrailer { //&& r.err == nil {
+		fmt.Println("warning: missing 0xBADCAFEi")
+		//r.err = fmt.Errorf("missing 0xBADCAFEi")
+		r.err = MissBADCAFEi
 	}
 }
 
@@ -207,20 +220,28 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 	for iCluster := uint8(0); iCluster < uint8(event.NoClusters()); iCluster++ {
 		frame1, err := r.Frame()
 		if err != nil {
-			if err == io.EOF {
+			switch {
+			case err == io.EOF:
 				return nil, false
+			case err == MissCAFEDECA || err == MissBADCAFEi:
+				event.IsCorrupted = true
+			default:
+				log.Fatal("error not nil")
 			}
-			log.Fatal("error not nil", err)
 		}
 		frame1.typeOfFrame = FirstFrameOfCluster
 		frame2, err := r.Frame()
 		if err != nil {
-			log.Fatal("error not nil")
+			switch {
+			case err == io.EOF:
+				return nil, false
+			case err == MissCAFEDECA || err == MissBADCAFEi:
+				event.IsCorrupted = true
+			default:
+				log.Fatal("error not nil")
+			}
 		}
 		frame2.typeOfFrame = SecondFrameOfCluster
-
-		//frame1.Print("medium")
-		//frame2.Print("medium")
 
 		evtID := uint(frame1.Block.Evt)
 		if evtID != uint(frame2.Block.Evt) {

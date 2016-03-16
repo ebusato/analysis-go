@@ -8,14 +8,16 @@ import (
 )
 
 type Event struct {
-	Clusters []pulse.Cluster
-	ID       uint
+	Clusters    []pulse.Cluster
+	ID          uint
+	IsCorrupted bool
 }
 
 func NewEvent(noClusters uint8) *Event {
 	return &Event{
-		Clusters: make([]pulse.Cluster, noClusters),
-		ID:       0,
+		Clusters:    make([]pulse.Cluster, noClusters),
+		ID:          0,
+		IsCorrupted: false,
 	}
 }
 
