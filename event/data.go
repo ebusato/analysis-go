@@ -17,6 +17,12 @@ type Data struct {
 	Events []Event
 }
 
+func NewData(cap uint) Data {
+	return Data{
+		Events: make([]Event, 0, cap),
+	}
+}
+
 func (d *Data) CheckIntegrity() {
 	for i := range d.Events {
 		d.Events[i].CheckIntegrity()
@@ -166,8 +172,8 @@ func (d *Data) PlotAmplitudeCorrelationWithinCluster() {
 func (d *Data) PlotPulses(xaxis pulse.XaxisType, pedestalRange bool) {
 	for i := range d.Events {
 		d.Events[i].PlotPulses(xaxis, pedestalRange)
-		//if i >= 10 {
-		//break
-		//}
+		if i >= 40 {
+			break
+		}
 	}
 }

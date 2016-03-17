@@ -23,7 +23,13 @@ func main() {
 		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
 		//outFileNamePulses = flag.String("oP", "output/pulses.csv", "Name of the output file containing pulse data")
 		//outFileNameGlobal = flag.String("oG", "output/globalEventVariables.csv", "Name of the output file containing global event variables")
-		noEvents         = flag.Int("n", -1, "Number of events to process (-1 means all events are processed)")
+		noEvents = flag.Int("n", -1, "Number of events to process (-1 means all events are processed)")
+
+		// flags specific to pedestal computation
+		computePed  = flag.Bool("computePed", false, "Compute pedestals if set to true")
+		outfileName = flag.String("o", "output/pedestals.csv", "Name of the file containing pedestal data")
+
+		// flags specific to analysis
 		applyCorrections = flag.Bool("corr", false, "Do corrections and calibration or not")
 	)
 
@@ -54,7 +60,7 @@ func main() {
 		log.Fatalf("could not open asm file: %v\n", err)
 	}
 
-	var data event.Data
+	data := event.NewData(5000)
 
 	dqplot := dq.NewDQPlot()
 
@@ -74,11 +80,44 @@ func main() {
 	}
 
 	data.CheckIntegrity()
-	//data.PrintPulsesToFile(*outFileNamePulses)
-	//data.PrintGlobalVarsToFile(*outFileNameGlobal)
-	dqplot.Finalize()
-	//dqplot.WriteHistosToFile("../dqref/dqplots_ref.gob")
-	//dqplot.WriteGob("dqplots.gob")
-	data.PlotPulses(pulse.XaxisIndex, false)
-	data.PlotAmplitudeCorrelationWithinCluster()
+	switch {
+	case *computePed:
+		ComputePedestals(&data)
+		tbdetector.Det.WritePedestalsToFile(*outfileName)
+		tbdetector.Det.PlotPedestals(true)
+		tbdetector.Det.PlotPedestals(false)
+	default: // analysis
+		//data.PrintPulsesToFile(*outFileNamePulses)
+		//data.PrintGlobalVarsToFile(*outFileNameGlobal)
+		dqplot.Finalize()
+		dqplot.WriteHistosToFile("../dqref/dqplots_ref.gob")
+		dqplot.WriteGob("dqplots.gob")
+		data.PlotPulses(pulse.XaxisIndex, false)
+		data.PlotAmplitudeCorrelationWithinCluster()
+	}
+}
+
+func ComputePedestals(data *event.Data) {
+	for iEvent := range data.Events {
+		event := data.Events[iEvent]
+		for iCluster := range event.Clusters {
+			cluster := &event.Clusters[iCluster]
+			for iPulse := range cluster.Pulses {
+				pulse := &cluster.Pulses[iPulse]
+				if pulse.HasSignal {
+					continue
+				}
+				for iSample := range pulse.Samples {
+					sample := &pulse.Samples[iSample]
+					capacitor := sample.Capacitor
+					noSamples := capacitor.NoPedestalSamples()
+					if iEvent == 0 && noSamples != 0 {
+						log.Fatal("len(capacitor.Pedestal()) != 0!")
+					}
+					capacitor.AddPedestalSample(sample.Amplitude)
+				}
+			}
+		}
+	}
+	tbdetector.Det.ComputePedestalsMeanStdDevFromSamples()
 }

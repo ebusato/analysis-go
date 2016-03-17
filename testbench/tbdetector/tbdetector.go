@@ -63,8 +63,8 @@ func (d *Detector) SamplingFreq() float64 {
 	return d.samplingFreq
 }
 
-func (d *Detector) Capacitor(iChannel uint8, iCapacitor uint16) *detector.Capacitor {
-	return d.asm.DRS(0).Quartet(0).Channel(iChannel).Capacitor(iCapacitor)
+func (d *Detector) Capacitor(iDRS uint8, iQuartet uint8, iChannel uint8, iCapacitor uint16) *detector.Capacitor {
+	return d.asm.DRS(iDRS).Quartet(iQuartet).Channel(iChannel).Capacitor(iCapacitor)
 }
 
 func (d *Detector) Channel(iDRS uint8, iQuartet uint8, iChannel uint8) *detector.Channel {
@@ -122,7 +122,7 @@ func (d *Detector) WritePedestalsToFile(outFileName string) {
 	tbl.Writer.Comma = ' '
 
 	err = tbl.WriteHeader(fmt.Sprintf("# Test bench pedestal file (creation date: %v)\n", time.Now()))
-	err = tbl.WriteHeader("# iChannel iCapacitor pedestalMean pedestalStdDev")
+	err = tbl.WriteHeader("# iDRS iQuartet iChannel iCapacitor pedestalMean pedestalStdDev")
 
 	if err != nil {
 		log.Fatalf("error writing header: %v\n", err)
@@ -137,6 +137,8 @@ func (d *Detector) WritePedestalsToFile(outFileName string) {
 				for iCapacitor := range ch.Capacitors() {
 					capa := ch.Capacitor(uint16(iCapacitor))
 					data := PedestalCSV{
+						IDRS:       uint8(iDRS),
+						IQuartet:   uint8(iQuartet),
 						IChannel:   uint8(iChannel),
 						ICapacitor: uint16(iCapacitor),
 						Mean:       capa.PedestalMean(),
@@ -180,7 +182,7 @@ func (d *Detector) ReadPedestalsFile(fileName string) {
 			log.Fatalf("error reading row: %v\n", err)
 		}
 		//fmt.Printf("data: %+v\n", data)
-		capacitor := d.Capacitor(data.IChannel, data.ICapacitor)
+		capacitor := d.Capacitor(data.IDRS, data.IQuartet, data.IChannel, data.ICapacitor)
 		capacitor.SetPedestalMeanStdDev(data.Mean, data.StdDev)
 	}
 	err = rows.Err()
