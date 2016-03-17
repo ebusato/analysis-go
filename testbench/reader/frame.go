@@ -1,0 +1,111 @@
+package reader
+
+import (
+	"fmt"
+	"log"
+	"strconv"
+
+	"gitlab.in2p3.fr/avirm/analysis-go/detector"
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
+)
+
+type TypeOfFrame byte
+
+const (
+	FirstFrameOfEvent TypeOfFrame = iota
+	SecondFrameOfEvent
+)
+
+type Frame struct {
+	lines     []string
+	frameType TypeOfFrame
+}
+
+func NewFrame(lines []string, frameType TypeOfFrame) *Frame {
+	frame := &Frame{
+		lines:     lines,
+		frameType: frameType,
+	}
+	return frame
+}
+
+func (f *Frame) RemoveHeaderAndCounters() []string {
+	linesWoHeaderCounters := f.lines[1:1000]
+	return linesWoHeaderCounters
+}
+
+func (f *Frame) SRout() uint16 {
+	n, err := strconv.ParseUint(f.lines[1000], 16, 16)
+	if err != nil || n < 0 || n > 1023 {
+		log.Fatalf("error parsing uint %q: %v\n", f.lines[1001:1001], err)
+	}
+	return uint16(n)
+}
+
+func (f *Frame) Print() {
+	for i, line := range f.lines {
+		fmt.Println(i, line)
+	}
+}
+
+func (f *Frame) PrintWoHeadersCounters() {
+	linesWoHeaderCounters := f.RemoveHeaderAndCounters()
+	for i, line := range linesWoHeaderCounters {
+		fmt.Println(i, line)
+	}
+}
+
+func (f *Frame) MakePulses() (*pulse.Pulse, *pulse.Pulse) {
+	var chan1 *detector.Channel
+	var chan2 *detector.Channel
+	switch f.frameType {
+	case FirstFrameOfEvent:
+		chan1 = tbdetector.Det.Channel(0, 0, 0)
+		chan2 = tbdetector.Det.Channel(0, 0, 1)
+	case SecondFrameOfEvent:
+		chan1 = tbdetector.Det.Channel(0, 0, 2)
+		chan2 = tbdetector.Det.Channel(0, 0, 3)
+	default:
+		panic("cannot make pulse, frame type not recognized")
+	}
+
+	pulse1 := pulse.NewPulse(chan1)
+	pulse2 := pulse.NewPulse(chan2)
+	pulse1.SRout = f.SRout()
+	pulse2.SRout = f.SRout()
+	linesWoHeaderCounters := f.RemoveHeaderAndCounters()
+	for i, line := range linesWoHeaderCounters {
+		lineI, err := strconv.ParseUint(line, 16, 32)
+		if err != nil {
+			log.Fatalf("error parsing uint %q: %v\n", line, err)
+		}
+
+		lineUI32 := uint32(lineI)
+
+		ampl2 := float64(lineUI32 & 0xFFF)
+		ampl1 := float64(lineUI32 >> 16)
+
+		sample1 := pulse.NewSample(ampl1, uint16(i), float64(i)*tbdetector.Det.SamplingFreq())
+		sample2 := pulse.NewSample(ampl2, uint16(i), float64(i)*tbdetector.Det.SamplingFreq())
+
+		pulse1.AddSample(sample1, tbdetector.Det.Capacitor(0, 0, pulse1.Channel.ID(), sample1.CapaIndex(pulse1.SRout)))
+		pulse2.AddSample(sample2, tbdetector.Det.Capacitor(0, 0, pulse2.Channel.ID(), sample2.CapaIndex(pulse2.SRout)))
+	}
+
+	//pulse1.Print()
+	//pulse2.Print()
+	return pulse1, pulse2
+}
+
+func NewEvent(frame1 *Frame, frame2 *Frame, evtID uint) *event.Event {
+	pulse1, pulse2 := frame1.MakePulses()
+	pulse3, pulse4 := frame2.MakePulses()
+	event := &event.Event{
+		Clusters: []pulse.Cluster{*pulse.NewCluster(0, [4]pulse.Pulse{*pulse1, *pulse2, *pulse3, *pulse4})},
+	}
+	event.ID = evtID
+	event.CheckIntegrity()
+	return event
+}

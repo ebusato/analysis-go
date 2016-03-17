@@ -7,10 +7,9 @@ import (
 	"log"
 	"os"
 
-	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
-	"gitlab.in2p3.fr/avirm/analysis-go/testbench/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/testbench/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/reader"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
 )
@@ -52,12 +51,13 @@ func main() {
 	}
 
 	s := reader.NewScanner(bufio.NewScanner(file))
+	s.SetInputType(inputType)
 
 	var data event.Data
 
 	dqplot := dq.NewDQPlot()
 
-	for event, status := s.ReadNextEvent(inputType); status && event.ID < *noEvents; event, status = s.ReadNextEvent(inputType) {
+	for event, status := s.ReadNextEvent(); status && event.ID < *noEvents; event, status = s.ReadNextEvent() {
 		if event.ID%500 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
@@ -78,6 +78,6 @@ func main() {
 	dqplot.Finalize()
 	dqplot.WriteHistosToFile("../dqref/dqplots_ref.gob")
 	dqplot.WriteGob("dqplots.gob")
-	data.PlotPulses(pulse.XaxisTime, false, true)
-	data.PlotAmplitudeCorrelationWithinCluster()
+	//data.PlotPulses(pulse.XaxisTime, false, true)
+	//data.PlotAmplitudeCorrelationWithinCluster()
 }

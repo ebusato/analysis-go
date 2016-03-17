@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.in2p3.fr/avirm/analysis-go/testbench/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 
 	//"io"
 )
@@ -53,8 +53,9 @@ const (
 )
 
 type Scanner struct {
-	s     *bufio.Scanner
-	evtID uint
+	s         *bufio.Scanner
+	inputType InputType
+	evtID     uint
 }
 
 func NewScanner(s *bufio.Scanner) *Scanner {
@@ -65,12 +66,16 @@ func NewScanner(s *bufio.Scanner) *Scanner {
 	return ss
 }
 
-func (s *Scanner) readNextFrame(inputType InputType, frameType event.TypeOfFrame) (*event.Frame, bool) {
+func (s *Scanner) SetInputType(inputType InputType) {
+	s.inputType = inputType
+}
+
+func (s *Scanner) readNextFrame(frameType TypeOfFrame) (*Frame, bool) {
 	var lines []string
 	status := true
 	for status = s.s.Scan(); status; status = s.s.Scan() {
 		text := s.s.Text()
-		switch inputType {
+		switch s.inputType {
 		case HexInput:
 			// no-op
 		case DecInput: // decimal input
@@ -91,18 +96,18 @@ func (s *Scanner) readNextFrame(inputType InputType, frameType event.TypeOfFrame
 		}
 		lines = append(lines, text)
 	}
-	frame := event.NewFrame(lines, frameType)
+	frame := NewFrame(lines, frameType)
 	//frame.PrintWoHeadersCounters()
 	return frame, status
 }
 
-func (s *Scanner) ReadNextEvent(inputType InputType) (*event.Event, bool) {
-	frame, _ := s.readNextFrame(inputType, event.FirstFrameOfEvent)
-	frameNext, status := s.readNextFrame(inputType, event.SecondFrameOfEvent)
+func (s *Scanner) ReadNextEvent() (*event.Event, bool) {
+	frame, _ := s.readNextFrame(FirstFrameOfEvent)
+	frameNext, status := s.readNextFrame(SecondFrameOfEvent)
 	if status == false {
 		return &event.Event{}, false
 	}
-	event := event.NewEvent(frame, frameNext, s.evtID)
+	event := NewEvent(frame, frameNext, s.evtID)
 	s.evtID++
 	return event, status
 }
