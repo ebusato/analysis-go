@@ -99,13 +99,13 @@ func (w *Writer) writeFrame(f *Frame) {
 		w.err = io.EOF
 		return
 	}
-	w.writeBlock(&f.Block, 0)
+	w.writeBlock(&f.Block)
 }
 
-func (w *Writer) writeBlock(blk *Block, fid uint32) {
+func (w *Writer) writeBlock(blk *Block) {
 	w.writeBlockHeader(blk)
 	w.writeBlockData(blk)
-	w.write((blockTrailer << 4) + fid)
+	w.write((blockTrailer << 4) + blk.ID)
 }
 
 func (w *Writer) writeBlockHeader(blk *Block) {

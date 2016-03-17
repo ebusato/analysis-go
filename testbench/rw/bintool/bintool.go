@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
+	"gitlab.in2p3.fr/avirm/analysis-go/testbench/rw"
 )
 
 var nFramesPerEvent uint = 12
@@ -85,6 +85,8 @@ func main() {
 		defer w.Close()
 	}
 
+	//r.Debug = true
+
 	// Start processing input file
 	hdr := r.Header()
 	switch {
@@ -102,14 +104,13 @@ func main() {
 		frame, err := r.Frame()
 		if err != nil {
 			if err != io.EOF {
-				log.Fatalf("error loading frame: %v\n", err)
+				fmt.Printf("error loading frame: %v\n", err)
 			}
 			if frame.ID != rw.LastFrame() {
-				log.Fatalf("invalid last frame id. got=%d. want=%d", frame.ID, rw.LastFrame())
+				fmt.Printf("invalid last frame id. got=%d. want=%d (nFrames=%v)", frame.ID, rw.LastFrame(), nFrames)
 			}
 			break
 		}
-
 		switch {
 		case *ascii:
 			switch nFrames < *noFrames {
@@ -126,7 +127,6 @@ func main() {
 				}
 				eventFrames[nFrames%nFramesPerEvent] = frame
 				if nFrames%nFramesPerEvent == nFramesPerEvent-1 {
-					//fmt.Println("here", nFrames)
 					writeFrames(w, eventFrames)
 				}
 			}

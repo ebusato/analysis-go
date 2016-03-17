@@ -8,9 +8,9 @@ import (
 	"os"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
-	"gitlab.in2p3.fr/avirm/analysis-go/testbench/applyCorrCalib"
+	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/dq"
-	"gitlab.in2p3.fr/avirm/analysis-go/testbench/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/reader"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
 )

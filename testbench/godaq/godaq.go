@@ -154,7 +154,6 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 	start := time.Now()
 	startabs := start
 	for {
-		//iEvent := nFrames / 12
 		select {
 		case <-terminateStream:
 			*noEvents = iEvent + 1
