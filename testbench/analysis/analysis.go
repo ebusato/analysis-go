@@ -4,20 +4,22 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"image/color"
 	"log"
 	"os"
-
-	"github.com/gonum/plot"
-	"github.com/gonum/plot/plotter"
-	"github.com/gonum/plot/vg"
+	"path/filepath"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/dq"
+	"gitlab.in2p3.fr/avirm/analysis-go/testbench/reader"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
 )
+
+type ReadScanInterf interface {
+	ReadNextEvent() (*event.Event, bool)
+}
 
 func main() {
 
@@ -29,8 +31,9 @@ func main() {
 		//outFileNameGlobal = flag.String("oG", "output/globalEventVariables.csv", "Name of the output file containing global event variables")
 		noEvents         = flag.Int("n", -1, "Number of events to process (-1 means all events are processed)")
 		applyCorrections = flag.Bool("corr", false, "Do corrections and calibration or not")
+		inputType        = reader.HexInput
 	)
-
+	flag.Var(&inputType, "inType", "Type of input file (possible values: Dec,Hex,Bin)")
 	flag.Parse()
 
 	err := os.RemoveAll("output")
@@ -49,21 +52,34 @@ func main() {
 	}
 	defer file.Close()
 
+	var rsi ReadScanInterf
+
+	if filepath.Ext(*infileName) == ".bin" {
+		// Binary file reader
+		rsi, err = rw.NewReader(bufio.NewReader(file))
+		if err != nil {
+			log.Fatalf("could not open asm file: %v\n", err)
+		}
+	} else if filepath.Ext(*infileName) == ".txt" {
+		// ASCII file scanner
+		s := reader.NewScanner(bufio.NewScanner(file))
+		s.SetInputType(inputType)
+		rsi = s
+	} else {
+		log.Fatalf("file extension not recognized.")
+	}
+
+	// Start doing concrete analysis
+
 	if *applyCorrections {
 		tbdetector.Det.ReadPedestalsFile("../calibConstants/pedestals.csv")
 	}
-
-	r, err := rw.NewReader(bufio.NewReader(file))
-	if err != nil {
-		log.Fatalf("could not open asm file: %v\n", err)
-	}
-
 	dqplot := dq.NewDQPlot()
 
-	var dataCorrelation plotter.XYZs
+	//var dataCorrelation plotter.XYZs
 
-	for event, status := r.ReadNextEvent(); status && (*noEvents == -1 || int(event.ID) < *noEvents); event, status = r.ReadNextEvent() {
-		if event.ID%100 == 0 {
+	for event, status := rsi.ReadNextEvent(); status && (*noEvents == -1 || int(event.ID) < *noEvents); event, status = rsi.ReadNextEvent() {
+		if event.ID%1 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
 		///////////////////////////////////////////////////////////
@@ -81,42 +97,45 @@ func main() {
 		}
 		// dq
 		dqplot.FillHistos(event)
-		//
-		cluster := event.Clusters[0]
-		pulses := cluster.PulsesWithSignal()
-		multiplicity := len(pulses)
-		if multiplicity == 2 {
-			mydata := struct {
-				X, Y, Z float64
-			}{
-				X: pulses[0].Amplitude(),
-				Y: pulses[1].Amplitude(),
-				Z: 0,
+		// correlation
+		/*
+			cluster := event.Clusters[0]
+			pulses := cluster.PulsesWithSignal()
+			multiplicity := len(pulses)
+			if multiplicity == 2 {
+				mydata := struct {
+					X, Y, Z float64
+				}{
+					X: pulses[0].Amplitude(),
+					Y: pulses[1].Amplitude(),
+					Z: 0,
+				}
+				dataCorrelation = append(dataCorrelation, mydata)
 			}
-			dataCorrelation = append(dataCorrelation, mydata)
-		}
+		*/
 		////////////////////////////////////////////////////////////
 	}
 
-	p, err := plot.New()
-	if err != nil {
-		panic(err)
-	}
-	p.Title.Text = "Correlation of amplitudes for clusters with 2 pulses"
-	p.X.Label.Text = "amplitude 1"
-	p.Y.Label.Text = "amplitude 2"
+	/*
+		p, err := plot.New()
+		if err != nil {
+			panic(err)
+		}
+		p.Title.Text = "Correlation of amplitudes for clusters with 2 pulses"
+		p.X.Label.Text = "amplitude 1"
+		p.Y.Label.Text = "amplitude 2"
 
-	bs, err := plotter.NewBubbles(dataCorrelation, vg.Points(1), vg.Points(3))
-	if err != nil {
-		panic(err)
-	}
-	bs.Color = color.RGBA{R: 196, B: 128, A: 255}
-	p.Add(bs)
+		bs, err := plotter.NewBubbles(dataCorrelation, vg.Points(1), vg.Points(3))
+		if err != nil {
+			panic(err)
+		}
+		bs.Color = color.RGBA{R: 196, B: 128, A: 255}
+		p.Add(bs)
 
-	if err := p.Save(4*vg.Inch, 4*vg.Inch, "output/bubble.png"); err != nil {
-		panic(err)
-	}
-
+		if err := p.Save(4*vg.Inch, 4*vg.Inch, "output/bubble.png"); err != nil {
+			panic(err)
+		}
+	*/
 	///////////////////////////////////////////////////
 	// These two line should not be uncomment, it won't
 	// work. They are here just to remind me that I should

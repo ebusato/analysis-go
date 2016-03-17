@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
-	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/reader"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
@@ -53,7 +52,7 @@ func main() {
 	s := reader.NewScanner(bufio.NewScanner(file))
 	s.SetInputType(inputType)
 
-	var data event.Data
+	//var data event.Data
 
 	dqplot := dq.NewDQPlot()
 
@@ -68,11 +67,11 @@ func main() {
 		// 			event.Print(true)
 		// 		}
 		//fmt.Println("correlation=", event.GlobalCorrelation("PMT1", "PMT2"))
-		data.Events = append(data.Events, *event)
+		//data.Events = append(data.Events, *event)
 		dqplot.FillHistos(event)
 	}
 
-	data.CheckIntegrity()
+	//data.CheckIntegrity()
 	//data.PrintPulsesToFile(*outFileNamePulses)
 	//data.PrintGlobalVarsToFile(*outFileNameGlobal)
 	dqplot.Finalize()
