@@ -23,7 +23,7 @@ func main() {
 		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
 		//outFileNamePulses = flag.String("oP", "output/pulses.csv", "Name of the output file containing pulse data")
 		//outFileNameGlobal = flag.String("oG", "output/globalEventVariables.csv", "Name of the output file containing global event variables")
-		noEvents         = flag.Uint("n", 10, "Number of events to process")
+		noEvents         = flag.Int("n", -1, "Number of events to process (-1 means all events are processed)")
 		applyCorrections = flag.Bool("corr", false, "Do corrections and calibration or not")
 	)
 
@@ -58,7 +58,7 @@ func main() {
 
 	dqplot := dq.NewDQPlot()
 
-	for event, status := r.ReadNextEvent(); status && event.ID < *noEvents; event, status = r.ReadNextEvent() {
+	for event, status := r.ReadNextEvent(); status && (*noEvents == -1 || int(event.ID) < *noEvents); event, status = r.ReadNextEvent() {
 		if event.ID%100 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
