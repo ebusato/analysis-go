@@ -28,9 +28,11 @@ func main() {
 		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
 		//outFileNamePulses = flag.String("oP", "output/pulses.csv", "Name of the output file containing pulse data")
 		//outFileNameGlobal = flag.String("oG", "output/globalEventVariables.csv", "Name of the output file containing global event variables")
-		noEvents         = flag.Int("n", -1, "Number of events to process (-1 means all events are processed)")
-		applyCorrections = flag.Bool("corr", false, "Do corrections and calibration or not")
-		inputType        = reader.HexInput
+		noEvents  = flag.Int("n", -1, "Number of events to process (-1 means all events are processed)")
+		pedCorr   = flag.String("pedcorr", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
+		wGob      = flag.String("wgob", "dqplots.gob", "Name of the output gob file containing dq plots. If not set, the gob file is not produced.")
+		refGob    = flag.String("refgob", "", "Name of the gob file containing reference dq plots. If not set, reference dq plots are not overlaid to current dq plots.")
+		inputType = reader.HexInput
 	)
 	flag.Var(&inputType, "inType", "Type of input file (possible values: Dec,Hex,Bin)")
 	flag.Parse()
@@ -70,20 +72,20 @@ func main() {
 
 	// Start doing concrete analysis
 
-	if *applyCorrections {
-		tbdetector.Det.ReadPedestalsFile("../calibConstants/pedestals.csv")
+	if *pedCorr != "" {
+		tbdetector.Det.ReadPedestalsFile(*pedCorr)
 	}
 	dqplot := dq.NewDQPlot()
 
 	//var dataCorrelation plotter.XYZs
 
 	for event, status := rner.ReadNextEvent(); status && (*noEvents == -1 || int(event.ID) < *noEvents); event, status = rner.ReadNextEvent() {
-		if event.ID%1 == 0 {
+		if event.ID%500 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
 		///////////////////////////////////////////////////////////
 		// Corrections
-		if *applyCorrections {
+		if *pedCorr != "" {
 			event = applyCorrCalib.RemovePedestal(event)
 		}
 		///////////////////////////////////////////////////////////
@@ -146,8 +148,8 @@ func main() {
 	//PrintGlobalVarsToFile(*outFileNameGlobal)
 	///////////////////////////////////////////////////
 	dqplot.Finalize()
-	dqplot.WriteHistosToFile("../dqref/dqplots_ref.gob")
-	dqplot.WriteGob("dqplots.gob")
+	dqplot.WriteGob(*wGob)
+	dqplot.SaveHistos(*refGob)
 }
 
 /*

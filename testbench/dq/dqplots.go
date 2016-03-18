@@ -55,7 +55,7 @@ func NewDQPlot() *DQPlot {
 }
 
 func NewDQPlotFromGob(fileName string) *DQPlot {
-	fmt.Printf("Opening gob file %s\n", fileName)
+	fmt.Printf("Reading gob file %s\n", fileName)
 	f, err := os.Open(fileName)
 	if err != nil {
 		panic(err)
@@ -63,8 +63,6 @@ func NewDQPlotFromGob(fileName string) *DQPlot {
 	defer f.Close()
 
 	dec := gob.NewDecoder(f)
-
-	fmt.Printf("Loading DQ from %s\n", fileName)
 
 	dqplot := NewDQPlot()
 
@@ -132,13 +130,17 @@ func (d *DQPlot) Finalize() {
 	//d.HClusterAmplitudeMultiplicityEq2.Scale(1 / d.HClusterAmplitudeMultiplicityEq2.Integral())
 }
 
-func (d *DQPlot) WriteHistosToFile(refs ...string) {
+// SaveHistos saves histograms on disk.
+// If refs is specified, current histograms
+// are overlaid with reference histograms
+// located in the gob file provided.
+func (d *DQPlot) SaveHistos(refs ...string) {
 	doplot := utils.MakeHPl
 	// 	doplot := utils.MakeGonumPlot
 
 	dqplotref := &DQPlot{}
 
-	if len(refs) != 0 {
+	if len(refs) != 0 && refs[0] != "" {
 		dqplotref = NewDQPlotFromGob(refs[0])
 	}
 
@@ -194,7 +196,6 @@ func (d *DQPlot) WriteHistosToFile(refs ...string) {
 }
 
 func (d *DQPlot) WriteGob(fileName string) error {
-	fmt.Printf("Creating gob file %s\n", fileName)
 	f, err := os.Create(fileName)
 	if err != nil {
 		return err
@@ -202,7 +203,7 @@ func (d *DQPlot) WriteGob(fileName string) error {
 	defer f.Close()
 
 	enc := gob.NewEncoder(f)
-	fmt.Printf("Saving DQplot to %s\n", fileName)
+	fmt.Printf("Saving DQplot object to %s\n", fileName)
 	err = enc.Encode(d)
 	if err != nil {
 		return err
