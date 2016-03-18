@@ -17,12 +17,11 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
 )
 
-type ReadScanInterf interface {
+type ReadNextEventer interface {
 	ReadNextEvent() (*event.Event, bool)
 }
 
 func main() {
-
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
@@ -52,11 +51,11 @@ func main() {
 	}
 	defer file.Close()
 
-	var rsi ReadScanInterf
+	var rner ReadNextEventer
 
 	if filepath.Ext(*infileName) == ".bin" {
 		// Binary file reader
-		rsi, err = rw.NewReader(bufio.NewReader(file))
+		rner, err = rw.NewReader(bufio.NewReader(file))
 		if err != nil {
 			log.Fatalf("could not open asm file: %v\n", err)
 		}
@@ -64,7 +63,7 @@ func main() {
 		// ASCII file scanner
 		s := reader.NewScanner(bufio.NewScanner(file))
 		s.SetInputType(inputType)
-		rsi = s
+		rner = s
 	} else {
 		log.Fatalf("file extension not recognized.")
 	}
@@ -78,7 +77,7 @@ func main() {
 
 	//var dataCorrelation plotter.XYZs
 
-	for event, status := rsi.ReadNextEvent(); status && (*noEvents == -1 || int(event.ID) < *noEvents); event, status = rsi.ReadNextEvent() {
+	for event, status := rner.ReadNextEvent(); status && (*noEvents == -1 || int(event.ID) < *noEvents); event, status = rner.ReadNextEvent() {
 		if event.ID%1 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
