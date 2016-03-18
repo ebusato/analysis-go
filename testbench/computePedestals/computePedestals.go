@@ -18,7 +18,7 @@ type ReadNextEventer interface {
 	ReadNextEvent() (*event.Event, bool)
 }
 
-func AddSamplesToComputation(event *event.Event) {
+func addSamples(event *event.Event) {
 	for iCluster := range event.Clusters {
 		cluster := &event.Clusters[iCluster]
 		for iPulse := range cluster.Pulses {
@@ -31,7 +31,7 @@ func AddSamplesToComputation(event *event.Event) {
 				capacitor := sample.Capacitor
 				noSamples := capacitor.NoPedestalSamples()
 				if event.ID == 0 && noSamples != 0 {
-					log.Fatal("len(capacitor.Pedestal()) != 0!")
+					log.Fatal("noSamples != 0!")
 				}
 				capacitor.AddPedestalSample(sample.Amplitude)
 			}
@@ -43,8 +43,9 @@ func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
-		infileName  = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
-		outfileName = flag.String("o", "output/pedestals.csv", "Name of the output pedestal csv file")
+		infileName      = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
+		outfileName     = flag.String("o", "output/pedestals.csv", "Name of the output pedestal csv file")
+		outrootfileName = flag.String("oroot", "output/pedestals.root", "Name of the output pedestal root file")
 		//outFileNamePulses = flag.String("oP", "output/pulses.csv", "Name of the output file containing pulse data")
 		//outFileNameGlobal = flag.String("oG", "output/globalEventVariables.csv", "Name of the output file containing global event variables")
 		noEvents  = flag.Int("n", -1, "Number of events to process (-1 means all events are processed)")
@@ -90,11 +91,11 @@ func main() {
 		if event.ID%500 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
-		AddSamplesToComputation(event)
+		addSamples(event)
 	}
 
 	tbdetector.Det.ComputePedestalsMeanStdDevFromSamples()
-	tbdetector.Det.WritePedestalsToFile(*outfileName)
+	tbdetector.Det.WritePedestalsToFile(*outfileName, *outrootfileName)
 	tbdetector.Det.PlotPedestals(true)
 	tbdetector.Det.PlotPedestals(false)
 	// detector.TBDet.Print()

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-hep/croot"
 	"github.com/go-hep/csvutil"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/detector"
@@ -113,7 +114,15 @@ type PedestalCSV struct {
 	StdDev     float64
 }
 
-func (d *Detector) WritePedestalsToFile(outFileName string) {
+type PedROOTData struct {
+	IDRS            uint
+	IQuartet        uint
+	IChannel        uint
+	ICapacitor      uint
+	PedestalSamples []float64
+}
+
+func (d *Detector) WritePedestalsToFile(outFileName string, outrootfileName string) {
 	tbl, err := csvutil.Create(outFileName)
 	if err != nil {
 		log.Fatalf("could not create %s: %v\n", outFileName, err)
@@ -126,6 +135,21 @@ func (d *Detector) WritePedestalsToFile(outFileName string) {
 
 	if err != nil {
 		log.Fatalf("error writing header: %v\n", err)
+	}
+
+	ofile, err := croot.OpenFile(outrootfileName, "recreate", "Pedestal file", 1, 0)
+	if err != nil {
+		panic(err)
+	}
+	defer ofile.Close("")
+
+	tree := croot.NewTree("tree", "tree", 32)
+	peddata := PedROOTData{}
+	const bufsiz = 32000
+
+	_, err = tree.Branch("data", &peddata, bufsiz, 0)
+	if err != nil {
+		panic(err)
 	}
 
 	for iDRS := range d.asm.DRSs() {
@@ -148,6 +172,17 @@ func (d *Detector) WritePedestalsToFile(outFileName string) {
 					if err != nil {
 						log.Fatalf("error writing row: %v\n", err)
 					}
+
+					peddata.IDRS = uint(iDRS)
+					peddata.IQuartet = uint(iQuartet)
+					peddata.IChannel = uint(iChannel)
+					peddata.ICapacitor = uint(iCapacitor)
+					peddata.PedestalSamples = capa.PedestalSamples()
+
+					_, err = tree.Fill()
+					if err != nil {
+						panic(err)
+					}
 				}
 			}
 		}
@@ -157,6 +192,8 @@ func (d *Detector) WritePedestalsToFile(outFileName string) {
 	if err != nil {
 		log.Fatalf("error closing table: %v\n", err)
 	}
+
+	ofile.Write("", 0, 0)
 }
 
 func (d *Detector) ReadPedestalsFile(fileName string) {

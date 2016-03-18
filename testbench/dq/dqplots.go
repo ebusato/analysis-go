@@ -47,7 +47,8 @@ func NewDQPlot() *DQPlot {
 		HClusterAmplitudeMultiplicityEq2: hbook.NewH1D(100, 0, 15000),
 	}
 	for i := 0; i < N; i++ {
-		dqp.HCharge[i] = *hbook.NewH1D(100, -2e4, 100e3)
+		//dqp.HCharge[i] = *hbook.NewH1D(100, -2e4, 100e3)
+		dqp.HCharge[i] = *hbook.NewH1D(50, 1e4, 100e3)
 		dqp.HAmplitude[i] = *hbook.NewH1D(100, 0, 4200)
 	}
 

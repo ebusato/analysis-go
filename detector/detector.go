@@ -41,6 +41,11 @@ func (c *Capacitor) NoPedestalSamples() int {
 	return len(c.pedestalSamples)
 }
 
+// PedestalSamples returns the slice of pedestal samples.
+func (c *Capacitor) PedestalSamples() []float64 {
+	return c.pedestalSamples
+}
+
 // AddPedestalSample adds a sample for pedestal calculation.
 func (c *Capacitor) AddPedestalSample(n float64) {
 	c.pedestalSamples = append(c.pedestalSamples, n)
