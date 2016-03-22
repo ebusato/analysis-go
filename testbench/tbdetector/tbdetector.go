@@ -115,11 +115,15 @@ type PedestalCSV struct {
 }
 
 type PedROOTData struct {
-	IDRS            uint
-	IQuartet        uint
-	IChannel        uint
-	ICapacitor      uint
+	IDRS            float64
+	IQuartet        float64
+	IChannel        float64
+	ICapacitor      float64
 	PedestalSamples []float64
+}
+
+func (p *PedROOTData) Print() {
+	fmt.Println(p.IDRS, p.IQuartet, p.IChannel, p.ICapacitor)
 }
 
 func (d *Detector) WritePedestalsToFile(outFileName string, outrootfileName string) {
@@ -173,12 +177,12 @@ func (d *Detector) WritePedestalsToFile(outFileName string, outrootfileName stri
 						log.Fatalf("error writing row: %v\n", err)
 					}
 
-					peddata.IDRS = uint(iDRS)
-					peddata.IQuartet = uint(iQuartet)
-					peddata.IChannel = uint(iChannel)
-					peddata.ICapacitor = uint(iCapacitor)
+					peddata.IDRS = float64(iDRS)
+					peddata.IQuartet = float64(iQuartet)
+					peddata.IChannel = float64(iChannel)
+					peddata.ICapacitor = float64(iCapacitor)
 					peddata.PedestalSamples = capa.PedestalSamples()
-
+					//peddata.Print()
 					_, err = tree.Fill()
 					if err != nil {
 						panic(err)

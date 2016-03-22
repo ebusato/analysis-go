@@ -142,7 +142,6 @@ func (c *Channel) XY(iCapacitor int) (x, y float64) {
 		y = capacitor.pedestalMean
 	case true:
 		y = float64(capacitor.NoPedestalSamples())
-
 	}
 	return
 }

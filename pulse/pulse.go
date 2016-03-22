@@ -131,7 +131,7 @@ func (p *Pulse) AddSample(s *Sample, capa *detector.Capacitor) {
 	}
 	s.Capacitor = capa
 	p.Samples = append(p.Samples, *s)
-	if s.Amplitude > 1000 {
+	if s.Amplitude > 650 {
 		p.HasSignal = true
 		if s.Amplitude == 4095 {
 			p.HasSatSignal = true
