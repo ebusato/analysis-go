@@ -25,16 +25,9 @@ var (
 	datac = make(chan Data)
 )
 
-// type Data struct {
-// 	X    float64      `json:"x"`
-// 	Sin  float64      `json:"sin"`
-// 	Cos  float64      `json:"cos"`
-// 	SinF [][2]float64 `json:"sinf"`
-// }
-
 type Data struct {
-	Time   float64      `json:"time"` // time at which monitoring data are taken
-	Freq   float64      `json:"freq"` // number of events processed per second
+	Time   float64      `json:"time"`   // time at which monitoring data are taken
+	Freq   float64      `json:"freq"`   // number of events processed per second
 	Pulse0 [][2]float64 `json:"pulse0"`
 	Pulse1 [][2]float64 `json:"pulse1"`
 	Pulse2 [][2]float64 `json:"pulse2"`
