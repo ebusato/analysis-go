@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/toqueteos/webbrowser"
+
 	"golang.org/x/net/websocket"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
@@ -116,7 +118,7 @@ func main() {
 }
 
 func webserver(webad *string) {
-	//webbrowser.Open("http://" + *webad)
+	webbrowser.Open("http://" + *webad)
 	http.HandleFunc("/", plotHandle)
 	http.Handle("/data", websocket.Handler(dataHandler))
 	err := http.ListenAndServe(*webad, nil)
@@ -255,7 +257,7 @@ func dataHandler(ws *websocket.Conn) {
 const page = `
 <html>
 	<head>
-		<title>Test bench monitoring</title>
+		<title>DPGA monitoring</title>
 		<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 		<script src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
 		<script type="text/javascript">
@@ -359,7 +361,7 @@ const page = `
 
 	<body>
 		<div id="header">
-			<h2>Test bench monitoring</h2>
+			<h2>DPGA monitoring</h2>
 		</div>
 		<div id="my-freq-plot" class="my-plot-stylefreq"></div>
 		<hr>
