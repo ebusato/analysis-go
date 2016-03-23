@@ -19,6 +19,11 @@ type Reader struct {
 	Debug bool
 }
 
+// Err return the reader error
+func (r *Reader) Err() error {
+	return r.err
+}
+
 // Header returns the ASM-stream header
 func (r *Reader) Header() Header {
 	return r.hdr
@@ -62,6 +67,10 @@ func (r *Reader) read(v interface{}) {
 	if r.Debug {
 		fmt.Printf("word = %x\n", *(v.(*uint32)))
 	}
+}
+
+func (r *Reader) ReadFrame(f *Frame) {
+	r.readFrame(f)
 }
 
 func (r *Reader) readFrame(f *Frame) {
@@ -115,9 +124,10 @@ func (r *Reader) readBlockData(blk *Block) {
 	if r.err != nil {
 		return
 	}
-	for i := range blk.Data {
-		r.read(&blk.Data[i])
-	}
+	//for i := range blk.Data {
+	//	r.read(&blk.Data[i])
+	//}
+	r.read(&blk.Data)
 	r.read(&blk.SRout)
 	//fmt.Printf("rw: srout = %v\n", blk.SRout)
 	for i := range blk.Counters {

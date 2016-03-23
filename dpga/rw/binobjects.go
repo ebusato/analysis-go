@@ -14,6 +14,10 @@ func LastFrame() uint32 {
 	return lastFrame
 }
 
+func NumSamples() uint16 {
+	return numSamples
+}
+
 // Header holds metadata about the frames in the ASM stream
 type Header struct {
 	Size     uint32 // size of the frame in the ASM stream

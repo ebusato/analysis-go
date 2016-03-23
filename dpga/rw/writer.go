@@ -57,7 +57,7 @@ func (w *Writer) Header(hdr Header) error {
 }
 
 // Frame writes a Frame to the ASM stream.
-func (w *Writer) Frame(f Frame) error {
+func (w *Writer) Frame(f *Frame) error {
 	if w.err != nil {
 		return w.err
 	}
@@ -74,7 +74,7 @@ func (w *Writer) Frame(f Frame) error {
 	if int(numSamples) != len(f.Block.Data) {
 		return fmt.Errorf("asm: inconsistent number of samples")
 	}
-	w.writeFrame(&f)
+	w.writeFrame(f)
 	return w.err
 }
 
@@ -189,8 +189,8 @@ func (w *Writer) Event(event *event.Event) {
 			block2.Counters[j] = cluster.Counter(j)
 		}
 
-		w.Frame(frame1)
-		w.Frame(frame2)
+		w.Frame(&frame1)
+		w.Frame(&frame2)
 		iframe += 2
 	}
 }

@@ -74,7 +74,7 @@ func main() {
 			}
 			break
 		}
-		err = w.Frame(*frame)
+		err = w.Frame(frame)
 		if err != nil {
 			log.Fatalf("error writing frame: %v\n", err)
 		}
