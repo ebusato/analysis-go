@@ -130,9 +130,10 @@ func (r *Reader) readBlockData(blk *Block) {
 	r.read(&blk.Data)
 	r.read(&blk.SRout)
 	//fmt.Printf("rw: srout = %v\n", blk.SRout)
-	for i := range blk.Counters {
-		r.read(&blk.Counters[i])
-	}
+	//for i := range blk.Counters {
+	//	r.read(&blk.Counters[i])
+	//}
+	r.read(&blk.Counters)
 }
 
 func (r *Reader) readBlockTrailer(blk *Block) {
