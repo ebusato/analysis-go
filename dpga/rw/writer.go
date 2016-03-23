@@ -78,7 +78,14 @@ func (w *Writer) Frame(f *Frame) error {
 	return w.err
 }
 
-func (w *Writer) write(v uint32) {
+// func (w *Writer) write(v uint32) {
+// 	if w.err != nil {
+// 		return
+// 	}
+// 	w.err = binary.Write(w.w, binary.BigEndian, v)
+// }
+
+func (w *Writer) write(v interface{}) {
 	if w.err != nil {
 		return
 	}
@@ -122,13 +129,15 @@ func (w *Writer) writeBlockData(blk *Block) {
 	if w.err != nil {
 		return
 	}
-	for _, v := range blk.Data {
-		w.write(v)
-	}
+	// 	for _, v := range blk.Data {
+	// 		w.write(v)
+	// 	}
+	w.write(blk.Data)
 	w.write(blk.SRout)
-	for _, v := range blk.Counters {
-		w.write(v)
-	}
+	w.write(blk.Counters)
+	// 	for _, v := range blk.Counters {
+	// 		w.write(v)
+	// 	}
 }
 
 func (w *Writer) Event(event *event.Event) {
