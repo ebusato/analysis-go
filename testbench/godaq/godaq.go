@@ -25,13 +25,19 @@ var (
 	datac = make(chan Data)
 )
 
+type XY struct {
+	X float64
+	Y float64
+}
+
+type Pulse []XY
+
+type Quartet [4]Pulse
+
 type Data struct {
-	Time   float64      `json:"time"`   // time at which monitoring data are taken
-	Freq   float64      `json:"freq"`   // number of events processed per second
-	Pulse0 [][2]float64 `json:"pulse0"`
-	Pulse1 [][2]float64 `json:"pulse1"`
-	Pulse2 [][2]float64 `json:"pulse2"`
-	Pulse3 [][2]float64 `json:"pulse3"`
+	Time float64 `json:"time"` // time at which monitoring data are taken
+	Freq float64 `json:"freq"` // number of events processed per second
+	Q    Quartet `json:"quartet"`
 }
 
 func main() {
@@ -131,10 +137,13 @@ func control(terminateStream chan bool, commandIsEnded chan bool) {
 	}
 }
 
-func GetMonData(pulse pulse.Pulse) [][2]float64 {
-	data := make([][2]float64, pulse.NoSamples())
+func GetMonData(pulse pulse.Pulse) []XY {
+	data := make([]XY, pulse.NoSamples())
 	for i := range data {
-		data[i] = [2]float64{float64(pulse.Samples[i].Index), pulse.Samples[i].Amplitude}
+		data[i] = XY{
+			X: float64(pulse.Samples[i].Index),
+			Y: pulse.Samples[i].Amplitude,
+		}
 	}
 	return data
 }
@@ -180,7 +189,11 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						pulse1 := GetMonData(event.Clusters[0].Pulses[1])
 						pulse2 := GetMonData(event.Clusters[0].Pulses[2])
 						pulse3 := GetMonData(event.Clusters[0].Pulses[3])
-						datac <- Data{Time: time, Freq: freq, Pulse0: pulse0, Pulse1: pulse1, Pulse2: pulse2, Pulse3: pulse3}
+						datac <- Data{
+							Time: time,
+							Freq: freq,
+							Q:    [4]Pulse{pulse0, pulse1, pulse2, pulse3},
+						}
 						noEventsForMon = 0
 					}
 					iEvent++
@@ -242,74 +255,39 @@ const page = `
 		<script src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
 		<script type="text/javascript">
 		var sock = null;
-		var freqplot = {
-			label: "frequency (Hz)",
-			data: [],
-		};
-		var pulse0plot = {
-			label: "channel 0 (ampl. vs sample index)",
-			data: [],
-		};
-		var pulse1plot = {
-			label: "channel 1 (ampl. vs sample index)",
-			data: [],
-		};
-		var pulse2plot = {
-			label: "channel 2 (ampl. vs sample index)",
-			data: [],
-		};
-		var pulse3plot = {
-			label: "channel 3 (ampl. vs sample index)",
-			data: [],
-		};
-		var optionspulse0 = {
-			series: {
-				stack: true,
-			},
-			yaxis: { min: 0, max: 4096 },
-			xaxis: { tickDecimals: 0 }
-		};
-		optionspulse0.colors = ['blue'];
-		var optionspulse1 = {
-			series: {
-				stack: true,
-			},
-			yaxis: { min: 0, max: 4096 },
-			xaxis: { tickDecimals: 0 }
-		};
-		optionspulse1.colors = ['red'];
-		var optionspulse2 = {
-			series: {
-				stack: true,
-			},
-			yaxis: { min: 0, max: 4096 },
-			xaxis: { tickDecimals: 0 }
-		};
-		optionspulse2.colors = ['black'];
-		var optionspulse3 = {
-			series: {
-				stack: true,
-			},
-			yaxis: { min: 0, max: 4096 },
-			xaxis: { tickDecimals: 0 }
-		};
-		optionspulse3.colors = ['green'];
+		
+		function options(color) {
+			this.series = {stack: true};
+			this.yaxis = {min: 0, max: 4096};
+			this.xaxis = {tickDecimals: 0};
+			this.colors = [color]
+		}
+		
+		function plot(label, data, color) {
+			this.label = label;
+			this.data = data;
+			this.options = new options(color);
+		}
+		
+		var freqplot = new plot("frequency (Hz)", [], [])
+		
+		var Nplots = 4
+		
+		var colors = ['blue', 'red', 'black', 'green']
+		var pulseplots = []
+		for (var i = 0; i < Nplots; i += 1) {
+			pulseplots.push(new plot("channel "+i+" (ampl. vs sample index)", [], colors[i]))
+		}
+		
 		function update() {
 			var freq = $.plot("#my-freq-plot", [freqplot]);
 			freq.setupGrid(); // needed as x-axis changes
 			freq.draw();
-			var p0 = $.plot("#my-pulse0-plot", [pulse0plot], optionspulse0);
-			p0.setupGrid();
-			p0.draw();
-			var p1 = $.plot("#my-pulse1-plot", [pulse1plot], optionspulse1);
-			p1.setupGrid();
-			p1.draw();
-			var p2 = $.plot("#my-pulse2-plot", [pulse2plot], optionspulse2);
-			p2.setupGrid();
-			p2.draw();
-			var p3 = $.plot("#my-pulse3-plot", [pulse3plot], optionspulse3);
-			p3.setupGrid();
-			p3.draw();
+			for (var i = 0; i < Nplots; i += 1) {
+				var p = $.plot("#my-pulse"+i+"-plot", [pulseplots[i]], pulseplots[i].options);
+				p.setupGrid();
+				p.draw();
+			}
 		};
 
 		window.onload = function() {
@@ -322,19 +300,17 @@ const page = `
 					freqplot.data.push([data.time, data.freq])
 				}
 				for (var i = 0; i < 999; i += 1) {
-					pulse0plot.data.push([data.pulse0[i][0], data.pulse0[i][1]]);
-					pulse1plot.data.push([data.pulse1[i][0], data.pulse1[i][1]]);
-					pulse2plot.data.push([data.pulse2[i][0], data.pulse2[i][1]]);
-					pulse3plot.data.push([data.pulse3[i][0], data.pulse3[i][1]]);
+					for (var j = 0; j < Nplots; j += 1) {
+						pulseplots[j].data.push([data.quartet[j][i].X, data.quartet[j][i].Y]);
+					}
 				}
 				update();
-				pulse0plot.data = []
-				pulse1plot.data = []
-				pulse2plot.data = []
-				pulse3plot.data = []
+				for (var j = 0; j < Nplots; j += 1) {
+					pulseplots[j].data = []
+				}
 			};
 		};
-
+		
 		</script>
 
 		<style>
@@ -370,6 +346,28 @@ const page = `
 				</td>
 			</tr>
 		</table>
+		
+		<!-- script>
+			var x = document.createElement("TABLE");
+			x.setAttribute("id", "myTable");
+			document.body.appendChild(x);
+			
+			var Nrows = 2
+			var Ncolumns = 2
+			
+			var table = document.getElementById("myTable");
+			
+			var counter = 0;
+			for (var i = 0; i < Nrows; i += 1) {
+				var row = table.insertRow(i);
+				for (var j = 0; j < Ncolumns; j += 1) {
+					var cell = row.insertCell(j);
+					//cell.innerHTML = "cell"+i+j;
+					cell.innerHTML = '<div id="my-pulse0-plot" class="my-plot-style"></div>';
+					counter += 1;
+				}					
+			}
+		</script -->
 	</body>
 </html>
 `
