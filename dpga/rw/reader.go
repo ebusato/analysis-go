@@ -13,9 +13,10 @@ import (
 
 // Reader wraps an io.Reader and reads avirm data files
 type Reader struct {
-	r   io.Reader
-	err error
-	hdr Header
+	r     io.Reader
+	err   error
+	hdr   Header
+	Debug bool
 }
 
 // Header returns the ASM-stream header
@@ -58,9 +59,15 @@ func (r *Reader) read(v interface{}) {
 		return
 	}
 	r.err = binary.Read(r.r, binary.BigEndian, v)
+	if r.Debug {
+		fmt.Printf("word = %x\n", *(v.(*uint32)))
+	}
 }
 
 func (r *Reader) readFrame(f *Frame) {
+	if r.Debug {
+		fmt.Printf("rw: start reading frame\n")
+	}
 	r.read(&f.ID)
 	//fmt.Printf("rw: frame id = %v\n", f.ID)
 	if f.ID == lastFrame {
