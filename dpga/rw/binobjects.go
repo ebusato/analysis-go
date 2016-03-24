@@ -1,6 +1,9 @@
 package rw
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 const (
 	numSamples   uint16 = 999
@@ -20,12 +23,14 @@ func NumSamples() uint16 {
 
 // Header holds metadata about the frames in the ASM stream
 type Header struct {
+	Time     uint32 // number of seconds since Jan 01 1970
 	Size     uint32 // size of the frame in the ASM stream
 	NumFrame uint32 // number of frames x number of cards
 }
 
 func (h *Header) Print() {
 	fmt.Println("Printing header:")
+	fmt.Printf("   Time = %v\n", time.Unix(int64(h.Time), 0).Format(time.UnixDate))
 	fmt.Printf("   Size = %v\n", h.Size)
 	fmt.Printf("   NumFrame = %v\n", h.NumFrame)
 }

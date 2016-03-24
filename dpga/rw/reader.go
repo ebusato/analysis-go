@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"time"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
@@ -95,6 +96,10 @@ func (r *Reader) readFrame(f *Frame) {
 }
 
 func (r *Reader) readHeader(hdr *Header) {
+	r.read(&hdr.Time)
+	// Hack: set time from client clock rather than from server's
+	// since the later is not good.
+	hdr.Time = uint32(time.Now().Unix())
 	r.read(&hdr.Size)
 	r.read(&hdr.NumFrame)
 	//fmt.Printf("rw: reading header %v %v\n", hdr.Size, hdr.NumFrame)

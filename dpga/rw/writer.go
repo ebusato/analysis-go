@@ -93,6 +93,7 @@ func (w *Writer) write(v interface{}) {
 }
 
 func (w *Writer) writeHeader(hdr Header) {
+	w.write(hdr.Time)
 	w.write(hdr.Size)
 	w.write(hdr.NumFrame)
 }
