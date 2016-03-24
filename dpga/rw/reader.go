@@ -97,7 +97,8 @@ func (r *Reader) readFrame(f *Frame) {
 }
 
 func (r *Reader) readHeader(hdr *Header) {
-	if r.hdr.HdrType == HeaderCAL {
+	switch {
+	case r.hdr.HdrType == HeaderCAL:
 		r.read(&hdr.Time)
 		// Hack: set time from client clock rather than from server's
 		// since the later is not good.
@@ -110,10 +111,13 @@ func (r *Reader) readHeader(hdr *Header) {
 		r.read(&hdr.LowHighThres)
 		r.read(&hdr.TrigSigShapingHighThres)
 		r.read(&hdr.TrigSigShapingLowThres)
-	}
-	r.read(&hdr.Size)
-	r.read(&hdr.NumFrame)
+	case r.hdr.HdrType == HeaderOld:
+		r.read(&hdr.Size)
+		r.read(&hdr.NumFrame)
 	//fmt.Printf("rw: reading header %v %v\n", hdr.Size, hdr.NumFrame)
+	default:
+		panic("error ! header type not known")
+	}
 }
 
 func (r *Reader) readBlock(blk *Block) {

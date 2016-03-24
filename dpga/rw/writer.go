@@ -61,7 +61,7 @@ func (w *Writer) Frame(f *Frame) error {
 	if w.err != nil {
 		return w.err
 	}
-	if w.hdr.Size == 0 {
+	if w.hdr.HdrType == HeaderOld && w.hdr.Size == 0 {
 		w.hdr.Size = uint32(len(f.Block.Data))
 		w.hdr.NumFrame = 0
 
@@ -93,7 +93,8 @@ func (w *Writer) write(v interface{}) {
 }
 
 func (w *Writer) writeHeader(hdr Header) {
-	if hdr.HdrType == HeaderCAL {
+	switch {
+	case hdr.HdrType == HeaderCAL:
 		w.write(hdr.Time)
 		w.write(hdr.NoSamples)
 		w.write(hdr.DataToRead)
@@ -103,9 +104,12 @@ func (w *Writer) writeHeader(hdr Header) {
 		w.write(hdr.LowHighThres)
 		w.write(hdr.TrigSigShapingHighThres)
 		w.write(hdr.TrigSigShapingLowThres)
+	case hdr.HdrType == HeaderOld:
+		w.write(hdr.Size)
+		w.write(hdr.NumFrame)
+	default:
+		panic("error ! header type not known")
 	}
-	w.write(hdr.Size)
-	w.write(hdr.NumFrame)
 }
 
 func (w *Writer) writeFrame(f *Frame) {

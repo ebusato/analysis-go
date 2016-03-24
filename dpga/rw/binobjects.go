@@ -59,7 +59,8 @@ type Header struct {
 // Print prints header fields
 func (h *Header) Print() {
 	fmt.Printf("Printing header (type = %#v):\n", h.HdrType.String())
-	if h.HdrType == HeaderCAL {
+	switch {
+	case h.HdrType == HeaderCAL:
 		fmt.Printf("   Time = %v\n", time.Unix(int64(h.Time), 0).Format(time.UnixDate))
 		fmt.Printf("   NoSamples = %v\n", h.NoSamples)
 		fmt.Printf("   DataToRead = %x\n", h.DataToRead)
@@ -69,9 +70,12 @@ func (h *Header) Print() {
 		fmt.Printf("   LowHighThres = %x\n", h.LowHighThres)
 		fmt.Printf("   TrigSigShapingHighThres = %x\n", h.TrigSigShapingHighThres)
 		fmt.Printf("   TrigSigShapingLowThres = %x\n", h.TrigSigShapingLowThres)
+	case h.HdrType == HeaderOld:
+		fmt.Printf("   Size = %v\n", h.Size)
+		fmt.Printf("   NumFrame = %v\n", h.NumFrame)
+	default:
+		panic("error ! header type not known")
 	}
-	fmt.Printf("   Size = %v\n", h.Size)
-	fmt.Printf("   NumFrame = %v\n", h.NumFrame)
 }
 
 // Block is a single data frame in an ASM stream
