@@ -93,7 +93,17 @@ func (w *Writer) write(v interface{}) {
 }
 
 func (w *Writer) writeHeader(hdr Header) {
-	w.write(hdr.Time)
+	if hdr.HdrType == HeaderCAL {
+		w.write(hdr.Time)
+		w.write(hdr.NoSamples)
+		w.write(hdr.DataToRead)
+		w.write(hdr.TriggerEq)
+		w.write(hdr.TriggerDelay)
+		w.write(hdr.ChanUsedForTrig)
+		w.write(hdr.LowHighThres)
+		w.write(hdr.TrigSigShapingHighThres)
+		w.write(hdr.TrigSigShapingLowThres)
+	}
 	w.write(hdr.Size)
 	w.write(hdr.NumFrame)
 }

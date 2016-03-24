@@ -31,7 +31,7 @@ func main() {
 		log.Fatalf("could not create data file: %v\n", err)
 	}
 	defer filew.Close()
-	r, err := rw.NewReader(bufio.NewReader(filew))
+	r, err := rw.NewReader(bufio.NewReader(filew), rw.HeaderCAL)
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}

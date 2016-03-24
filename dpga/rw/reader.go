@@ -31,10 +31,11 @@ func (r *Reader) Header() Header {
 }
 
 // NewReader returns a new ASM stream in read mode
-func NewReader(r io.Reader) (*Reader, error) {
+func NewReader(r io.Reader, ht HeaderType) (*Reader, error) {
 	rr := &Reader{
 		r: r,
 	}
+	rr.hdr.HdrType = ht
 	rr.readHeader(&rr.hdr)
 	return rr, rr.err
 }
@@ -96,10 +97,20 @@ func (r *Reader) readFrame(f *Frame) {
 }
 
 func (r *Reader) readHeader(hdr *Header) {
-	r.read(&hdr.Time)
-	// Hack: set time from client clock rather than from server's
-	// since the later is not good.
-	hdr.Time = uint32(time.Now().Unix())
+	if r.hdr.HdrType == HeaderCAL {
+		r.read(&hdr.Time)
+		// Hack: set time from client clock rather than from server's
+		// since the later is not good.
+		hdr.Time = uint32(time.Now().Unix())
+		r.read(&hdr.NoSamples)
+		r.read(&hdr.DataToRead)
+		r.read(&hdr.TriggerEq)
+		r.read(&hdr.TriggerDelay)
+		r.read(&hdr.ChanUsedForTrig)
+		r.read(&hdr.LowHighThres)
+		r.read(&hdr.TrigSigShapingHighThres)
+		r.read(&hdr.TrigSigShapingLowThres)
+	}
 	r.read(&hdr.Size)
 	r.read(&hdr.NumFrame)
 	//fmt.Printf("rw: reading header %v %v\n", hdr.Size, hdr.NumFrame)
