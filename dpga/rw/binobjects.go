@@ -58,17 +58,17 @@ type Header struct {
 
 // Print prints header fields
 func (h *Header) Print() {
-	fmt.Println("Printing header (type = %v):\n", h.HdrType)
+	fmt.Printf("Printing header (type = %#v):\n", h.HdrType.String())
 	if h.HdrType == HeaderCAL {
 		fmt.Printf("   Time = %v\n", time.Unix(int64(h.Time), 0).Format(time.UnixDate))
 		fmt.Printf("   NoSamples = %v\n", h.NoSamples)
-		fmt.Printf("   DataToRead = %v\n", h.DataToRead)
-		fmt.Printf("   TriggerEq = %v\n", h.TriggerEq)
-		fmt.Printf("   TriggerDelay = %v\n", h.TriggerDelay)
-		fmt.Printf("   ChanUsedForTrig = %v\n", h.ChanUsedForTrig)
-		fmt.Printf("   LowHighThres = %v\n", h.LowHighThres)
-		fmt.Printf("   TrigSigShapingHighThres = %v\n", h.TrigSigShapingHighThres)
-		fmt.Printf("   TrigSigShapingLowThres = %v\n", h.TrigSigShapingLowThres)
+		fmt.Printf("   DataToRead = %x\n", h.DataToRead)
+		fmt.Printf("   TriggerEq = %x\n", h.TriggerEq)
+		fmt.Printf("   TriggerDelay = %x\n", h.TriggerDelay)
+		fmt.Printf("   ChanUsedForTrig = %x\n", h.ChanUsedForTrig)
+		fmt.Printf("   LowHighThres = %x\n", h.LowHighThres)
+		fmt.Printf("   TrigSigShapingHighThres = %x\n", h.TrigSigShapingHighThres)
+		fmt.Printf("   TrigSigShapingLowThres = %x\n", h.TrigSigShapingLowThres)
 	}
 	fmt.Printf("   Size = %v\n", h.Size)
 	fmt.Printf("   NumFrame = %v\n", h.NumFrame)

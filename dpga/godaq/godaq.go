@@ -68,7 +68,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	r, err := rw.NewReader(bufio.NewReader(tcp))
+	r, err := rw.NewReader(bufio.NewReader(tcp), rw.HeaderCAL)
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
