@@ -23,14 +23,30 @@ func NumSamples() uint16 {
 
 // Header holds metadata about the frames in the ASM stream
 type Header struct {
-	Time     uint32 // number of seconds since Jan 01 1970
-	Size     uint32 // size of the frame in the ASM stream
-	NumFrame uint32 // number of frames x number of cards
+	Time                    uint32 // number of seconds since Jan 01 1970
+	NoSamples               uint32 // number of samples
+	DataToRead              uint32 // data to read
+	TriggerEq               uint32 // trigger equation
+	TriggerDelay            uint32 // trigger delay
+	ChanUsedForTrig         uint32 // channels used for trigger
+	LowHighThres            uint32 // low and high thresholds
+	TrigSigShapingHighThres uint32 // trigger signal shaping for high threshold
+	TrigSigShapingLowThres  uint32 // trigger signal shaping for low threshold
+	Size                    uint32 // size of the frame in the ASM stream
+	NumFrame                uint32 // number of frames x number of cards
 }
 
 func (h *Header) Print() {
 	fmt.Println("Printing header:")
 	fmt.Printf("   Time = %v\n", time.Unix(int64(h.Time), 0).Format(time.UnixDate))
+	fmt.Printf("   NoSamples = %v\n", h.NoSamples)
+	fmt.Printf("   DataToRead = %v\n", h.DataToRead)
+	fmt.Printf("   TriggerEq = %v\n", h.TriggerEq)
+	fmt.Printf("   TriggerDelay = %v\n", h.TriggerDelay)
+	fmt.Printf("   ChanUsedForTrig = %v\n", h.ChanUsedForTrig)
+	fmt.Printf("   LowHighThres = %v\n", h.LowHighThres)
+	fmt.Printf("   TrigSigShapingHighThres = %v\n", h.TrigSigShapingHighThres)
+	fmt.Printf("   TrigSigShapingLowThres = %v\n", h.TrigSigShapingLowThres)
 	fmt.Printf("   Size = %v\n", h.Size)
 	fmt.Printf("   NumFrame = %v\n", h.NumFrame)
 }
