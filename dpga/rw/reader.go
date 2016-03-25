@@ -14,10 +14,11 @@ import (
 
 // Reader wraps an io.Reader and reads avirm data files
 type Reader struct {
-	r     io.Reader
-	err   error
-	hdr   Header
-	Debug bool
+	r         io.Reader
+	err       error
+	hdr       Header
+	noSamples uint16
+	Debug     bool
 }
 
 // Err return the reader error
@@ -54,7 +55,7 @@ func (r *Reader) Frame() (*Frame, error) {
 	}
 	f := &Frame{
 		Block: Block{
-			Data: make([]uint32, numSamples),
+			Data: make([]uint32, r.noSamples),
 		},
 	}
 	r.readFrame(f)
@@ -67,7 +68,49 @@ func (r *Reader) read(v interface{}) {
 	}
 	r.err = binary.Read(r.r, binary.BigEndian, v)
 	if r.Debug {
-		fmt.Printf("word = %x\n", *(v.(*uint32)))
+		v1, ok := v.(*uint32)
+		if ok {
+			fmt.Printf("word = %x\n", *v1)
+		}
+		v2, ok := v.(*[]uint32)
+		if ok {
+			for i := range *v2 {
+				fmt.Printf("word = %x\n", (*v2)[i])
+			}
+		}
+		//fmt.Printf("word = %x\n", *(v.(*uint32)))
+	}
+}
+
+func (r *Reader) readHeader(hdr *Header) {
+	switch {
+	case r.hdr.HdrType == HeaderCAL:
+		r.read(&hdr.Time)
+		// Hack: set time from client clock rather than from server's
+		// since the later is not correct.
+		hdr.Time = uint32(time.Now().Unix())
+		r.read(&hdr.NoSamples)
+		r.read(&hdr.DataToRead)
+		r.read(&hdr.TriggerEq)
+		r.read(&hdr.TriggerDelay)
+		r.read(&hdr.ChanUsedForTrig)
+		r.read(&hdr.LowHighThres)
+		r.read(&hdr.TrigSigShapingHighThres)
+		r.read(&hdr.TrigSigShapingLowThres)
+		// When setting the number of samples to 1000 it's actually 999
+		// hence the -1 subtraction
+		r.noSamples = uint16(hdr.NoSamples) - 1
+	case r.hdr.HdrType == HeaderOld:
+		r.read(&hdr.Size)
+		r.read(&hdr.NumFrame)
+		// In the case of old header, the number of samples
+		// is retrieved from the header.Size field
+		// When header.Size = 1007, the number of samples is 999
+		// hence the -8 subtraction
+		r.noSamples = uint16(hdr.Size) - 8
+		//fmt.Printf("rw: reading header %v %v\n", hdr.Size, hdr.NumFrame)
+	default:
+		panic("error ! header type not known")
 	}
 }
 
@@ -93,30 +136,6 @@ func (r *Reader) readFrame(f *Frame) {
 		if f.ID != lastFrame {
 			log.Fatalf("invalid last frame id. got=%x. want=%x", f.ID, lastFrame)
 		}
-	}
-}
-
-func (r *Reader) readHeader(hdr *Header) {
-	switch {
-	case r.hdr.HdrType == HeaderCAL:
-		r.read(&hdr.Time)
-		// Hack: set time from client clock rather than from server's
-		// since the later is not good.
-		hdr.Time = uint32(time.Now().Unix())
-		r.read(&hdr.NoSamples)
-		r.read(&hdr.DataToRead)
-		r.read(&hdr.TriggerEq)
-		r.read(&hdr.TriggerDelay)
-		r.read(&hdr.ChanUsedForTrig)
-		r.read(&hdr.LowHighThres)
-		r.read(&hdr.TrigSigShapingHighThres)
-		r.read(&hdr.TrigSigShapingLowThres)
-	case r.hdr.HdrType == HeaderOld:
-		r.read(&hdr.Size)
-		r.read(&hdr.NumFrame)
-	//fmt.Printf("rw: reading header %v %v\n", hdr.Size, hdr.NumFrame)
-	default:
-		panic("error ! header type not known")
 	}
 }
 

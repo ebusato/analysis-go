@@ -46,6 +46,7 @@ func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
+		hdrType     = rw.HeaderCAL
 		noEvents    = flag.Uint("n", 100000, "Number of events")
 		outfileName = flag.String("o", "out.bin", "Name of the output file")
 		ip          = flag.String("ip", "192.168.100.11", "IP address")
@@ -55,7 +56,7 @@ func main() {
 		debug       = flag.Bool("d", false, "If set, debugging informations are printed")
 		webad       = flag.String("webad", "localhost:5555", "server address:port")
 	)
-
+	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
 	flag.Parse()
 
 	// Reader
@@ -68,7 +69,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	r, err := rw.NewReader(bufio.NewReader(tcp), rw.HeaderCAL)
+	r, err := rw.NewReader(bufio.NewReader(tcp), hdrType)
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}

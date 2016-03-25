@@ -6,7 +6,6 @@ import (
 )
 
 const (
-	numSamples   uint16 = 999
 	numCounters  uint8  = 17
 	blockHeader  uint32 = 0xCAFEDECA
 	blockTrailer uint32 = 0xBADCAFE
@@ -17,17 +16,14 @@ func LastFrame() uint32 {
 	return lastFrame
 }
 
-func NumSamples() uint16 {
-	return numSamples
-}
-
 // HeaderType defines the type of header
+// It can take two values: HeaderOld and HeaderCAL
+type HeaderType int
+
 const (
-	HeaderOld = iota + 1
+	HeaderOld HeaderType = iota + 1
 	HeaderCAL
 )
-
-type HeaderType byte
 
 func (ht *HeaderType) String() string {
 	switch *ht {
@@ -40,7 +36,20 @@ func (ht *HeaderType) String() string {
 	}
 }
 
-// Header holds metadata about the frames in the ASM stream
+// Set is the method to set the flag value.
+func (ht *HeaderType) Set(value string) error {
+	switch value {
+	case "HeaderCAL":
+		*ht = HeaderCAL
+	case "HeaderOld":
+		*ht = HeaderOld
+	default:
+		return fmt.Errorf("invalid header type value %q", value)
+	}
+	return nil
+}
+
+// Header holds metadata about the run configuration
 type Header struct {
 	HdrType                 HeaderType // type of header
 	Time                    uint32     // number of seconds since Jan 01 1970

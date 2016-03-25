@@ -71,9 +71,6 @@ func (w *Writer) Frame(f *Frame) error {
 		}
 	}
 
-	if int(numSamples) != len(f.Block.Data) {
-		return fmt.Errorf("asm: inconsistent number of samples")
-	}
 	w.writeFrame(f)
 	return w.err
 }
@@ -175,10 +172,6 @@ func (w *Writer) Event(event *event.Event) {
 
 		cluster := &event.Clusters[i]
 
-		if cluster.NoSamples() != numSamples {
-			log.Fatalf("rw: cluster.NoSamples() != numSamples")
-		}
-
 		pulses := &cluster.Pulses
 
 		if pulses[0].Channel.FifoID() != pulses[1].Channel.FifoID() {
@@ -193,7 +186,7 @@ func (w *Writer) Event(event *event.Event) {
 		block1.SRout = uint32(cluster.SRout())
 		block2.SRout = block1.SRout
 
-		for j := uint16(0); j < numSamples; j++ {
+		for j := uint16(0); j < cluster.NoSamples(); j++ {
 			// Make block1 data from pulse[0] and pulse[1]
 			amp0, amp1 := uint32(pulses[0].Samples[j].Amplitude), uint32(pulses[1].Samples[j].Amplitude)
 			word := (amp0&0xFFF)<<16 | (amp1 & 0xFFF)
