@@ -8,11 +8,10 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/toqueteos/webbrowser"
 
 	"golang.org/x/net/websocket"
 
@@ -75,11 +74,14 @@ func main() {
 	}
 
 	page = strings.Replace(page, "?DATE?", time.Unix(int64(r.Header().Time), 0).Format(time.UnixDate), 1)
-	//page = strings.Replace(page, "?NOSAMPLES?", r.NoSamples(), 1)
-	//page = strings.Replace(page, "?DATATOREAD?", r.Header().DataToRead, 1)
-	//page = strings.Replace(page, "?TRIGGEREQ?", r.Header().TriggerEq, 1)
-
-	fmt.Printf("%v", page)
+	page = strings.Replace(page, "?NOSAMPLES?", strconv.FormatUint(uint64(r.NoSamples()), 10), 1)
+	page = strings.Replace(page, "?DATATOREAD?", strconv.FormatUint(uint64(r.Header().DataToRead), 16), 1)
+	page = strings.Replace(page, "?TRIGGEREQ?", strconv.FormatUint(uint64(r.Header().TriggerEq), 16), 1)
+	page = strings.Replace(page, "?TRIGGERDELAY?", strconv.FormatUint(uint64(r.Header().TriggerDelay), 16), 1)
+	page = strings.Replace(page, "?CHANUSEDFORTRIGGER?", strconv.FormatUint(uint64(r.Header().ChanUsedForTrig), 16), 1)
+	page = strings.Replace(page, "?LOWHIGHTHRESH?", strconv.FormatUint(uint64(r.Header().LowHighThres), 16), 1)
+	page = strings.Replace(page, "?TRIGSIGSHAPINGHIGHTHRES?", strconv.FormatUint(uint64(r.Header().TrigSigShapingHighThres), 16), 1)
+	page = strings.Replace(page, "?TRIGSIGSHAPINGLOWTHRES?", strconv.FormatUint(uint64(r.Header().TrigSigShapingLowThres), 16), 1)
 
 	// Writer
 	filew, err := os.Create(*outfileName)
@@ -126,7 +128,7 @@ func main() {
 }
 
 func webserver(webad *string) {
-	webbrowser.Open("http://" + *webad)
+	//webbrowser.Open("http://" + *webad)
 	http.HandleFunc("/", plotHandle)
 	http.Handle("/data", websocket.Handler(dataHandler))
 	err := http.ListenAndServe(*webad, nil)
@@ -266,6 +268,8 @@ var page string = `
 <html>
 	<head>
 		<title>DPGA monitoring</title>
+		<!-- script src="jquery-2.2.2.js"></script-->
+		<!-- script src="/home/ebusato/Travail/flot/jquery.flot.min.js"></script-->
 		<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 		<script src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
 		<script type="text/javascript">

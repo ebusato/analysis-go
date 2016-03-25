@@ -17,12 +17,13 @@ func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
+		hdrType  = rw.HeaderCAL
 		fileName = flag.String("i", "", "Input file name")
 		ip       = flag.String("ip", "localhost", "IP address")
 		port     = flag.String("p", "5555", "Port number")
 		freq     = flag.Uint("freq", 100, "Event number printing frequency")
 	)
-
+	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
 	flag.Parse()
 
 	// Reader
@@ -31,7 +32,7 @@ func main() {
 		log.Fatalf("could not create data file: %v\n", err)
 	}
 	defer filew.Close()
-	r, err := rw.NewReader(bufio.NewReader(filew), rw.HeaderCAL)
+	r, err := rw.NewReader(bufio.NewReader(filew), hdrType)
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
