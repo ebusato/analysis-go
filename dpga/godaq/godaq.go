@@ -75,6 +75,10 @@ func main() {
 	}
 
 	page = strings.Replace(page, "?DATE?", time.Unix(int64(r.Header().Time), 0).Format(time.UnixDate), 1)
+	//page = strings.Replace(page, "?NOSAMPLES?", r.NoSamples(), 1)
+	//page = strings.Replace(page, "?DATATOREAD?", r.Header().DataToRead, 1)
+	//page = strings.Replace(page, "?TRIGGEREQ?", r.Header().TriggerEq, 1)
+
 	fmt.Printf("%v", page)
 
 	// Writer
@@ -372,15 +376,15 @@ var page string = `
 	<body>
 		<div id="header">
 			<h2>DPGA monitoring</h2>
-		Date: ?DATE? <br>
-		Number of samples: ?NOSAMPLES?<br>
-		Data read: ?DATATOREAD?<br>
-		Trigger equation: ?TRIGGEREQ?<br>
-		Trigger delay: ?TRIGGERDELAY?<br>
-		Channels used for trigger: ?CHANUSEDFORTRIGGER?<br>
-		Low and high thresholds: ?LOWHIGHTHRESH?<br>
-		Trigger signal sample shaping for high threshold: ?TRIGSIGSHAPINGHIGHTHRES?<br>
-		Trigger signal sample shaping for low threshold: ?TRIGSIGSHAPINGLOWTHRES?<br>
+		<b>Date:</b> ?DATE? <br>
+		<b>Number of samples:</b> ?NOSAMPLES?<br>
+		<b>Data read:</b> ?DATATOREAD?<br>
+		<b>Trigger equation:</b> ?TRIGGEREQ?<br>
+		<b>Trigger delay:</b> ?TRIGGERDELAY?<br>
+		<b>Channels used for trigger:</b> ?CHANUSEDFORTRIGGER?<br>
+		<b>Low and high thresholds:</b> ?LOWHIGHTHRESH?<br>
+		<b>Trigger signal sample shaping for high threshold:</b> ?TRIGSIGSHAPINGHIGHTHRES?<br>
+		<b>Trigger signal sample shaping for low threshold:</b> ?TRIGSIGSHAPINGLOWTHRES?<br>
 		<br>
 		</div>
 		<div id="my-freq-plot" class="my-plot-stylefreq">

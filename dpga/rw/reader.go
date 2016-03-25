@@ -21,6 +21,11 @@ type Reader struct {
 	Debug     bool
 }
 
+// NoSamples returns the number of samples
+func (r *Reader) NoSamples() uint16 {
+	return r.noSamples
+}
+
 // Err return the reader error
 func (r *Reader) Err() error {
 	return r.err
