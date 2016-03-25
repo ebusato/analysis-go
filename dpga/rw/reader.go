@@ -73,41 +73,54 @@ func (r *Reader) read(v interface{}) {
 	}
 	r.err = binary.Read(r.r, binary.BigEndian, v)
 	if r.Debug {
-		v1, ok := v.(*uint32)
-		if ok {
-			fmt.Printf("word = %x\n", *v1)
-		}
-		v2, ok := v.(*[]uint32)
-		if ok {
-			for i := range *v2 {
-				fmt.Printf("word = %x\n", (*v2)[i])
+		switch v := v.(type) {
+		case *uint32:
+			fmt.Printf("word = %x\n", *v)
+		case *[]uint32:
+			for _, vv := range *v {
+				fmt.Printf("word = %x\n", vv)
 			}
 		}
 		//fmt.Printf("word = %x\n", *(v.(*uint32)))
 	}
 }
 
+func (r *Reader) readU32(v *uint32) {
+	if r.err != nil {
+		return
+	}
+	var buf [4]byte
+	_, r.err = r.r.Read(buf[:])
+	if r.err != nil {
+		return
+	}
+	*v = binary.BigEndian.Uint32(buf[:])
+	if r.Debug {
+		fmt.Printf("word = %x\n", *v)
+	}
+}
+
 func (r *Reader) readHeader(hdr *Header) {
 	switch {
 	case r.hdr.HdrType == HeaderCAL:
-		r.read(&hdr.Time)
+		r.readU32(&hdr.Time)
 		// Hack: set time from client clock rather than from server's
 		// since the later is not correct.
 		hdr.Time = uint32(time.Now().Unix())
-		r.read(&hdr.NoSamples)
-		r.read(&hdr.DataToRead)
-		r.read(&hdr.TriggerEq)
-		r.read(&hdr.TriggerDelay)
-		r.read(&hdr.ChanUsedForTrig)
-		r.read(&hdr.LowHighThres)
-		r.read(&hdr.TrigSigShapingHighThres)
-		r.read(&hdr.TrigSigShapingLowThres)
+		r.readU32(&hdr.NoSamples)
+		r.readU32(&hdr.DataToRead)
+		r.readU32(&hdr.TriggerEq)
+		r.readU32(&hdr.TriggerDelay)
+		r.readU32(&hdr.ChanUsedForTrig)
+		r.readU32(&hdr.LowHighThres)
+		r.readU32(&hdr.TrigSigShapingHighThres)
+		r.readU32(&hdr.TrigSigShapingLowThres)
 		// When setting the number of samples to 1000 it's actually 999
 		// hence the -1 subtraction
 		r.noSamples = uint16(hdr.NoSamples) - 1
 	case r.hdr.HdrType == HeaderOld:
-		r.read(&hdr.Size)
-		r.read(&hdr.NumFrame)
+		r.readU32(&hdr.Size)
+		r.readU32(&hdr.NumFrame)
 		// In the case of old header, the number of samples
 		// is retrieved from the header.Size field
 		// When header.Size = 1007, the number of samples is 999
@@ -127,7 +140,7 @@ func (r *Reader) readFrame(f *Frame) {
 	if r.Debug {
 		fmt.Printf("rw: start reading frame\n")
 	}
-	r.read(&f.ID)
+	r.readU32(&f.ID)
 	//fmt.Printf("rw: frame id = %v\n", f.ID)
 	if f.ID == lastFrame {
 		r.err = io.EOF
@@ -154,10 +167,10 @@ func (r *Reader) readBlockHeader(blk *Block) {
 	if r.err != nil {
 		return
 	}
-	r.read(&blk.Evt)
-	r.read(&blk.ID)
+	r.readU32(&blk.Evt)
+	r.readU32(&blk.ID)
 	var ctrl uint32
-	r.read(&ctrl)
+	r.readU32(&ctrl)
 	if ctrl != blockHeader && r.err == nil {
 		r.err = fmt.Errorf("asm: missing 0xCAFEDECA magic")
 	}
@@ -168,21 +181,19 @@ func (r *Reader) readBlockData(blk *Block) {
 	if r.err != nil {
 		return
 	}
-	//for i := range blk.Data {
-	//	r.read(&blk.Data[i])
-	//}
-	r.read(&blk.Data)
-	r.read(&blk.SRout)
+	for i := range blk.Data {
+		r.readU32(&blk.Data[i])
+	}
+	r.readU32(&blk.SRout)
 	//fmt.Printf("rw: srout = %v\n", blk.SRout)
-	//for i := range blk.Counters {
-	//	r.read(&blk.Counters[i])
-	//}
-	r.read(&blk.Counters)
+	for i := range blk.Counters {
+		r.readU32(&blk.Counters[i])
+	}
 }
 
 func (r *Reader) readBlockTrailer(blk *Block) {
 	var ctrl uint32
-	r.read(&ctrl)
+	r.readU32(&ctrl)
 	//fmt.Printf("rw: block trailer = %x\n", ctrl)
 	if (ctrl>>4) != blockTrailer && r.err == nil {
 		r.err = fmt.Errorf("asm: missing 0xBADCAFEF magic")
