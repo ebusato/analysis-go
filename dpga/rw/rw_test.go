@@ -15,7 +15,7 @@ func TestReader(t *testing.T) {
 	}
 	defer f.Close()
 
-	r, err := NewReader(bufio.NewReader(f))
+	r, err := NewReader(bufio.NewReader(f), HeaderOld)
 	if err != nil {
 		t.Fatalf("could not open asm file: %v\n", err)
 	}
@@ -91,7 +91,7 @@ func TestReadWrite(t *testing.T) {
 	}
 
 	for _, frame := range rframes {
-		err = w.Frame(frame)
+		err = w.Frame(&frame)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -128,7 +128,7 @@ func testRead(t *testing.T, name string) (Header, []Frame) {
 	}
 	defer f.Close()
 
-	r, err := NewReader(bufio.NewReader(f))
+	r, err := NewReader(bufio.NewReader(f), HeaderOld)
 	if err != nil {
 		t.Fatalf("could not open asm file [%s]: %v\n", name, err)
 	}
