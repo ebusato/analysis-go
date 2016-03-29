@@ -95,6 +95,7 @@ func (w *Writer) writeHeader(hdr Header) {
 	switch {
 	case hdr.HdrType == HeaderCAL:
 		w.writeU32(hdr.Time)
+		w.writeU32(hdr.NoASMCards)
 		w.writeU32(hdr.NoSamples)
 		w.writeU32(hdr.DataToRead)
 		w.writeU32(hdr.TriggerEq)

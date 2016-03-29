@@ -107,6 +107,7 @@ func (r *Reader) readHeader(hdr *Header) {
 		// Hack: set time from client clock rather than from server's
 		// since the later is not correct.
 		hdr.Time = uint32(time.Now().Unix())
+		r.readU32(&hdr.NoASMCards)
 		r.readU32(&hdr.NoSamples)
 		r.readU32(&hdr.DataToRead)
 		r.readU32(&hdr.TriggerEq)
@@ -181,14 +182,16 @@ func (r *Reader) readBlockData(blk *Block) {
 	if r.err != nil {
 		return
 	}
-	for i := range blk.Data {
-		r.readU32(&blk.Data[i])
-	}
+	r.read(&blk.Data)
+	//for i := range blk.Data {
+	//	r.readU32(&blk.Data[i])
+	//}
 	r.readU32(&blk.SRout)
+	r.read(&blk.Counters)
 	//fmt.Printf("rw: srout = %v\n", blk.SRout)
-	for i := range blk.Counters {
-		r.readU32(&blk.Counters[i])
-	}
+	//for i := range blk.Counters {
+	//	r.readU32(&blk.Counters[i])
+	//}
 }
 
 func (r *Reader) readBlockTrailer(blk *Block) {
@@ -310,13 +313,19 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 		pulse2, pulse3 := MakePulses(frame2, iCluster)
 
 		event.Clusters[iCluster] = *pulse.NewCluster(iCluster, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
+		
+		// The counter treatment should be clarified with Magali
+		// For now keep the info without checking that countersf1 == countersf2
+		// But it's not clear whether this is the right thing to do
+		// (are we supposed to have the same counters within one quartet, as the 
+		// code below implies ? -> not sure, to be checked)
 		event.Clusters[iCluster].Counters = make([]uint32, numCounters)
 		for i := uint8(0); i < numCounters; i++ {
 			counterf1 := frame1.Block.Counters[i]
-			counterf2 := frame2.Block.Counters[i]
-			if counterf1 != counterf2 {
-				log.Fatalf("rw: countersf1 != countersf2")
-			}
+			//counterf2 := frame2.Block.Counters[i]
+			//if counterf1 != counterf2 {
+			//	log.Fatalf("rw: countersf1 != countersf2")
+			//}
 			event.Clusters[iCluster].Counters[i] = counterf1
 		}
 	}

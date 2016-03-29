@@ -53,6 +53,7 @@ func (ht *HeaderType) Set(value string) error {
 type Header struct {
 	HdrType                 HeaderType // type of header
 	Time                    uint32     // number of seconds since Jan 01 1970
+	NoASMCards		uint32     // number of ASM cards
 	NoSamples               uint32     // number of samples
 	DataToRead              uint32     // data to read
 	TriggerEq               uint32     // trigger equation
@@ -71,6 +72,7 @@ func (h *Header) Print() {
 	switch {
 	case h.HdrType == HeaderCAL:
 		fmt.Printf("   Time = %v\n", time.Unix(int64(h.Time), 0).Format(time.UnixDate))
+		fmt.Printf("   NoASMCards = %v\n", h.NoASMCards)
 		fmt.Printf("   NoSamples = %v\n", h.NoSamples)
 		fmt.Printf("   DataToRead = %x\n", h.DataToRead)
 		fmt.Printf("   TriggerEq = %x\n", h.TriggerEq)
