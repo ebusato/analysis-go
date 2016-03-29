@@ -31,9 +31,9 @@ func (w *Writer) Write(data []byte) (int, error) {
 // Close closes the ASM stream.
 //
 // Close flushes any pending data.
-// Close does not close the underlying io.Reader.
+// Close does not close the underlying io.Writer.
 func (w *Writer) Close() error {
-	w.write(lastFrame)
+	w.writeU32(lastFrame)
 	if ww, ok := w.w.(*bufio.Writer); ok {
 		ww.Flush()
 	}
@@ -75,13 +75,6 @@ func (w *Writer) Frame(f *Frame) error {
 	return w.err
 }
 
-// func (w *Writer) write(v uint32) {
-// 	if w.err != nil {
-// 		return
-// 	}
-// 	w.err = binary.Write(w.w, binary.BigEndian, v)
-// }
-
 func (w *Writer) write(v interface{}) {
 	if w.err != nil {
 		return
@@ -89,21 +82,30 @@ func (w *Writer) write(v interface{}) {
 	w.err = binary.Write(w.w, binary.BigEndian, v)
 }
 
+func (w *Writer) writeU32(v uint32) {
+	if w.err != nil {
+		return
+	}
+	var buf [4]byte
+	binary.BigEndian.PutUint32(buf[:], v)
+	_, w.err = w.w.Write(buf[:])
+}
+
 func (w *Writer) writeHeader(hdr Header) {
 	switch {
 	case hdr.HdrType == HeaderCAL:
-		w.write(hdr.Time)
-		w.write(hdr.NoSamples)
-		w.write(hdr.DataToRead)
-		w.write(hdr.TriggerEq)
-		w.write(hdr.TriggerDelay)
-		w.write(hdr.ChanUsedForTrig)
-		w.write(hdr.LowHighThres)
-		w.write(hdr.TrigSigShapingHighThres)
-		w.write(hdr.TrigSigShapingLowThres)
+		w.writeU32(hdr.Time)
+		w.writeU32(hdr.NoSamples)
+		w.writeU32(hdr.DataToRead)
+		w.writeU32(hdr.TriggerEq)
+		w.writeU32(hdr.TriggerDelay)
+		w.writeU32(hdr.ChanUsedForTrig)
+		w.writeU32(hdr.LowHighThres)
+		w.writeU32(hdr.TrigSigShapingHighThres)
+		w.writeU32(hdr.TrigSigShapingLowThres)
 	case hdr.HdrType == HeaderOld:
-		w.write(hdr.Size)
-		w.write(hdr.NumFrame)
+		w.writeU32(hdr.Size)
+		w.writeU32(hdr.NumFrame)
 	default:
 		panic("error ! header type not known")
 	}
@@ -113,7 +115,7 @@ func (w *Writer) writeFrame(f *Frame) {
 	if w.err != nil {
 		return
 	}
-	w.write(f.ID)
+	w.writeU32(f.ID)
 	if f.ID == lastFrame {
 		w.err = io.EOF
 		return
@@ -124,7 +126,7 @@ func (w *Writer) writeFrame(f *Frame) {
 func (w *Writer) writeBlock(blk *Block, fid uint32) {
 	w.writeBlockHeader(blk)
 	w.writeBlockData(blk)
-	w.write((blockTrailer << 4) + fid)
+	w.writeU32((blockTrailer << 4) + fid)
 }
 
 func (w *Writer) writeBlockHeader(blk *Block) {
@@ -132,24 +134,22 @@ func (w *Writer) writeBlockHeader(blk *Block) {
 		return
 	}
 	//fmt.Printf("rw: writing block header: %v %v %x\n", blk.Evt, blk.ID, blockHeader)
-	w.write(blk.Evt)
-	w.write(blk.ID)
-	w.write(blockHeader)
+	w.writeU32(blk.Evt)
+	w.writeU32(blk.ID)
+	w.writeU32(blockHeader)
 }
 
 func (w *Writer) writeBlockData(blk *Block) {
 	if w.err != nil {
 		return
 	}
-	// 	for _, v := range blk.Data {
-	// 		w.write(v)
-	// 	}
-	w.write(blk.Data)
-	w.write(blk.SRout)
-	w.write(blk.Counters)
-	// 	for _, v := range blk.Counters {
-	// 		w.write(v)
-	// 	}
+	for _, v := range blk.Data {
+		w.writeU32(v)
+	}
+	w.writeU32(blk.SRout)
+	for _, v := range blk.Counters {
+		w.writeU32(v)
+	}
 }
 
 func (w *Writer) Event(event *event.Event) {
