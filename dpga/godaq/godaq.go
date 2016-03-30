@@ -15,6 +15,8 @@ import (
 
 	"github.com/toqueteos/webbrowser"
 
+	//"github.com/toqueteos/webbrowser"
+
 	"golang.org/x/net/websocket"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
@@ -24,6 +26,8 @@ import (
 
 var (
 	datac = make(chan Data, 10)
+	webad = flag.String("webad", ":5555", "server address:port")
+	nobro = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
 )
 
 type XY struct {
@@ -55,7 +59,6 @@ func main() {
 		monFreq     = flag.Uint("mf", 50, "Monitoring frequency")
 		evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
 		debug       = flag.Bool("d", false, "If set, debugging informations are printed")
-		webad       = flag.String("webad", "localhost:5555", "server address:port")
 	)
 	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
 	flag.Parse()
@@ -85,6 +88,13 @@ func main() {
 	page = strings.Replace(page, "?LOWHIGHTHRESH?", strconv.FormatUint(uint64(r.Header().LowHighThres), 16), 1)
 	page = strings.Replace(page, "?TRIGSIGSHAPINGHIGHTHRES?", strconv.FormatUint(uint64(r.Header().TrigSigShapingHighThres), 16), 1)
 	page = strings.Replace(page, "?TRIGSIGSHAPINGLOWTHRES?", strconv.FormatUint(uint64(r.Header().TrigSigShapingLowThres), 16), 1)
+
+	webadSlice := strings.Split(*webad, ":")
+	if webadSlice[0] == "" {
+		webadSlice[0] = getHostIP()
+	}
+	*webad = webadSlice[0] + ":" + webadSlice[1]
+	page = strings.Replace(page, "?WEBAD?", *webad, 1)
 
 	// Writer
 	filew, err := os.Create(*outfileName)
@@ -124,14 +134,16 @@ func main() {
 	go control(terminateStream, commandIsEnded)
 	go stream(terminateStream, cevent, r, w, noEvents, monFreq, evtFreq, &wg)
 	go command(commandIsEnded)
-	go webserver(webad)
+	go webserver()
 	//go monitoring(cevent)
 
 	wg.Wait()
 }
 
-func webserver(webad *string) {
-	webbrowser.Open("http://" + *webad)
+func webserver() {
+	if !*nobro {
+		webbrowser.Open("http://" + *webad)
+	}
 	http.HandleFunc("/", plotHandle)
 	http.Handle("/data", websocket.Handler(dataHandler))
 	err := http.ListenAndServe(*webad, nil)
@@ -267,14 +279,42 @@ func dataHandler(ws *websocket.Conn) {
 	}
 }
 
+func getHostIP() string {
+	host, err := os.Hostname()
+	if err != nil {
+		log.Fatalf("could not retrieve hostname: %v\n", err)
+	}
+
+	addrs, err := net.LookupIP(host)
+	if err != nil {
+		log.Fatalf("could not lookup hostname IP: %v\n", err)
+	}
+
+	for _, addr := range addrs {
+		ipv4 := addr.To4()
+		if ipv4 == nil {
+			continue
+		}
+		return ipv4.String()
+	}
+
+	log.Fatalf("could not infer host IP")
+	return ""
+}
+
 var page string = `
 <html>
 	<head>
 		<title>DPGA monitoring</title>
-		<!-- script src="jquery-2.2.2.js"></script-->
-		<!-- script src="/home/ebusato/Travail/flot/jquery.flot.min.js"></script-->
+		
+		<!--
+		<script type="text/javascript" src="file:///home/lestand/Bin/flot/jquery.min.js"></script>
+		<script type="text/javascript" src="file:///home/lestand/Bin/flot/jquery.flot.min.js"></script>
+		-->
+		
 		<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 		<script src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
+	
 		<script type="text/javascript">
 		var sock = null;
 		
@@ -336,8 +376,7 @@ var page string = `
 		};
 
 		window.onload = function() {
-			sock = new WebSocket("ws://localhost:5555/data");
-
+			sock = new WebSocket("ws://?WEBAD?/data");
 			sock.onmessage = function(event) {
 				var data = JSON.parse(event.data);
 				console.log("data: "+JSON.stringify(data));
