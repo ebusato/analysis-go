@@ -75,28 +75,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	r, err := rw.NewReader(bufio.NewReader(tcp), hdrType, !*st)
+	r, err := rw.NewReader(bufio.NewReader(tcp), hdrType)
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
-
-	page = strings.Replace(page, "?DATE?", time.Unix(int64(r.Header().Time), 0).Format(time.UnixDate), 1)
-	page = strings.Replace(page, "?NOASMCARDS?", strconv.FormatUint(uint64(r.Header().NoASMCards), 10), 1)
-	page = strings.Replace(page, "?NOSAMPLES?", strconv.FormatUint(uint64(r.NoSamples()), 10), 1)
-	page = strings.Replace(page, "?DATATOREAD?", strconv.FormatUint(uint64(r.Header().DataToRead), 16), 1)
-	page = strings.Replace(page, "?TRIGGEREQ?", strconv.FormatUint(uint64(r.Header().TriggerEq), 16), 1)
-	page = strings.Replace(page, "?TRIGGERDELAY?", strconv.FormatUint(uint64(r.Header().TriggerDelay), 16), 1)
-	page = strings.Replace(page, "?CHANUSEDFORTRIGGER?", strconv.FormatUint(uint64(r.Header().ChanUsedForTrig), 16), 1)
-	page = strings.Replace(page, "?LOWHIGHTHRESH?", strconv.FormatUint(uint64(r.Header().LowHighThres), 16), 1)
-	page = strings.Replace(page, "?TRIGSIGSHAPINGHIGHTHRES?", strconv.FormatUint(uint64(r.Header().TrigSigShapingHighThres), 16), 1)
-	page = strings.Replace(page, "?TRIGSIGSHAPINGLOWTHRES?", strconv.FormatUint(uint64(r.Header().TrigSigShapingLowThres), 16), 1)
-
-	webadSlice := strings.Split(*webad, ":")
-	if webadSlice[0] == "" {
-		webadSlice[0] = getHostIP()
-	}
-	*webad = webadSlice[0] + ":" + webadSlice[1]
-	page = strings.Replace(page, "?WEBAD?", *webad, 1)
 
 	// Writer
 	filew, err := os.Create(*outfileName)
@@ -113,12 +95,30 @@ func main() {
 
 	// Start reading TCP stream
 	hdr := r.Header()
-	hdr.Print()
 
-	err = w.Header(hdr)
+	err = w.Header(hdr, !*st)
 	if err != nil {
 		log.Fatalf("error writing header: %v\n", err)
 	}
+	hdr.Print()
+
+	page = strings.Replace(page, "?DATE?", time.Unix(int64(r.Header().Time), 0).Format(time.UnixDate), 1)
+	page = strings.Replace(page, "?NOASMCARDS?", strconv.FormatUint(uint64(hdr.NoASMCards), 10), 1)
+	page = strings.Replace(page, "?NOSAMPLES?", strconv.FormatUint(uint64(r.NoSamples()), 10), 1)
+	page = strings.Replace(page, "?DATATOREAD?", strconv.FormatUint(uint64(hdr.DataToRead), 16), 1)
+	page = strings.Replace(page, "?TRIGGEREQ?", strconv.FormatUint(uint64(hdr.TriggerEq), 16), 1)
+	page = strings.Replace(page, "?TRIGGERDELAY?", strconv.FormatUint(uint64(hdr.TriggerDelay), 16), 1)
+	page = strings.Replace(page, "?CHANUSEDFORTRIGGER?", strconv.FormatUint(uint64(hdr.ChanUsedForTrig), 16), 1)
+	page = strings.Replace(page, "?LOWHIGHTHRESH?", strconv.FormatUint(uint64(hdr.LowHighThres), 16), 1)
+	page = strings.Replace(page, "?TRIGSIGSHAPINGHIGHTHRES?", strconv.FormatUint(uint64(hdr.TrigSigShapingHighThres), 16), 1)
+	page = strings.Replace(page, "?TRIGSIGSHAPINGLOWTHRES?", strconv.FormatUint(uint64(hdr.TrigSigShapingLowThres), 16), 1)
+
+	webadSlice := strings.Split(*webad, ":")
+	if webadSlice[0] == "" {
+		webadSlice[0] = getHostIP()
+	}
+	*webad = webadSlice[0] + ":" + webadSlice[1]
+	page = strings.Replace(page, "?WEBAD?", *webad, 1)
 
 	// Start goroutines
 	const N = 1

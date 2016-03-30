@@ -32,7 +32,7 @@ func main() {
 		log.Fatalf("could not create data file: %v\n", err)
 	}
 	defer filew.Close()
-	r, err := rw.NewReader(bufio.NewReader(filew), hdrType, false)
+	r, err := rw.NewReader(bufio.NewReader(filew), hdrType)
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
@@ -54,7 +54,7 @@ func main() {
 	hdr := r.Header()
 	hdr.Print()
 
-	err = w.Header(hdr)
+	err = w.Header(&hdr, false)
 	if err != nil {
 		log.Fatalf("error writing header: %v\n", err)
 	}

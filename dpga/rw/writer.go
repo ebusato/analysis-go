@@ -3,9 +3,9 @@ package rw
 import (
 	"bufio"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"log"
+	"time"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
 )
@@ -14,7 +14,7 @@ import (
 type Writer struct {
 	w            io.Writer
 	err          error
-	hdr          Header
+	hdr          *Header
 	frameCounter uint32
 }
 
@@ -44,15 +44,12 @@ func (w *Writer) Close() error {
 }
 
 // Header writes the Header to the ASM stream.
-func (w *Writer) Header(hdr Header) error {
+func (w *Writer) Header(hdr *Header, clientTime bool) error {
 	if w.err != nil {
 		return w.err
 	}
-	if w.hdr.Size != 0 {
-		return fmt.Errorf("asm: header already written")
-	}
 	w.hdr = hdr
-	w.writeHeader(w.hdr)
+	w.writeHeader(w.hdr, clientTime)
 	return w.err
 }
 
@@ -61,16 +58,6 @@ func (w *Writer) Frame(f *Frame) error {
 	if w.err != nil {
 		return w.err
 	}
-	if w.hdr.HdrType == HeaderOld && w.hdr.Size == 0 {
-		w.hdr.Size = uint32(len(f.Block.Data))
-		w.hdr.NumFrame = 0
-
-		w.writeHeader(w.hdr)
-		if w.err != nil {
-			return w.err
-		}
-	}
-
 	w.writeFrame(f)
 	return w.err
 }
@@ -91,9 +78,14 @@ func (w *Writer) writeU32(v uint32) {
 	_, w.err = w.w.Write(buf[:])
 }
 
-func (w *Writer) writeHeader(hdr Header) {
+func (w *Writer) writeHeader(hdr *Header, clientTime bool) {
 	switch {
 	case hdr.HdrType == HeaderCAL:
+		if clientTime {
+			// Hack: set time from client clock rather than from server's
+			// since the later is not correct.
+			hdr.Time = uint32(time.Now().Unix())
+		}
 		w.writeU32(hdr.Time)
 		w.writeU32(hdr.NoASMCards)
 		w.writeU32(hdr.NoSamples)

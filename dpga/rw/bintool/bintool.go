@@ -42,7 +42,7 @@ func main() {
 	}
 	defer f.Close()
 
-	r, err := rw.NewReader(bufio.NewReader(f), rw.HeaderCAL, false)
+	r, err := rw.NewReader(bufio.NewReader(f), rw.HeaderCAL)
 	if err != nil {
 		log.Fatalf("could not open asm file: %v\n", err)
 	}
@@ -93,7 +93,7 @@ func main() {
 	case *ascii:
 		hdr.Print()
 	case *wgoodevts:
-		err = w.Header(hdr)
+		err = w.Header(&hdr, false)
 		if err != nil {
 			log.Fatalf("error writing header: %v\n", err)
 		}

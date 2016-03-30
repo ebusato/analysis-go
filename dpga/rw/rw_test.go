@@ -25,7 +25,7 @@ func TestRW(t *testing.T) {
 	}
 	defer f.Close()
 
-	r, err := NewReader(bufio.NewReader(f), HeaderCAL, false)
+	r, err := NewReader(bufio.NewReader(f), HeaderCAL)
 	if err != nil {
 		t.Fatalf("could not open asm file: %v\n", err)
 	}
@@ -45,7 +45,7 @@ func TestRW(t *testing.T) {
 
 	rhdr = r.Header()
 
-	err = w.Header(rhdr)
+	err = w.Header(&rhdr, false)
 	if err != nil {
 		t.Fatalf("error writing header: %v\n", err)
 	}
@@ -77,7 +77,7 @@ func TestWIntegrity(t *testing.T) {
 	}
 	defer f.Close()
 
-	r, err := NewReader(bufio.NewReader(f), HeaderCAL, false)
+	r, err := NewReader(bufio.NewReader(f), HeaderCAL)
 	if err != nil {
 		t.Fatalf("could not open asm file: %v\n", err)
 	}
@@ -111,48 +111,3 @@ func TestWIntegrity(t *testing.T) {
 		t.Fatalf("events differ.\ngot= %#v\nwant=%v\n", wevents, revents)
 	}
 }
-
-/*
-func TestWIntegrity(t *testing.T) {
-	rhdr, revents := read(t, "testdata/50evtsNewHeader.bin")
-	whdr, wevents := read(t, "testdata/w50evtsNewHeader.bin")
-
-	fmt.Println("starting deep equal")
-	if !reflect.DeepEqual(rhdr, whdr) {
-		t.Fatalf("headers differ.\ngot= %#v\nwant=%v\n", whdr, rhdr)
-	}
-
-	if !reflect.DeepEqual(revents, wevents) {
-		t.Fatalf("events differ.\ngot= %#v\nwant=%v\n", wevents, revents)
-	}
-
-}
-
-
-func read(t *testing.T, fname string) (Header, []event.Event) {
-	f, err := os.Open(fname)
-	if err != nil {
-		t.Fatalf("could not open data file: %v\n", err)
-	}
-	defer f.Close()
-
-	r, err := NewReader(bufio.NewReader(f), HeaderCAL)
-	if err != nil {
-		t.Fatalf("could not open asm file: %v\n", err)
-	}
-
-	hdr := r.Header()
-
-	var events []event.Event
-
-	for {
-		event, _ := r.ReadNextEvent()
-		events = append(events, *event)
-		if r.Err() == io.EOF {
-			break
-		}
-	}
-
-	return hdr, events
-}
-*/

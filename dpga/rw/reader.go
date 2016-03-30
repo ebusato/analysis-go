@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"time"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
@@ -32,17 +31,17 @@ func (r *Reader) Err() error {
 }
 
 // Header returns the ASM-stream header
-func (r *Reader) Header() Header {
-	return r.hdr
+func (r *Reader) Header() *Header {
+	return &r.hdr
 }
 
 // NewReader returns a new ASM stream in read mode
-func NewReader(r io.Reader, ht HeaderType, clientTime bool) (*Reader, error) {
+func NewReader(r io.Reader, ht HeaderType) (*Reader, error) {
 	rr := &Reader{
 		r: r,
 	}
 	rr.hdr.HdrType = ht
-	rr.readHeader(&rr.hdr, clientTime)
+	rr.readHeader(&rr.hdr)
 	return rr, rr.err
 }
 
@@ -100,15 +99,10 @@ func (r *Reader) readU32(v *uint32) {
 	}
 }
 
-func (r *Reader) readHeader(hdr *Header, clientTime bool) {
+func (r *Reader) readHeader(hdr *Header) {
 	switch {
 	case r.hdr.HdrType == HeaderCAL:
 		r.readU32(&hdr.Time)
-		if clientTime {
-			// Hack: set time from client clock rather than from server's
-			// since the later is not correct.
-			hdr.Time = uint32(time.Now().Unix())
-		}
 		r.readU32(&hdr.NoASMCards)
 		r.readU32(&hdr.NoSamples)
 		r.readU32(&hdr.DataToRead)
