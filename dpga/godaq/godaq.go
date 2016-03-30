@@ -102,7 +102,7 @@ func main() {
 	}
 	hdr.Print()
 
-	page = strings.Replace(page, "?DATE?", time.Unix(int64(r.Header().Time), 0).Format(time.UnixDate), 1)
+	page = strings.Replace(page, "?DATE?", time.Unix(int64(hdr.Time), 0).Format(time.UnixDate), 1)
 	page = strings.Replace(page, "?NOASMCARDS?", strconv.FormatUint(uint64(hdr.NoASMCards), 10), 1)
 	page = strings.Replace(page, "?NOSAMPLES?", strconv.FormatUint(uint64(r.NoSamples()), 10), 1)
 	page = strings.Replace(page, "?DATATOREAD?", "0x"+strconv.FormatUint(uint64(hdr.DataToRead), 16), 1)
