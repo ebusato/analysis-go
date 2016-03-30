@@ -37,12 +37,12 @@ func (r *Reader) Header() Header {
 }
 
 // NewReader returns a new ASM stream in read mode
-func NewReader(r io.Reader, ht HeaderType) (*Reader, error) {
+func NewReader(r io.Reader, ht HeaderType, clientTime bool) (*Reader, error) {
 	rr := &Reader{
 		r: r,
 	}
 	rr.hdr.HdrType = ht
-	rr.readHeader(&rr.hdr)
+	rr.readHeader(&rr.hdr, clientTime)
 	return rr, rr.err
 }
 
@@ -100,13 +100,15 @@ func (r *Reader) readU32(v *uint32) {
 	}
 }
 
-func (r *Reader) readHeader(hdr *Header) {
+func (r *Reader) readHeader(hdr *Header, clientTime bool) {
 	switch {
 	case r.hdr.HdrType == HeaderCAL:
 		r.readU32(&hdr.Time)
-		// Hack: set time from client clock rather than from server's
-		// since the later is not correct.
-		hdr.Time = uint32(time.Now().Unix())
+		if clientTime {
+			// Hack: set time from client clock rather than from server's
+			// since the later is not correct.
+			hdr.Time = uint32(time.Now().Unix())
+		}
 		r.readU32(&hdr.NoASMCards)
 		r.readU32(&hdr.NoSamples)
 		r.readU32(&hdr.DataToRead)
@@ -313,11 +315,11 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 		pulse2, pulse3 := MakePulses(frame2, iCluster)
 
 		event.Clusters[iCluster] = *pulse.NewCluster(iCluster, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
-		
+
 		// The counter treatment should be clarified with Magali
 		// For now keep the info without checking that countersf1 == countersf2
 		// But it's not clear whether this is the right thing to do
-		// (are we supposed to have the same counters within one quartet, as the 
+		// (are we supposed to have the same counters within one quartet, as the
 		// code below implies ? -> not sure, to be checked)
 		event.Clusters[iCluster].Counters = make([]uint32, numCounters)
 		for i := uint8(0); i < numCounters; i++ {

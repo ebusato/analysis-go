@@ -2,149 +2,157 @@ package rw
 
 import (
 	"bufio"
+	"fmt"
 	"io"
+	"log"
 	"os"
 	"reflect"
 	"testing"
+
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 )
 
-func TestReader(t *testing.T) {
-	f, err := os.Open("testdata/data-03-frames.bin")
+var rhdr Header
+var revents []event.Event
+
+func TestRW(t *testing.T) {
+	fmt.Println("starting TestRW")
+
+	// Reader
+	f, err := os.Open("testdata/50evtsNewHeader.bin")
 	if err != nil {
 		t.Fatalf("could not open data file: %v\n", err)
 	}
 	defer f.Close()
 
-	r, err := NewReader(bufio.NewReader(f), HeaderOld)
+	r, err := NewReader(bufio.NewReader(f), HeaderCAL, false)
 	if err != nil {
 		t.Fatalf("could not open asm file: %v\n", err)
 	}
 
-	hdr := r.Header()
-	const (
-		hdrSize    uint32 = 1007
-		hdrNFrames uint32 = 3
-	)
-	if hdr.Size != hdrSize {
-		t.Fatalf("invalid header.Size. got=%d. want=%d", hdr.Size, hdrSize)
-	}
-	if hdr.NumFrame != hdrNFrames {
-		t.Fatalf("invalid header.NumFrame. got=%d. want=%d",
-			hdr.NumFrame,
-			hdrNFrames,
-		)
-	}
-
-	nframes := 0
-	for {
-		frame, err := r.Frame()
-		if err != nil {
-			if err != io.EOF {
-				t.Fatalf("error loading frame: %v\n", err)
-			}
-			if frame.ID != lastFrame {
-				t.Fatalf("invalid last frame id. got=%d. want=%d",
-					frame.ID,
-					lastFrame,
-				)
-			}
-			break
-		}
-		if frame.ID != uint32(nframes) {
-			t.Fatalf(
-				"frame.id differ. got=%d want=%d\n",
-				frame.ID,
-				uint32(nframes),
-			)
-		}
-		//frame.Print()
-		nframes++
-	}
-	if nframes != 3 {
-		t.Fatalf("got %d frames. want 3\n", nframes)
-	}
-}
-
-func TestReadWrite(t *testing.T) {
-	const (
-		rname = "testdata/data-03-frames.bin"
-		wname = "testdata/wdata-03-frames.bin"
-	)
-
-	rhdr, rframes := testRead(t, rname)
-
-	f, err := os.Create(wname)
+	// Writer
+	filew, err := os.Create("testdata/w50evtsNewHeader.bin")
 	if err != nil {
-		t.Fatalf("could not create data file: %v\n", err)
+		log.Fatalf("could not create data file: %v\n", err)
 	}
-	defer f.Close()
-	//defer os.Remove(wname)
+	defer filew.Close()
 
-	w := NewWriter(bufio.NewWriter(f))
+	w := NewWriter(bufio.NewWriter(filew))
 	if err != nil {
-		t.Fatalf("could not open asm file: %v\n", err)
+		log.Fatalf("could not open file: %v\n", err)
 	}
+	defer w.Close()
+
+	rhdr = r.Header()
 
 	err = w.Header(rhdr)
 	if err != nil {
-		t.Fatalf("error: %v\n", err)
+		t.Fatalf("error writing header: %v\n", err)
 	}
 
-	for _, frame := range rframes {
-		err = w.Frame(&frame)
-		if err != nil {
-			if err == io.EOF {
-				break
+	nevents := 0
+	for {
+		event, status := r.ReadNextEvent()
+		if r.Err() != io.EOF {
+			revents = append(revents, *event)
+			w.Event(event)
+			if status == false {
+				t.Fatalf("error: status is false\n")
 			}
-			t.Fatalf("error: %v\n", err)
+		} else {
+			break
+		}
+		nevents++
+	}
+	if nevents != 50 {
+		t.Fatalf("got %d events. want 50\n", nevents)
+	}
+}
+
+func TestWIntegrity(t *testing.T) {
+	fmt.Println("starting TestWIntegrity")
+	f, err := os.Open("testdata/w50evtsNewHeader.bin")
+	if err != nil {
+		t.Fatalf("could not open data file: %v\n", err)
+	}
+	defer f.Close()
+
+	r, err := NewReader(bufio.NewReader(f), HeaderCAL, false)
+	if err != nil {
+		t.Fatalf("could not open asm file: %v\n", err)
+	}
+
+	whdr := r.Header()
+
+	var wevents []event.Event
+
+	for {
+		event, status := r.ReadNextEvent()
+		if r.Err() != io.EOF {
+			wevents = append(wevents, *event)
+			if status == false {
+				t.Fatalf("error: status is false\n")
+			}
+		} else {
+			break
 		}
 	}
 
-	err = w.Close()
-	if err != nil {
-		t.Fatalf("error closing asm-stream: %v\n", err)
+	fmt.Println("in TestWIntegrity, starting deepEqual")
+	if !reflect.DeepEqual(rhdr, whdr) {
+		fmt.Println("Printing original header")
+		rhdr.Print()
+		fmt.Println("Printing written header")
+		whdr.Print()
+		t.Fatalf("headers differ.")
 	}
 
-	err = f.Close()
-	if err != nil {
-		t.Fatalf("error closing output file: %v\n", err)
+	if !reflect.DeepEqual(revents, wevents) {
+		t.Fatalf("events differ.\ngot= %#v\nwant=%v\n", wevents, revents)
 	}
+}
 
-	whdr, wframes := testRead(t, wname)
+/*
+func TestWIntegrity(t *testing.T) {
+	rhdr, revents := read(t, "testdata/50evtsNewHeader.bin")
+	whdr, wevents := read(t, "testdata/w50evtsNewHeader.bin")
 
+	fmt.Println("starting deep equal")
 	if !reflect.DeepEqual(rhdr, whdr) {
 		t.Fatalf("headers differ.\ngot= %#v\nwant=%v\n", whdr, rhdr)
 	}
 
-	if !reflect.DeepEqual(rframes, wframes) {
-		t.Fatalf("frames differ.\ngot= %#v\nwant=%v\n", wframes, rframes)
+	if !reflect.DeepEqual(revents, wevents) {
+		t.Fatalf("events differ.\ngot= %#v\nwant=%v\n", wevents, revents)
 	}
+
 }
 
-func testRead(t *testing.T, name string) (Header, []Frame) {
-	f, err := os.Open(name)
+
+func read(t *testing.T, fname string) (Header, []event.Event) {
+	f, err := os.Open(fname)
 	if err != nil {
-		t.Fatalf("could not open data file [%s]: %v\n", name, err)
+		t.Fatalf("could not open data file: %v\n", err)
 	}
 	defer f.Close()
 
-	r, err := NewReader(bufio.NewReader(f), HeaderOld)
+	r, err := NewReader(bufio.NewReader(f), HeaderCAL)
 	if err != nil {
-		t.Fatalf("could not open asm file [%s]: %v\n", name, err)
+		t.Fatalf("could not open asm file: %v\n", err)
 	}
 
 	hdr := r.Header()
-	frames := []Frame{}
+
+	var events []event.Event
 
 	for {
-		frame, err := r.Frame()
-		frames = append(frames, *frame)
-		if err != nil {
-			if err != io.EOF {
-				t.Fatalf("[%s]: error loading frame: %v\n", name, err)
-			}
+		event, _ := r.ReadNextEvent()
+		events = append(events, *event)
+		if r.Err() == io.EOF {
 			break
 		}
 	}
-	return hdr, frames
+
+	return hdr, events
 }
+*/

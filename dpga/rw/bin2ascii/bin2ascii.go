@@ -27,7 +27,7 @@ func main() {
 	}
 	defer f.Close()
 
-	r, err := rw.NewReader(bufio.NewReader(f), rw.HeaderCAL)
+	r, err := rw.NewReader(bufio.NewReader(f), rw.HeaderCAL, false)
 	if err != nil {
 		log.Fatalf("could not create reader: %v\n", err)
 	}

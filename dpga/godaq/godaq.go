@@ -28,6 +28,7 @@ var (
 	datac = make(chan Data, 10)
 	webad = flag.String("webad", ":5555", "server address:port")
 	nobro = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
+	sleep = flag.Bool("s", false, "If set, sleep a bit between events")
 )
 
 type XY struct {
@@ -58,6 +59,7 @@ func main() {
 		port        = flag.String("p", "1024", "Port number")
 		monFreq     = flag.Uint("mf", 50, "Monitoring frequency")
 		evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
+		st          = flag.Bool("st", false, "If set, client time is used rather than server's time.")
 		debug       = flag.Bool("d", false, "If set, debugging informations are printed")
 	)
 	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
@@ -73,7 +75,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	r, err := rw.NewReader(bufio.NewReader(tcp), hdrType)
+	r, err := rw.NewReader(bufio.NewReader(tcp), hdrType, !*st)
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
@@ -230,6 +232,9 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 					}
 					iEvent++
 					noEventsForMon++
+					if *sleep {
+						time.Sleep(1 * time.Second)
+					}
 				case true:
 					fmt.Println("warning, event is corrupted and therefore not written to output file.")
 					log.Fatalf(" -> quitting")
