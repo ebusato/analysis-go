@@ -54,7 +54,7 @@ func main() {
 	hdr := r.Header()
 	hdr.Print()
 
-	err = w.Header(&hdr, false)
+	err = w.Header(hdr, false)
 	if err != nil {
 		log.Fatalf("error writing header: %v\n", err)
 	}

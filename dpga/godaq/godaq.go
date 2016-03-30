@@ -105,13 +105,13 @@ func main() {
 	page = strings.Replace(page, "?DATE?", time.Unix(int64(r.Header().Time), 0).Format(time.UnixDate), 1)
 	page = strings.Replace(page, "?NOASMCARDS?", strconv.FormatUint(uint64(hdr.NoASMCards), 10), 1)
 	page = strings.Replace(page, "?NOSAMPLES?", strconv.FormatUint(uint64(r.NoSamples()), 10), 1)
-	page = strings.Replace(page, "?DATATOREAD?", strconv.FormatUint(uint64(hdr.DataToRead), 16), 1)
-	page = strings.Replace(page, "?TRIGGEREQ?", strconv.FormatUint(uint64(hdr.TriggerEq), 16), 1)
-	page = strings.Replace(page, "?TRIGGERDELAY?", strconv.FormatUint(uint64(hdr.TriggerDelay), 16), 1)
-	page = strings.Replace(page, "?CHANUSEDFORTRIGGER?", strconv.FormatUint(uint64(hdr.ChanUsedForTrig), 16), 1)
-	page = strings.Replace(page, "?LOWHIGHTHRESH?", strconv.FormatUint(uint64(hdr.LowHighThres), 16), 1)
-	page = strings.Replace(page, "?TRIGSIGSHAPINGHIGHTHRES?", strconv.FormatUint(uint64(hdr.TrigSigShapingHighThres), 16), 1)
-	page = strings.Replace(page, "?TRIGSIGSHAPINGLOWTHRES?", strconv.FormatUint(uint64(hdr.TrigSigShapingLowThres), 16), 1)
+	page = strings.Replace(page, "?DATATOREAD?", "0x"+strconv.FormatUint(uint64(hdr.DataToRead), 16), 1)
+	page = strings.Replace(page, "?TRIGGEREQ?", "0x"+strconv.FormatUint(uint64(hdr.TriggerEq), 16), 1)
+	page = strings.Replace(page, "?TRIGGERDELAY?", "0x"+strconv.FormatUint(uint64(hdr.TriggerDelay), 16), 1)
+	page = strings.Replace(page, "?CHANUSEDFORTRIGGER?", "0x"+strconv.FormatUint(uint64(hdr.ChanUsedForTrig), 16), 1)
+	page = strings.Replace(page, "?LOWHIGHTHRESH?", "0x"+strconv.FormatUint(uint64(hdr.LowHighThres), 16), 1)
+	page = strings.Replace(page, "?TRIGSIGSHAPINGHIGHTHRES?", "0x"+strconv.FormatUint(uint64(hdr.TrigSigShapingHighThres), 16), 1)
+	page = strings.Replace(page, "?TRIGSIGSHAPINGLOWTHRES?", "0x"+strconv.FormatUint(uint64(hdr.TrigSigShapingLowThres), 16), 1)
 
 	webadSlice := strings.Split(*webad, ":")
 	if webadSlice[0] == "" {
@@ -430,11 +430,13 @@ var page string = `
 		</div>
 		<table cellspacing="15">
 		<tr> 
-		<td>
+		<td valign="top">
 		<b>Date:</b> ?DATE? <br>
 		<b>Number of ASM Cards:</b> ?NOASMCARDS?<br>
 		<b>Number of samples:</b> ?NOSAMPLES?<br>
 		<b>Data read:</b> ?DATATOREAD?<br>
+		</td>
+		<td valign="top">
 		<b>Trigger equation:</b> ?TRIGGEREQ?<br>
 		<b>Trigger delay:</b> ?TRIGGERDELAY?<br>
 		<b>Channels used for trigger:</b> ?CHANUSEDFORTRIGGER?<br>

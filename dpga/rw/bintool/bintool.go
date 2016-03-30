@@ -93,7 +93,7 @@ func main() {
 	case *ascii:
 		hdr.Print()
 	case *wgoodevts:
-		err = w.Header(&hdr, false)
+		err = w.Header(hdr, false)
 		if err != nil {
 			log.Fatalf("error writing header: %v\n", err)
 		}
