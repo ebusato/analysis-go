@@ -12,7 +12,7 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
 )
 
-var rhdr Header
+var rhdr *Header
 var revents []event.Event
 
 func TestRW(t *testing.T) {
@@ -45,7 +45,7 @@ func TestRW(t *testing.T) {
 
 	rhdr = r.Header()
 
-	err = w.Header(&rhdr, false)
+	err = w.Header(rhdr, false)
 	if err != nil {
 		t.Fatalf("error writing header: %v\n", err)
 	}

@@ -125,13 +125,13 @@ func (p *Pulse) Copy() *Pulse {
 }
 
 // AddSample adds a sample to the pulse
-func (p *Pulse) AddSample(s *Sample, capa *detector.Capacitor) {
+func (p *Pulse) AddSample(s *Sample, capa *detector.Capacitor, thres float64) {
 	if s.Capacitor != nil {
 		log.Fatal("capacitor is not nil")
 	}
 	s.Capacitor = capa
 	p.Samples = append(p.Samples, *s)
-	if s.Amplitude > 650 {
+	if s.Amplitude > thres {
 		p.HasSignal = true
 		if s.Amplitude == 4095 {
 			p.HasSatSignal = true

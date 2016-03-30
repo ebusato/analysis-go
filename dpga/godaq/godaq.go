@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-hep/hbook"
 	"github.com/toqueteos/webbrowser"
 
 	//"github.com/toqueteos/webbrowser"
@@ -42,10 +43,23 @@ type Quartet [4]Pulse
 
 type Quartets [60]Quartet
 
+type H1D []XY // X is the bin center and Y the bin content
+
+func NewH1D(h *hbook.H1D) H1D {
+	var hist H1D
+	nbins := h.Len()
+	for i := 0; i < nbins; i++ {
+		x, y := h.XY(i)
+		hist = append(hist, XY{X: x, Y: y})
+	}
+	return hist
+}
+
 type Data struct {
 	Time float64  `json:"time"` // time at which monitoring data are taken
 	Freq float64  `json:"freq"` // number of events processed per second
 	Qs   Quartets `json:"quartets"`
+	Mult H1D      `json:"mult"` // multiplicity of pulses
 }
 
 func main() {
@@ -182,6 +196,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 	//nFrames := uint(0)
 	iEvent := uint(0)
 	noEventsForMon := uint64(0)
+	hMult := hbook.NewH1D(8, -0.5, 7.5)
 	start := time.Now()
 	startabs := start
 	for {
@@ -202,6 +217,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				switch event.IsCorrupted {
 				case false:
 					w.Event(event)
+					hMult.Fill(float64(event.Multiplicity()), 1)
 					if iEvent%*monFreq == 0 {
 						//cevent <- *event
 						// Webserver data
@@ -227,6 +243,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							Time: time,
 							Freq: freq,
 							Qs:   qs,
+							Mult: NewH1D(hMult),
 						}
 						noEventsForMon = 0
 					}
@@ -338,6 +355,9 @@ var page string = `
 		
 		var freqplot = new plot("frequency (Hz)", [], 'orange')
 		
+		var multplot = new plot("Pulse multiplicity", [], 'orange')
+		multplot.bars = { show: true }
+		
 		var colors = ['blue', 'red', 'black', 'green']
 		
 		var Nquartets = 60
@@ -354,6 +374,7 @@ var page string = `
 		}
 		
 		function clearplots() {
+			multplot.data = []
 			for (var iq = 0; iq < Nquartets; iq += 1) {
 				for (var ip = 0; ip < Nplots; ip += 1) {
 					quartetplots[iq][ip].data = []
@@ -365,8 +386,12 @@ var page string = `
 			var freq = $.plot("#my-freq-plot", [freqplot]);
 			freq.setupGrid(); // needed as x-axis changes
 			freq.draw();
+			multopts = new options()
+			multopts.xaxis = {ticks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
+			var mult = $.plot("#my-mult-plot", [multplot], multopts);
+			mult.setupGrid(); 
+			mult.draw();
 			for (var i = 0; i < Nquartets; i++) {
-				
 				if (i < Nquartets/2) {
 					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], new options('yellow'));
 					p.setupGrid();
@@ -387,6 +412,9 @@ var page string = `
 				console.log("data: "+JSON.stringify(data));
 				if (data.freq != 0) {	
 					freqplot.data.push([data.time, data.freq])
+				}
+				for (var i = 0; i < 8; i += 1) {
+					multplot.data.push([data.mult[i].X, data.mult[i].Y])
 				}
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
@@ -446,6 +474,9 @@ var page string = `
 		</td>
 		<td>
 		<div id="my-freq-plot" class="my-plot-stylefreq"></div>
+		</td>		
+		<td>
+		<div id="my-mult-plot" class="my-plot-stylefreq"></div>
 		</td>
 		</tr>
 		</table>
