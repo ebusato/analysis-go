@@ -8,8 +8,10 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/go-hep/hbook"
@@ -99,9 +101,6 @@ func main() {
 	defer filew.Close()
 
 	w := rw.NewWriter(bufio.NewWriter(filew))
-	if err != nil {
-		log.Fatalf("could not open file: %v\n", err)
-	}
 	defer w.Close()
 
 	// Start reading TCP stream
@@ -113,24 +112,44 @@ func main() {
 	}
 	hdr.Print()
 
-	// 	page = strings.Replace(page, "?DATE?", time.Unix(int64(hdr.Time), 0).Format(time.UnixDate), 1)
-	// 	page = strings.Replace(page, "?NOASMCARDS?", strconv.FormatUint(uint64(hdr.NoASMCards), 10), 1)
-	// 	page = strings.Replace(page, "?NOSAMPLES?", strconv.FormatUint(uint64(r.NoSamples()), 10), 1)
-	// 	page = strings.Replace(page, "?DATATOREAD?", "0x"+strconv.FormatUint(uint64(hdr.DataToRead), 16), 1)
-	// 	page = strings.Replace(page, "?TRIGGEREQ?", "0x"+strconv.FormatUint(uint64(hdr.TriggerEq), 16), 1)
-	// 	page = strings.Replace(page, "?TRIGGERDELAY?", "0x"+strconv.FormatUint(uint64(hdr.TriggerDelay), 16), 1)
-	// 	page = strings.Replace(page, "?CHANUSEDFORTRIGGER?", "0x"+strconv.FormatUint(uint64(hdr.ChanUsedForTrig), 16), 1)
-	// 	page = strings.Replace(page, "?LOWHIGHTHRESH?", "0x"+strconv.FormatUint(uint64(hdr.LowHighThres), 16), 1)
-	// 	page = strings.Replace(page, "?TRIGSIGSHAPINGHIGHTHRES?", "0x"+strconv.FormatUint(uint64(hdr.TrigSigShapingHighThres), 16), 1)
-	// 	page = strings.Replace(page, "?TRIGSIGSHAPINGLOWTHRES?", "0x"+strconv.FormatUint(uint64(hdr.TrigSigShapingLowThres), 16), 1)
-
 	webadSlice := strings.Split(*webad, ":")
 	if webadSlice[0] == "" {
 		webadSlice[0] = getHostIP()
 	}
 	*webad = webadSlice[0] + ":" + webadSlice[1]
 	fmt.Printf("Monitoring served at %v\n", *webad)
-	// 	page = strings.Replace(page, "?WEBAD?", *webad, 1)
+
+	t := template.New("index-template.html")
+	t, err = t.ParseFiles("root-fs/index-template.html")
+	if err != nil {
+		panic(err)
+	}
+
+	filehtml, err := os.Create("root-fs/index.html")
+	if err != nil {
+		log.Fatalf("could not create data file: %v\n", err)
+	}
+	defer filehtml.Close()
+
+	htmlw := rw.NewWriter(filehtml)
+	defer htmlw.Close()
+
+	err = t.Execute(htmlw, map[string]interface{}{
+		"WebAd":                   *webad,
+		"Time":                    time.Unix(int64(hdr.Time), 0).Format(time.UnixDate),
+		"NoASMCards":              strconv.FormatUint(uint64(hdr.NoASMCards), 10),
+		"NoSamples":               strconv.FormatUint(uint64(r.NoSamples()), 10),
+		"DataToRead":              "0x" + strconv.FormatUint(uint64(hdr.DataToRead), 16),
+		"TriggerEq":               "0x" + strconv.FormatUint(uint64(hdr.TriggerEq), 16),
+		"TriggerDelay":            "0x" + strconv.FormatUint(uint64(hdr.TriggerDelay), 16),
+		"ChanUsedForTrig":         "0x" + strconv.FormatUint(uint64(hdr.ChanUsedForTrig), 16),
+		"LowHighThres":            "0x" + strconv.FormatUint(uint64(hdr.LowHighThres), 16),
+		"TrigSigShapingHighThres": "0x" + strconv.FormatUint(uint64(hdr.TrigSigShapingHighThres), 16),
+		"TrigSigShapingLowThres":  "0x" + strconv.FormatUint(uint64(hdr.TrigSigShapingLowThres), 16),
+	})
+	if err != nil {
+		panic(err)
+	}
 
 	// Start goroutines
 	const N = 1
@@ -285,10 +304,6 @@ func monitoring(cevent chan event.Event) {
 		event.Clusters[0].PlotPulses(0, pulse.XaxisIndex, false)
 	}
 }
-
-// func plotHandle(w http.ResponseWriter, r *http.Request) {
-// 	fmt.Fprintf(w, page)
-// }
 
 func dataHandler(ws *websocket.Conn) {
 	for data := range datac {

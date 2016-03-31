@@ -74,8 +74,7 @@
 		};
 
 		window.onload = function() {
-			//sock = new WebSocket("ws://?WEBAD?/data");
-			sock = new WebSocket("ws://127.0.1.1:5555/data");
+			sock = new WebSocket("ws://{{.WebAd}}/data");
 			sock.onmessage = function(event) {
 				var data = JSON.parse(event.data);
 				console.log("data: "+JSON.stringify(data));
@@ -128,18 +127,18 @@
 		<table cellspacing="15">
 		<tr> 
 		<td valign="top">
-		<b>Date:</b> ?DATE? <br>
-		<b>Number of ASM Cards:</b> ?NOASMCARDS?<br>
-		<b>Number of samples:</b> ?NOSAMPLES?<br>
-		<b>Data read:</b> ?DATATOREAD?<br>
+		<b>Date:</b> {{.Time}} <br>
+		<b>Number of ASM Cards:</b> {{.NoASMCards}}<br>
+		<b>Number of samples:</b> {{.NoSamples}}<br>
+		<b>Data read:</b> {{.DataToRead}}<br>
 		</td>
 		<td valign="top">
-		<b>Trigger equation:</b> ?TRIGGEREQ?<br>
-		<b>Trigger delay:</b> ?TRIGGERDELAY?<br>
-		<b>Channels used for trigger:</b> ?CHANUSEDFORTRIGGER?<br>
-		<b>Low and high thresholds:</b> ?LOWHIGHTHRESH?<br>
-		<b>Trigger signal sample shaping for high threshold:</b> ?TRIGSIGSHAPINGHIGHTHRES?<br>
-		<b>Trigger signal sample shaping for low threshold:</b> ?TRIGSIGSHAPINGLOWTHRES?<br>
+		<b>Trigger equation:</b> {{.TriggerEq}}<br>
+		<b>Trigger delay:</b> {{.TriggerDelay}}<br>
+		<b>Channels used for trigger:</b> {{.ChanUsedForTrig}}<br>
+		<b>Low and high thresholds:</b> {{.LowHighThres}}<br>
+		<b>Trigger signal sample shaping for high threshold:</b> {{.TrigSigShapingHighThres}} <br>
+		<b>Trigger signal sample shaping for low threshold:</b> {{.TrigSigShapingLowThres}} <br>
 		</td>
 		<td>
 		<div id="my-freq-plot" class="my-plot-stylefreq"></div>
