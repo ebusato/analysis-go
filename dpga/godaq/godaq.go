@@ -191,7 +191,8 @@ func webserver() {
 		webbrowser.Open("http://" + *webad)
 	}
 	//http.HandleFunc("/", plotHandle)
-	http.Handle("/", http.FileServer(http.Dir("./root-fs")))
+	//http.Handle("/", http.FileServer(http.Dir("./root-fs")))
+	http.Handle("/", http.FileServer(assetFS()))
 	http.Handle("/data", websocket.Handler(dataHandler))
 	err := http.ListenAndServe(*webad, nil)
 	if err != nil {

@@ -19,9 +19,11 @@ func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
-		infileName       = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
-		noEvents         = flag.Uint("n", 10000000, "Number of events to process")
-		applyCorrections = flag.Bool("corr", false, "Do corrections and calibration or not")
+		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
+		noEvents   = flag.Uint("n", 10000000, "Number of events to process")
+		pedCorr    = flag.String("pedcorr", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
+		wGob       = flag.String("wgob", "dqplots.gob", "Name of the output gob file containing dq plots. If not set, the gob file is not produced.")
+		refGob     = flag.String("refgob", "", "Name of the gob file containing reference dq plots. If not set, reference dq plots are not overlaid to current dq plots.")
 	)
 
 	flag.Parse()
@@ -68,6 +70,6 @@ func main() {
 	}
 
 	dqplots.Finalize()
-	dqplots.WriteHistosToFile("../dqref/dqplots.gob")
-	dqplots.WriteGob("dqplots.gob")
+	dqplot.WriteGob(*wGob)
+	dqplot.SaveHistos(*refGob)
 }
