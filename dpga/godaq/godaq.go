@@ -16,8 +16,6 @@ import (
 	"github.com/go-hep/hbook"
 	"github.com/toqueteos/webbrowser"
 
-	//"github.com/toqueteos/webbrowser"
-
 	"golang.org/x/net/websocket"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
@@ -132,6 +130,7 @@ func main() {
 		webadSlice[0] = getHostIP()
 	}
 	*webad = webadSlice[0] + ":" + webadSlice[1]
+	fmt.Printf("Monitoring served at %v\n", *webad)
 	page = strings.Replace(page, "?WEBAD?", *webad, 1)
 
 	// Start goroutines
@@ -444,8 +443,8 @@ var page string = `
 			line-height: 1.2em;
 		}
 		.my-plot-style {
-			width: 200px;
-			height: 150px;
+			width: 150px;
+			height: 120px;
 			font-size: 14px;
 			line-height: 1.2em;
 		}
