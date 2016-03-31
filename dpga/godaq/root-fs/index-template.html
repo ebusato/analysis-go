@@ -78,7 +78,7 @@
 			sock.onmessage = function(event) {
 				var data = JSON.parse(event.data);
 				console.log("data: "+JSON.stringify(data));
-				if (data.freq != 0) {	
+				if (data.freq != 0) {
 					freqplot.data.push([data.time, data.freq])
 				}
 				for (var i = 0; i < 8; i += 1) {

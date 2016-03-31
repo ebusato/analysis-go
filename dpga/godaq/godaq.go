@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"log"
@@ -25,10 +26,19 @@ import (
 )
 
 var (
-	datac = make(chan Data, 10)
-	webad = flag.String("webad", ":5555", "server address:port")
-	nobro = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
-	sleep = flag.Bool("s", false, "If set, sleep a bit between events")
+	datac       = make(chan Data, 10)
+	hdrType     = rw.HeaderCAL
+	noEvents    = flag.Uint("n", 100000, "Number of events")
+	outfileName = flag.String("o", "out.bin", "Name of the output file")
+	ip          = flag.String("ip", "192.168.100.11", "IP address")
+	port        = flag.String("p", "1024", "Port number")
+	monFreq     = flag.Uint("mf", 50, "Monitoring frequency")
+	evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
+	st          = flag.Bool("st", false, "If set, client time is used rather than server's time.")
+	debug       = flag.Bool("d", false, "If set, debugging informations are printed")
+	webad       = flag.String("webad", ":5555", "server address:port")
+	nobro       = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
+	sleep       = flag.Bool("s", false, "If set, sleep a bit between events")
 )
 
 type XY struct {
@@ -64,17 +74,6 @@ type Data struct {
 func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
-	var (
-		hdrType     = rw.HeaderCAL
-		noEvents    = flag.Uint("n", 100000, "Number of events")
-		outfileName = flag.String("o", "out.bin", "Name of the output file")
-		ip          = flag.String("ip", "192.168.100.11", "IP address")
-		port        = flag.String("p", "1024", "Port number")
-		monFreq     = flag.Uint("mf", 50, "Monitoring frequency")
-		evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
-		st          = flag.Bool("st", false, "If set, client time is used rather than server's time.")
-		debug       = flag.Bool("d", false, "If set, debugging informations are printed")
-	)
 	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
 	flag.Parse()
 
@@ -100,7 +99,8 @@ func main() {
 	}
 	defer filew.Close()
 
-	w := rw.NewWriter(bufio.NewWriter(filew))
+	bufiow := bufio.NewWriter(filew)
+	w := rw.NewWriter(bufiow)
 	defer w.Close()
 
 	// Start reading TCP stream
@@ -164,13 +164,24 @@ func main() {
 		r.Debug = true
 	}
 
+	iEvent := uint(0)
 	go control(terminateStream, commandIsEnded)
-	go stream(terminateStream, cevent, r, w, noEvents, monFreq, evtFreq, &wg)
+	go stream(terminateStream, cevent, r, w, &iEvent, &wg)
 	go command(commandIsEnded)
 	go webserver()
 	//go monitoring(cevent)
 
 	wg.Wait()
+
+	//bufiow.Flush()
+	// 	updateHeader(filew, 4, uint32(time.Now().Unix()))
+	// 	updateHeader(filew, 8, uint32(*iEvent))
+}
+
+func updateHeader(f *os.File, offset int64, val uint32) {
+	var buf [4]byte
+	binary.BigEndian.PutUint32(buf[:], val)
+	f.WriteAt(buf[:], offset)
 }
 
 func webserver() {
@@ -209,10 +220,9 @@ func GetMonData(pulse pulse.Pulse) []XY {
 	return data
 }
 
-func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w *rw.Writer, noEvents *uint, monFreq *uint, evtFreq *uint, wg *sync.WaitGroup) {
+func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
 	//nFrames := uint(0)
-	iEvent := uint(0)
 	noEventsForMon := uint64(0)
 	hMult := hbook.NewH1D(8, -0.5, 7.5)
 	start := time.Now()
@@ -220,13 +230,13 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 	for {
 		select {
 		case <-terminateStream:
-			*noEvents = iEvent + 1
+			*noEvents = *iEvent + 1
 			fmt.Printf("terminating stream for total number of events = %v.\n", *noEvents)
 		default:
-			switch iEvent < *noEvents {
+			switch *iEvent < *noEvents {
 			case true:
-				if iEvent%*evtFreq == 0 {
-					fmt.Printf("event %v\n", iEvent)
+				if *iEvent%*evtFreq == 0 {
+					fmt.Printf("event %v\n", *iEvent)
 				}
 				event, status := r.ReadNextEvent()
 				if status == false {
@@ -236,7 +246,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				case false:
 					w.Event(event)
 					hMult.Fill(float64(event.Multiplicity()), 1)
-					if iEvent%*monFreq == 0 {
+					if *iEvent%*monFreq == 0 {
 						//cevent <- *event
 						// Webserver data
 						stop := time.Now()
@@ -244,7 +254,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						start = stop
 						time := stop.Sub(startabs).Seconds()
 						freq := float64(noEventsForMon) / duration
-						if iEvent == 0 {
+						if *iEvent == 0 {
 							freq = 0
 						}
 
@@ -265,7 +275,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						}
 						noEventsForMon = 0
 					}
-					iEvent++
+					*iEvent++
 					noEventsForMon++
 					if *sleep {
 						time.Sleep(1 * time.Second)
