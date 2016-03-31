@@ -24,4 +24,10 @@ testbench/tmp/
 dpga/godaq/out
 dpga/godaq/out.bin
 out
+*/*/*.bin
+*/*/*/*.bin
+*/*/*.gob
+*/*/output
+*/*/test
+*/*/*~
 
