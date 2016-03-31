@@ -136,7 +136,9 @@ func main() {
 
 	err = t.Execute(htmlw, map[string]interface{}{
 		"WebAd":                   *webad,
-		"Time":                    time.Unix(int64(hdr.Time), 0).Format(time.UnixDate),
+		"TimeStart":               time.Unix(int64(hdr.TimeStart), 0).Format(time.UnixDate),
+		"TimeStop":                time.Unix(int64(hdr.TimeStop), 0).Format(time.UnixDate),
+		"NoEvents":                strconv.FormatUint(uint64(hdr.NoEvents), 10),
 		"NoASMCards":              strconv.FormatUint(uint64(hdr.NoASMCards), 10),
 		"NoSamples":               strconv.FormatUint(uint64(r.NoSamples()), 10),
 		"DataToRead":              "0x" + strconv.FormatUint(uint64(hdr.DataToRead), 16),
@@ -174,8 +176,8 @@ func main() {
 	wg.Wait()
 
 	//bufiow.Flush()
-	// 	updateHeader(filew, 4, uint32(time.Now().Unix()))
-	// 	updateHeader(filew, 8, uint32(*iEvent))
+	updateHeader(filew, 4, uint32(time.Now().Unix()))
+	updateHeader(filew, 8, uint32(iEvent))
 }
 
 func updateHeader(f *os.File, offset int64, val uint32) {

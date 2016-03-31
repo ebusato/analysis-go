@@ -52,7 +52,9 @@ func (ht *HeaderType) Set(value string) error {
 // Header holds metadata about the run configuration
 type Header struct {
 	HdrType                 HeaderType // type of header
-	Time                    uint32     // number of seconds since Jan 01 1970
+	TimeStart               uint32     // start time (number of seconds since Jan 01 1970)
+	TimeStop                uint32     // end time (number of seconds since Jan 01 1970)
+	NoEvents                 uint32    // total number of events in file
 	NoASMCards              uint32     // number of ASM cards
 	NoSamples               uint32     // number of samples
 	DataToRead              uint32     // data to read
@@ -71,7 +73,9 @@ func (h *Header) Print() {
 	fmt.Printf("Printing header (type = %#v):\n", h.HdrType.String())
 	switch {
 	case h.HdrType == HeaderCAL:
-		fmt.Printf("   Time = %v\n", time.Unix(int64(h.Time), 0).Format(time.UnixDate))
+		fmt.Printf("   TimeStart = %v\n", time.Unix(int64(h.TimeStart), 0).Format(time.UnixDate))
+		fmt.Printf("   TimeStop = %v\n", time.Unix(int64(h.TimeStop), 0).Format(time.UnixDate))
+		fmt.Printf("   NoEvents = %v\n", h.NoEvents)
 		fmt.Printf("   NoASMCards = %v\n", h.NoASMCards)
 		fmt.Printf("   NoSamples = %v\n", h.NoSamples)
 		fmt.Printf("   DataToRead = %x\n", h.DataToRead)

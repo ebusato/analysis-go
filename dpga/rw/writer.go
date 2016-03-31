@@ -84,9 +84,11 @@ func (w *Writer) writeHeader(hdr *Header, clientTime bool) {
 		if clientTime {
 			// Hack: set time from client clock rather than from server's
 			// since the later is not correct.
-			hdr.Time = uint32(time.Now().Unix())
+			hdr.TimeStart = uint32(time.Now().Unix())
 		}
-		w.writeU32(hdr.Time)
+		w.writeU32(hdr.TimeStart)
+		w.writeU32(hdr.TimeStop)
+		w.writeU32(hdr.NoEvents)
 		w.writeU32(hdr.NoASMCards)
 		w.writeU32(hdr.NoSamples)
 		w.writeU32(hdr.DataToRead)
