@@ -34,7 +34,7 @@ var (
 	port        = flag.String("p", "1024", "Port number")
 	monFreq     = flag.Uint("mf", 50, "Monitoring frequency")
 	evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
-	st          = flag.Bool("st", false, "If set, client time is used rather than server's time.")
+	st          = flag.Bool("st", false, "If set, server start time is used rather than client's one")
 	debug       = flag.Bool("d", false, "If set, debugging informations are printed")
 	webad       = flag.String("webad", ":5555", "server address:port")
 	nobro       = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
