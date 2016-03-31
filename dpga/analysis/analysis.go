@@ -8,10 +8,9 @@ import (
 	"log"
 	"os"
 
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/applyCorrCalib"
+	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dq"
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
@@ -21,7 +20,6 @@ func main() {
 
 	var (
 		infileName       = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
-		outfileName      = flag.String("o", "", "Name of the output file")
 		noEvents         = flag.Uint("n", 10000000, "Number of events to process")
 		applyCorrections = flag.Bool("corr", false, "Do corrections and calibration or not")
 	)
@@ -45,31 +43,13 @@ func main() {
 	}
 	defer filer.Close()
 
-	r, err := rw.NewReader(bufio.NewReader(filer))
+	r, err := rw.NewReader(bufio.NewReader(filer), rw.HeaderCAL)
 	if err != nil {
 		log.Fatalf("could not open asm file: %v\n", err)
 	}
 
-	// Writer
-	var w *rw.Writer
-	if *outfileName != "" {
-		filew, err := os.Create(*outfileName)
-		if err != nil {
-			log.Fatalf("could not create data file: %v\n", err)
-		}
-		defer filew.Close()
-
-		w = rw.NewWriter(bufio.NewWriter(filew))
-		if err != nil {
-			log.Fatalf("could not open asm file: %v\n", err)
-		}
-		w.Header(r.Header())
-	}
-
 	// Start analysis
 	dpgadetector.Det.ReadPedestalsFile("../calibConstants/pedestals.csv")
-
-	var data event.Data
 
 	dqplots := dq.NewDQPlot()
 
@@ -80,26 +60,14 @@ func main() {
 		if *applyCorrections {
 			event = applyCorrCalib.RemovePedestal(event)
 		}
+		if event.ID < 40 {
+			event.PlotPulses(pulse.XaxisCapacitor, false)
+		}
 		dqplots.FillHistos(event)
 		//event.Print(true)
-		data.Events = append(data.Events, *event)
-
-		if w != nil {
-			w.Event(event)
-		}
 	}
-
-	data.CheckIntegrity()
 
 	dqplots.Finalize()
 	dqplots.WriteHistosToFile("../dqref/dqplots.gob")
 	dqplots.WriteGob("dqplots.gob")
-	data.PlotPulses(pulse.XaxisTime, false)
-
-	if w != nil {
-		err = w.Close()
-		if err != nil {
-			log.Fatalf("error closing asm-stream: %v\n", err)
-		}
-	}
 }

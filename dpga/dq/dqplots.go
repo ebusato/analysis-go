@@ -9,7 +9,7 @@ import (
 	"github.com/go-hep/hbook"
 	"github.com/gonum/plot/vg"
 	"github.com/gonum/plot/vg/draw"
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
