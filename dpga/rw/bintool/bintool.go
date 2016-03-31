@@ -21,16 +21,16 @@ func main() {
 
 		// set of flags when dumping to ascii
 		ascii     = flag.Bool("ascii", false, "Dump binary to ascii if set to true")
-		noFrames  = flag.Uint("n", 10000000000000000000, "Number of frames")
-		verbosity = flag.String("v", "full", "Verbosity of the output (short, medium, long, full)")
+		noFrames  = flag.Uint("n", 10000000000000000000, "Number of frames (relevant only when -ascii is specified)")
+		verbosity = flag.String("v", "full", "Verbosity of the output (short, medium, long, full) (relevant only when -ascii is specified)")
 
 		// set of flags when printing general informations
 		info = flag.Bool("info", false, "Print general informations about binary file when set tot true")
 
 		// set of flags when writting new binary file with only good events
 		wgoodevts   = flag.Bool("wgoodevts", false, "Write good events to new binary file (skip events having corrupted frames)")
-		outfileName = flag.String("o", "", "Name of the output file")
-		nevts       = flag.Int("nevts", -1, "Number of events to write")
+		outfileName = flag.String("o", "", "Name of the output file (relevant only when -wgoodevts is specified)")
+		nevts       = flag.Int("nevts", -1, "Number of events to write (relevant only when -wgoodevts is specified)")
 	)
 
 	flag.Parse()
