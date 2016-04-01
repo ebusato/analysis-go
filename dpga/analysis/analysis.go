@@ -19,8 +19,8 @@ func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
-		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
-		noEvents   = flag.Uint("n", 10000000, "Number of events to process")
+		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file.")
+		noEvents   = flag.Uint("n", 10000000, "Number of events to process.")
 		pedCorr    = flag.String("pedcorr", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 		wGob       = flag.String("wgob", "dqplots.gob", "Name of the output gob file containing dq plots. If not set, the gob file is not produced.")
 		refGob     = flag.String("refgob", "", "Name of the gob file containing reference dq plots. If not set, reference dq plots are not overlaid to current dq plots.")
@@ -50,26 +50,38 @@ func main() {
 		log.Fatalf("could not open asm file: %v\n", err)
 	}
 
-	// Start analysis
-	dpgadetector.Det.ReadPedestalsFile("../calibConstants/pedestals.csv")
+	// Start doing concrete analysis
 
+	if *pedCorr != "" {
+		dpgadetector.Det.ReadPedestalsFile(*pedCorr)
+	}
 	dqplots := dq.NewDQPlot()
 
 	for event, status := r.ReadNextEvent(); status && event.ID < *noEvents; event, status = r.ReadNextEvent() {
 		if event.ID%50 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
-		if *applyCorrections {
+		///////////////////////////////////////////////////////////
+		// Corrections
+		if *pedCorr != "" {
 			event = applyCorrCalib.RemovePedestal(event)
 		}
+		///////////////////////////////////////////////////////////
+
+		///////////////////////////////////////////////////////////
+		// Plotting
+		// pulses
 		if event.ID < 40 {
 			event.PlotPulses(pulse.XaxisCapacitor, false)
 		}
+		// dq
 		dqplots.FillHistos(event)
+		////////////////////////////////////////////////////////////
+
 		//event.Print(true)
 	}
 
 	dqplots.Finalize()
-	dqplot.WriteGob(*wGob)
-	dqplot.SaveHistos(*refGob)
+	dqplots.WriteGob(*wGob)
+	dqplots.SaveHistos(*refGob)
 }
