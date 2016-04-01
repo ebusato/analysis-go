@@ -71,6 +71,18 @@ type Data struct {
 	Mult H1D      `json:"mult"` // multiplicity of pulses
 }
 
+func TCPConn(p *string) *net.TCPConn {
+	laddr, err := net.ResolveTCPAddr("tcp", *ip+":"+*p)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tcp, err := net.DialTCP("tcp", nil, laddr)
+	if err != nil {
+		return nil
+	}
+	return tcp
+}
+
 func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
@@ -78,15 +90,24 @@ func main() {
 	flag.Parse()
 
 	// Reader
-	laddr, err := net.ResolveTCPAddr("tcp", *ip+":"+*port)
-	if err != nil {
-		log.Fatal(err)
-	}
-	tcp, err := net.DialTCP("tcp", nil, laddr)
-	if err != nil {
-		log.Fatal(err)
+	var tcp *net.TCPConn = nil
+	tcp = TCPConn(port)
+	for i := 0; tcp == nil; i++ {
+		newportu, err := strconv.ParseUint(*port, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		newportu += 1
+		newport := strconv.FormatUint(newportu, 10)
+		fmt.Printf("Port %v not responding, trying %v\n", *port, newport)
+		*port = newport
+		tcp = TCPConn(port)
+		if i >= 5 {
+			log.Fatalf("Cannot find port to connect to server")
+		}
 	}
 
+	//for i := 0; i < 4; i++ {
 	r, err := rw.NewReader(bufio.NewReader(tcp), hdrType)
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
@@ -191,8 +212,8 @@ func webserver() {
 		webbrowser.Open("http://" + *webad)
 	}
 	//http.HandleFunc("/", plotHandle)
-	//http.Handle("/", http.FileServer(http.Dir("./root-fs")))
-	http.Handle("/", http.FileServer(assetFS()))
+	http.Handle("/", http.FileServer(http.Dir("./root-fs")))
+	//http.Handle("/", http.FileServer(assetFS()))
 	http.Handle("/data", websocket.Handler(dataHandler))
 	err := http.ListenAndServe(*webad, nil)
 	if err != nil {
