@@ -46,10 +46,10 @@
 				if (ip == 0) {
 					// ugly, 0 not printing is not a string
 					if (iq == 0) {
-						legend = "0"
+						legend = "0->3"
 					}
 					else {
-						legend = iq
+						legend = iq*4 + "->" + iq*4+3 
 					}
 				}
 				pulseplots.push(new plot(legend, [], colors[ip]))

@@ -52,7 +52,7 @@ func NewDetector() *Detector {
 		hemi := &det.hemispheres[iHemi]
 		for iASM := range hemi.asm {
 			asm := &hemi.asm[iASM]
-			asm.AngleDeg(37.5 - float64(iASM)*15)
+			asm.SetAngleDeg(37.5 - float64(iASM)*15)
 			for iDRS := range asm.DRSs() {
 				drs := asm.DRS(uint8(iDRS))
 				drs.SetID(uint8(iDRS))

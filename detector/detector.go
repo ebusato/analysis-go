@@ -360,11 +360,12 @@ func (d *DRS) Quartet(iQuartet uint8) *Quartet {
 // An ASMCard is made of 3 DRS, one on each mezzanine.
 // In the DPGA, an ASM card processes signals from one line of the detector.
 // There is thus a one-to-one mapping between ASM cards and detectors lines (cassettes).
-// A line of the DPGA is caracterized by its angle, hence the angle fields in the ASMCard struct.
+// A line of the DPGA is caracterized by its angle and shift along z, hence the angle and zshift fields in the struct.
 type ASMCard struct {
 	drss  [3]DRS
 	id    uint8
 	angle float64 // angle is in radian
+	zshift float64 // zshift is the shift along the z direction of the line
 }
 
 // Print prints the ASMCard informations.
@@ -385,8 +386,12 @@ func (a *ASMCard) DRS(iDRS uint8) *DRS {
 	return &a.drss[iDRS]
 }
 
-// SetAngle sets the angle (in degree, converted to radian internally)
-func (a *ASMCard) AngleDeg(angle float64) {
-	anglerad := angle * math.Pi / 180.
-	a.angle = anglerad
+// SetAngleDeg sets the angle (in degree, converted to radian internally)
+func (a *ASMCard) SetAngleDeg(angle float64) {
+	a.angle = angle * math.Pi / 180.
+}
+
+// SetZShift sets the shift along z
+func (a *ASMCard) SetZShift(shift float64) {
+	a.zshift = shift
 }
