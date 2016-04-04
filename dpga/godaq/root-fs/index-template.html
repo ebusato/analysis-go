@@ -26,7 +26,7 @@
 		var multplot = new plot("Pulse multiplicity", [], 'orange')
 		multplot.bars = { show: true }
 		
-		var colors = ['blue', 'red', 'black', 'green']
+		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
 		
 		var Nquartets = 60
 		var quartetplots = []
@@ -61,12 +61,12 @@
 			mult.draw();
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
-					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], new options('yellow'));
+					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], new options('#FFFF00')); // yellow
 					p.setupGrid();
 					p.draw();
 				}
 				else {
-					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], new options('#ADD8E6'));
+					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], new options('#ADD8E6')); // blue
 					p.setupGrid();
 					p.draw();
 				}	
