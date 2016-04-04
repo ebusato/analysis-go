@@ -26,6 +26,10 @@
 		var multplot = new plot("Pulse multiplicity", [], 'orange')
 		multplot.bars = { show: true }
 		
+		var freqhplot = ""
+		var freqhsatplot = ""
+		
+		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
 		
 		var Nquartets = 60
@@ -36,7 +40,19 @@
 			var pulseplots = []
 			for (var ip = 0; ip < Nplots; ip += 1) {
 				//pulseplots.push(new plot("q"+iq+"c"+ip, [], colors[ip]))
-				pulseplots.push(new plot("", [], colors[ip]))
+				// hack, for the moment put plot info in legend, it's not simplest option
+				// though not the best one
+				legend = ""
+				if (ip == 0) {
+					// ugly, 0 not printing is not a string
+					if (iq == 0) {
+						legend = "0"
+					}
+					else {
+						legend = iq
+					}
+				}
+				pulseplots.push(new plot(legend, [], colors[ip]))
 			}
 			quartetplots.push(pulseplots)
 		}
@@ -59,6 +75,10 @@
 			var mult = $.plot("#my-mult-plot", [multplot], multopts);
 			mult.setupGrid(); 
 			mult.draw();
+			var p1 = document.getElementById("my-freqh-plot");
+			p1.innerHTML = freqhplot;
+			var p2 = document.getElementById("my-freqhsat-plot");
+			p2.innerHTML = freqhsatplot;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], new options('#FFFF00')); // yellow
@@ -84,6 +104,8 @@
 				for (var i = 0; i < 8; i += 1) {
 					multplot.data.push([data.mult[i].X, data.mult[i].Y])
 				}
+				freqhplot = data.freqh;
+				freqhsatplot = data.freqhsat;
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < 999; is += 5) {
@@ -149,82 +171,91 @@
 		</tr>
 		</table>
 		<hr>
+		<table cellpadding=0 cellspacing=0>
+		<tr> 
+		<td>
+		<div id="my-freqh-plot" class="my-plot-stylefreq"></div>
+		<div id="my-freqhsat-plot" class="my-plot-stylefreq"></div>
+		</td>
+		</tr>
+		</table>
+		<hr>
 		<table>
 			<tr>    
 				<td colspan="5" align="center"><b>Left hemisphere</b></td> 
 				<td colspan="5" align="center"><b>Right hemisphere</b></td> 
 			</tr>
 			<tr>
-				<td><div id="my-q0-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q1-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q2-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q3-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q4-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q55-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q56-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q57-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q58-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q59-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q4-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q3-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q2-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q1-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q0-plot" class="my-plot-style"></div></td>
 			</tr>
 			<tr>
-				<td><div id="my-q5-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q6-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q7-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q8-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q9-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q50-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q51-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q52-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q53-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q54-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q9-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q8-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q7-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q6-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q5-plot" class="my-plot-style"></div></td>
 			</tr>
 			<tr>
-				<td><div id="my-q10-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q11-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q12-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q13-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q14-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q45-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q46-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q47-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q48-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q49-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q14-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q13-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q12-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q11-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q10-plot" class="my-plot-style"></div></td>
 			</tr>
 			<tr>
-				<td><div id="my-q15-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q16-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q17-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q18-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q19-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q40-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q41-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q42-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q43-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q44-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q19-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q18-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q17-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q16-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q15-plot" class="my-plot-style"></div></td>
 			</tr>
 			<tr>
-				<td><div id="my-q20-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q21-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q22-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q23-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q24-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q35-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q36-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q37-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q38-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q39-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q24-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q23-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q22-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q21-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q20-plot" class="my-plot-style"></div></td>
 			</tr>
 			<tr>
-				<td><div id="my-q25-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q26-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q27-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q28-plot" class="my-plot-style"></div></td>
-				<td><div id="my-q29-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q30-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q31-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q32-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q33-plot" class="my-plot-style"></div></td>
 				<td><div id="my-q34-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q29-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q28-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q27-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q26-plot" class="my-plot-style"></div></td>
+				<td><div id="my-q25-plot" class="my-plot-style"></div></td>
 			</tr>
 		</table>
 	</body>

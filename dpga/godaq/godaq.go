@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
+	"image/color"
 	"log"
 	"net"
 	"net/http"
@@ -16,13 +17,18 @@ import (
 	"time"
 
 	"github.com/go-hep/hbook"
+	"github.com/gonum/plot"
+	"github.com/gonum/plot/plotter"
+	"github.com/gonum/plot/plotutil"
 	"github.com/toqueteos/webbrowser"
 
 	"golang.org/x/net/websocket"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
 var (
@@ -65,10 +71,12 @@ func NewH1D(h *hbook.H1D) H1D {
 }
 
 type Data struct {
-	Time float64  `json:"time"` // time at which monitoring data are taken
-	Freq float64  `json:"freq"` // number of events processed per second
-	Qs   Quartets `json:"quartets"`
-	Mult H1D      `json:"mult"` // multiplicity of pulses
+	Time     float64  `json:"time"` // time at which monitoring data are taken
+	Freq     float64  `json:"freq"` // number of events processed per second
+	Qs       Quartets `json:"quartets"`
+	Mult     H1D      `json:"mult"`     // multiplicity of pulses
+	FreqH    string   `json:"freqh"`    // frequency histogram
+	FreqHSat string   `json:"freqhsat"` // frequency histogram for saturating pulses
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -249,6 +257,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 	//nFrames := uint(0)
 	noEventsForMon := uint64(0)
 	hMult := hbook.NewH1D(8, -0.5, 7.5)
+	dqplots := dq.NewDQPlot()
 	start := time.Now()
 	startabs := start
 	for {
@@ -270,6 +279,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				case false:
 					w.Event(event)
 					hMult.Fill(float64(event.Multiplicity()), 1)
+					dqplots.FillHistos(event)
 					if *iEvent%*monFreq == 0 {
 						//cevent <- *event
 						// Webserver data
@@ -291,11 +301,47 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						}
 
 						//fmt.Println("data:", time, noEventsForMon, duration, freq)
+
+						// make freqh svg
+						pfreqh, err := plot.New()
+						if err != nil {
+							panic(err)
+						}
+						pfreqh.X.Label.Text = "channel"
+						pfreqh.Y.Label.Text = "# pulses"
+						freqhgonum, err := plotter.NewHistogram(dqplots.HFrequency, dqplots.HFrequency.Axis().Bins())
+						if err != nil {
+							panic(err)
+						}
+						freqhgonum.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
+						freqhgonum.Color = plotutil.Color(3)
+						pfreqh.Add(freqhgonum)
+						freqhsvg := utils.RenderSVG(pfreqh, 50, 4)
+
+						// make freqhsat svg
+						pfreqhsat, err := plot.New()
+						if err != nil {
+							panic(err)
+						}
+						pfreqhsat.X.Label.Text = "channel"
+						pfreqhsat.Y.Label.Text = "# sat. pulses"
+						freqhsatgonum, err := plotter.NewHistogram(dqplots.HSatFrequency, dqplots.HSatFrequency.Axis().Bins())
+						if err != nil {
+							panic(err)
+						}
+						freqhsatgonum.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
+						freqhsatgonum.Color = plotutil.Color(3)
+						pfreqhsat.Add(freqhsatgonum)
+						freqhsatsvg := utils.RenderSVG(pfreqhsat, 50, 4)
+
+						// send to channel
 						datac <- Data{
-							Time: time,
-							Freq: freq,
-							Qs:   qs,
-							Mult: NewH1D(hMult),
+							Time:     time,
+							Freq:     freq,
+							Qs:       qs,
+							Mult:     NewH1D(hMult),
+							FreqH:    freqhsvg,
+							FreqHSat: freqhsatsvg,
 						}
 						noEventsForMon = 0
 					}

@@ -2,6 +2,8 @@
 package utils
 
 import (
+	"bytes"
+
 	"github.com/go-hep/hbook"
 	"github.com/go-hep/hplot"
 	"github.com/gonum/plot"
@@ -9,6 +11,7 @@ import (
 	"github.com/gonum/plot/plotutil"
 	"github.com/gonum/plot/vg"
 	"github.com/gonum/plot/vg/draw"
+	"github.com/gonum/plot/vg/vgsvg"
 )
 
 // H1DToGonum converts hbook.H1D objects to plotter.Histogram objects.
@@ -125,4 +128,19 @@ func MakeGonumPlot(xTitle string, yTitle string, outFile string, histo ...hbook.
 	if err := p.Save(4*vg.Inch, 4*vg.Inch, outFile); err != nil {
 		panic(err)
 	}
+}
+
+// RenderSVG takes a gonum plot and returns string encoding svg graphics.
+func RenderSVG(p *plot.Plot, w vg.Length, h vg.Length) string {
+	width := w * vg.Centimeter
+	height := h * vg.Centimeter
+	//canvas := vgsvg.New(size, size/vg.Length(math.Phi))
+	canvas := vgsvg.New(width, height)
+	p.Draw(draw.New(canvas))
+	out := new(bytes.Buffer)
+	_, err := canvas.WriteTo(out)
+	if err != nil {
+		panic(err)
+	}
+	return string(out.Bytes())
 }
