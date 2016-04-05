@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"os"
 	"strconv"
 	"time"
 
@@ -18,8 +17,8 @@ import (
 type HemisphereType uint8
 
 const (
-	rightHemisphere HemisphereType = iota
-	leftHemisphere
+	right HemisphereType = iota
+	left
 )
 
 type Hemisphere struct {
@@ -50,15 +49,33 @@ func NewDetector() *Detector {
 	}
 	for iHemi := range det.hemispheres {
 		hemi := &det.hemispheres[iHemi]
+		switch iHemi {
+		case 0:
+			hemi.which = right
+		case 1:
+			hemi.which = left
+		}
 		for iASM := range hemi.asm {
 			asm := &hemi.asm[iASM]
-			asm.SetAngleDeg(37.5 - float64(iASM)*15)
+			switch hemi.which {
+			case right:
+				asm.SetAngleDeg(180. - 37.5 + float64(iASM)*15)
+			case left:
+				asm.SetAngleDeg(-37.5 + float64(iASM)*15)
+			}
 			for iDRS := range asm.DRSs() {
 				drs := asm.DRS(uint8(iDRS))
 				drs.SetID(uint8(iDRS))
 				for iQuartet := range drs.Quartets() {
 					quartet := drs.Quartet(uint8(iQuartet))
 					quartet.SetID(uint8(iQuartet))
+					// iqtemp is a temporary index refering to the quartet within a line.
+					// iqtemp goes from 0 to 4 (5 quartets per line). It is equal to 0 for 
+					// the quartet on the front side of the DPGA and equal to 4 for the 
+					// quartet on the rear side of the DPGA.
+					iqtemp := len(drs.Quartets()) * iDRS + iQuartet
+					quartet.SetCylCoord(-(3*19.5+6.5/2.+13) + iqtemp * 2 * 19.5)
+					
 					for iChannel := range quartet.Channels() {
 						ch := quartet.Channel(uint8(iChannel))
 						ch.SetName("PMT" + strconv.FormatUint(uint64(iChannel), 10))
@@ -149,37 +166,37 @@ type GeomCSV struct {
 	Z              float64
 }
 
-func (d *Detector) ReadGeom() {
-	fileName := os.Getenv("GOPATH") + "/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector/mapping_IDchanneltoCoordinates_Arnaud.txt"
-	tbl, err := csvutil.Open(fileName)
-	if err != nil {
-		log.Fatalf("could not open %s: %v\n", fileName, err)
-	}
-	defer tbl.Close()
-	tbl.Reader.Comma = ' '
-	tbl.Reader.Comment = '#'
-
-	rows, err := tbl.ReadRows(0, -1)
-	if err != nil {
-		log.Fatalf("could read rows [0, -1): %v\n", err)
-	}
-	defer rows.Close()
-
-	var data GeomCSV
-
-	for rows.Next() {
-		err = rows.Scan(&data)
-		if err != nil {
-			log.Fatalf("error reading row: %v\n", err)
-		}
-		channel := d.ChannelFromIdAbs240(data.IChannelAbs240)
-		channel.SetCoord(data.X, data.Y, data.Z)
-	}
-	err = rows.Err()
-	if err != nil && err.Error() != "EOF" {
-		log.Fatalf("error: %v\n", err)
-	}
-}
+// func (d *Detector) ReadGeom() {
+// 	fileName := os.Getenv("GOPATH") + "/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector/mapping_IDchanneltoCoordinates_Arnaud.txt"
+// 	tbl, err := csvutil.Open(fileName)
+// 	if err != nil {
+// 		log.Fatalf("could not open %s: %v\n", fileName, err)
+// 	}
+// 	defer tbl.Close()
+// 	tbl.Reader.Comma = ' '
+// 	tbl.Reader.Comment = '#'
+//
+// 	rows, err := tbl.ReadRows(0, -1)
+// 	if err != nil {
+// 		log.Fatalf("could read rows [0, -1): %v\n", err)
+// 	}
+// 	defer rows.Close()
+//
+// 	var data GeomCSV
+//
+// 	for rows.Next() {
+// 		err = rows.Scan(&data)
+// 		if err != nil {
+// 			log.Fatalf("error reading row: %v\n", err)
+// 		}
+// 		channel := d.ChannelFromIdAbs240(data.IChannelAbs240)
+// 		channel.SetCartCoord(data.X, data.Y, data.Z)
+// 	}
+// 	err = rows.Err()
+// 	if err != nil && err.Error() != "EOF" {
+// 		log.Fatalf("error: %v\n", err)
+// 	}
+// }
 
 func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
 	for iHemi := range d.hemispheres {
@@ -356,6 +373,5 @@ var Det *Detector
 
 func init() {
 	Det = NewDetector()
-	Det.ReadGeom()
 	//Det.Print()
 }

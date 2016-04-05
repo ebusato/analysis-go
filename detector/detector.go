@@ -6,6 +6,8 @@ import (
 	"log"
 	"math"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/utils"
+
 	"github.com/gonum/plot"
 	"github.com/gonum/plot/plotter"
 	"github.com/gonum/plot/plotutil"
@@ -86,12 +88,6 @@ func (c *Capacitor) SetPedestalMeanStdDev(mean float64, stddev float64) {
 	c.pedestalStdDev = stddev
 }
 
-// Coord describes the coordinates of a scintillator cristal.
-// The coordinates are those of the center of the front face of the cristal.
-type Coord struct {
-	x, y, z float64
-}
-
 // Channel describes a DRS channel.
 // A channel is made of 1024 capacitors.
 type Channel struct {
@@ -101,8 +97,10 @@ type Channel struct {
 	absid240   uint16 // absolute id: 0 -> 239 for DPGA, irrelevant for test bench
 	fifoid     uint16 // fifo id: 0 -> 143 for DPGA
 	name       string
-	coord      Coord
 	plotStat   bool
+
+	// The coordinates are those of the center of the front face of the cristal.
+	utils.CartCoord
 }
 
 // Capacitors returns the capacitors for this channel
@@ -221,15 +219,16 @@ func (c *Channel) SetFifoID(id uint16) {
 }
 
 // SetCoord sets the cartesian coordinates for this channel.
+// Coordinates are those of the center of the PMT at its front surface.
 func (c *Channel) SetCoord(x, y, z float64) {
-	c.coord.x = x
-	c.coord.y = y
-	c.coord.z = z
+	c.X = x
+	c.Y = y
+	c.Z = z
 }
 
 // Print print channel informations.
 func (c *Channel) Print() {
-	fmt.Printf("   o Channel: id = %v absid288 = %v absid240 = %v coord = (%v, %v, %v) (address=%p)\n", c.id, c.absid288, c.absid240, c.coord.x, c.coord.y, c.coord.z, c)
+	fmt.Printf("   o Channel: id = %v absid288 = %v absid240 = %v coord = (%v, %v, %v) (address=%p)\n", c.id, c.absid288, c.absid240, c.X, c.Y, c.Z, c)
 	for i := range c.capacitors {
 		c.capacitors[i].Print()
 	}
@@ -240,6 +239,8 @@ func (c *Channel) Print() {
 type Quartet struct {
 	channels [4]Channel
 	id       uint8
+
+	utils.CylCoord
 }
 
 // SetID sets the quartet id.
@@ -324,6 +325,14 @@ func (q *Quartet) PlotPedestals(plotStat bool, text string) {
 	}
 }
 
+// SetCoord sets the cylindrical coordinates for this quartet.
+// Coordinates are those of the center of the quartet at its front.
+func (q *Quartet) SetCoord(r, phi, z float64) {
+	q.R = r
+	q.Phi = phi
+	q.Z = z
+}
+
 // DRS describes a DRS chip of the ASM cards.
 // A DRS treats signals of 2 quartets.
 type DRS struct {
@@ -362,9 +371,9 @@ func (d *DRS) Quartet(iQuartet uint8) *Quartet {
 // There is thus a one-to-one mapping between ASM cards and detectors lines (cassettes).
 // A line of the DPGA is caracterized by its angle and shift along z, hence the angle and zshift fields in the struct.
 type ASMCard struct {
-	drss  [3]DRS
-	id    uint8
-	angle float64 // angle is in radian
+	drss   [3]DRS
+	id     uint8
+	angle  float64 // angle is in radian
 	zshift float64 // zshift is the shift along the z direction of the line
 }
 
