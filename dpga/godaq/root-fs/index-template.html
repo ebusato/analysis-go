@@ -27,7 +27,6 @@
 		multplot.bars = { show: true }
 		
 		var freqhplot = ""
-		var freqhsatplot = ""
 		
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
@@ -77,8 +76,6 @@
 			mult.draw();
 			var p1 = document.getElementById("my-freqh-plot");
 			p1.innerHTML = freqhplot;
-			var p2 = document.getElementById("my-freqhsat-plot");
-			p2.innerHTML = freqhsatplot;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], new options('#FFFF00')); // yellow
@@ -105,7 +102,6 @@
 					multplot.data.push([data.mult[i].X, data.mult[i].Y])
 				}
 				freqhplot = data.freqh;
-				freqhsatplot = data.freqhsat;
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < 999; is += 5) {
@@ -170,16 +166,16 @@
 		</td>
 		</tr>
 		</table>
-		<hr>
+		<hr size="10" noshade>
 		<table cellpadding=0 cellspacing=0>
 		<tr> 
 		<td>
 		<div id="my-freqh-plot" class="my-plot-stylefreq"></div>
-		<div id="my-freqhsat-plot" class="my-plot-stylefreq"></div>
 		</td>
 		</tr>
 		</table>
-		<hr>
+		<br><br><br><br><br><br><br><br><br><br><br>
+		<hr size="10" noshade>
 		<table>
 			<tr>    
 				<td colspan="5" align="center"><b>Left hemisphere</b></td> 

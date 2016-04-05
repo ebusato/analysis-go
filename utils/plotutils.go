@@ -130,13 +130,17 @@ func MakeGonumPlot(xTitle string, yTitle string, outFile string, histo ...hbook.
 	}
 }
 
+type Drawer interface {
+	Draw(c draw.Canvas)
+}
+
 // RenderSVG takes a gonum plot and returns string encoding svg graphics.
-func RenderSVG(p *hplot.TiledPlot, w vg.Length, h vg.Length) string {
+func RenderSVG(d Drawer, w vg.Length, h vg.Length) string {
 	width := w * vg.Centimeter
 	height := h * vg.Centimeter
 	//canvas := vgsvg.New(size, size/vg.Length(math.Phi))
 	canvas := vgsvg.New(width, height)
-	p.Draw(draw.New(canvas))
+	d.Draw(draw.New(canvas))
 	out := new(bytes.Buffer)
 	_, err := canvas.WriteTo(out)
 	if err != nil {
