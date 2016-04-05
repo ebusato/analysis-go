@@ -19,6 +19,7 @@ import (
 	"github.com/go-hep/hbook"
 	"github.com/go-hep/hplot"
 	"github.com/gonum/plot/plotutil"
+	"github.com/gonum/plot/vg"
 	"github.com/gonum/plot/vg/draw"
 	"github.com/toqueteos/webbrowser"
 
@@ -71,11 +72,11 @@ func NewH1D(h *hbook.H1D) H1D {
 }
 
 type Data struct {
-	Time     float64  `json:"time"` // time at which monitoring data are taken
-	Freq     float64  `json:"freq"` // number of events processed per second
-	Qs       Quartets `json:"quartets"`
-	Mult     H1D      `json:"mult"`     // multiplicity of pulses
-	FreqH    string   `json:"freqh"`    // frequency histogram
+	Time  float64  `json:"time"` // time at which monitoring data are taken
+	Freq  float64  `json:"freq"` // number of events processed per second
+	Qs    Quartets `json:"quartets"`
+	Mult  H1D      `json:"mult"`  // multiplicity of pulses
+	FreqH string   `json:"freqh"` // frequency histogram
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -301,13 +302,14 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 
 						//fmt.Println("data:", time, noEventsForMon, duration, freq)
 
-						tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 2})
+						tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 2, PadY: 1 * vg.Centimeter})
 						if err != nil {
 							panic(err)
 						}
 						p1 := tp.Plot(0, 0)
 						p1.X.Min = 0
 						p1.X.Max = 240
+						p1.X.Tick.Marker = utils.NewTicks(241, 4)
 						hplotfreq, err := hplot.NewH1D(dqplots.HFrequency)
 						if err != nil {
 							panic(err)
@@ -323,6 +325,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						p2 := tp.Plot(1, 0)
 						p2.X.Min = 0
 						p2.X.Max = 240
+						p2.X.Tick.Marker = utils.NewTicks(241, 4)
 						hplotsatfreq, err := hplot.NewH1D(dqplots.HSatFrequency)
 						if err != nil {
 							panic(err)

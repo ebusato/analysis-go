@@ -3,6 +3,7 @@ package utils
 
 import (
 	"bytes"
+	"strconv"
 
 	"github.com/go-hep/hbook"
 	"github.com/go-hep/hplot"
@@ -147,4 +148,34 @@ func RenderSVG(d Drawer, w vg.Length, h vg.Length) string {
 		panic(err)
 	}
 	return string(out.Bytes())
+}
+
+type Ticks struct {
+	T       []plot.Tick
+	Flabels uint //Inverse frequency of labels (e.g. if Flabels = 4 then one tick every four ticks has a label)
+}
+
+func NewTicks(n uint, flabels uint) *Ticks {
+	T := &Ticks{
+		T:       make([]plot.Tick, n),
+		Flabels: flabels,
+	}
+	return T
+}
+
+func (c *Ticks) Ticks(min, max float64) []plot.Tick {
+	for i := range c.T {
+		v := min + float64(i)*(max-min)/float64(len(c.T)-1)
+		c.T[i] = plot.Tick{
+			Value: v,
+			Label: func() string {
+				if uint(i)%c.Flabels == 0 {
+					return strconv.FormatFloat(v, 'f', -1, 64)
+				} else {
+					return ""
+				}
+			}(),
+		}
+	}
+	return c.T
 }
