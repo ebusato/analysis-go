@@ -12,6 +12,7 @@ import (
 	"github.com/go-hep/csvutil"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/detector"
+	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
 type HemisphereType uint8
@@ -77,9 +78,18 @@ func NewDetector() *Detector {
 					// iqtemp goes from 0 to 4 (5 quartets per line). It is equal to 0 for
 					// the quartet on the front side of the DPGA and equal to 4 for the
 					// quartet on the rear side of the DPGA.
-					//iqtemp := len(drs.Quartets())*iDRS + iQuartet
-					//quartet.SetCylCoord(-(3*19.5 + 6.5/2. + 13) + float64(iqtemp)*2*19.5)
-
+					// iqtemp corresponds to iDRS=2 and iQuartet=1, hence the non-physical values
+					// of the coordinates.
+					iqtemp := len(drs.Quartets())*iDRS + iQuartet
+					switch iqtemp == 5 {
+					case false:
+						quartet.SetCylCoord(asm.CylCoord.R, asm.CylCoord.Phi, asm.CylCoord.Z+float64(iqtemp)*2*19.5)
+					case true:
+						quartet.SetCylCoord(0, 0, 0)
+					}
+					// Convert right away cylindrical coordinates to cartesian ones.
+					// To be used in the following channel loop
+					qCartCoord := utils.CylindricalToCartesian(quartet.CylCoord)
 					for iChannel := range quartet.Channels() {
 						ch := quartet.Channel(uint8(iChannel))
 						ch.SetName("PMT" + strconv.FormatUint(uint64(iChannel), 10))
@@ -90,6 +100,32 @@ func NewDetector() *Detector {
 						case false:
 							_, iChannelAbs240 := RelIdxToAbsIdx240(uint8(iHemi), uint8(iASM), uint8(iDRS), uint8(iQuartet), uint8(iChannel))
 							ch.SetAbsID240(iChannelAbs240)
+
+							// determine channel cartesian coordinates from quartet's cylindrical coordinates
+							var xSign int
+							var ySign int
+							if iChannel == 0 || iChannel == 1 {
+								switch hemi.which {
+								case right:
+									xSign = -1
+									ySign = -1
+								case left:
+									xSign = +1
+									ySign = -1
+								}
+							} else { // iChannel == 2 || iChannel == 3
+								switch hemi.which {
+								case right:
+									xSign = +1
+									ySign = +1
+								case left:
+									xSign = -1
+									ySign = +1
+								}
+							}
+							x := qCartCoord.X + float64(xSign)*19.5*math.Sin(quartet.CylCoord.Phi)
+							y := qCartCoord.Y + float64(ySign)*19.5*math.Cos(quartet.CylCoord.Phi)
+							ch.SetCartCoord(x, y, qCartCoord.Z)
 						case true: // channel not used in DPGA (one of the four channels per ASM card which is not used)
 							ch.SetAbsID240(math.MaxUint16)
 						}
@@ -168,6 +204,36 @@ type GeomCSV struct {
 	X              float64
 	Y              float64
 	Z              float64
+}
+
+func (d *Detector) DumpGeom() {
+	tbl, err := csvutil.Create("dpgageom.csv")
+	if err != nil {
+		log.Fatalf("could not create dpgageom.csv: %v\n", err)
+	}
+	defer tbl.Close()
+	tbl.Writer.Comma = ' '
+
+	err = tbl.WriteHeader(fmt.Sprintf("# DPGA geometry file (creation date: %v)\n", time.Now()))
+	err = tbl.WriteHeader("# iChannelAbs240     X     Y     Z")
+
+	for i := uint16(0); i < 240; i++ {
+		ch := d.ChannelFromIdAbs240(i)
+		data := GeomCSV{
+			i,
+			ch.X,
+			ch.Y,
+			ch.Z,
+		}
+		err = tbl.WriteRow(data)
+		if err != nil {
+			log.Fatalf("error writing row: %v\n", err)
+		}
+	}
+	err = tbl.Close()
+	if err != nil {
+		log.Fatalf("error closing table: %v\n", err)
+	}
 }
 
 // func (d *Detector) ReadGeom() {
