@@ -59,9 +59,9 @@ func NewDetector() *Detector {
 			asm := &hemi.asm[iASM]
 			switch hemi.which {
 			case right:
-				asm.SetAngleDeg(180. - 37.5 + float64(iASM)*15)
+				asm.SetCylCoord(30, math.Pi*(180.-37.5+float64(iASM)*15)/180., -(3*19.5 + 6.5/2. + 13))
 			case left:
-				asm.SetAngleDeg(-37.5 + float64(iASM)*15)
+				asm.SetCylCoord(30, math.Pi*(-37.5+float64(iASM)*15)/180., -(3*19.5 + 6.5/2. + 13))
 			}
 			for iDRS := range asm.DRSs() {
 				drs := asm.DRS(uint8(iDRS))
@@ -70,12 +70,12 @@ func NewDetector() *Detector {
 					quartet := drs.Quartet(uint8(iQuartet))
 					quartet.SetID(uint8(iQuartet))
 					// iqtemp is a temporary index refering to the quartet within a line.
-					// iqtemp goes from 0 to 4 (5 quartets per line). It is equal to 0 for 
-					// the quartet on the front side of the DPGA and equal to 4 for the 
+					// iqtemp goes from 0 to 4 (5 quartets per line). It is equal to 0 for
+					// the quartet on the front side of the DPGA and equal to 4 for the
 					// quartet on the rear side of the DPGA.
-					iqtemp := len(drs.Quartets()) * iDRS + iQuartet
-					quartet.SetCylCoord(-(3*19.5+6.5/2.+13) + iqtemp * 2 * 19.5)
-					
+					//iqtemp := len(drs.Quartets())*iDRS + iQuartet
+					//quartet.SetCylCoord(-(3*19.5 + 6.5/2. + 13) + float64(iqtemp)*2*19.5)
+
 					for iChannel := range quartet.Channels() {
 						ch := quartet.Channel(uint8(iChannel))
 						ch.SetName("PMT" + strconv.FormatUint(uint64(iChannel), 10))

@@ -156,11 +156,10 @@ type Ticks struct {
 }
 
 func NewTicks(n uint, flabels uint) *Ticks {
-	T := &Ticks{
+	return &Ticks{
 		T:       make([]plot.Tick, n),
 		Flabels: flabels,
 	}
-	return T
 }
 
 func (c *Ticks) Ticks(min, max float64) []plot.Tick {

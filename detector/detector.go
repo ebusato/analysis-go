@@ -218,9 +218,9 @@ func (c *Channel) SetFifoID(id uint16) {
 	c.fifoid = id
 }
 
-// SetCoord sets the cartesian coordinates for this channel.
+// SetCartCoord sets the cartesian coordinates for this channel.
 // Coordinates are those of the center of the PMT at its front surface.
-func (c *Channel) SetCoord(x, y, z float64) {
+func (c *Channel) SetCartCoord(x, y, z float64) {
 	c.X = x
 	c.Y = y
 	c.Z = z
@@ -325,9 +325,9 @@ func (q *Quartet) PlotPedestals(plotStat bool, text string) {
 	}
 }
 
-// SetCoord sets the cylindrical coordinates for this quartet.
+// SetCylCoord sets the cylindrical coordinates for this quartet.
 // Coordinates are those of the center of the quartet at its front.
-func (q *Quartet) SetCoord(r, phi, z float64) {
+func (q *Quartet) SetCylCoord(r, phi, z float64) {
 	q.R = r
 	q.Phi = phi
 	q.Z = z
@@ -369,12 +369,12 @@ func (d *DRS) Quartet(iQuartet uint8) *Quartet {
 // An ASMCard is made of 3 DRS, one on each mezzanine.
 // In the DPGA, an ASM card processes signals from one line of the detector.
 // There is thus a one-to-one mapping between ASM cards and detectors lines (cassettes).
-// A line of the DPGA is caracterized by its angle and shift along z, hence the angle and zshift fields in the struct.
+// A line of the DPGA can be described by its cylindrical coordinates, hence the embedding of utils.CylCoord.
 type ASMCard struct {
-	drss   [3]DRS
-	id     uint8
-	angle  float64 // angle is in radian
-	zshift float64 // zshift is the shift along the z direction of the line
+	drss [3]DRS
+	id   uint8
+
+	utils.CylCoord
 }
 
 // Print prints the ASMCard informations.
@@ -395,12 +395,10 @@ func (a *ASMCard) DRS(iDRS uint8) *DRS {
 	return &a.drss[iDRS]
 }
 
-// SetAngleDeg sets the angle (in degree, converted to radian internally)
-func (a *ASMCard) SetAngleDeg(angle float64) {
-	a.angle = angle * math.Pi / 180.
-}
-
-// SetZShift sets the shift along z
-func (a *ASMCard) SetZShift(shift float64) {
-	a.zshift = shift
+// SetCylCoord sets the cylindrical coordinates for this ASM card.
+// Coordinates are those of the center of its first quartet (i.e. the one closest to the front side of the DPGA).
+func (a *ASMCard) SetCylCoord(r, phi, z float64) {
+	a.R = r
+	a.Phi = phi
+	a.Z = z
 }
