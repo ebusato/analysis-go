@@ -59,9 +59,13 @@ func NewDetector() *Detector {
 			asm := &hemi.asm[iASM]
 			switch hemi.which {
 			case right:
-				asm.SetCylCoord(30, math.Pi*(180.-37.5+float64(iASM)*15)/180., -(3*19.5 + 6.5/2. + 13))
+				// on the right hemisphere, the ASM card with index iASM=0
+				// is the one at the very top of the detector (corresponding to line 1)
+				asm.SetCylCoord(322, math.Pi*(180.-37.5+float64(iASM)*15)/180., -(3*19.5+6.5/2.+13)-float64(iASM%3)*6.5)
 			case left:
-				asm.SetCylCoord(30, math.Pi*(-37.5+float64(iASM)*15)/180., -(3*19.5 + 6.5/2. + 13))
+				// on the left hemisphere, the ASM card with index iASM=0
+				// is the one at the very bottom of the detector (corresponding to line 7)
+				asm.SetCylCoord(322, math.Pi*(-37.5+float64(iASM)*15)/180., -(3*19.5+6.5/2.+13)-float64(iASM%3)*6.5)
 			}
 			for iDRS := range asm.DRSs() {
 				drs := asm.DRS(uint8(iDRS))

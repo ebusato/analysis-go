@@ -327,6 +327,9 @@ func (q *Quartet) PlotPedestals(plotStat bool, text string) {
 
 // SetCylCoord sets the cylindrical coordinates for this quartet.
 // Coordinates are those of the center of the quartet at its front.
+// r is in mm
+// phi is in radian
+// z is in mm
 func (q *Quartet) SetCylCoord(r, phi, z float64) {
 	q.R = r
 	q.Phi = phi
@@ -397,6 +400,9 @@ func (a *ASMCard) DRS(iDRS uint8) *DRS {
 
 // SetCylCoord sets the cylindrical coordinates for this ASM card.
 // Coordinates are those of the center of its first quartet (i.e. the one closest to the front side of the DPGA).
+// r is in mm
+// phi is in radian
+// z is in mm
 func (a *ASMCard) SetCylCoord(r, phi, z float64) {
 	a.R = r
 	a.Phi = phi
