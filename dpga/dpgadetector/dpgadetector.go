@@ -141,8 +141,18 @@ func NewDetector() *Detector {
 									zSign = +1
 								}
 							}
-							x := qCartCoord.X + float64(xSign)*19.5*math.Sin(quartet.CylCoord.Phi)
-							y := qCartCoord.Y + float64(ySign)*19.5*math.Cos(quartet.CylCoord.Phi)
+							fmt.Printf("iChannelAbs240=%v, phi=%v, Yquartet=%v\n", iChannelAbs240, quartet.CylCoord.Phi, qCartCoord.Y)
+							x := qCartCoord.X + float64(xSign)*19.5/2.*math.Sin(quartet.CylCoord.Phi)
+							var y float64
+							// in the case of the y coordinate, the angle needs to be adjusted when projecting as cos(pi - phi) = -cos(phi).
+							// (in the case of the x coordinate, the projection is done with sin, it's therefore not necessary to change phi to pi - phi
+							// as sin(pi - phi) = sin(phi)
+							switch hemi.which {
+							case left:
+								y = qCartCoord.Y + float64(ySign)*19.5/2.*math.Cos(quartet.CylCoord.Phi)
+							case right:
+								y = qCartCoord.Y + float64(ySign)*19.5/2.*math.Cos(math.Pi-quartet.CylCoord.Phi)
+							}
 							z := qCartCoord.Z + float64(zSign)*(6.5/2.+6.5)
 							ch.SetCartCoord(x, y, z)
 						case true: // channel not used in DPGA (one of the four channels per ASM card which is not used)
