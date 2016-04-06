@@ -141,7 +141,7 @@ func NewDetector() *Detector {
 									zSign = +1
 								}
 							}
-							fmt.Printf("iChannelAbs240=%v, phi=%v, Yquartet=%v\n", iChannelAbs240, quartet.CylCoord.Phi, qCartCoord.Y)
+							// fmt.Printf("iChannelAbs240=%v, phi=%v, Yquartet=%v\n", iChannelAbs240, quartet.CylCoord.Phi, qCartCoord.Y)
 							x := qCartCoord.X + float64(xSign)*19.5/2.*math.Sin(quartet.CylCoord.Phi)
 							var y float64
 							// in the case of the y coordinate, the angle needs to be adjusted when projecting as cos(pi - phi) = -cos(phi).
@@ -155,6 +155,75 @@ func NewDetector() *Detector {
 							}
 							z := qCartCoord.Z + float64(zSign)*(6.5/2.+6.5)
 							ch.SetCartCoord(x, y, z)
+							// set the scintillator coordinates (8 values, each corresponding to one corner of the rectangular parallelepiped)
+							// corners are counted in the following order
+							//
+							//            7  _____________ 6
+							//             /|            /|
+							//            / |           / |
+							//         3 /__|__ _____ 2/  |
+							//           |  |_________ |__|   rear face
+							//           |  /4         |  /5
+							//           | /           | /
+							//           |/____________|/
+							//           0            1   front face
+							//
+							switch hemi.which {
+							case right:
+								ch.ScintCoords[0].X = x - 13/2.*math.Sin(quartet.CylCoord.Phi)
+								ch.ScintCoords[1].X = ch.ScintCoords[0].X
+								ch.ScintCoords[2].X = x + 13/2.*math.Sin(quartet.CylCoord.Phi)
+								ch.ScintCoords[3].X = ch.ScintCoords[2].X
+								ch.ScintCoords[4].X = ch.ScintCoords[0].X - 15*math.Cos(math.Pi-quartet.CylCoord.Phi)
+								ch.ScintCoords[5].X = ch.ScintCoords[4].X
+								ch.ScintCoords[6].X = ch.ScintCoords[2].X - 15*math.Cos(math.Pi-quartet.CylCoord.Phi)
+								ch.ScintCoords[7].X = ch.ScintCoords[6].X
+
+								ch.ScintCoords[0].Y = y - 13/2.*math.Cos(math.Pi-quartet.CylCoord.Phi)
+								ch.ScintCoords[1].Y = ch.ScintCoords[0].Y
+								ch.ScintCoords[2].Y = y + 13/2.*math.Cos(math.Pi-quartet.CylCoord.Phi)
+								ch.ScintCoords[3].Y = ch.ScintCoords[2].Y
+								ch.ScintCoords[4].Y = ch.ScintCoords[0].Y + 15*math.Sin(quartet.CylCoord.Phi) // in fact pi - phi, but sin(pi - phi) = sin(phi)
+								ch.ScintCoords[5].Y = ch.ScintCoords[4].Y
+								ch.ScintCoords[6].Y = ch.ScintCoords[2].Y + 15*math.Sin(quartet.CylCoord.Phi) // in fact pi - phi, but sin(pi - phi) = sin(phi)
+								ch.ScintCoords[7].Y = ch.ScintCoords[6].Y
+
+								ch.ScintCoords[0].Z = z + 13/2.
+								ch.ScintCoords[1].Z = z - 13/2.
+								ch.ScintCoords[2].Z = ch.ScintCoords[1].Z
+								ch.ScintCoords[3].Z = ch.ScintCoords[0].Z
+								ch.ScintCoords[4].Z = ch.ScintCoords[0].Z
+								ch.ScintCoords[5].Z = ch.ScintCoords[1].Z
+								ch.ScintCoords[6].Z = ch.ScintCoords[5].Z
+								ch.ScintCoords[7].Z = ch.ScintCoords[3].Z
+							case left:
+								ch.ScintCoords[0].X = x + 13/2.*math.Sin(quartet.CylCoord.Phi)
+								ch.ScintCoords[1].X = ch.ScintCoords[0].X
+								ch.ScintCoords[2].X = x - 13/2.*math.Sin(quartet.CylCoord.Phi)
+								ch.ScintCoords[3].X = ch.ScintCoords[2].X
+								ch.ScintCoords[4].X = ch.ScintCoords[0].X + 15*math.Cos(quartet.CylCoord.Phi)
+								ch.ScintCoords[5].X = ch.ScintCoords[4].X
+								ch.ScintCoords[6].X = ch.ScintCoords[2].X + 15*math.Cos(quartet.CylCoord.Phi)
+								ch.ScintCoords[7].X = ch.ScintCoords[6].X
+
+								ch.ScintCoords[0].Y = y - 13/2.*math.Cos(quartet.CylCoord.Phi)
+								ch.ScintCoords[1].Y = ch.ScintCoords[0].Y
+								ch.ScintCoords[2].Y = y + 13/2.*math.Cos(quartet.CylCoord.Phi)
+								ch.ScintCoords[3].Y = ch.ScintCoords[2].Y
+								ch.ScintCoords[4].Y = ch.ScintCoords[0].Y + 15*math.Sin(quartet.CylCoord.Phi)
+								ch.ScintCoords[5].Y = ch.ScintCoords[4].Y
+								ch.ScintCoords[6].Y = ch.ScintCoords[2].Y + 15*math.Sin(quartet.CylCoord.Phi)
+								ch.ScintCoords[7].Y = ch.ScintCoords[6].Y
+
+								ch.ScintCoords[0].Z = z - 13/2.
+								ch.ScintCoords[1].Z = z + 13/2.
+								ch.ScintCoords[2].Z = ch.ScintCoords[1].Z
+								ch.ScintCoords[3].Z = ch.ScintCoords[0].Z
+								ch.ScintCoords[4].Z = ch.ScintCoords[0].Z
+								ch.ScintCoords[5].Z = ch.ScintCoords[1].Z
+								ch.ScintCoords[6].Z = ch.ScintCoords[5].Z
+								ch.ScintCoords[7].Z = ch.ScintCoords[3].Z
+							}
 						case true: // channel not used in DPGA (one of the four channels per ASM card which is not used)
 							ch.SetAbsID240(math.MaxUint16)
 						}
@@ -235,6 +304,9 @@ type GeomCSV struct {
 	Z              float64
 }
 
+// DumpGeom dumps the x, y and z coordinates of the 240 channels (indentified by the iChannelAbs240 index) of the DPGA.
+// Coordinates are those of the detector.Channel.CartCoord object. They correspond to the coordinates of the center
+// of the front face of the
 func (d *Detector) DumpGeom() {
 	tbl, err := csvutil.Create("dpgageom.csv")
 	if err != nil {
@@ -253,6 +325,54 @@ func (d *Detector) DumpGeom() {
 			ch.X,
 			ch.Y,
 			ch.Z,
+		}
+		err = tbl.WriteRow(data)
+		if err != nil {
+			log.Fatalf("error writing row: %v\n", err)
+		}
+	}
+	err = tbl.Close()
+	if err != nil {
+		log.Fatalf("error closing table: %v\n", err)
+	}
+}
+
+type FullGeomCSV struct {
+	IChannelAbs240 uint16
+	X0, Y0, Z0     float64 // cartesian coords of corner 0
+	X1, Y1, Z1     float64 // cartesian coords of corner 1
+	X2, Y2, Z2     float64 // cartesian coords of corner 2
+	X3, Y3, Z3     float64 // cartesian coords of corner 3
+	X4, Y4, Z4     float64 // cartesian coords of corner 4
+	X5, Y5, Z5     float64 // cartesian coords of corner 5
+	X6, Y6, Z6     float64 // cartesian coords of corner 6
+	X7, Y7, Z7     float64 // cartesian coords of corner 7
+}
+
+// DumpFullGeom dumps the 8 coordinates of the 240 PMTs of the DPGA
+func (d *Detector) DumpFullGeom() {
+	tbl, err := csvutil.Create("dpgafullgeom.csv")
+	if err != nil {
+		log.Fatalf("could not create dpgafullgeom.csv: %v\n", err)
+	}
+	defer tbl.Close()
+	tbl.Writer.Comma = ' '
+
+	err = tbl.WriteHeader(fmt.Sprintf("# DPGA full geometry file (creation date: %v)\n", time.Now()))
+	err = tbl.WriteHeader("# iChannelAbs240 X0 Y0 Z0 X1 Y1 Z1 X2 Y2 Z2 X3 Y3 Z3 X4 Y4 Z4 X5 Y5 Z5 X6 Y6 Z6 X7 Y7 Z7")
+
+	for i := uint16(0); i < 240; i++ {
+		ch := d.ChannelFromIdAbs240(i)
+		data := FullGeomCSV{
+			i,
+			ch.ScintCoords[0].X, ch.ScintCoords[0].Y, ch.ScintCoords[0].Z,
+			ch.ScintCoords[1].X, ch.ScintCoords[1].Y, ch.ScintCoords[1].Z,
+			ch.ScintCoords[2].X, ch.ScintCoords[2].Y, ch.ScintCoords[2].Z,
+			ch.ScintCoords[3].X, ch.ScintCoords[3].Y, ch.ScintCoords[3].Z,
+			ch.ScintCoords[4].X, ch.ScintCoords[4].Y, ch.ScintCoords[4].Z,
+			ch.ScintCoords[5].X, ch.ScintCoords[5].Y, ch.ScintCoords[5].Z,
+			ch.ScintCoords[6].X, ch.ScintCoords[6].Y, ch.ScintCoords[6].Z,
+			ch.ScintCoords[7].X, ch.ScintCoords[7].Y, ch.ScintCoords[7].Z,
 		}
 		err = tbl.WriteRow(data)
 		if err != nil {
@@ -473,5 +593,6 @@ var Det *Detector
 func init() {
 	Det = NewDetector()
 	Det.DumpGeom()
+	Det.DumpFullGeom()
 	//Det.Print()
 }

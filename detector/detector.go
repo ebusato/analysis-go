@@ -88,6 +88,11 @@ func (c *Capacitor) SetPedestalMeanStdDev(mean float64, stddev float64) {
 	c.pedestalStdDev = stddev
 }
 
+// RectParallelepiped describes the geometry of the scintillator used in the detector (which
+// are rectangular parallelepiped). It's nothing but an array of size 8, each component beeing
+// the cartesian coordinates of one corner of the rectangular parallelepiped.
+type RectParallelepiped [8]utils.CartCoord
+
 // Channel describes a DRS channel.
 // A channel is made of 1024 capacitors.
 type Channel struct {
@@ -101,6 +106,9 @@ type Channel struct {
 
 	// The coordinates are those of the center of the front face of the cristal.
 	utils.CartCoord
+
+	// Full coordinates of the scintillator
+	ScintCoords RectParallelepiped
 }
 
 // Capacitors returns the capacitors for this channel
