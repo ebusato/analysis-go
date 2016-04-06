@@ -8,9 +8,13 @@ void display(TString fileNameCenters="../../godaq/dpgageom.csv", TString fileNam
   TEveRGBAPalette* pal = new TEveRGBAPalette(0, 130);
   
   // Read scintillators and put them in a box set
-  TEveBoxSet* bs = new TEveBoxSet("BoxSet");
-  bs->Reset(TEveBoxSet::kBT_FreeBox, kFALSE, 64);
-  bs->SetPalette(pal);
+  TEveBoxSet* bsright = new TEveBoxSet("BoxSetRight");
+  bsright->Reset(TEveBoxSet::kBT_FreeBox, kFALSE, 64);
+  bsright->SetPalette(pal);
+
+  TEveBoxSet* bsleft = new TEveBoxSet("BoxSetLeft");
+  bsleft->Reset(TEveBoxSet::kBT_FreeBox, kFALSE, 64);
+  bsleft->SetPalette(pal);
 
   ifstream infull(fileNameFull.Data());
   if (!infull) {
@@ -51,16 +55,22 @@ void display(TString fileNameCenters="../../godaq/dpgageom.csv", TString fileNam
 	X5 , Y5 , Z5,
 	X6 , Y6 , Z6,
 	X7 , Y7 , Z7};
-      bs->AddBox(verts);
+      
       // Color code:
-      //  10 -> Blue
-      //  75 -> Green
-      // 130 -> Red
-      // if() {
-      bs->DigitValue(100);
+      //  100 -> yellow
+      //  10 -> blue
+      if(iChannelAbs240 < 120) {
+	bsright->AddBox(verts);
+	bsright->DigitValue(100);
+      }
+      else {
+	bsleft->AddBox(verts);
+	bsleft->DigitValue(10);
+      }
     }
   }
-  bs->RefitPlex();
+  bsright->RefitPlex();
+  bsleft->RefitPlex();
 
   // Read centers of scintillators' front faces and put them in a point set
   TEvePointSet* ps = new TEvePointSet();
@@ -87,13 +97,14 @@ void display(TString fileNameCenters="../../godaq/dpgageom.csv", TString fileNam
     }
   }
 
-  ps->SetMarkerColor(kBlue);
-  ps->SetMarkerSize(2);
+  ps->SetMarkerColor(kOrange);
+  ps->SetMarkerSize(1);
   ps->SetMarkerStyle(8);
 
   if (register)
     {
-      gEve->AddElement(bs);
+      gEve->AddElement(bsright);
+      gEve->AddElement(bsleft);
       gEve->AddElement(ps);
       gEve->Redraw3D(kTRUE);
     }
