@@ -58,15 +58,19 @@ func NewDetector() *Detector {
 		}
 		for iASM := range hemi.asm {
 			asm := &hemi.asm[iASM]
+			// The value of 148.4 for the radial distance is the one used by Christophe is Catia.
+			// We use this same value here for consistency, but note that it is slighlty different
+			// than the one we find in some papers (e.g. 148.336, but the difference is
+			// way smaller than the incertainty (of the order of 1 mm) so it's no big deal)
 			switch hemi.which {
 			case right:
 				// on the right hemisphere, the ASM card with index iASM=0
 				// is the one at the very top of the detector (corresponding to line 1)
-				asm.SetCylCoord(148.336, math.Pi*(180.-37.5+float64(iASM)*15)/180., -(3*19.5+6.5/2.+13)-float64(iASM%3)*6.5)
+				asm.SetCylCoord(148.4, math.Pi*(180.-37.5+float64(iASM)*15)/180., -(3*19.5+6.5/2.+13-6.5/2)-float64(iASM%3)*6.5)
 			case left:
 				// on the left hemisphere, the ASM card with index iASM=0
 				// is the one at the very bottom of the detector (corresponding to line 7)
-				asm.SetCylCoord(148.336, math.Pi*(-37.5+float64(iASM)*15)/180., -(3*19.5+6.5/2.+13)-float64(iASM%3)*6.5)
+				asm.SetCylCoord(148.4, math.Pi*(-37.5+float64(iASM)*15)/180., -(3*19.5+6.5/2.+13-6.5/2)-float64(iASM%3)*6.5)
 			}
 			for iDRS := range asm.DRSs() {
 				drs := asm.DRS(uint8(iDRS))

@@ -1,5 +1,5 @@
 
-TEveBoxSet* display(TString fileName="../../godaq/dpgafullgeom.csv", Bool_t register=kTRUE)
+void display(TString fileNameCenters="../../godaq/dpgageom.csv", TString fileNameFull="../../godaq/dpgafullgeom.csv", Bool_t register=kTRUE)
 {
   TEveManager::Create();
 
@@ -7,19 +7,19 @@ TEveBoxSet* display(TString fileName="../../godaq/dpgafullgeom.csv", Bool_t regi
   
   TEveRGBAPalette* pal = new TEveRGBAPalette(0, 130);
   
-  TEveBoxSet* q = new TEveBoxSet("BoxSet");
-  q->SetPalette(pal);
-  q->Reset(TEveBoxSet::kBT_FreeBox, kFALSE, 64);
+  // Read scintillators and put them in a box set
+  TEveBoxSet* bs = new TEveBoxSet("BoxSet");
+  bs->Reset(TEveBoxSet::kBT_FreeBox, kFALSE, 64);
+  bs->SetPalette(pal);
 
-  ifstream in(fileName.Data());
-  if (!in) {
-    cerr << "ERROR ! Unable to open file '" << fileName << "' !" << endl;
+  ifstream infull(fileNameFull.Data());
+  if (!infull) {
+    cerr << "ERROR ! Unable to open file '" << fileNameFull << "' !" << endl;
     return;
   }
-
-  for(; !in.eof() ;) {
+  for(; !infull.eof() ;) {
     string line;
-    if (!getline(in,line)) break;
+    if (!getline(infull,line)) break;
     if (!line.empty() && line[0]!='#') {
       istringstream istr(line);
       int iChannelAbs240;
@@ -51,16 +51,50 @@ TEveBoxSet* display(TString fileName="../../godaq/dpgafullgeom.csv", Bool_t regi
 	X5 , Y5 , Z5,
 	X6 , Y6 , Z6,
 	X7 , Y7 , Z7};
-      q->AddBox(verts);
+      bs->AddBox(verts);
+      // Color code:
+      //  10 -> Blue
+      //  75 -> Green
+      // 130 -> Red
+      // if() {
+      bs->DigitValue(100);
     }
   }
-  q->RefitPlex();
+  bs->RefitPlex();
+
+  // Read centers of scintillators' front faces and put them in a point set
+  TEvePointSet* ps = new TEvePointSet();
+  ps->SetOwnIds(kTRUE);
+  
+  ifstream incenters(fileNameCenters.Data());
+  if (!incenters) {
+    cerr << "ERROR ! Unable to open file '" << fileNameCenters << "' !" << endl;
+    return;
+  }
+  for(; !incenters.eof() ;) {
+    string line;
+    if (!getline(incenters,line)) break;
+    if (!line.empty() && line[0]!='#') {
+      istringstream istr(line);
+      int iChannelAbs240;
+      float X, Y, Z;
+
+      istr >> iChannelAbs240
+	   >> X >> Y >> Z;
+       
+      ps -> SetNextPoint(X, Y, Z);
+      ps -> SetPointId(new TNamed(Form("iChannelAbs240=%d", iChannelAbs240), ""));
+    }
+  }
+
+  ps->SetMarkerColor(kBlue);
+  ps->SetMarkerSize(2);
+  ps->SetMarkerStyle(8);
 
   if (register)
     {
-      gEve->AddElement(q);
+      gEve->AddElement(bs);
+      gEve->AddElement(ps);
       gEve->Redraw3D(kTRUE);
     }
-  
-  return q;
 }
