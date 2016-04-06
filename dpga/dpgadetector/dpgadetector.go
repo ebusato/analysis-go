@@ -62,11 +62,11 @@ func NewDetector() *Detector {
 			case right:
 				// on the right hemisphere, the ASM card with index iASM=0
 				// is the one at the very top of the detector (corresponding to line 1)
-				asm.SetCylCoord(322, math.Pi*(180.-37.5+float64(iASM)*15)/180., -(3*19.5+6.5/2.+13)-float64(iASM%3)*6.5)
+				asm.SetCylCoord(148.336, math.Pi*(180.-37.5+float64(iASM)*15)/180., -(3*19.5+6.5/2.+13)-float64(iASM%3)*6.5)
 			case left:
 				// on the left hemisphere, the ASM card with index iASM=0
 				// is the one at the very bottom of the detector (corresponding to line 7)
-				asm.SetCylCoord(322, math.Pi*(-37.5+float64(iASM)*15)/180., -(3*19.5+6.5/2.+13)-float64(iASM%3)*6.5)
+				asm.SetCylCoord(148.336, math.Pi*(-37.5+float64(iASM)*15)/180., -(3*19.5+6.5/2.+13)-float64(iASM%3)*6.5)
 			}
 			for iDRS := range asm.DRSs() {
 				drs := asm.DRS(uint8(iDRS))
@@ -104,6 +104,8 @@ func NewDetector() *Detector {
 							// determine channel cartesian coordinates from quartet's cylindrical coordinates
 							var xSign int
 							var ySign int
+							var zSign int
+							// Set xSign and ySign (channels 0 and 1 have the same X and Y coordinates and thus the same xSign and ySign)
 							if iChannel == 0 || iChannel == 1 {
 								switch hemi.which {
 								case right:
@@ -123,9 +125,26 @@ func NewDetector() *Detector {
 									ySign = +1
 								}
 							}
+							// Set zSign
+							if iChannel == 0 || iChannel == 2 {
+								switch hemi.which {
+								case right:
+									zSign = +1
+								case left:
+									zSign = -1
+								}
+							} else { // iChannel == 1 || iChannel == 3
+								switch hemi.which {
+								case right:
+									zSign = -1
+								case left:
+									zSign = +1
+								}
+							}
 							x := qCartCoord.X + float64(xSign)*19.5*math.Sin(quartet.CylCoord.Phi)
 							y := qCartCoord.Y + float64(ySign)*19.5*math.Cos(quartet.CylCoord.Phi)
-							ch.SetCartCoord(x, y, qCartCoord.Z)
+							z := qCartCoord.Z + float64(zSign)*(6.5/2.+6.5)
+							ch.SetCartCoord(x, y, z)
 						case true: // channel not used in DPGA (one of the four channels per ASM card which is not used)
 							ch.SetAbsID240(math.MaxUint16)
 						}
@@ -215,7 +234,7 @@ func (d *Detector) DumpGeom() {
 	tbl.Writer.Comma = ' '
 
 	err = tbl.WriteHeader(fmt.Sprintf("# DPGA geometry file (creation date: %v)\n", time.Now()))
-	err = tbl.WriteHeader("# iChannelAbs240     X     Y     Z")
+	err = tbl.WriteHeader("# iChannelAbs240 X Y Z")
 
 	for i := uint16(0); i < 240; i++ {
 		ch := d.ChannelFromIdAbs240(i)
@@ -443,5 +462,6 @@ var Det *Detector
 
 func init() {
 	Det = NewDetector()
+	Det.DumpGeom()
 	//Det.Print()
 }

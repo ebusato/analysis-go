@@ -306,10 +306,12 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						if err != nil {
 							panic(err)
 						}
+
 						p1 := tp.Plot(0, 0)
 						p1.X.Min = 0
 						p1.X.Max = 240
-						p1.X.Tick.Marker = utils.NewTicks(241, 4)
+						p1.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
+						p1.Add(hplot.NewGrid())
 						hplotfreq, err := hplot.NewH1D(dqplots.HFrequency)
 						if err != nil {
 							panic(err)
@@ -325,7 +327,8 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						p2 := tp.Plot(1, 0)
 						p2.X.Min = 0
 						p2.X.Max = 240
-						p2.X.Tick.Marker = utils.NewTicks(241, 4)
+						p2.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
+						p2.Add(hplot.NewGrid())
 						hplotsatfreq, err := hplot.NewH1D(dqplots.HSatFrequency)
 						if err != nil {
 							panic(err)
