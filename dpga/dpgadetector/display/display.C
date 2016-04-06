@@ -7,6 +7,26 @@ void display(TString fileNameCenters="../../godaq/dpgageom.csv", TString fileNam
   
   TEveRGBAPalette* pal = new TEveRGBAPalette(0, 130);
   
+  // Draw coordinate system
+  TEveArrow* xAxis = new TEveArrow(100., 0., 0., 0., 0., 0.);
+  TEveArrow* yAxis = new TEveArrow(0., 100., 0., 0., 0., 0.);
+  TEveArrow* zAxis = new TEveArrow(0., 0., 100., 0., 0., 0.);
+  xAxis->SetMainColor(kBlue); xAxis->SetTubeR(0.02); xAxis->SetPickable(kTRUE);
+  yAxis->SetMainColor(kBlue); yAxis->SetTubeR(0.02); yAxis->SetPickable(kTRUE);
+  zAxis->SetMainColor(kBlue); zAxis->SetTubeR(0.02); zAxis->SetPickable(kTRUE);
+  gEve->AddElement(xAxis);
+  gEve->AddElement(yAxis);
+  gEve->AddElement(zAxis);
+  TEveText* tx = new TEveText("x"); tx->SetFontSize(20);
+  TEveVector tvx = xAxis->GetVector()*1.1+xAxis->GetOrigin(); tx->RefMainTrans().SetPos(tvx.Arr());
+  xAxis->AddElement(tx);
+  TEveText* ty = new TEveText("y"); ty->SetFontSize(20);
+  TEveVector tvy = yAxis->GetVector()*1.1+yAxis->GetOrigin(); ty->RefMainTrans().SetPos(tvy.Arr());
+  yAxis->AddElement(ty);
+  TEveText* tz = new TEveText("z"); tz->SetFontSize(20);
+  TEveVector tvz = zAxis->GetVector()*1.1+zAxis->GetOrigin(); tz->RefMainTrans().SetPos(tvz.Arr());
+  zAxis->AddElement(tz);
+  
   // Read scintillators and put them in a box set
   TEveBoxSet* bsright = new TEveBoxSet("BoxSetRight");
   bsright->Reset(TEveBoxSet::kBT_FreeBox, kFALSE, 64);
@@ -97,7 +117,7 @@ void display(TString fileNameCenters="../../godaq/dpgageom.csv", TString fileNam
     }
   }
 
-  ps->SetMarkerColor(kOrange);
+  ps->SetMarkerColor(kRed);
   ps->SetMarkerSize(1);
   ps->SetMarkerStyle(8);
 
