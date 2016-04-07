@@ -603,7 +603,7 @@ var Det *Detector
 
 func init() {
 	Det = NewDetector()
-	Det.DumpGeom()
-	Det.DumpFullGeom()
+	//Det.DumpGeom()
+	//Det.DumpFullGeom()
 	//Det.Print()
 }
