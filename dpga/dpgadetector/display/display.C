@@ -108,20 +108,20 @@ void display(bool showChannelIndex = false, TString fileNameCenters="../geom/dpg
       istringstream istr(line);
       int iChannelAbs240;
       float X, Y, Z;
-
+      
       istr >> iChannelAbs240
 	   >> X >> Y >> Z;
-       
+      
       ps -> SetNextPoint(X, Y, Z);
       ps -> SetPointId(new TNamed(Form("iChannelAbs240=%d", iChannelAbs240), ""));
-
+      
       if(showChannelIndex) {
 	float x, y, z;
 	ps -> GetPoint(ps->GetLastPoint(), x, y, z);
 	TEveText* text = new TEveText(Form("%i", iChannelAbs240)); text->SetFontSize(10);
 	if (iChannelAbs240 >= 120) {
 	  text->RefMainTrans().SetPos(x-3, y-3, z);
-      }
+	}
 	else {
 	  text->RefMainTrans().SetPos(x+3, y+3, z);
 	}
