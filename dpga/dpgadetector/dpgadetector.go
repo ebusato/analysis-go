@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"strconv"
 	"time"
 
@@ -312,7 +313,8 @@ type GeomCSV struct {
 // Coordinates are those of the detector.Channel.CartCoord object. They correspond to the coordinates of the center
 // of the front face of the
 func (d *Detector) DumpGeom() {
-	tbl, err := csvutil.Create("dpgageom.csv")
+	fileName := os.Getenv("GOPATH") + "/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector/dpgageom.csv"
+	tbl, err := csvutil.Create(fileName)
 	if err != nil {
 		log.Fatalf("could not create dpgageom.csv: %v\n", err)
 	}
@@ -355,7 +357,8 @@ type FullGeomCSV struct {
 
 // DumpFullGeom dumps the 8 coordinates of the 240 PMTs of the DPGA
 func (d *Detector) DumpFullGeom() {
-	tbl, err := csvutil.Create("dpgafullgeom.csv")
+	fileName := os.Getenv("GOPATH") + "/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector/dpgafullgeom.csv"
+	tbl, err := csvutil.Create(fileName)
 	if err != nil {
 		log.Fatalf("could not create dpgafullgeom.csv: %v\n", err)
 	}

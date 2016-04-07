@@ -27,7 +27,7 @@ void display(TString fileNameCenters="../../godaq/dpgageom.csv", TString fileNam
   TEveVector tvz = zAxis->GetVector()*1.1+zAxis->GetOrigin(); tz->RefMainTrans().SetPos(tvz.Arr());
   zAxis->AddElement(tz);
   
-  // Read scintillators and put them in a box set
+  // Read full coordinates of scintillators and put them in a box set
   TEveBoxSet* bsright = new TEveBoxSet("BoxSetRight");
   bsright->Reset(TEveBoxSet::kBT_FreeBox, kFALSE, 64);
   bsright->SetPalette(pal);
@@ -114,6 +114,14 @@ void display(TString fileNameCenters="../../godaq/dpgageom.csv", TString fileNam
        
       ps -> SetNextPoint(X, Y, Z);
       ps -> SetPointId(new TNamed(Form("iChannelAbs240=%d", iChannelAbs240), ""));
+
+      TEveText* text = new TEveText("test"); text->SetFontSize(20);
+      gEve->AddElement(text);
+      float x, y, z;
+      ps -> GetPoint(0, x, y, z);
+      cout << "coord = " << x << "  " << y << "  " << z << endl;
+      //TEveVector tvx = xAxis->GetVector()*1.1+xAxis->GetOrigin(); text->RefMainTrans().SetPos(tvx.Arr());
+      //xAxis->AddElement(tx);
     }
   }
 
