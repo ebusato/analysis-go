@@ -212,9 +212,6 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 	detChannel1 := dpgadetector.Det.ChannelFromIdAbs288(iChannelAbs288_1)
 	detChannel2 := dpgadetector.Det.ChannelFromIdAbs288(iChannelAbs288_2)
 
-	///////////////////////////////////////////////////////////////////////////////////
-	// Sanity check
-	iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx60ToRelIdx(iCluster)
 	var iChannel1 uint8
 	var iChannel2 uint8
 	switch f.typeOfFrame {
@@ -226,6 +223,9 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 		iChannel2 = 3
 	}
 
+	///////////////////////////////////////////////////////////////////////////////////
+	// Sanity check
+	iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx60ToRelIdx(iCluster)
 	detChannel1debug := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel1)
 	detChannel2debug := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel2)
 

@@ -106,12 +106,48 @@ func NewDetector() *Detector {
 							_, iChannelAbs240 := RelIdxToAbsIdx240(uint8(iHemi), uint8(iASM), uint8(iDRS), uint8(iQuartet), uint8(iChannel))
 							ch.SetAbsID240(iChannelAbs240)
 
-							// determine channel cartesian coordinates from quartet's cylindrical coordinates
+							// Determine channel cartesian coordinates from quartet's cylindrical coordinates
+							// The position of the PMT within a quartet is given by its index on the PMT base card. Let's call this index idxPMT (0 -> 3).
+							// When looking from the inside of the detector to the quartets, we have
+							//
+							//      _________________________
+							//      |           |           |
+							//      |  idxPMT2  |  idxPMT3  |
+							//      |           |           |
+							//      |-----------|-----------|
+							//      |           |           |
+							//      |  idxPMT0  |  idxPMT1  |
+							//      |___________|___________|
+							//
+							//
+							// This idxPMT index is different from the electronics channel index (or the index within the Quartet.channels array, which is
+							// the same as the electronics channel index). The electronics channel index is the index specifying on which pin of the connector
+							// on the HV divider card the signal is leaving to card.
+							// Let's call this index idxElec (0 -> 3). We have, representing the connector on the HV divider card :
+							//
+							//            ________________________________________________
+							//           |                                                |
+							//           |      pin        pin       pin      pin (brown) |
+							//           |       |          |         |        |          |
+							//           --------------------------------------------------
+							//                idxElec3  idxElec2  idxElec1  idxElec0
+							//
+							//
+							// A mapping thus needs to be done to map the electronic channels to the right position.
+							// The mapping is the following
+							//
+							//     idxPMT   |    idxElec
+							//     ---------------------
+							//        0     |       3
+							//        1     |       2
+							//        2     |       1
+							//        3     |       0
+
 							var xSign int
 							var ySign int
 							var zSign int
 							// Set xSign and ySign (channels 0 and 1 have the same X and Y coordinates and thus the same xSign and ySign)
-							if iChannel == 0 || iChannel == 1 {
+							if iChannel == 3 || iChannel == 2 {
 								switch hemi.which {
 								case right:
 									xSign = -1
@@ -120,7 +156,7 @@ func NewDetector() *Detector {
 									xSign = +1
 									ySign = -1
 								}
-							} else { // iChannel == 2 || iChannel == 3
+							} else { // iChannel == 0 || iChannel == 1
 								switch hemi.which {
 								case right:
 									xSign = +1
@@ -131,14 +167,14 @@ func NewDetector() *Detector {
 								}
 							}
 							// Set zSign
-							if iChannel == 0 || iChannel == 2 {
+							if iChannel == 3 || iChannel == 1 {
 								switch hemi.which {
 								case right:
 									zSign = +1
 								case left:
 									zSign = -1
 								}
-							} else { // iChannel == 1 || iChannel == 3
+							} else { // iChannel == 2 || iChannel == 0
 								switch hemi.which {
 								case right:
 									zSign = -1
@@ -313,7 +349,7 @@ type GeomCSV struct {
 // Coordinates are those of the detector.Channel.CartCoord object. They correspond to the coordinates of the center
 // of the front face of the
 func (d *Detector) DumpGeom() {
-	fileName := os.Getenv("GOPATH") + "/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector/dpgageom.csv"
+	fileName := os.Getenv("GOPATH") + "/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector/geom/dpgageom.csv"
 	tbl, err := csvutil.Create(fileName)
 	if err != nil {
 		log.Fatalf("could not create dpgageom.csv: %v\n", err)
@@ -357,7 +393,7 @@ type FullGeomCSV struct {
 
 // DumpFullGeom dumps the 8 coordinates of the 240 PMTs of the DPGA
 func (d *Detector) DumpFullGeom() {
-	fileName := os.Getenv("GOPATH") + "/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector/dpgafullgeom.csv"
+	fileName := os.Getenv("GOPATH") + "/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector/geom/dpgafullgeom.csv"
 	tbl, err := csvutil.Create(fileName)
 	if err != nil {
 		log.Fatalf("could not create dpgafullgeom.csv: %v\n", err)
@@ -567,7 +603,7 @@ var Det *Detector
 
 func init() {
 	Det = NewDetector()
-	//Det.DumpGeom()
-	//Det.DumpFullGeom()
+	Det.DumpGeom()
+	Det.DumpFullGeom()
 	//Det.Print()
 }
