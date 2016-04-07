@@ -1,5 +1,5 @@
 
-void display(TString fileNameCenters="../../godaq/dpgageom.csv", TString fileNameFull="../../godaq/dpgafullgeom.csv", Bool_t register=kTRUE)
+void display(bool showChannelIndex = false, TString fileNameCenters="../geom/dpgageom.csv", TString fileNameFull="../geom/dpgafullgeom.csv", Bool_t register=kTRUE)
 {
   TEveManager::Create();
 
@@ -115,13 +115,18 @@ void display(TString fileNameCenters="../../godaq/dpgageom.csv", TString fileNam
       ps -> SetNextPoint(X, Y, Z);
       ps -> SetPointId(new TNamed(Form("iChannelAbs240=%d", iChannelAbs240), ""));
 
-      TEveText* text = new TEveText("test"); text->SetFontSize(20);
-      gEve->AddElement(text);
-      float x, y, z;
-      ps -> GetPoint(0, x, y, z);
-      cout << "coord = " << x << "  " << y << "  " << z << endl;
-      //TEveVector tvx = xAxis->GetVector()*1.1+xAxis->GetOrigin(); text->RefMainTrans().SetPos(tvx.Arr());
-      //xAxis->AddElement(tx);
+      if(showChannelIndex) {
+	float x, y, z;
+	ps -> GetPoint(ps->GetLastPoint(), x, y, z);
+	TEveText* text = new TEveText(Form("%i", iChannelAbs240)); text->SetFontSize(10);
+	if (iChannelAbs240 >= 120) {
+	  text->RefMainTrans().SetPos(x-3, y-3, z);
+      }
+	else {
+	  text->RefMainTrans().SetPos(x+3, y+3, z);
+	}
+	gEve->AddElement(text);
+      }
     }
   }
 
