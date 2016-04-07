@@ -392,38 +392,6 @@ func (d *Detector) DumpFullGeom() {
 	}
 }
 
-// func (d *Detector) ReadGeom() {
-// 	fileName := os.Getenv("GOPATH") + "/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector/mapping_IDchanneltoCoordinates_Arnaud.txt"
-// 	tbl, err := csvutil.Open(fileName)
-// 	if err != nil {
-// 		log.Fatalf("could not open %s: %v\n", fileName, err)
-// 	}
-// 	defer tbl.Close()
-// 	tbl.Reader.Comma = ' '
-// 	tbl.Reader.Comment = '#'
-//
-// 	rows, err := tbl.ReadRows(0, -1)
-// 	if err != nil {
-// 		log.Fatalf("could read rows [0, -1): %v\n", err)
-// 	}
-// 	defer rows.Close()
-//
-// 	var data GeomCSV
-//
-// 	for rows.Next() {
-// 		err = rows.Scan(&data)
-// 		if err != nil {
-// 			log.Fatalf("error reading row: %v\n", err)
-// 		}
-// 		channel := d.ChannelFromIdAbs240(data.IChannelAbs240)
-// 		channel.SetCartCoord(data.X, data.Y, data.Z)
-// 	}
-// 	err = rows.Err()
-// 	if err != nil && err.Error() != "EOF" {
-// 		log.Fatalf("error: %v\n", err)
-// 	}
-// }
-
 func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
 	for iHemi := range d.hemispheres {
 		hemi := &d.hemispheres[iHemi]
@@ -599,7 +567,7 @@ var Det *Detector
 
 func init() {
 	Det = NewDetector()
-	Det.DumpGeom()
-	Det.DumpFullGeom()
+	//Det.DumpGeom()
+	//Det.DumpFullGeom()
 	//Det.Print()
 }
