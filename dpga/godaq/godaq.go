@@ -229,6 +229,8 @@ func main() {
 	}
 	runNumber := updateRunsCSV(fileName, timeStop, noEvents, hdr)
 	updateHeader(filew, 4, runNumber)
+
+	err = os.Rename(*outfileName, "run"+strconv.FormatUint(uint64(runNumber), 10)+".bin")
 }
 
 func updateHeader(f *os.File, offset int64, val uint32) {
