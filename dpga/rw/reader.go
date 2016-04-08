@@ -102,6 +102,9 @@ func (r *Reader) readU32(v *uint32) {
 func (r *Reader) readHeader(hdr *Header) {
 	switch {
 	case r.hdr.HdrType == HeaderCAL:
+		r.readU32(&hdr.History)
+		r.readU32(&hdr.RunNumber)
+		r.readU32(&hdr.FreeField)
 		r.readU32(&hdr.TimeStart)
 		r.readU32(&hdr.TimeStop)
 		r.readU32(&hdr.NoEvents)

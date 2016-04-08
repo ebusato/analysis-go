@@ -52,6 +52,9 @@ func (ht *HeaderType) Set(value string) error {
 // Header holds metadata about the run configuration
 type Header struct {
 	HdrType                 HeaderType // type of header
+	History                 uint32     // history word (0 means that it's a raw file produced by the DAQ software, not reprocessed by any subsequent software.)
+	RunNumber               uint32     // run number
+	FreeField               uint32     // free fields (for the moment not used, here just in case it's needed in the future)
 	TimeStart               uint32     // start time (number of seconds since Jan 01 1970)
 	TimeStop                uint32     // end time (number of seconds since Jan 01 1970)
 	NoEvents                uint32     // total number of events in file
@@ -73,6 +76,9 @@ func (h *Header) Print() {
 	fmt.Printf("Printing header (type = %#v):\n", h.HdrType.String())
 	switch {
 	case h.HdrType == HeaderCAL:
+		fmt.Printf("   History = %v\n", h.History)
+		fmt.Printf("   RunNumber = %v\n", h.RunNumber)
+		fmt.Printf("   FreeField = %v\n", h.FreeField)
 		fmt.Printf("   TimeStart = %v\n", time.Unix(int64(h.TimeStart), 0).Format(time.UnixDate))
 		fmt.Printf("   TimeStop = %v\n", time.Unix(int64(h.TimeStop), 0).Format(time.UnixDate))
 		fmt.Printf("   NoEvents = %v\n", h.NoEvents)

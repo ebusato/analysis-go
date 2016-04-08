@@ -81,6 +81,9 @@ func (w *Writer) writeU32(v uint32) {
 func (w *Writer) writeHeader(hdr *Header, clientTime bool) {
 	switch {
 	case hdr.HdrType == HeaderCAL:
+		w.writeU32(hdr.History)
+		w.writeU32(hdr.RunNumber)
+		w.writeU32(hdr.FreeField)
 		if clientTime {
 			// Hack: set time from client clock rather than from server's
 			// since the later is not correct.
