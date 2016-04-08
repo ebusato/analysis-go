@@ -7,8 +7,11 @@ import (
 	"os"
 
 	"github.com/go-hep/hbook"
+	"github.com/go-hep/hplot"
+	"github.com/gonum/plot/plotutil"
 	"github.com/gonum/plot/vg"
 	"github.com/gonum/plot/vg/draw"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
@@ -19,14 +22,26 @@ type DQPlot struct {
 	HSatFrequency    *hbook.H1D
 	HMultiplicity    *hbook.H1D
 	HSatMultiplicity *hbook.H1D
+	HCharge          [][4]hbook.H1D
+	HAmplitude       [][4]hbook.H1D
 }
 
 func NewDQPlot() *DQPlot {
+	const N = 4
+	NoClusters := dpgadetector.Det.NoClusters()
 	dqp := &DQPlot{
 		HFrequency:       hbook.NewH1D(240, 0, 240),
 		HSatFrequency:    hbook.NewH1D(240, 0, 240),
 		HMultiplicity:    hbook.NewH1D(8, 0, 8),
 		HSatMultiplicity: hbook.NewH1D(8, 0, 8),
+		HCharge:          make([][4]hbook.H1D, NoClusters),
+		HAmplitude:       make([][4]hbook.H1D, NoClusters),
+	}
+	for i := uint8(0); i < NoClusters; i++ {
+		for j := 0; j < N; j++ {
+			dqp.HCharge[i][j] = *hbook.NewH1D(50, 1e4, 100e3)
+			dqp.HAmplitude[i][j] = *hbook.NewH1D(100, 0, 4200)
+		}
 	}
 	return dqp
 }
@@ -68,6 +83,8 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 		satmult += uint8(len(cluster.PulsesWithSatSignal()))
 		for j := range cluster.Pulses {
 			pulse := &cluster.Pulses[j]
+			d.HCharge[i][j].Fill(float64(pulse.Charge()), 1)
+			d.HAmplitude[i][j].Fill(float64(pulse.Amplitude()), 1)
 			if pulse.HasSignal {
 				d.HFrequency.Fill(counter, 1)
 			}
@@ -87,6 +104,69 @@ func (d *DQPlot) Finalize() {
 	d.HSatFrequency.Scale(1 / float64(d.Nevents))
 	d.HMultiplicity.Scale(1 / d.HMultiplicity.Integral())
 	d.HSatMultiplicity.Scale(1 / d.HSatMultiplicity.Integral())
+	// Take len of HCharge and HCharge[0] as it should be the same for all other
+	// objects used here
+	for i := 0; i < len(d.HCharge); i++ {
+		for j := 0; j < len(d.HCharge[0]); j++ {
+			d.HCharge[i][j].Scale(1 / d.HCharge[i][j].Integral())
+			d.HAmplitude[i][j].Scale(1 / d.HAmplitude[i][j].Integral())
+		}
+	}
+}
+
+type WhichVar byte
+
+const (
+	Charge WhichVar = iota
+	Amplitude
+)
+
+func (d *DQPlot) MakeChargeTiledPlot(which WhichVar) *hplot.TiledPlot {
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 6, Rows: 10, PadY: 1 * vg.Centimeter})
+	if err != nil {
+		panic(err)
+	}
+	iCluster := 0
+	var histos *[4]hbook.H1D
+	switch which {
+	case Charge:
+		histos = &d.HCharge[iCluster]
+	case Amplitude:
+		histos = &d.HAmplitude[iCluster]
+	}
+	for irows := 0; irows < tp.Tiles.Rows; irows++ {
+		for icols := 0; icols < tp.Tiles.Cols; icols++ {
+			p := tp.Plot(irows, icols)
+			p.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
+			p.Add(hplot.NewGrid())
+			hplotcharge0, err := hplot.NewH1D(&histos[0])
+			if err != nil {
+				panic(err)
+			}
+			hplotcharge1, err := hplot.NewH1D(&histos[1])
+			if err != nil {
+				panic(err)
+			}
+			hplotcharge2, err := hplot.NewH1D(&histos[2])
+			if err != nil {
+				panic(err)
+			}
+			hplotcharge3, err := hplot.NewH1D(&histos[3])
+			if err != nil {
+				panic(err)
+			}
+			hplotcharge0.Color = plotutil.Color(1)
+			hplotcharge1.Color = plotutil.Color(2)
+			hplotcharge2.Color = plotutil.Color(3)
+			hplotcharge3.Color = plotutil.Color(4)
+			p.Add(hplotcharge0)
+			p.Add(hplotcharge1)
+			p.Add(hplotcharge2)
+			p.Add(hplotcharge3)
+			iCluster++
+		}
+	}
+	return tp
 }
 
 // SaveHistos saves histograms on disk.

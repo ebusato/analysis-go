@@ -27,6 +27,7 @@
 		multplot.bars = { show: true }
 		
 		var freqhplot = ""
+		var chargehplot = ""
 		
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
@@ -76,6 +77,8 @@
 			mult.draw();
 			var p1 = document.getElementById("my-freqh-plot");
 			p1.innerHTML = freqhplot;
+			var p2 = document.getElementById("my-chargeh-plot");
+			p2.innerHTML = chargehplot;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], new options('#FFFF00')); // yellow
@@ -102,6 +105,7 @@
 					multplot.data.push([data.mult[i].X, data.mult[i].Y])
 				}
 				freqhplot = data.freqh;
+				chargehplot = data.chargeh;
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < 999; is += 5) {
@@ -269,7 +273,7 @@
 					</table>
 				</div> <!-- tab 1 content -->
 				<div id="tab2" class="tab">
-					
+					<div id="my-chargeh-plot" class="my-plot-stylefreq"></div>
 				</div> <!-- tab 2 content -->
 				<!--div id="tab3" class="tab">
 					<p>Tab #3 content goes here!</p>

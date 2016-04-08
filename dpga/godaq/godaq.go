@@ -74,11 +74,12 @@ func NewH1D(h *hbook.H1D) H1D {
 }
 
 type Data struct {
-	Time  float64  `json:"time"` // time at which monitoring data are taken
-	Freq  float64  `json:"freq"` // number of events processed per second
-	Qs    Quartets `json:"quartets"`
-	Mult  H1D      `json:"mult"`  // multiplicity of pulses
-	FreqH string   `json:"freqh"` // frequency histogram
+	Time   float64  `json:"time"` // time at which monitoring data are taken
+	Freq   float64  `json:"freq"` // number of events processed per second
+	Qs     Quartets `json:"quartets"`
+	Mult   H1D      `json:"mult"`   // multiplicity of pulses
+	FreqH  string   `json:"freqh"`  // frequency histogram
+	Charge string   `json:"charge"` // charge histograms
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -401,6 +402,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 
 						//fmt.Println("data:", time, noEventsForMon, duration, freq)
 
+						// Make frequency histo plot
 						tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 2, PadY: 1 * vg.Centimeter})
 						if err != nil {
 							panic(err)
@@ -441,6 +443,10 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						p2.Title.Text = fmt.Sprintf("Number of saturating pulses vs channel\n")
 						freqhsvg := utils.RenderSVG(tp, 50, 10)
 
+						// Make charge distrib histo plot
+
+						//chargesvg := utils.RenderSVG(tpCharge, 50, 40)
+
 						// send to channel
 						datac <- Data{
 							Time:  time,
@@ -448,6 +454,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							Qs:    qs,
 							Mult:  NewH1D(hMult),
 							FreqH: freqhsvg,
+							//Charge: chargesvg,
 						}
 						noEventsForMon = 0
 					}
