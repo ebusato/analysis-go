@@ -143,6 +143,23 @@ func main() {
 	}
 	hdr.Print()
 
+	// determine run number
+	var runCSVFileName string
+	switch *runcsvtest {
+	case true:
+		runCSVFileName = os.Getenv("HOME") + "/godaq/runs/runs_test.csv"
+	case false:
+		runCSVFileName = os.Getenv("HOME") + "/godaq/runs/runs.csv"
+	}
+	if !utils.Exists(runCSVFileName) {
+		fmt.Printf("could not open %v -> nothing will be written to it.\n", runCSVFileName)
+		return
+	}
+	prevRunNumber := getPreviousRunNumber(runCSVFileName)
+	currentRunNumber := prevRunNumber + 1
+	fmt.Printf("Previous run number is %v -> setting current run number to %v\n", prevRunNumber, currentRunNumber)
+
+	// web address handling
 	webadSlice := strings.Split(*webad, ":")
 	if webadSlice[0] == "" {
 		webadSlice[0] = getHostIP()
@@ -169,6 +186,7 @@ func main() {
 
 	err = t.Execute(htmlw, map[string]interface{}{
 		"WebAd":                   *webad,
+		"RunNumber":               currentRunNumber,
 		"TimeStart":               time.Unix(int64(hdr.TimeStart), 0).Format(time.UnixDate),
 		"TimeStop":                time.Unix(int64(hdr.TimeStop), 0).Format(time.UnixDate),
 		"NoEvents":                strconv.FormatUint(uint64(hdr.NoEvents), 10),
@@ -216,21 +234,10 @@ func main() {
 	updateHeader(filew, 20, noEvents)
 
 	// Dump run info in csv. Only relevant when ran on DAQ PC, where the csv file is present.
-	var fileName string
-	switch *runcsvtest {
-	case true:
-		fileName = os.Getenv("HOME") + "/godaq/runs/runs_test.csv"
-	case false:
-		fileName = os.Getenv("HOME") + "/godaq/runs/runs.csv"
-	}
-	if !utils.Exists(fileName) {
-		fmt.Printf("could not open %v -> nothing will be written to it.\n", fileName)
-		return
-	}
-	runNumber := updateRunsCSV(fileName, timeStop, noEvents, hdr)
-	updateHeader(filew, 4, runNumber)
+	updateRunsCSV(runCSVFileName, currentRunNumber, timeStop, noEvents, hdr)
+	updateHeader(filew, 4, currentRunNumber)
 
-	err = os.Rename(*outfileName, "run"+strconv.FormatUint(uint64(runNumber), 10)+".bin")
+	err = os.Rename(*outfileName, "run"+strconv.FormatUint(uint64(currentRunNumber), 10)+".bin")
 }
 
 func updateHeader(f *os.File, offset int64, val uint32) {
@@ -276,16 +283,15 @@ func getPreviousRunNumber(fileName string) uint32 {
 	return data.RunNumber
 }
 
-func updateRunsCSV(fileName string, timeStop uint32, noEvents uint32, hdr *rw.Header) uint32 {
-	prevRunNumber := getPreviousRunNumber(fileName)
-	currentRunNumber := prevRunNumber + 1
-	fmt.Printf("previous run number is %v -> setting current run number to %v\n", prevRunNumber, currentRunNumber)
-
+func updateRunsCSV(fileName string, runNumber uint32, timeStop uint32, noEvents uint32, hdr *rw.Header) {
+	// Determine working directory
 	pwd, err := os.Getwd()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	// Open csv file in append mode
 	tbl, err := csvutil.Append(fileName)
 	if err != nil {
 		log.Fatalf("could not create dpgageom.csv: %v\n", err)
@@ -294,7 +300,7 @@ func updateRunsCSV(fileName string, timeStop uint32, noEvents uint32, hdr *rw.He
 	tbl.Writer.Comma = ' '
 
 	data := RunsCSV{
-		RunNumber: currentRunNumber,
+		RunNumber: runNumber,
 		NoEvents:  noEvents,
 		ExecDir:   pwd,
 		StartTime: time.Unix(int64(hdr.TimeStart), 0).Format(time.UnixDate),
@@ -306,8 +312,6 @@ func updateRunsCSV(fileName string, timeStop uint32, noEvents uint32, hdr *rw.He
 	}
 
 	// implement git commit
-
-	return currentRunNumber
 }
 
 func webserver() {
