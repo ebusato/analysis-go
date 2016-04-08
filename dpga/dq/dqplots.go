@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/go-hep/hbook"
 	"github.com/go-hep/hplot"
@@ -22,8 +23,8 @@ type DQPlot struct {
 	HSatFrequency    *hbook.H1D
 	HMultiplicity    *hbook.H1D
 	HSatMultiplicity *hbook.H1D
-	HCharge          [][4]hbook.H1D
-	HAmplitude       [][4]hbook.H1D
+	HCharge          [][]hbook.H1D
+	HAmplitude       [][]hbook.H1D
 }
 
 func NewDQPlot() *DQPlot {
@@ -34,13 +35,15 @@ func NewDQPlot() *DQPlot {
 		HSatFrequency:    hbook.NewH1D(240, 0, 240),
 		HMultiplicity:    hbook.NewH1D(8, 0, 8),
 		HSatMultiplicity: hbook.NewH1D(8, 0, 8),
-		HCharge:          make([][4]hbook.H1D, NoClusters),
-		HAmplitude:       make([][4]hbook.H1D, NoClusters),
+		HCharge:          make([][]hbook.H1D, NoClusters),
+		HAmplitude:       make([][]hbook.H1D, NoClusters),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
+		dqp.HCharge[i] = make([]hbook.H1D, N)
+		dqp.HAmplitude[i] = make([]hbook.H1D, N)
 		for j := 0; j < N; j++ {
-			dqp.HCharge[i][j] = *hbook.NewH1D(50, 1e4, 100e3)
-			dqp.HAmplitude[i][j] = *hbook.NewH1D(100, 0, 4200)
+			dqp.HCharge[i][j] = *hbook.NewH1D(50, 1e4, 1000e3)
+			dqp.HAmplitude[i][j] = *hbook.NewH1D(100, 0, 6000)
 		}
 	}
 	return dqp
@@ -121,18 +124,20 @@ const (
 	Amplitude
 )
 
-func (d *DQPlot) MakeChargeTiledPlot(which WhichVar) *hplot.TiledPlot {
-	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 6, Rows: 10, PadY: 1 * vg.Centimeter})
+func (d *DQPlot) MakeChargeAmplTiledPlot(which WhichVar) *hplot.TiledPlot {
+	//tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 6, Rows: 10, PadY: 1 * vg.Centimeter})
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 1, PadY: 1 * vg.Centimeter})
 	if err != nil {
 		panic(err)
 	}
 	iCluster := 0
-	var histos *[4]hbook.H1D
+	histos := make([]hbook.H1D, len(d.HCharge[0]))
+
 	switch which {
 	case Charge:
-		histos = &d.HCharge[iCluster]
+		histos = d.HCharge[iCluster]
 	case Amplitude:
-		histos = &d.HAmplitude[iCluster]
+		histos = d.HAmplitude[iCluster]
 	}
 	for irows := 0; irows < tp.Tiles.Rows; irows++ {
 		for icols := 0; icols < tp.Tiles.Cols; icols++ {
@@ -160,9 +165,9 @@ func (d *DQPlot) MakeChargeTiledPlot(which WhichVar) *hplot.TiledPlot {
 			hplotcharge2.Color = plotutil.Color(3)
 			hplotcharge3.Color = plotutil.Color(4)
 			p.Add(hplotcharge0)
-			p.Add(hplotcharge1)
-			p.Add(hplotcharge2)
-			p.Add(hplotcharge3)
+			// 			p.Add(hplotcharge1)
+			// 			p.Add(hplotcharge2)
+			// 			p.Add(hplotcharge3)
 			iCluster++
 		}
 	}
@@ -186,6 +191,16 @@ func (d *DQPlot) SaveHistos(refs ...string) {
 	linestyle := draw.LineStyle{Width: vg.Points(2)}
 	linestyleref := draw.LineStyle{Width: vg.Points(1), Dashes: []vg.Length{vg.Points(5), vg.Points(5)}}
 
+	for i := range d.HAmplitude {
+		doplot("Amplitude",
+			"Entries",
+			"output/distribAmplitude"+strconv.FormatInt(int64(i), 10)+".png",
+			utils.H1dToHplot(linestyle, d.HAmplitude[i]...)...)
+		doplot("Charge",
+			"Entries",
+			"output/distribCharge"+strconv.FormatInt(int64(i), 10)+".png",
+			utils.H1dToHplot(linestyle, d.HCharge[i]...)...)
+	}
 	doplot("Channel",
 		"# pulses / event",
 		"output/distribFrequency.png",
