@@ -54,7 +54,7 @@ type Header struct {
 	HdrType                 HeaderType // type of header
 	TimeStart               uint32     // start time (number of seconds since Jan 01 1970)
 	TimeStop                uint32     // end time (number of seconds since Jan 01 1970)
-	NoEvents                 uint32    // total number of events in file
+	NoEvents                uint32     // total number of events in file
 	NoASMCards              uint32     // number of ASM cards
 	NoSamples               uint32     // number of samples
 	DataToRead              uint32     // data to read

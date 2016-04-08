@@ -16,6 +16,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/go-hep/csvutil"
 	"github.com/go-hep/hbook"
 	"github.com/go-hep/hplot"
 	"github.com/gonum/plot/plotutil"
@@ -46,6 +47,7 @@ var (
 	webad       = flag.String("webad", ":5555", "server address:port")
 	nobro       = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
 	sleep       = flag.Bool("s", false, "If set, sleep a bit between events")
+	runcsvtest  = flag.Bool("runcsvtest", false, "If set, update runs_test.csv rather than the \"official\" runs.csv file")
 )
 
 type XY struct {
@@ -121,7 +123,7 @@ func main() {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
 
-	// Writer
+	// Writer for binary file
 	filew, err := os.Create(*outfileName)
 	if err != nil {
 		log.Fatalf("could not create data file: %v\n", err)
@@ -148,12 +150,14 @@ func main() {
 	*webad = webadSlice[0] + ":" + webadSlice[1]
 	fmt.Printf("Monitoring served at %v\n", *webad)
 
+	// html template
 	t := template.New("index-template.html")
 	t, err = t.ParseFiles("root-fs/index-template.html")
 	if err != nil {
 		panic(err)
 	}
 
+	// Writer for html template file
 	filehtml, err := os.Create("root-fs/index.html")
 	if err != nil {
 		log.Fatalf("could not create data file: %v\n", err)
@@ -204,15 +208,103 @@ func main() {
 
 	wg.Wait()
 
+	// Update header
 	//bufiow.Flush()
-	updateHeader(filew, 4, uint32(time.Now().Unix()))
-	updateHeader(filew, 8, uint32(iEvent))
+	timeStop := uint32(time.Now().Unix())
+	updateHeader(filew, 12, timeStop)
+	updateHeader(filew, 16, uint32(iEvent))
+
+	// Dump run info in csv. Only relevant when ran on DAQ PC, where the csv file is present.
+	var fileName string
+	switch *runcsvtest {
+	case true:
+		fileName = os.Getenv("HOME") + "/godaq/runs/runs_test.csv"
+	case false:
+		fileName = os.Getenv("HOME") + "/godaq/runs/runs.csv"
+	}
+	if !utils.Exists(fileName) {
+		fmt.Printf("could not open %v -> nothing will be written to it.\n", fileName)
+		return
+	}
+	runNumber := updateRunsCSV(fileName, timeStop, hdr)
+	updateHeader(filew, 4, runNumber)
 }
 
 func updateHeader(f *os.File, offset int64, val uint32) {
 	var buf [4]byte
 	binary.BigEndian.PutUint32(buf[:], val)
 	f.WriteAt(buf[:], offset)
+}
+
+type RunsCSV struct {
+	RunNumber uint32
+	NoEvents  uint32
+	ExecDir   string
+	StartTime string
+	StopTime  string
+}
+
+func getPreviousRunNumber(fileName string) uint32 {
+	tbl, err := csvutil.Open(fileName)
+	if err != nil {
+		log.Fatalf("could not open runs.csv.\n")
+	}
+	defer tbl.Close()
+	tbl.Reader.Comma = ' '
+	tbl.Reader.Comment = '#'
+
+	nLines, err := utils.LineCounter(fileName)
+	if err != nil {
+		log.Fatalf("error reading the number of lines in runs.csv\n", err)
+	}
+
+	// the -2 is because there are two lines of header at the beginning
+	rows, err := tbl.ReadRows(int64(nLines-2-1), -1)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+	var data RunsCSV
+	rows.Next()
+	err = rows.Scan(&data)
+	if err != nil {
+		log.Fatalf("error reading row: %v\n", err)
+	}
+	return data.RunNumber
+}
+
+func updateRunsCSV(fileName string, timeStop uint32, hdr *rw.Header) uint32 {
+	prevRunNumber := getPreviousRunNumber(fileName)
+	currentRunNumber := prevRunNumber + 1
+	fmt.Printf("previous run number is %v -> setting current run number to %v\n", prevRunNumber, currentRunNumber)
+
+	pwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	tbl, err := csvutil.Append(fileName)
+	if err != nil {
+		log.Fatalf("could not create dpgageom.csv: %v\n", err)
+	}
+	defer tbl.Close()
+	tbl.Writer.Comma = ' '
+
+	data := RunsCSV{
+		RunNumber: currentRunNumber,
+		NoEvents:  hdr.NoEvents,
+		ExecDir:   pwd,
+		StartTime: time.Unix(int64(hdr.TimeStart), 0).Format(time.UnixDate),
+		StopTime:  time.Unix(int64(timeStop), 0).Format(time.UnixDate),
+	}
+	err = tbl.WriteRow(data)
+	if err != nil {
+		log.Fatalf("error writing row: %v\n", err)
+	}
+
+	// implement git commit
+
+	return currentRunNumber
 }
 
 func webserver() {
