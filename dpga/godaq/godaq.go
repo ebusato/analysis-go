@@ -211,8 +211,9 @@ func main() {
 	// Update header
 	//bufiow.Flush()
 	timeStop := uint32(time.Now().Unix())
+	noEvents := uint32(iEvent)
 	updateHeader(filew, 12, timeStop)
-	updateHeader(filew, 16, uint32(iEvent))
+	updateHeader(filew, 16, noEvents)
 
 	// Dump run info in csv. Only relevant when ran on DAQ PC, where the csv file is present.
 	var fileName string
@@ -226,7 +227,7 @@ func main() {
 		fmt.Printf("could not open %v -> nothing will be written to it.\n", fileName)
 		return
 	}
-	runNumber := updateRunsCSV(fileName, timeStop, hdr)
+	runNumber := updateRunsCSV(fileName, timeStop, noEvents, hdr)
 	updateHeader(filew, 4, runNumber)
 }
 
@@ -273,7 +274,7 @@ func getPreviousRunNumber(fileName string) uint32 {
 	return data.RunNumber
 }
 
-func updateRunsCSV(fileName string, timeStop uint32, hdr *rw.Header) uint32 {
+func updateRunsCSV(fileName string, timeStop uint32, noEvents uint32, hdr *rw.Header) uint32 {
 	prevRunNumber := getPreviousRunNumber(fileName)
 	currentRunNumber := prevRunNumber + 1
 	fmt.Printf("previous run number is %v -> setting current run number to %v\n", prevRunNumber, currentRunNumber)
@@ -292,7 +293,7 @@ func updateRunsCSV(fileName string, timeStop uint32, hdr *rw.Header) uint32 {
 
 	data := RunsCSV{
 		RunNumber: currentRunNumber,
-		NoEvents:  hdr.NoEvents,
+		NoEvents:  noEvents,
 		ExecDir:   pwd,
 		StartTime: time.Unix(int64(hdr.TimeStart), 0).Format(time.UnixDate),
 		StopTime:  time.Unix(int64(timeStop), 0).Format(time.UnixDate),
