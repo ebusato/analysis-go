@@ -212,8 +212,8 @@ func main() {
 	//bufiow.Flush()
 	timeStop := uint32(time.Now().Unix())
 	noEvents := uint32(iEvent)
-	updateHeader(filew, 12, timeStop)
-	updateHeader(filew, 16, noEvents)
+	updateHeader(filew, 16, timeStop)
+	updateHeader(filew, 20, noEvents)
 
 	// Dump run info in csv. Only relevant when ran on DAQ PC, where the csv file is present.
 	var fileName string
