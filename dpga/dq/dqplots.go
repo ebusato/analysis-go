@@ -125,8 +125,8 @@ const (
 )
 
 func (d *DQPlot) MakeChargeAmplTiledPlot(which WhichVar) *hplot.TiledPlot {
-	//tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 6, Rows: 10, PadY: 1 * vg.Centimeter})
-	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 1, PadY: 1 * vg.Centimeter})
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 6, Rows: 10, PadY: 1 * vg.Centimeter})
+	//tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 2, Rows: 2, PadY: 1 * vg.Centimeter})
 	if err != nil {
 		panic(err)
 	}
@@ -142,7 +142,7 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(which WhichVar) *hplot.TiledPlot {
 	for irows := 0; irows < tp.Tiles.Rows; irows++ {
 		for icols := 0; icols < tp.Tiles.Cols; icols++ {
 			p := tp.Plot(irows, icols)
-			p.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
+			p.X.Tick.Marker = &hplot.FreqTicks{N: 10, Freq: 4}
 			p.Add(hplot.NewGrid())
 			hplotcharge0, err := hplot.NewH1D(&histos[0])
 			if err != nil {
@@ -165,9 +165,9 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(which WhichVar) *hplot.TiledPlot {
 			hplotcharge2.Color = plotutil.Color(3)
 			hplotcharge3.Color = plotutil.Color(4)
 			p.Add(hplotcharge0)
-			// 			p.Add(hplotcharge1)
-			// 			p.Add(hplotcharge2)
-			// 			p.Add(hplotcharge3)
+			p.Add(hplotcharge1)
+			p.Add(hplotcharge2)
+			p.Add(hplotcharge3)
 			iCluster++
 		}
 	}

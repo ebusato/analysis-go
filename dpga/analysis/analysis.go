@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/gonum/plot/vg"
+
 	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dq"
@@ -83,8 +85,8 @@ func main() {
 
 	dqplots.Finalize()
 
-	//tp := dqplots.MakeChargeAmplTiledPlot(dq.Charge)
-	//tp.Save(10*vg.Centimeter, 10*vg.Centimeter, "ChargeDistribTiled.png")
+	tp := dqplots.MakeChargeAmplTiledPlot(dq.Charge)
+	tp.Save(100*vg.Centimeter, 50*vg.Centimeter, "ChargeDistribTiled.png")
 
 	dqplots.WriteGob(*wGob)
 	dqplots.SaveHistos(*refGob)
