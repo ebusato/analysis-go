@@ -233,6 +233,7 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 			p.Add(hplotcharge1)
 			p.Add(hplotcharge2)
 			p.Add(hplotcharge3)
+			p.BackgroundColor = plotutil.DarkColors[5]
 			iCluster++
 			switch whichH {
 			case dpgadetector.Left:
