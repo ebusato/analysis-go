@@ -44,7 +44,7 @@ func NewDQPlot() *DQPlot {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
 		dqp.HAmplitude[i] = make([]hbook.H1D, N)
 		for j := 0; j < N; j++ {
-			dqp.HCharge[i][j] = *hbook.NewH1D(50, 1e4, 1000e3)
+			dqp.HCharge[i][j] = *hbook.NewH1D(50, 0, 1000e3)
 			dqp.HAmplitude[i][j] = *hbook.NewH1D(100, 0, 4096)
 		}
 	}
@@ -209,6 +209,10 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 				p.X.Tick.Marker = &hplot.FreqTicks{N: 4, Freq: 1}
 			}
 			p.Add(hplot.NewGrid())
+			p.Plot.X.LineStyle.Width = 2
+			p.Plot.Y.LineStyle.Width = 2
+			p.Plot.X.Tick.LineStyle.Width = 2
+			p.Plot.Y.Tick.LineStyle.Width = 2
 			hplotcharge0, err := hplot.NewH1D(&histos[0])
 			if err != nil {
 				panic(err)
@@ -229,16 +233,22 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 			hplotcharge1.Color = plotutil.DarkColors[1]                    // green
 			hplotcharge2.Color = plotutil.DarkColors[2]                    // blue
 			hplotcharge3.Color = color.RGBA{R: 250, G: 88, B: 244, A: 255} // pink
-			p.Add(hplotcharge0)
-			p.Add(hplotcharge1)
-			p.Add(hplotcharge2)
-			p.Add(hplotcharge3)
-			p.BackgroundColor = plotutil.DarkColors[5]
+			hplotcharge0.FillColor = nil
+			hplotcharge1.FillColor = nil
+			hplotcharge2.FillColor = nil
+			hplotcharge3.FillColor = nil
+			hplotcharge0.LineStyle.Width = 2
+			hplotcharge1.LineStyle.Width = 2
+			hplotcharge2.LineStyle.Width = 2
+			hplotcharge3.LineStyle.Width = 2
+			p.Add(hplotcharge0, hplotcharge1, hplotcharge2, hplotcharge3)
 			iCluster++
 			switch whichH {
 			case dpgadetector.Left:
+				p.BackgroundColor = color.RGBA{R: 224, G: 242, B: 247, A: 255}
 				icol++
 			case dpgadetector.Right:
+				p.BackgroundColor = color.RGBA{R: 255, G: 255, B: 0, A: 255}
 				icol--
 			}
 		}

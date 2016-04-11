@@ -410,11 +410,11 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						chargeRsvg := utils.RenderSVG(tpchargeR, 30, 30)
 						// send to channel
 						datac <- Data{
-							Time:  time,
-							Freq:  freq,
-							Qs:    qs,
-							Mult:  NewH1D(hMult),
-							FreqH: freqhsvg,
+							Time:    time,
+							Freq:    freq,
+							Qs:      qs,
+							Mult:    NewH1D(hMult),
+							FreqH:   freqhsvg,
 							ChargeL: chargeLsvg,
 							ChargeR: chargeRsvg,
 						}
