@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
-	"image/color"
 	"log"
 	"net"
 	"net/http"
@@ -18,14 +17,11 @@ import (
 
 	"github.com/go-hep/csvutil"
 	"github.com/go-hep/hbook"
-	"github.com/go-hep/hplot"
-	"github.com/gonum/plot/plotutil"
-	"github.com/gonum/plot/vg"
-	"github.com/gonum/plot/vg/draw"
 	"github.com/toqueteos/webbrowser"
 
 	"golang.org/x/net/websocket"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
@@ -74,12 +70,13 @@ func NewH1D(h *hbook.H1D) H1D {
 }
 
 type Data struct {
-	Time   float64  `json:"time"` // time at which monitoring data are taken
-	Freq   float64  `json:"freq"` // number of events processed per second
-	Qs     Quartets `json:"quartets"`
-	Mult   H1D      `json:"mult"`   // multiplicity of pulses
-	FreqH  string   `json:"freqh"`  // frequency histogram
-	Charge string   `json:"charge"` // charge histograms
+	Time    float64  `json:"time"` // time at which monitoring data are taken
+	Freq    float64  `json:"freq"` // number of events processed per second
+	Qs      Quartets `json:"quartets"`
+	Mult    H1D      `json:"mult"`    // multiplicity of pulses
+	FreqH   string   `json:"freqh"`   // frequency histogram
+	ChargeL string   `json:"chargel"` // charge histograms for left hemisphere
+	ChargeR string   `json:"charger"` // charge histograms for right hemisphere
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -403,50 +400,14 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						//fmt.Println("data:", time, noEventsForMon, duration, freq)
 
 						// Make frequency histo plot
-						tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 2, PadY: 1 * vg.Centimeter})
-						if err != nil {
-							panic(err)
-						}
-
-						p1 := tp.Plot(0, 0)
-						p1.X.Min = 0
-						p1.X.Max = 240
-						p1.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
-						p1.Add(hplot.NewGrid())
-						hplotfreq, err := hplot.NewH1D(dqplots.HFrequency)
-						if err != nil {
-							panic(err)
-						}
-						hplotfreq.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
-						hplotfreq.Color = plotutil.Color(3)
-						p1.Add(hplotfreq)
-						if err != nil {
-							panic(err)
-						}
-						p1.Title.Text = fmt.Sprintf("Number of pulses vs channel\n")
-
-						p2 := tp.Plot(1, 0)
-						p2.X.Min = 0
-						p2.X.Max = 240
-						p2.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
-						p2.Add(hplot.NewGrid())
-						hplotsatfreq, err := hplot.NewH1D(dqplots.HSatFrequency)
-						if err != nil {
-							panic(err)
-						}
-						hplotsatfreq.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
-						hplotsatfreq.Color = plotutil.Color(3)
-						p2.Add(hplotsatfreq)
-						if err != nil {
-							log.Fatalf("error creating histogram \n")
-						}
-						p2.Title.Text = fmt.Sprintf("Number of saturating pulses vs channel\n")
-						freqhsvg := utils.RenderSVG(tp, 50, 10)
+						tpfreq := dqplots.MakeFreqTiledPlot()
+						freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
 
 						// Make charge distrib histo plot
-
-						//chargesvg := utils.RenderSVG(tpCharge, 50, 40)
-
+						tpchargeL := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Left)
+						tpchargeR := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Right)
+						chargeLsvg := utils.RenderSVG(tpchargeL, 30, 30)
+						chargeRsvg := utils.RenderSVG(tpchargeR, 30, 30)
 						// send to channel
 						datac <- Data{
 							Time:  time,
@@ -454,7 +415,8 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							Qs:    qs,
 							Mult:  NewH1D(hMult),
 							FreqH: freqhsvg,
-							//Charge: chargesvg,
+							ChargeL: chargeLsvg,
+							ChargeR: chargeRsvg,
 						}
 						noEventsForMon = 0
 					}

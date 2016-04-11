@@ -19,8 +19,8 @@ import (
 type HemisphereType uint8
 
 const (
-	right HemisphereType = iota
-	left
+	Right HemisphereType = iota
+	Left
 )
 
 type Hemisphere struct {
@@ -53,9 +53,9 @@ func NewDetector() *Detector {
 		hemi := &det.hemispheres[iHemi]
 		switch iHemi {
 		case 0:
-			hemi.which = right
+			hemi.which = Right
 		case 1:
-			hemi.which = left
+			hemi.which = Left
 		}
 		for iASM := range hemi.asm {
 			asm := &hemi.asm[iASM]
@@ -64,11 +64,11 @@ func NewDetector() *Detector {
 			// than the one we find in some papers (e.g. 148.336, but the difference is
 			// way smaller than the incertainty (of the order of 1 mm) so it's no big deal)
 			switch hemi.which {
-			case right:
+			case Right:
 				// on the right hemisphere, the ASM card with index iASM=0
 				// is the one at the very top of the detector (corresponding to line 1)
 				asm.SetCylCoord(148.4, math.Pi*(180.-37.5+float64(iASM)*15)/180., -(3*19.5+6.5/2.+13-6.5/2)-float64(iASM%3)*6.5)
-			case left:
+			case Left:
 				// on the left hemisphere, the ASM card with index iASM=0
 				// is the one at the very bottom of the detector (corresponding to line 7)
 				asm.SetCylCoord(148.4, math.Pi*(-37.5+float64(iASM)*15)/180., -(3*19.5+6.5/2.+13-6.5/2)-float64(iASM%3)*6.5)
@@ -149,19 +149,19 @@ func NewDetector() *Detector {
 							// Set xSign and ySign (channels 0 and 1 have the same X and Y coordinates and thus the same xSign and ySign)
 							if iChannel == 3 || iChannel == 2 {
 								switch hemi.which {
-								case right:
+								case Right:
 									xSign = -1
 									ySign = -1
-								case left:
+								case Left:
 									xSign = +1
 									ySign = -1
 								}
 							} else { // iChannel == 0 || iChannel == 1
 								switch hemi.which {
-								case right:
+								case Right:
 									xSign = +1
 									ySign = +1
-								case left:
+								case Left:
 									xSign = -1
 									ySign = +1
 								}
@@ -169,16 +169,16 @@ func NewDetector() *Detector {
 							// Set zSign
 							if iChannel == 3 || iChannel == 1 {
 								switch hemi.which {
-								case right:
+								case Right:
 									zSign = +1
-								case left:
+								case Left:
 									zSign = -1
 								}
 							} else { // iChannel == 2 || iChannel == 0
 								switch hemi.which {
-								case right:
+								case Right:
 									zSign = -1
-								case left:
+								case Left:
 									zSign = +1
 								}
 							}
@@ -189,9 +189,9 @@ func NewDetector() *Detector {
 							// (in the case of the x coordinate, the projection is done with sin, it's therefore not necessary to change phi to pi - phi
 							// as sin(pi - phi) = sin(phi)
 							switch hemi.which {
-							case left:
+							case Left:
 								y = qCartCoord.Y + float64(ySign)*19.5/2.*math.Cos(quartet.CylCoord.Phi)
-							case right:
+							case Right:
 								y = qCartCoord.Y + float64(ySign)*19.5/2.*math.Cos(math.Pi-quartet.CylCoord.Phi)
 							}
 							z := qCartCoord.Z + float64(zSign)*(6.5/2.+6.5)
@@ -210,7 +210,7 @@ func NewDetector() *Detector {
 							//           0            1   front face
 							//
 							switch hemi.which {
-							case right:
+							case Right:
 								ch.ScintCoords[0].X = x - 13/2.*math.Sin(quartet.CylCoord.Phi)
 								ch.ScintCoords[1].X = ch.ScintCoords[0].X
 								ch.ScintCoords[2].X = x + 13/2.*math.Sin(quartet.CylCoord.Phi)
@@ -237,7 +237,7 @@ func NewDetector() *Detector {
 								ch.ScintCoords[5].Z = ch.ScintCoords[1].Z
 								ch.ScintCoords[6].Z = ch.ScintCoords[5].Z
 								ch.ScintCoords[7].Z = ch.ScintCoords[3].Z
-							case left:
+							case Left:
 								ch.ScintCoords[0].X = x + 13/2.*math.Sin(quartet.CylCoord.Phi)
 								ch.ScintCoords[1].X = ch.ScintCoords[0].X
 								ch.ScintCoords[2].X = x - 13/2.*math.Sin(quartet.CylCoord.Phi)

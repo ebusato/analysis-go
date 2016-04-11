@@ -85,8 +85,8 @@ func main() {
 
 	dqplots.Finalize()
 
-	tp := dqplots.MakeChargeAmplTiledPlot(dq.Charge)
-	tp.Save(100*vg.Centimeter, 50*vg.Centimeter, "ChargeDistribTiled.png")
+	tp := dqplots.MakeChargeAmplTiledPlot(dq.Amplitude)
+	tp.Save(150*vg.Centimeter, 100*vg.Centimeter, "ChargeDistribTiled.png")
 
 	dqplots.WriteGob(*wGob)
 	dqplots.SaveHistos(*refGob)

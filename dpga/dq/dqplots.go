@@ -4,6 +4,8 @@ package dq
 import (
 	"encoding/gob"
 	"fmt"
+	"image/color"
+	"log"
 	"os"
 	"strconv"
 
@@ -43,7 +45,7 @@ func NewDQPlot() *DQPlot {
 		dqp.HAmplitude[i] = make([]hbook.H1D, N)
 		for j := 0; j < N; j++ {
 			dqp.HCharge[i][j] = *hbook.NewH1D(50, 1e4, 1000e3)
-			dqp.HAmplitude[i][j] = *hbook.NewH1D(100, 0, 6000)
+			dqp.HAmplitude[i][j] = *hbook.NewH1D(100, 0, 4096)
 		}
 	}
 	return dqp
@@ -86,13 +88,15 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 		satmult += uint8(len(cluster.PulsesWithSatSignal()))
 		for j := range cluster.Pulses {
 			pulse := &cluster.Pulses[j]
-			d.HCharge[i][j].Fill(float64(pulse.Charge()), 1)
-			d.HAmplitude[i][j].Fill(float64(pulse.Amplitude()), 1)
 			if pulse.HasSignal {
 				d.HFrequency.Fill(counter, 1)
 			}
 			if pulse.HasSatSignal {
 				d.HSatFrequency.Fill(counter, 1)
+			}
+			if pulse.HasSignal {
+				d.HCharge[i][j].Fill(float64(pulse.Charge()), 1)
+				d.HAmplitude[i][j].Fill(float64(pulse.Amplitude()), 1)
 			}
 			counter++
 		}
@@ -124,25 +128,86 @@ const (
 	Amplitude
 )
 
-func (d *DQPlot) MakeChargeAmplTiledPlot(which WhichVar) *hplot.TiledPlot {
-	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 6, Rows: 10, PadY: 1 * vg.Centimeter})
-	//tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 2, Rows: 2, PadY: 1 * vg.Centimeter})
+func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 2, PadY: 1 * vg.Centimeter})
 	if err != nil {
 		panic(err)
 	}
-	iCluster := 0
+
+	p1 := tp.Plot(0, 0)
+	p1.X.Min = 0
+	p1.X.Max = 240
+	p1.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
+	p1.Add(hplot.NewGrid())
+	hplotfreq, err := hplot.NewH1D(d.HFrequency)
+	if err != nil {
+		panic(err)
+	}
+	hplotfreq.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
+	hplotfreq.Color = plotutil.Color(3)
+	p1.Add(hplotfreq)
+	if err != nil {
+		panic(err)
+	}
+	p1.Title.Text = fmt.Sprintf("Number of pulses vs channel\n")
+
+	p2 := tp.Plot(1, 0)
+	p2.X.Min = 0
+	p2.X.Max = 240
+	p2.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
+	p2.Add(hplot.NewGrid())
+	hplotsatfreq, err := hplot.NewH1D(d.HSatFrequency)
+	if err != nil {
+		panic(err)
+	}
+	hplotsatfreq.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
+	hplotsatfreq.Color = plotutil.Color(3)
+	p2.Add(hplotsatfreq)
+	if err != nil {
+		log.Fatalf("error creating histogram \n")
+	}
+	p2.Title.Text = fmt.Sprintf("Number of saturating pulses vs channel\n")
+	return tp
+}
+
+func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.HemisphereType) *hplot.TiledPlot {
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 5, Rows: 6, PadY: 1 * vg.Centimeter})
+	if err != nil {
+		panic(err)
+	}
+
 	histos := make([]hbook.H1D, len(d.HCharge[0]))
 
-	switch which {
-	case Charge:
-		histos = d.HCharge[iCluster]
-	case Amplitude:
-		histos = d.HAmplitude[iCluster]
+	iCluster := 0
+	irowBeg := 0
+	irowEnd := tp.Tiles.Rows
+	icolBeg := tp.Tiles.Cols - 1
+	icolEnd := -1
+
+	if whichH == dpgadetector.Left {
+		iCluster = 30
+		irowBeg = tp.Tiles.Rows - 1
+		irowEnd = -1
+		icolBeg = 0
+		icolEnd = tp.Tiles.Cols
 	}
-	for irows := 0; irows < tp.Tiles.Rows; irows++ {
-		for icols := 0; icols < tp.Tiles.Cols; icols++ {
-			p := tp.Plot(irows, icols)
-			p.X.Tick.Marker = &hplot.FreqTicks{N: 10, Freq: 4}
+
+	for irow := irowBeg; irow != irowEnd; {
+		for icol := icolBeg; icol != icolEnd; {
+			switch whichV {
+			case Charge:
+				histos = d.HCharge[iCluster]
+			case Amplitude:
+				histos = d.HAmplitude[iCluster]
+			}
+			p := tp.Plot(irow, icol)
+			p.Title.Text = "Channel " + strconv.FormatInt(int64(iCluster*4), 10) + " -> " + strconv.FormatInt(int64(iCluster*4+3), 10)
+			switch whichV {
+			case Amplitude:
+				p.X.Tick.Marker = &hplot.FreqTicks{N: 6, Freq: 1}
+			case Charge:
+				p.X.Tick.Marker = &hplot.FreqTicks{N: 4, Freq: 1}
+			}
 			p.Add(hplot.NewGrid())
 			hplotcharge0, err := hplot.NewH1D(&histos[0])
 			if err != nil {
@@ -160,15 +225,27 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(which WhichVar) *hplot.TiledPlot {
 			if err != nil {
 				panic(err)
 			}
-			hplotcharge0.Color = plotutil.Color(1)
-			hplotcharge1.Color = plotutil.Color(2)
-			hplotcharge2.Color = plotutil.Color(3)
-			hplotcharge3.Color = plotutil.Color(4)
+			hplotcharge0.Color = plotutil.DarkColors[0]                    // red
+			hplotcharge1.Color = plotutil.DarkColors[1]                    // green
+			hplotcharge2.Color = plotutil.DarkColors[2]                    // blue
+			hplotcharge3.Color = color.RGBA{R: 250, G: 88, B: 244, A: 255} // pink
 			p.Add(hplotcharge0)
 			p.Add(hplotcharge1)
 			p.Add(hplotcharge2)
 			p.Add(hplotcharge3)
 			iCluster++
+			switch whichH {
+			case dpgadetector.Left:
+				icol++
+			case dpgadetector.Right:
+				icol--
+			}
+		}
+		switch whichH {
+		case dpgadetector.Left:
+			irow--
+		case dpgadetector.Right:
+			irow++
 		}
 	}
 	return tp

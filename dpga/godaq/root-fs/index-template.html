@@ -27,7 +27,8 @@
 		multplot.bars = { show: true }
 		
 		var freqhplot = ""
-		var chargehplot = ""
+		var chargelhplot = ""
+		var chargerhplot = ""
 		
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
@@ -44,7 +45,7 @@
 				// though not the best one
 				legend = ""
 				if (ip == 0) {
-					// ugly, 0 not printing is not a string
+					// hack, 0 not printing if not a string
 					if (iq == 0) {
 						legend = "0->3"
 					}
@@ -77,8 +78,10 @@
 			mult.draw();
 			var p1 = document.getElementById("my-freqh-plot");
 			p1.innerHTML = freqhplot;
-			var p2 = document.getElementById("my-chargeh-plot");
-			p2.innerHTML = chargehplot;
+			var p2 = document.getElementById("my-chargelh-plot");
+			p2.innerHTML = chargelhplot;
+			var p3 = document.getElementById("my-chargerh-plot");
+			p3.innerHTML = chargerhplot;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], new options('#FFFF00')); // yellow
@@ -105,7 +108,8 @@
 					multplot.data.push([data.mult[i].X, data.mult[i].Y])
 				}
 				freqhplot = data.freqh;
-				chargehplot = data.chargeh;
+				chargelhplot = data.chargel;
+				chargerhplot = data.charger;
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < 999; is += 5) {
@@ -199,7 +203,7 @@
 						<td colspan="5" align="center"><b>Right hemisphere</b></td> 
 					</tr>
 					<tr>
-					<td><div id="my-q55-plot" class="my-plot-style"></div></td>
+						<td><div id="my-q55-plot" class="my-plot-style"></div></td>
 						<td><div id="my-q56-plot" class="my-plot-style"></div></td>
 						<td><div id="my-q57-plot" class="my-plot-style"></div></td>
 						<td><div id="my-q58-plot" class="my-plot-style"></div></td>
@@ -270,10 +274,19 @@
 						<td><div id="my-q26-plot" class="my-plot-style"></div></td>
 						<td><div id="my-q25-plot" class="my-plot-style"></div></td>
 					</tr>
-					</table>
+				</table>
 				</div> <!-- tab 1 content -->
 				<div id="tab2" class="tab">
-					<div id="my-chargeh-plot" class="my-plot-stylefreq"></div>
+				<table>
+					<tr>    
+						<td align="center"><b>Left hemisphere</b></td> 
+						<td align="center"><b>Right hemisphere</b></td> 
+					</tr>
+					<tr>
+						<td width="1100"><div id="my-chargelh-plot" class="my-plot-stylefreq"></div></td>
+						<td width="1100"><div id="my-chargerh-plot" class="my-plot-stylefreq"></div></td>
+					</tr>
+				</table>
 				</div> <!-- tab 2 content -->
 				<!--div id="tab3" class="tab">
 					<p>Tab #3 content goes here!</p>
