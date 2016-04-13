@@ -248,6 +248,7 @@ func updateHeader(f *os.File, offset int64, val uint32) {
 type RunsCSV struct {
 	RunNumber uint32
 	NoEvents  uint32
+	Threshold uint32
 	ExecDir   string
 	StartTime string
 	StopTime  string
@@ -301,6 +302,7 @@ func updateRunsCSV(fileName string, runNumber uint32, timeStop uint32, noEvents 
 	data := RunsCSV{
 		RunNumber: runNumber,
 		NoEvents:  noEvents,
+		Threshold: hdr.Threshold,
 		ExecDir:   pwd,
 		StartTime: time.Unix(int64(hdr.TimeStart), 0).Format(time.UnixDate),
 		StopTime:  time.Unix(int64(timeStop), 0).Format(time.UnixDate),
