@@ -3,12 +3,12 @@ package rw
 import (
 	"bufio"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"log"
 	"time"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
 // Writer wraps an io.Writer and writes an ASM stream.
@@ -151,7 +151,57 @@ func (w *Writer) writeBlockData(blk *Block) {
 	}
 }
 
+func (w *Writer) MakeFrame(iCluster int, evtID uint32, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse) *Frame {
+	frame := &Frame{ID: w.frameCounter}
+	w.frameCounter++
+	block := &frame.Block
+	block.Evt = evtID
+	if pulse0.Channel.FifoID144() != pulse1.Channel.FifoID144() {
+		log.Fatalf("pulses[0].Channel.FifoID() != pulses[1].Channel.FifoID()")
+	}
+	block.ID = uint32(pulse0.Channel.FifoID144())
+	if pulse0.SRout != pulse1.SRout {
+		log.Fatalf("pulse0.SRout != pulse1.SRout")
+	}
+	block.SRout = uint32(pulse0.SRout)
+	if pulse0.NoSamples() != pulse1.NoSamples() {
+		log.Fatalf("pulse0.NoSamples() != pulse1.NoSamples()\n")
+	}
+	for j := uint16(0); j < pulse0.NoSamples(); j++ {
+		amp0, amp1 := uint32(pulse0.Samples[j].Amplitude), uint32(pulse1.Samples[j].Amplitude)
+		word := (amp0&0xFFF)<<16 | (amp1 & 0xFFF)
+		block.Data = append(block.Data, word)
+	}
+	return frame
+}
+
 func (w *Writer) Event(event *event.Event) {
+	for iCluster := range event.Clusters {
+		cluster := &event.Clusters[iCluster]
+		pulses := &cluster.Pulses
+
+		if uint8(len(cluster.Counters)) != numCounters {
+			log.Fatalf("rw: len(cluster.Counters) = %v, numCounters = %v", len(cluster.Counters), numCounters)
+		}
+
+		if pulses[0].NoSamples() != 0 || pulses[1].NoSamples() != 0 {
+			frame := w.MakeFrame(iCluster, uint32(event.ID), &pulses[0], &pulses[1])
+			for j := 0; j < int(numCounters); j++ {
+				frame.Block.Counters[j] = cluster.Counter(j)
+			}
+			w.Frame(frame)
+		}
+		if pulses[2].NoSamples() != 0 || pulses[3].NoSamples() != 0 {
+			frame := w.MakeFrame(iCluster, uint32(event.ID), &pulses[2], &pulses[3])
+			for j := 0; j < int(numCounters); j++ {
+				frame.Block.Counters[j] = cluster.Counter(j)
+			}
+			w.Frame(frame)
+		}
+	}
+}
+
+func (w *Writer) EventFull(event *event.Event) {
 	iframe := 0
 	for i := range event.Clusters {
 		if iframe >= 120 {
@@ -173,8 +223,8 @@ func (w *Writer) Event(event *event.Event) {
 
 		pulses := &cluster.Pulses
 
-		fmt.Println("pulses[0].Channel =", pulses[0].Channel)
-		fmt.Println("pulses[1].Channel =", pulses[1].Channel)
+		// 		fmt.Println("pulses[0].Channel=", pulses[0].Channel)
+		// 		fmt.Println("pulses[1].Channel=", pulses[1].Channel)
 
 		if pulses[0].Channel.FifoID144() != pulses[1].Channel.FifoID144() {
 			log.Fatalf("pulses[0].Channel.FifoID() != pulses[1].Channel.FifoID()")

@@ -60,7 +60,7 @@ func (e *Event) NoClusters() int {
 }
 
 func (e *Event) Print(printClusters bool, printClusterDetails bool) {
-	fmt.Println("-> Printing event", e.ID)
+	fmt.Println("\n-> Printing event", e.ID)
 	fmt.Println("    o number of clusters =", len(e.Clusters))
 	if printClusters {
 		for i := range e.Clusters {
