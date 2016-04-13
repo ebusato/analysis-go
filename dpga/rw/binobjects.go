@@ -64,7 +64,8 @@ type Header struct {
 	TriggerEq               uint32     // trigger equation
 	TriggerDelay            uint32     // trigger delay
 	ChanUsedForTrig         uint32     // channels used for trigger
-	LowHighThres            uint32     // low and high thresholds
+	Threshold		uint32     // threshold above which fifo data are send to socket and received on DAQ PC
+	LowHighThres            uint32     // low and high trigger thresholds
 	TrigSigShapingHighThres uint32     // trigger signal shaping for high threshold
 	TrigSigShapingLowThres  uint32     // trigger signal shaping for low threshold
 	Size                    uint32     // size of the frame in the ASM stream
@@ -88,6 +89,7 @@ func (h *Header) Print() {
 		fmt.Printf("   TriggerEq = %x\n", h.TriggerEq)
 		fmt.Printf("   TriggerDelay = %x\n", h.TriggerDelay)
 		fmt.Printf("   ChanUsedForTrig = %x\n", h.ChanUsedForTrig)
+		fmt.Printf("   Threshold = %v\n", h.Threshold)
 		fmt.Printf("   LowHighThres = %x\n", h.LowHighThres)
 		fmt.Printf("   TrigSigShapingHighThres = %x\n", h.TrigSigShapingHighThres)
 		fmt.Printf("   TrigSigShapingLowThres = %x\n", h.TrigSigShapingLowThres)

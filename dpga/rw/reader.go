@@ -117,6 +117,7 @@ func (r *Reader) readHeader(hdr *Header) {
 		r.readU32(&hdr.TriggerEq)
 		r.readU32(&hdr.TriggerDelay)
 		r.readU32(&hdr.ChanUsedForTrig)
+		r.readU32(&hdr.Threshold)
 		r.readU32(&hdr.LowHighThres)
 		r.readU32(&hdr.TrigSigShapingHighThres)
 		r.readU32(&hdr.TrigSigShapingLowThres)

@@ -194,6 +194,7 @@ func main() {
 		"TriggerEq":               "0x" + strconv.FormatUint(uint64(hdr.TriggerEq), 16),
 		"TriggerDelay":            "0x" + strconv.FormatUint(uint64(hdr.TriggerDelay), 16),
 		"ChanUsedForTrig":         "0x" + strconv.FormatUint(uint64(hdr.ChanUsedForTrig), 16),
+		"Threshold":               strconv.FormatUint(uint64(hdr.Threshold), 10),
 		"LowHighThres":            "0x" + strconv.FormatUint(uint64(hdr.LowHighThres), 16),
 		"TrigSigShapingHighThres": "0x" + strconv.FormatUint(uint64(hdr.TrigSigShapingHighThres), 16),
 		"TrigSigShapingLowThres":  "0x" + strconv.FormatUint(uint64(hdr.TrigSigShapingLowThres), 16),
@@ -338,12 +339,22 @@ func control(terminateStream chan bool, commandIsEnded chan bool) {
 	}
 }
 
-func GetMonData(pulse pulse.Pulse) []XY {
-	data := make([]XY, pulse.NoSamples())
+func GetMonData(noSamples uint16, pulse pulse.Pulse) []XY {
+	data := make([]XY, noSamples)
 	for i := range data {
+		var x float64
+		var y float64
+		switch pulse.NoSamples() == noSamples {
+		case true:
+			x = float64(pulse.Samples[i].Index)
+			y = pulse.Samples[i].Amplitude
+		case false:
+			x = 0
+			y = 0
+		}
 		data[i] = XY{
-			X: float64(pulse.Samples[i].Index),
-			Y: pulse.Samples[i].Amplitude,
+			X: x,
+			Y: y,
 		}
 	}
 	return data
@@ -374,7 +385,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				}
 				switch event.IsCorrupted {
 				case false:
-					//event.Print(false, false)
+					//event.Print(true, false)
 					w.Event(event)
 					hMult.Fill(float64(event.Multiplicity()), 1)
 					dqplots.FillHistos(event)
@@ -392,10 +403,10 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 
 						var qs Quartets
 						for iq := 0; iq < len(qs); iq++ {
-							qs[iq][0] = GetMonData(event.Clusters[iq].Pulses[0])
-							qs[iq][1] = GetMonData(event.Clusters[iq].Pulses[1])
-							qs[iq][2] = GetMonData(event.Clusters[iq].Pulses[2])
-							qs[iq][3] = GetMonData(event.Clusters[iq].Pulses[3])
+							qs[iq][0] = GetMonData(r.NoSamples(), event.Clusters[iq].Pulses[0])
+							qs[iq][1] = GetMonData(r.NoSamples(), event.Clusters[iq].Pulses[1])
+							qs[iq][2] = GetMonData(r.NoSamples(), event.Clusters[iq].Pulses[2])
+							qs[iq][3] = GetMonData(r.NoSamples(), event.Clusters[iq].Pulses[3])
 						}
 
 						//fmt.Println("data:", time, noEventsForMon, duration, freq)
@@ -407,8 +418,8 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						// Make charge distrib histo plot
 						tpchargeL := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Left)
 						tpchargeR := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Right)
-						chargeLsvg := utils.RenderSVG(tpchargeL, 30, 30)
-						chargeRsvg := utils.RenderSVG(tpchargeR, 30, 30)
+						chargeLsvg := utils.RenderSVG(tpchargeL, 25, 25)
+						chargeRsvg := utils.RenderSVG(tpchargeR, 25, 25)
 						// send to channel
 						datac <- Data{
 							Time:    time,

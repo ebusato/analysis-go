@@ -99,6 +99,7 @@ func (w *Writer) writeHeader(hdr *Header, clientTime bool) {
 		w.writeU32(hdr.TriggerEq)
 		w.writeU32(hdr.TriggerDelay)
 		w.writeU32(hdr.ChanUsedForTrig)
+		w.writeU32(hdr.Threshold)
 		w.writeU32(hdr.LowHighThres)
 		w.writeU32(hdr.TrigSigShapingHighThres)
 		w.writeU32(hdr.TrigSigShapingLowThres)
@@ -180,12 +181,11 @@ func (w *Writer) Event(event *event.Event) {
 		cluster := &event.Clusters[iCluster]
 		pulses := &cluster.Pulses
 
-		if uint8(len(cluster.Counters)) != numCounters {
-			log.Fatalf("rw: len(cluster.Counters) = %v, numCounters = %v", len(cluster.Counters), numCounters)
-		}
-
 		if pulses[0].NoSamples() != 0 || pulses[1].NoSamples() != 0 {
 			frame := w.MakeFrame(iCluster, uint32(event.ID), &pulses[0], &pulses[1])
+			if uint8(len(cluster.Counters)) != numCounters {
+				log.Fatalf("rw: len(cluster.Counters) = %v, numCounters = %v", len(cluster.Counters), numCounters)
+			}
 			for j := 0; j < int(numCounters); j++ {
 				frame.Block.Counters[j] = cluster.Counter(j)
 			}

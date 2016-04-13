@@ -250,7 +250,8 @@ func NewCluster(id uint8, pulses [4]Pulse) *Cluster {
 
 // Print prints cluster informations
 func (c *Cluster) Print(detailed bool) {
-	fmt.Printf("->Printing cluster with ID=%v\n", c.ID)
+	fmt.Printf("-> Printing cluster with ID=%v\n", c.ID)
+	fmt.Printf(" o Number of counters=%v\n", len(c.Counters))
 	for i := range c.Pulses {
 		c.Pulses[i].Print(detailed)
 	}
