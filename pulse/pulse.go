@@ -336,7 +336,7 @@ func (c *Cluster) PlotPulses(evtID uint, x XaxisType, pedestalRange bool) string
 		panic(err)
 	}
 
-	p.Title.Text = "Pulse for event " + strconv.Itoa(int(evtID)) + " cluster " + strconv.Itoa(int(c.ID)) + " (SRout = " + strconv.Itoa(int(c.SRout())) + ")"
+	p.Title.Text = "Pulse for event " + strconv.Itoa(int(evtID)) + " cluster " + strconv.Itoa(int(c.ID))
 	switch x {
 	case XaxisTime:
 		p.X.Label.Text = "time (ns)"
@@ -349,12 +349,17 @@ func (c *Cluster) PlotPulses(evtID uint, x XaxisType, pedestalRange bool) string
 	p.Legend.Top = true
 
 	p.Add(plotter.NewGrid())
-	err = plotutil.AddLinePoints(p,
-		c.Pulses[0].Channel.Name()+" (HasSignal = "+strconv.FormatBool(c.Pulses[0].HasSignal)+", Sat = "+strconv.FormatBool(c.Pulses[0].HasSatSignal)+")", c.Pulses[0].MakeXY(x),
-		c.Pulses[1].Channel.Name()+" (HasSignal = "+strconv.FormatBool(c.Pulses[1].HasSignal)+", Sat = "+strconv.FormatBool(c.Pulses[1].HasSatSignal)+")", c.Pulses[1].MakeXY(x),
-		c.Pulses[2].Channel.Name()+" (HasSignal = "+strconv.FormatBool(c.Pulses[2].HasSignal)+", Sat = "+strconv.FormatBool(c.Pulses[2].HasSatSignal)+")", c.Pulses[2].MakeXY(x),
-		c.Pulses[3].Channel.Name()+" (HasSignal = "+strconv.FormatBool(c.Pulses[3].HasSignal)+", Sat = "+strconv.FormatBool(c.Pulses[3].HasSatSignal)+")", c.Pulses[3].MakeXY(x))
-
+	var TextsAndXYs []interface{}
+	for i := range c.Pulses {
+		if c.Pulses[i].Channel != nil {
+			TextsAndXYs = append(TextsAndXYs, c.Pulses[i].Channel.Name()+" (HasSignal = "+strconv.FormatBool(c.Pulses[i].HasSignal)+
+				", Sat = "+strconv.FormatBool(c.Pulses[i].HasSatSignal)+
+				", SRout = "+strconv.Itoa(int(c.Pulses[i].SRout))+
+				")")
+			TextsAndXYs = append(TextsAndXYs, c.Pulses[i].MakeXY(x))
+		}
+	}
+	err = plotutil.AddLinePoints(p, TextsAndXYs...)
 	if err != nil {
 		panic(err)
 	}
