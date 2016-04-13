@@ -44,7 +44,7 @@ func NewDQPlot() *DQPlot {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
 		dqp.HAmplitude[i] = make([]hbook.H1D, N)
 		for j := 0; j < N; j++ {
-			dqp.HCharge[i][j] = *hbook.NewH1D(50, 0, 1000e3)
+			dqp.HCharge[i][j] = *hbook.NewH1D(50, 0, 1)
 			dqp.HAmplitude[i][j] = *hbook.NewH1D(100, 0, 4096)
 		}
 	}
@@ -95,7 +95,7 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 				d.HSatFrequency.Fill(counter, 1)
 			}
 			if pulse.HasSignal {
-				d.HCharge[i][j].Fill(float64(pulse.Charge()), 1)
+				d.HCharge[i][j].Fill(float64(pulse.Charge()/1e6), 1)
 				d.HAmplitude[i][j].Fill(float64(pulse.Amplitude()), 1)
 			}
 			counter++

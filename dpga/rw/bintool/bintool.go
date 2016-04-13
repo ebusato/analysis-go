@@ -90,7 +90,7 @@ func main() {
 	// Start processing input file
 	hdr := r.Header()
 	switch {
-	case *ascii:
+	case *ascii || *info:
 		hdr.Print()
 	case *wgoodevts:
 		err = w.Header(hdr, false)
@@ -135,13 +135,11 @@ func main() {
 	}
 A:
 	if *info {
-		fmt.Printf("\nInformations for file %v\n", *infileName)
-		fmt.Printf("  -> number of frames = %v", nFrames)
+		fmt.Printf("\nNumber of frames = %v", nFrames)
 		if nFrames%nFramesPerEvent != 0 {
-			fmt.Printf(" (WARNING: not a multiple of %v)", nFramesPerEvent)
+			fmt.Printf("  (WARNING: not a multiple of %v)", nFramesPerEvent)
 		}
 		fmt.Printf("\n")
-		fmt.Printf("  -> number of events = %v\n", float64(nFrames)/float64(nFramesPerEvent))
 	}
 }
 
