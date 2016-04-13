@@ -81,7 +81,7 @@ func NewPulse(channel *detector.Channel) *Pulse {
 }
 
 // Print prints pulse informations
-func (p *Pulse) Print() {
+func (p *Pulse) Print(detailed bool) {
 	fmt.Println("-> Printing pulse informations")
 	fmt.Printf("  o len(Samples) = %v\n", len(p.Samples))
 	fmt.Printf("  o TimeStep = %v\n", p.TimeStep)
@@ -89,19 +89,23 @@ func (p *Pulse) Print() {
 	fmt.Printf("  o HasSignal = %v\n", p.HasSignal)
 	if p.Channel != nil {
 		fmt.Printf("  o Channel name = %v\n", p.Channel.Name())
+	} else {
+		fmt.Printf("  o Channel = nil\n")
 	}
-	fmt.Println("  o Capacitors = ")
-	for i := range p.Samples {
-		sample := &p.Samples[i]
-		if sample.Capacitor != nil {
-			if i == 0 {
-				fmt.Printf("%v", sample.Capacitor.ID())
-			} else {
-				fmt.Printf(", %v", sample.Capacitor.ID())
+	if detailed {
+		fmt.Println("  o Capacitors = ")
+		for i := range p.Samples {
+			sample := &p.Samples[i]
+			if sample.Capacitor != nil {
+				if i == 0 {
+					fmt.Printf("%v", sample.Capacitor.ID())
+				} else {
+					fmt.Printf(", %v", sample.Capacitor.ID())
+				}
 			}
 		}
+		fmt.Println("\n")
 	}
-	fmt.Println("\n")
 }
 
 // NoSamples return the number of samples the pulse is made of
@@ -229,6 +233,13 @@ type Cluster struct {
 	Counters []uint32 // Counters stores the counters present in the binary/hexa/decimal files
 }
 
+// NewClusterFromID constructs a new cluster from ID only
+func NewClusterFromID(id uint8) *Cluster {
+	return &Cluster{
+		ID: id,
+	}
+}
+
 // NewCluster constructs a new cluster
 func NewCluster(id uint8, pulses [4]Pulse) *Cluster {
 	return &Cluster{
@@ -238,10 +249,10 @@ func NewCluster(id uint8, pulses [4]Pulse) *Cluster {
 }
 
 // Print prints cluster informations
-func (c *Cluster) Print() {
+func (c *Cluster) Print(detailed bool) {
+	fmt.Printf("->Printing cluster with ID=%v\n", c.ID)
 	for i := range c.Pulses {
-		fmt.Printf("->Printing cluster")
-		c.Pulses[i].Print()
+		c.Pulses[i].Print(detailed)
 	}
 }
 

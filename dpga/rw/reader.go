@@ -13,11 +13,12 @@ import (
 
 // Reader wraps an io.Reader and reads avirm data files
 type Reader struct {
-	r         io.Reader
-	err       error
-	hdr       Header
-	noSamples uint16
-	Debug     bool
+	r              io.Reader
+	err            error
+	hdr            Header
+	noSamples      uint16
+	evtIDPrevFrame uint32
+	Debug          bool
 }
 
 // NoSamples returns the number of samples
@@ -38,7 +39,8 @@ func (r *Reader) Header() *Header {
 // NewReader returns a new ASM stream in read mode
 func NewReader(r io.Reader, ht HeaderType) (*Reader, error) {
 	rr := &Reader{
-		r: r,
+		r:              r,
+		evtIDPrevFrame: 0,
 	}
 	rr.hdr.HdrType = ht
 	rr.readHeader(&rr.hdr)
@@ -279,6 +281,60 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 
 func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 	event := event.NewEvent(dpgadetector.Det.NoClusters())
+	firstPass := true
+	for { // loop over frames
+		frame, err := r.Frame()
+		if err != nil {
+			if err == io.EOF {
+				return nil, false
+			}
+			log.Fatal("error not nil", err)
+		}
+		// 		frame.Print("short")
+		evtID := frame.Block.Evt
+		fmt.Println("evtID =", evtID)
+		if firstPass || evtID == r.evtIDPrevFrame { // fill event
+			firstPass = false
+			fifoID144 := uint16(frame.Block.ID)
+			iCluster := dpgadetector.FifoID144ToQuartetAbsIdx60(fifoID144)
+			if iCluster >= 60 {
+				log.Fatalf("error ! iCluster=%v (>= 60)\n", iCluster)
+			}
+			fmt.Printf("fifoID144=%v, iCluster = %v\n", fifoID144, iCluster)
+			switch fifoID144 % 2 {
+			case 0:
+				fmt.Println(" -> first frame")
+				frame.typeOfFrame = FirstFrameOfCluster
+			case 1:
+				fmt.Println(" -> second frame")
+				frame.typeOfFrame = SecondFrameOfCluster
+			}
+			pulse0, pulse1 := MakePulses(frame, iCluster)
+			event.Clusters[iCluster] = *pulse.NewClusterFromID(iCluster)
+			switch frame.typeOfFrame {
+			case FirstFrameOfCluster:
+				fmt.Println(" -> filling event.Clusters[iCluster].Pulses[0, 1]")
+				event.Clusters[iCluster].Pulses[0] = *pulse0
+				event.Clusters[iCluster].Pulses[1] = *pulse1
+			case SecondFrameOfCluster:
+				fmt.Println(" -> filling event.Clusters[iCluster].Pulses[2, 3]")
+				event.Clusters[iCluster].Pulses[2] = *pulse0
+				event.Clusters[iCluster].Pulses[3] = *pulse1
+			}
+		} else { // switched to next event
+			// add Seek to return to the right  position in the binary file
+			event.Print(true, false)
+			return event, true
+		}
+		r.evtIDPrevFrame = evtID
+	} // end of loop over frames
+	log.Fatalf("error ! you should never end up here")
+	return nil, false
+}
+
+/*
+func (r *Reader) ReadNextEvent() (*event.Event, bool) {
+	event := event.NewEvent(dpgadetector.Det.NoClusters())
 	for iCluster := uint8(0); iCluster < uint8(event.NoClusters()); iCluster++ {
 		frame1, err := r.Frame()
 		if err != nil {
@@ -333,3 +389,4 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 
 	return event, true
 }
+*/

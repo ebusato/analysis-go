@@ -3,6 +3,7 @@ package rw
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"time"
@@ -172,14 +173,17 @@ func (w *Writer) Event(event *event.Event) {
 
 		pulses := &cluster.Pulses
 
-		if pulses[0].Channel.FifoID() != pulses[1].Channel.FifoID() {
+		fmt.Println("pulses[0].Channel =", pulses[0].Channel)
+		fmt.Println("pulses[1].Channel =", pulses[1].Channel)
+
+		if pulses[0].Channel.FifoID144() != pulses[1].Channel.FifoID144() {
 			log.Fatalf("pulses[0].Channel.FifoID() != pulses[1].Channel.FifoID()")
 		}
-		if pulses[2].Channel.FifoID() != pulses[3].Channel.FifoID() {
+		if pulses[2].Channel.FifoID144() != pulses[3].Channel.FifoID144() {
 			log.Fatalf("pulses[2].Channel.FifoID() != pulses[3].Channel.FifoID()")
 		}
-		block1.ID = uint32(pulses[0].Channel.FifoID())
-		block2.ID = uint32(pulses[2].Channel.FifoID())
+		block1.ID = uint32(pulses[0].Channel.FifoID144())
+		block2.ID = uint32(pulses[2].Channel.FifoID144())
 
 		block1.SRout = uint32(cluster.SRout())
 		block2.SRout = block1.SRout

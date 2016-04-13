@@ -268,7 +268,7 @@ func NewDetector() *Detector {
 						case true: // channel not used in DPGA (one of the four channels per ASM card which is not used)
 							ch.SetAbsID240(math.MaxUint16)
 						}
-						ch.SetFifoID(ChannelAbsIdx288ToFifoID(iChannelAbs288))
+						ch.SetFifoID144(ChannelAbsIdx288ToFifoID144(iChannelAbs288))
 						for iCapacitor := range ch.Capacitors() {
 							capa := ch.Capacitor(uint16(iCapacitor))
 							capa.SetID(uint16(iCapacitor))
@@ -316,8 +316,24 @@ func ChannelAbsIdx288ToRelIdx(iChannelAbs uint16) (iHemi uint8, iASM uint8, iDRS
 }
 
 // iChannelAbs can go from 0 to 287
-func ChannelAbsIdx288ToFifoID(iChannelAbs uint16) uint16 {
+func ChannelAbsIdx288ToFifoID144(iChannelAbs uint16) uint16 {
 	return iChannelAbs / 2
+}
+
+// iFifo can go from 0 to 143
+// The returned value can go from 0 to 119
+func FifoID144ToFifoID120(iFifo uint16) uint16 {
+	i := iFifo % 12
+	if i == 10 || i == 11 {
+		log.Fatalf("iFifo corresponds to an unused fifo.\n")
+	}
+	return iFifo - 2*(iFifo/12)
+}
+
+// iFifo can go from 0 to 143
+// QuartetAbsIdx60 can go from 0 to 59
+func FifoID144ToQuartetAbsIdx60(iFifo uint16) uint8 {
+	return uint8(FifoID144ToFifoID120(iFifo) / 2)
 }
 
 func RelIdxToAbsIdx240(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {

@@ -368,12 +368,15 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				if *iEvent%*evtFreq == 0 {
 					fmt.Printf("event %v\n", *iEvent)
 				}
+				fmt.Println("Start reading next event")
 				event, status := r.ReadNextEvent()
 				if status == false {
 					panic("error: status is false\n")
 				}
 				switch event.IsCorrupted {
 				case false:
+					fmt.Println("Start writing event")
+					//event.Print(true, false)
 					w.Event(event)
 					hMult.Fill(float64(event.Multiplicity()), 1)
 					dqplots.FillHistos(event)

@@ -59,13 +59,13 @@ func (e *Event) NoClusters() int {
 	return len(e.Clusters)
 }
 
-func (e *Event) Print(detailed bool) {
+func (e *Event) Print(printClusters bool, printClusterDetails bool) {
 	fmt.Println("-> Printing event", e.ID)
 	fmt.Println("    o number of clusters =", len(e.Clusters))
-	if detailed {
+	if printClusters {
 		for i := range e.Clusters {
 			cluster := e.Clusters[i]
-			cluster.Print()
+			cluster.Print(printClusterDetails)
 		}
 	}
 }
