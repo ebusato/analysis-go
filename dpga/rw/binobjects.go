@@ -64,7 +64,7 @@ type Header struct {
 	TriggerEq               uint32     // trigger equation
 	TriggerDelay            uint32     // trigger delay
 	ChanUsedForTrig         uint32     // channels used for trigger
-	Threshold		uint32     // threshold above which fifo data are sent to socket and received on DAQ PC
+	Threshold               uint32     // threshold above which fifo data are sent to socket and received on DAQ PC
 	LowHighThres            uint32     // low and high trigger thresholds
 	TrigSigShapingHighThres uint32     // trigger signal shaping for high threshold
 	TrigSigShapingLowThres  uint32     // trigger signal shaping for low threshold
@@ -74,7 +74,7 @@ type Header struct {
 
 // Print prints header fields
 func (h *Header) Print() {
-	fmt.Printf("Printing header (type = %#v):\n", h.HdrType.String())
+	fmt.Printf("Header (type = %#v):\n", h.HdrType.String())
 	switch {
 	case h.HdrType == HeaderCAL:
 		fmt.Printf("   History = %v\n", h.History)
