@@ -68,17 +68,16 @@
 			}
 		}
 		
+		opts = new options()
+		opts.zoom = {interactive: true}
+		opts.pan = {interactive: true}
+		
 		function update() {
-			freqopts = new options()
-			freqopts.zoom = {interactive: true}
-			freqopts.pan = {interactive: true}
-			var freq = $.plot("#my-freq-plot", [freqplot], freqopts);
+			var freq = $.plot("#my-freq-plot", [freqplot], opts);
 			freq.setupGrid(); // needed as x-axis changes
 			freq.draw();
-			multopts = new options()
+			var multopts = $.extend(true, {}, opts); // deep copy of options
 			multopts.xaxis = {ticks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
-			multopts.zoom = {interactive: true}
-			multopts.pan = {interactive: true}
 			var mult = $.plot("#my-mult-plot", [multplot], multopts);
 			mult.setupGrid(); 
 			mult.draw();
