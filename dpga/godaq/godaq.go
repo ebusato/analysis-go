@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 	"sync"
@@ -32,6 +33,7 @@ import (
 var (
 	datac       = make(chan Data, 10)
 	hdrType     = rw.HeaderCAL
+	cpuprof     = flag.String("cpuprof", "", "Name of file for CPU profiling")
 	noEvents    = flag.Uint("n", 100000, "Number of events")
 	outfileName = flag.String("o", "out.bin", "Name of the output file")
 	ip          = flag.String("ip", "192.168.100.11", "IP address")
@@ -96,6 +98,15 @@ func main() {
 
 	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
 	flag.Parse()
+
+	if *cpuprof != "" {
+		f, err := os.Create(*cpuprof)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	// Reader
 	var tcp *net.TCPConn = nil
@@ -331,6 +342,7 @@ func webserver() {
 
 func control(terminateStream chan bool, commandIsEnded chan bool) {
 	for {
+		time.Sleep(1 * time.Second)
 		select {
 		case <-commandIsEnded:
 			fmt.Printf("command is ended, terminating stream.\n")
