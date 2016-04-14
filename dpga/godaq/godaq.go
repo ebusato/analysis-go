@@ -160,7 +160,7 @@ func main() {
 	// web address handling
 	webadSlice := strings.Split(*webad, ":")
 	if webadSlice[0] == "" {
-		webadSlice[0] = getHostIP()
+		webadSlice[0] = utils.GetHostIP()
 	}
 	*webad = webadSlice[0] + ":" + webadSlice[1]
 	fmt.Printf("Monitoring served at %v\n", *webad)
@@ -482,27 +482,4 @@ func dataHandler(ws *websocket.Conn) {
 			return
 		}
 	}
-}
-
-func getHostIP() string {
-	host, err := os.Hostname()
-	if err != nil {
-		log.Fatalf("could not retrieve hostname: %v\n", err)
-	}
-
-	addrs, err := net.LookupIP(host)
-	if err != nil {
-		log.Fatalf("could not lookup hostname IP: %v\n", err)
-	}
-
-	for _, addr := range addrs {
-		ipv4 := addr.To4()
-		if ipv4 == nil {
-			continue
-		}
-		return ipv4.String()
-	}
-
-	log.Fatalf("could not infer host IP")
-	return ""
 }

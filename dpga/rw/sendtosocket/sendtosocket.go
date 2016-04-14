@@ -60,12 +60,16 @@ func main() {
 	}
 
 	nFrames := uint(0)
+	evtIDprev := float64(-1)
 	for {
-		iEvent := float64(nFrames) / 120.
-		if math.Mod(iEvent, float64(*freq)) == 0 {
-			fmt.Printf("event %v\n", iEvent)
-		}
 		frame, err := r.Frame()
+		evtID := float64(frame.Block.Evt)
+		if evtID != evtIDprev {
+			if math.Mod(evtID, float64(*freq)) == 0 {
+				fmt.Printf("event %v\n", evtID)
+			}
+		}
+		evtIDprev = evtID
 		if err != nil {
 			if err != io.EOF {
 				log.Fatalf("error loading frame: %v\n", err)
