@@ -4,6 +4,7 @@
 	<link rel="stylesheet" type="text/css" href="tabs.css">
 	<script src="static/jquery-2.2.2.min.js"></script>
 	<script src="static/jquery.flot-0.8.3.min.js"></script>
+	<script src="static/jquery.flot.navigate-0.8.3.min.js"></script>
 	<script type="text/javascript" src="tabs.js"></script>
 	<script type="text/javascript">
 		var sock = null;
@@ -68,11 +69,16 @@
 		}
 		
 		function update() {
-			var freq = $.plot("#my-freq-plot", [freqplot]);
+			freqopts = new options()
+			freqopts.zoom = {interactive: true}
+			freqopts.pan = {interactive: true}
+			var freq = $.plot("#my-freq-plot", [freqplot], freqopts);
 			freq.setupGrid(); // needed as x-axis changes
 			freq.draw();
 			multopts = new options()
 			multopts.xaxis = {ticks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
+			multopts.zoom = {interactive: true}
+			multopts.pan = {interactive: true}
 			var mult = $.plot("#my-mult-plot", [multplot], multopts);
 			mult.setupGrid(); 
 			mult.draw();
@@ -278,7 +284,20 @@
 				</table>
 				</div> <!-- tab 1 content -->
 				<div id="tab2" class="tab">
-				<table>
+				<div id="my-chargelh-plot" class="my-plot-stylefreq"></div>
+				<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+				<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+				<br><br><br><br><br><br><br><br>
+				<div id="my-chargerh-plot" class="my-plot-stylefreq"></div>
+				<!--table>
+					<tr>    
+						<td height="1100"><div id="my-chargelh-plot" class="my-plot-stylefreq"></div></td>
+					</tr>
+					<tr>
+						<td height="1100"><div id="my-chargerh-plot" class="my-plot-stylefreq"></div></td>
+					</tr>
+				</table-->
+				<!--table>
 					<tr>    
 						<td align="center"><b>Left hemisphere</b></td> 
 						<td align="center"><b>Right hemisphere</b></td> 
@@ -287,7 +306,7 @@
 						<td width="1100"><div id="my-chargelh-plot" class="my-plot-stylefreq"></div></td>
 						<td width="1100"><div id="my-chargerh-plot" class="my-plot-stylefreq"></div></td>
 					</tr>
-				</table>
+				</table -->
 				</div> <!-- tab 2 content -->
 				<!--div id="tab3" class="tab">
 					<p>Tab #3 content goes here!</p>

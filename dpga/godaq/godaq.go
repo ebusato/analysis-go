@@ -420,8 +420,8 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						// Make charge distrib histo plot
 						tpchargeL := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Left)
 						tpchargeR := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Right)
-						chargeLsvg := utils.RenderSVG(tpchargeL, 25, 25)
-						chargeRsvg := utils.RenderSVG(tpchargeR, 25, 25)
+						chargeLsvg := utils.RenderSVG(tpchargeL, 45, 30)
+						chargeRsvg := utils.RenderSVG(tpchargeR, 45, 30)
 						// send to channel
 						datac <- Data{
 							Time:    time,

@@ -171,7 +171,7 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 }
 
 func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.HemisphereType) *hplot.TiledPlot {
-	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 5, Rows: 6, PadY: 1 * vg.Centimeter})
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 5, Rows: 6, PadY: 0 * vg.Centimeter})
 	if err != nil {
 		panic(err)
 	}
