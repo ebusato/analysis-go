@@ -325,7 +325,7 @@ func ChannelAbsIdx288ToFifoID144(iChannelAbs uint16) uint16 {
 func FifoID144ToFifoID120(iFifo uint16) uint16 {
 	i := iFifo % 12
 	if i == 10 || i == 11 {
-		log.Fatalf("iFifo corresponds to an unused fifo.\n")
+		log.Fatalf("iFifo=%v -> corresponds to an unused fifo.\n", iFifo)
 	}
 	return iFifo - 2*(iFifo/12)
 }
