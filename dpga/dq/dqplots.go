@@ -229,14 +229,17 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 			if err != nil {
 				panic(err)
 			}
-			hplotcharge0.Color = plotutil.DarkColors[0]                    // red
-			hplotcharge1.Color = plotutil.DarkColors[1]                    // green
-			hplotcharge2.Color = plotutil.DarkColors[2]                    // blue
-			hplotcharge3.Color = color.RGBA{R: 250, G: 88, B: 244, A: 255} // pink
-			hplotcharge0.FillColor = nil
-			hplotcharge1.FillColor = nil
-			hplotcharge2.FillColor = nil
-			hplotcharge3.FillColor = nil
+			//hplotcharge0.Color = plotutil.DarkColors[0]                    // red
+			//hplotcharge1.Color = plotutil.DarkColors[1]                    // green
+			//hplotcharge2.Color = plotutil.DarkColors[2]                    // blue
+			hplotcharge0.Color = color.RGBA{R: 238, G: 46, B: 47, A: 255}    // red
+			hplotcharge1.Color = color.RGBA{R: 0, G: 140, B: 72, A: 255}     // green
+			hplotcharge2.Color = color.RGBA{R: 24, G: 90, B: 169, A: 255}    // blue
+			hplotcharge3.Color = color.RGBA{R: 250, G: 88, B: 244, A: 255}   // pink
+			hplotcharge0.FillColor = color.NRGBA{R: 238, G: 46, B: 47, A: 80}
+			hplotcharge1.FillColor = color.NRGBA{R: 0, G: 140, B: 72, A: 80}
+			hplotcharge2.FillColor = color.NRGBA{R: 24, G: 90, B: 169, A: 80}
+			hplotcharge3.FillColor = color.NRGBA{R: 250, G: 88, B: 244, A: 80}
 			hplotcharge0.LineStyle.Width = 2
 			hplotcharge1.LineStyle.Width = 2
 			hplotcharge2.LineStyle.Width = 2

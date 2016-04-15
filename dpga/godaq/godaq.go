@@ -341,16 +341,21 @@ func webserver() {
 }
 
 func control(terminateStream chan bool, commandIsEnded chan bool) {
-	for {
-		time.Sleep(1 * time.Second)
-		select {
-		case <-commandIsEnded:
-			fmt.Printf("command is ended, terminating stream.\n")
-			terminateStream <- true
-		default:
-			// do nothing
+	/*
+		for {
+			time.Sleep(1 * time.Second)
+			select {
+			case <-commandIsEnded:
+				fmt.Printf("command is ended, terminating stream.\n")
+				terminateStream <- true
+			default:
+				// do nothing
+			}
 		}
-	}
+	*/
+	<-commandIsEnded
+	fmt.Printf("command is ended, terminating stream.\n")
+	terminateStream <- true
 }
 
 func GetMonData(noSamples uint16, pulse pulse.Pulse) []XY {
