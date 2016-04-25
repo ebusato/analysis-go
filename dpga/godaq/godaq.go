@@ -35,7 +35,7 @@ var (
 	hdrType     = rw.HeaderCAL
 	cpuprof     = flag.String("cpuprof", "", "Name of file for CPU profiling")
 	noEvents    = flag.Uint("n", 100000, "Number of events")
-	outfileName = flag.String("o", "out.bin", "Name of the output file")
+	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
 	ip          = flag.String("ip", "192.168.100.11", "IP address")
 	port        = flag.String("p", "1024", "Port number")
 	monFreq     = flag.Uint("mf", 50, "Monitoring frequency")
@@ -132,7 +132,26 @@ func main() {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
 
+	// determine run number
+	var runCSVFileName string
+	switch *runcsvtest {
+	case true:
+		runCSVFileName = os.Getenv("HOME") + "/godaq/runs/runs_test.csv"
+	case false:
+		runCSVFileName = os.Getenv("HOME") + "/godaq/runs/runs.csv"
+	}
+	if !utils.Exists(runCSVFileName) {
+		fmt.Printf("could not open %v -> nothing will be written to it.\n", runCSVFileName)
+		return
+	}
+	prevRunNumber := getPreviousRunNumber(runCSVFileName)
+	currentRunNumber := prevRunNumber + 1
+	fmt.Printf("Previous run number is %v -> setting current run number to %v\n", prevRunNumber, currentRunNumber)
+
 	// Writer for binary file
+	if *outfileName == "" {
+		*outfileName = "run" + strconv.FormatUint(uint64(currentRunNumber), 10) + ".bin"
+	}
 	filew, err := os.Create(*outfileName)
 	if err != nil {
 		log.Fatalf("could not create data file: %v\n", err)
@@ -151,22 +170,6 @@ func main() {
 		log.Fatalf("error writing header: %v\n", err)
 	}
 	hdr.Print()
-
-	// determine run number
-	var runCSVFileName string
-	switch *runcsvtest {
-	case true:
-		runCSVFileName = os.Getenv("HOME") + "/godaq/runs/runs_test.csv"
-	case false:
-		runCSVFileName = os.Getenv("HOME") + "/godaq/runs/runs.csv"
-	}
-	if !utils.Exists(runCSVFileName) {
-		fmt.Printf("could not open %v -> nothing will be written to it.\n", runCSVFileName)
-		return
-	}
-	prevRunNumber := getPreviousRunNumber(runCSVFileName)
-	currentRunNumber := prevRunNumber + 1
-	fmt.Printf("Previous run number is %v -> setting current run number to %v\n", prevRunNumber, currentRunNumber)
 
 	// web address handling
 	webadSlice := strings.Split(*webad, ":")
@@ -244,10 +247,8 @@ func main() {
 	updateHeader(filew, 20, noEvents)
 
 	// Dump run info in csv. Only relevant when ran on DAQ PC, where the csv file is present.
-	updateRunsCSV(runCSVFileName, currentRunNumber, timeStop, noEvents, hdr)
+	updateRunsCSV(runCSVFileName, currentRunNumber, timeStop, noEvents, *outfileName, hdr)
 	updateHeader(filew, 4, currentRunNumber)
-
-	err = os.Rename(*outfileName, "run"+strconv.FormatUint(uint64(currentRunNumber), 10)+".bin")
 }
 
 func updateHeader(f *os.File, offset int64, val uint32) {
@@ -257,12 +258,13 @@ func updateHeader(f *os.File, offset int64, val uint32) {
 }
 
 type RunsCSV struct {
-	RunNumber uint32
-	NoEvents  uint32
-	Threshold uint32
-	ExecDir   string
-	StartTime string
-	StopTime  string
+	RunNumber   uint32
+	NoEvents    uint32
+	Threshold   uint32
+	OutFileName string
+	ExecDir     string
+	StartTime   string
+	StopTime    string
 }
 
 func getPreviousRunNumber(fileName string) uint32 {
@@ -294,7 +296,7 @@ func getPreviousRunNumber(fileName string) uint32 {
 	return data.RunNumber
 }
 
-func updateRunsCSV(fileName string, runNumber uint32, timeStop uint32, noEvents uint32, hdr *rw.Header) {
+func updateRunsCSV(csvFileName string, runNumber uint32, timeStop uint32, noEvents uint32, outfileName string, hdr *rw.Header) {
 	// Determine working directory
 	pwd, err := os.Getwd()
 	if err != nil {
@@ -303,7 +305,7 @@ func updateRunsCSV(fileName string, runNumber uint32, timeStop uint32, noEvents 
 	}
 
 	// Open csv file in append mode
-	tbl, err := csvutil.Append(fileName)
+	tbl, err := csvutil.Append(csvFileName)
 	if err != nil {
 		log.Fatalf("could not create dpgageom.csv: %v\n", err)
 	}
@@ -311,12 +313,13 @@ func updateRunsCSV(fileName string, runNumber uint32, timeStop uint32, noEvents 
 	tbl.Writer.Comma = ' '
 
 	data := RunsCSV{
-		RunNumber: runNumber,
-		NoEvents:  noEvents,
-		Threshold: hdr.Threshold,
-		ExecDir:   pwd,
-		StartTime: time.Unix(int64(hdr.TimeStart), 0).Format(time.UnixDate),
-		StopTime:  time.Unix(int64(timeStop), 0).Format(time.UnixDate),
+		RunNumber:   runNumber,
+		NoEvents:    noEvents,
+		Threshold:   hdr.Threshold,
+		OutFileName: outfileName,
+		ExecDir:     pwd,
+		StartTime:   time.Unix(int64(hdr.TimeStart), 0).Format(time.UnixDate),
+		StopTime:    time.Unix(int64(timeStop), 0).Format(time.UnixDate),
 	}
 	err = tbl.WriteRow(data)
 	if err != nil {
