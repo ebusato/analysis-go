@@ -52,7 +52,12 @@ func TestRW(t *testing.T) {
 
 	nevents := 0
 	for {
+		fmt.Printf("reading event %v\n", nevents)
 		event, status := r.ReadNextEvent()
+		if int(event.ID) != nevents {
+			t.Fatalf("event.ID != nevents (event.ID=%v; nevents=%v)\n", event.ID, nevents)
+		}
+		nevents++
 		if r.Err() != io.EOF {
 			revents = append(revents, *event)
 			w.Event(event)
@@ -62,7 +67,6 @@ func TestRW(t *testing.T) {
 		} else {
 			break
 		}
-		nevents++
 	}
 	if nevents != 50 {
 		t.Fatalf("got %d events. want 50\n", nevents)
