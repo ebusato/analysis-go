@@ -286,7 +286,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 	firstPass := true
 	for { // loop over frames
 		var frame *Frame = nil
-		if r.firstFrameOfEvent != nil {
+		if r.firstFrameOfEvent != nil { // enter this only for first frame of event
 			frame = r.firstFrameOfEvent
 			if r.err != nil {
 				if r.err == io.EOF {
@@ -295,7 +295,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 				log.Fatal("error not nil", r.err)
 			}
 			r.firstFrameOfEvent = nil
-		} else {
+		} else { // enter this for all frames but the first one of the event
 			frametemp, err := r.Frame()
 			if err != nil && err != io.EOF {
 				log.Fatal("error not nil", err)

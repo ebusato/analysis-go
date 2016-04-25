@@ -58,9 +58,9 @@ func TestRW(t *testing.T) {
 			t.Fatalf("event.ID != nevents (event.ID=%v; nevents=%v)\n", event.ID, nevents)
 		}
 		nevents++
+		revents = append(revents, *event)
+		w.Event(event)
 		if r.Err() != io.EOF {
-			revents = append(revents, *event)
-			w.Event(event)
 			if status == false {
 				t.Fatalf("error: status is false\n")
 			}
@@ -92,8 +92,8 @@ func TestWIntegrity(t *testing.T) {
 
 	for {
 		event, status := r.ReadNextEvent()
+		wevents = append(wevents, *event)
 		if r.Err() != io.EOF {
-			wevents = append(wevents, *event)
 			if status == false {
 				t.Fatalf("error: status is false\n")
 			}
