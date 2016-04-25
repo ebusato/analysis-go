@@ -170,13 +170,22 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 	return tp
 }
 
-func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.HemisphereType) *hplot.TiledPlot {
+func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.HemisphereType, gobFileWithRefPlots string) *hplot.TiledPlot {
 	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 5, Rows: 6, PadY: 0 * vg.Centimeter})
 	if err != nil {
 		panic(err)
 	}
 
+	var dref *DQPlot
+	if gobFileWithRefPlots != "" {
+		dref = NewDQPlotFromGob(gobFileWithRefPlots)
+	}
+
 	histos := make([]hbook.H1D, len(d.HCharge[0]))
+	var histosref []hbook.H1D
+	if dref != nil {
+		histosref = make([]hbook.H1D, len(d.HCharge[0]))
+	}
 
 	iCluster := 0
 	irowBeg := 0
@@ -197,8 +206,14 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 			switch whichV {
 			case Charge:
 				histos = d.HCharge[iCluster]
+				if len(histosref) != 0 {
+					histosref = dref.HCharge[iCluster]
+				}
 			case Amplitude:
 				histos = d.HAmplitude[iCluster]
+				if len(histosref) != 0 {
+					histosref = dref.HAmplitude[iCluster]
+				}
 			}
 			p := tp.Plot(irow, icol)
 			p.Title.Text = "Channel " + strconv.FormatInt(int64(iCluster*4), 10) + " -> " + strconv.FormatInt(int64(iCluster*4+3), 10)
@@ -232,10 +247,10 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 			//hplotcharge0.Color = plotutil.DarkColors[0]                    // red
 			//hplotcharge1.Color = plotutil.DarkColors[1]                    // green
 			//hplotcharge2.Color = plotutil.DarkColors[2]                    // blue
-			hplotcharge0.Color = color.RGBA{R: 238, G: 46, B: 47, A: 255}    // red
-			hplotcharge1.Color = color.RGBA{R: 0, G: 140, B: 72, A: 255}     // green
-			hplotcharge2.Color = color.RGBA{R: 24, G: 90, B: 169, A: 255}    // blue
-			hplotcharge3.Color = color.RGBA{R: 250, G: 88, B: 244, A: 255}   // pink
+			hplotcharge0.Color = color.RGBA{R: 238, G: 46, B: 47, A: 255}  // red
+			hplotcharge1.Color = color.RGBA{R: 0, G: 140, B: 72, A: 255}   // green
+			hplotcharge2.Color = color.RGBA{R: 24, G: 90, B: 169, A: 255}  // blue
+			hplotcharge3.Color = color.RGBA{R: 250, G: 88, B: 244, A: 255} // pink
 			hplotcharge0.FillColor = color.NRGBA{R: 238, G: 46, B: 47, A: 80}
 			hplotcharge1.FillColor = color.NRGBA{R: 0, G: 140, B: 72, A: 80}
 			hplotcharge2.FillColor = color.NRGBA{R: 24, G: 90, B: 169, A: 80}
@@ -245,6 +260,25 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 			hplotcharge2.LineStyle.Width = 2
 			hplotcharge3.LineStyle.Width = 2
 			p.Add(hplotcharge0, hplotcharge1, hplotcharge2, hplotcharge3)
+			if len(histosref) != 0 {
+				hplotcharge0ref, err := hplot.NewH1D(&histosref[0])
+				if err != nil {
+					panic(err)
+				}
+				hplotcharge1ref, err := hplot.NewH1D(&histosref[1])
+				if err != nil {
+					panic(err)
+				}
+				hplotcharge2ref, err := hplot.NewH1D(&histosref[2])
+				if err != nil {
+					panic(err)
+				}
+				hplotcharge3ref, err := hplot.NewH1D(&histosref[3])
+				if err != nil {
+					panic(err)
+				}
+				p.Add(hplotcharge0ref, hplotcharge1ref, hplotcharge2ref, hplotcharge3ref)
+			}
 			iCluster++
 			switch whichH {
 			case dpgadetector.Left:

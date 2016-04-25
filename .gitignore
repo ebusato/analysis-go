@@ -9,7 +9,6 @@ dpga/calibConstants
 dpga/computePedestals/computePedestals
 dpga/computePedestals/output/
 dpga/data/
-dpga/dqref/
 dpga/rw/out
 dpga/rw/testdata/wdata-03-frames.bin
 testbench/analysis/analysis
