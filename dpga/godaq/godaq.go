@@ -46,6 +46,8 @@ var (
 	nobro       = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
 	sleep       = flag.Bool("s", false, "If set, sleep a bit between events")
 	runcsvtest  = flag.Bool("runcsvtest", false, "If set, update runs_test.csv rather than the \"official\" runs.csv file")
+	refplots    = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
+		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
 )
 
 type XY struct {
@@ -388,7 +390,9 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 	noEventsForMon := uint64(0)
 	hMult := hbook.NewH1D(8, -0.5, 7.5)
 	dqplots := dq.NewDQPlot()
-	//dqplots.DQPlotRef = dq.NewDQPlotFromGob("../dqref/dq-run37020evtsPedReference.gob")
+	if *refplots != "" {
+		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
+	}
 	start := time.Now()
 	startabs := start
 	for {
