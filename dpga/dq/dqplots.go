@@ -27,6 +27,8 @@ type DQPlot struct {
 	HSatMultiplicity *hbook.H1D
 	HCharge          [][]hbook.H1D
 	HAmplitude       [][]hbook.H1D
+
+	DQPlotRef *DQPlot
 }
 
 func NewDQPlot() *DQPlot {
@@ -170,20 +172,15 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 	return tp
 }
 
-func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.HemisphereType, gobFileWithRefPlots string) *hplot.TiledPlot {
+func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.HemisphereType) *hplot.TiledPlot {
 	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 5, Rows: 6, PadY: 0 * vg.Centimeter})
 	if err != nil {
 		panic(err)
 	}
 
-	var dref *DQPlot
-	if gobFileWithRefPlots != "" {
-		dref = NewDQPlotFromGob(gobFileWithRefPlots)
-	}
-
 	histos := make([]hbook.H1D, len(d.HCharge[0]))
 	var histosref []hbook.H1D
-	if dref != nil {
+	if d.DQPlotRef != nil {
 		histosref = make([]hbook.H1D, len(d.HCharge[0]))
 	}
 
@@ -207,12 +204,12 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 			case Charge:
 				histos = d.HCharge[iCluster]
 				if len(histosref) != 0 {
-					histosref = dref.HCharge[iCluster]
+					histosref = d.DQPlotRef.HCharge[iCluster]
 				}
 			case Amplitude:
 				histos = d.HAmplitude[iCluster]
 				if len(histosref) != 0 {
-					histosref = dref.HAmplitude[iCluster]
+					histosref = d.DQPlotRef.HAmplitude[iCluster]
 				}
 			}
 			p := tp.Plot(irow, icol)
@@ -300,17 +297,16 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 }
 
 // SaveHistos saves histograms on disk.
-// If refs is specified, current histograms
-// are overlaid with reference histograms
-// located in the gob file provided.
-func (d *DQPlot) SaveHistos(refs ...string) {
+// If d.DQPlotRef is not nil, current histograms
+// are overlaid with the provided reference histograms.
+func (d *DQPlot) SaveHistos() {
 	doplot := utils.MakeHPl
 	// 	doplot := utils.MakeGonumPlot
 
 	dqplotref := &DQPlot{}
 
-	if len(refs) != 0 && refs[0] != "" {
-		dqplotref = NewDQPlotFromGob(refs[0])
+	if d.DQPlotRef != nil {
+		dqplotref = d.DQPlotRef
 	}
 
 	linestyle := draw.LineStyle{Width: vg.Points(2)}
