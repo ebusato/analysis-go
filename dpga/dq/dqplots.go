@@ -225,56 +225,80 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 			p.Plot.Y.LineStyle.Width = 2
 			p.Plot.X.Tick.LineStyle.Width = 2
 			p.Plot.Y.Tick.LineStyle.Width = 2
-			hplotcharge0, err := hplot.NewH1D(&histos[0])
+			hplot0, err := hplot.NewH1D(&histos[0])
 			if err != nil {
 				panic(err)
 			}
-			hplotcharge1, err := hplot.NewH1D(&histos[1])
+			hplot1, err := hplot.NewH1D(&histos[1])
 			if err != nil {
 				panic(err)
 			}
-			hplotcharge2, err := hplot.NewH1D(&histos[2])
+			hplot2, err := hplot.NewH1D(&histos[2])
 			if err != nil {
 				panic(err)
 			}
-			hplotcharge3, err := hplot.NewH1D(&histos[3])
+			hplot3, err := hplot.NewH1D(&histos[3])
 			if err != nil {
 				panic(err)
 			}
-			//hplotcharge0.Color = plotutil.DarkColors[0]                    // red
-			//hplotcharge1.Color = plotutil.DarkColors[1]                    // green
-			//hplotcharge2.Color = plotutil.DarkColors[2]                    // blue
-			hplotcharge0.Color = color.RGBA{R: 238, G: 46, B: 47, A: 255}  // red
-			hplotcharge1.Color = color.RGBA{R: 0, G: 140, B: 72, A: 255}   // green
-			hplotcharge2.Color = color.RGBA{R: 24, G: 90, B: 169, A: 255}  // blue
-			hplotcharge3.Color = color.RGBA{R: 250, G: 88, B: 244, A: 255} // pink
-			hplotcharge0.FillColor = color.NRGBA{R: 238, G: 46, B: 47, A: 80}
-			hplotcharge1.FillColor = color.NRGBA{R: 0, G: 140, B: 72, A: 80}
-			hplotcharge2.FillColor = color.NRGBA{R: 24, G: 90, B: 169, A: 80}
-			hplotcharge3.FillColor = color.NRGBA{R: 250, G: 88, B: 244, A: 80}
-			hplotcharge0.LineStyle.Width = 2
-			hplotcharge1.LineStyle.Width = 2
-			hplotcharge2.LineStyle.Width = 2
-			hplotcharge3.LineStyle.Width = 2
-			p.Add(hplotcharge0, hplotcharge1, hplotcharge2, hplotcharge3)
+			hplot0.Color = color.RGBA{R: 238, G: 46, B: 47, A: 255}  // red
+			hplot1.Color = color.RGBA{R: 0, G: 140, B: 72, A: 255}   // green
+			hplot2.Color = color.RGBA{R: 24, G: 90, B: 169, A: 255}  // blue
+			hplot3.Color = color.RGBA{R: 250, G: 88, B: 244, A: 255} // pink
+			// 			hplot0.FillColor = color.NRGBA{R: 238, G: 46, B: 47, A: 80}
+			// 			hplot1.FillColor = color.NRGBA{R: 0, G: 140, B: 72, A: 80}
+			// 			hplot2.FillColor = color.NRGBA{R: 24, G: 90, B: 169, A: 80}
+			// 			hplot3.FillColor = color.NRGBA{R: 250, G: 88, B: 244, A: 80}
+			hplot0.FillColor = nil
+			hplot1.FillColor = nil
+			hplot2.FillColor = nil
+			hplot3.FillColor = nil
+			hplot0.LineStyle.Width = 1
+			hplot1.LineStyle.Width = 1
+			hplot2.LineStyle.Width = 1
+			hplot3.LineStyle.Width = 1
+			hplot0.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
+			hplot1.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
+			hplot2.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
+			hplot3.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
+			p.Add(hplot0, hplot1, hplot2, hplot3)
 			if len(histosref) != 0 {
-				hplotcharge0ref, err := hplot.NewH1D(&histosref[0])
+				if histos[0].Integral() != 0 && histos[1].Integral() != 0 && histos[2].Integral() != 0 && histos[3].Integral() != 0 {
+					histosref[0].Scale(histos[0].Integral() / histosref[0].Integral())
+					histosref[1].Scale(histos[1].Integral() / histosref[1].Integral())
+					histosref[2].Scale(histos[2].Integral() / histosref[2].Integral())
+					histosref[3].Scale(histos[3].Integral() / histosref[3].Integral())
+				}
+
+				hplot0ref, err := hplot.NewH1D(&histosref[0])
 				if err != nil {
 					panic(err)
 				}
-				hplotcharge1ref, err := hplot.NewH1D(&histosref[1])
+				hplot1ref, err := hplot.NewH1D(&histosref[1])
 				if err != nil {
 					panic(err)
 				}
-				hplotcharge2ref, err := hplot.NewH1D(&histosref[2])
+				hplot2ref, err := hplot.NewH1D(&histosref[2])
 				if err != nil {
 					panic(err)
 				}
-				hplotcharge3ref, err := hplot.NewH1D(&histosref[3])
+				hplot3ref, err := hplot.NewH1D(&histosref[3])
 				if err != nil {
 					panic(err)
 				}
-				p.Add(hplotcharge0ref, hplotcharge1ref, hplotcharge2ref, hplotcharge3ref)
+				hplot0ref.Color = color.RGBA{R: 238, G: 46, B: 47, A: 255}  // red
+				hplot1ref.Color = color.RGBA{R: 0, G: 140, B: 72, A: 255}   // green
+				hplot2ref.Color = color.RGBA{R: 24, G: 90, B: 169, A: 255}  // blue
+				hplot3ref.Color = color.RGBA{R: 250, G: 88, B: 244, A: 255} // pink
+				hplot0ref.FillColor = color.NRGBA{R: 238, G: 46, B: 47, A: 80}
+				hplot1ref.FillColor = color.NRGBA{R: 0, G: 140, B: 72, A: 80}
+				hplot2ref.FillColor = color.NRGBA{R: 24, G: 90, B: 169, A: 80}
+				hplot3ref.FillColor = color.NRGBA{R: 250, G: 88, B: 244, A: 80}
+				hplot0ref.LineStyle.Width = 2
+				hplot1ref.LineStyle.Width = 2
+				hplot2ref.LineStyle.Width = 2
+				hplot3ref.LineStyle.Width = 2
+				p.Add(hplot0ref, hplot1ref, hplot2ref, hplot3ref)
 			}
 			iCluster++
 			switch whichH {
