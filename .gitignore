@@ -25,7 +25,6 @@ dpga/godaq/out.bin
 out
 */*/*.bin
 */*/*/*.bin
-*/*/*.gob
 */*/output
 */*/test
 */*/*~
