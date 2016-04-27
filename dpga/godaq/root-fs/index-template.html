@@ -89,12 +89,18 @@
 			p3.innerHTML = chargerhplot;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
-					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], new options('#FFFF00')); // yellow
+					optsR = new options('#FFFF00') // yellow
+					optsR.zoom = {interactive: true}
+					optsR.pan = {interactive: true}
+					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], optsR); 
 					p.setupGrid();
 					p.draw();
 				}
 				else {
-					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], new options('#E0F2F7')); // blue
+					optsL = new options('#E0F2F7') // blue
+					optsL.zoom = {interactive: true}
+					optsL.pan = {interactive: true}
+					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], optsL); 
 					p.setupGrid();
 					p.draw();
 				}	
@@ -192,6 +198,7 @@
 			<li class="active"><a href="#tab1">Occupancy and pulses</a></li>
 			<li><a href="#tab2">Charge distribution</a></li>
 			<!--li><a href="#tab3">Tab #3</a></li-->
+			<img border="0" src="DPGAmapping.png" style="width:304px;" align="right">
 			</ul>
 			<div class="tab-content">
 				<div id="tab1" class="tab active">
