@@ -9,6 +9,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
+	"path"
 	"runtime/pprof"
 	"strconv"
 	"strings"
@@ -73,6 +75,84 @@ func NewH1D(h *hbook.H1D) H1D {
 	return hist
 }
 
+type HVexec struct {
+	execName string
+}
+
+func NewHVexec(execName string, coefDir string) *HVexec {
+	if !utils.Exists(execName) {
+		fmt.Printf("could not find executable %v\n", execName)
+		return nil
+	}
+	if !utils.Exists(coefDir) {
+		fmt.Printf("could not find directory %v\n", coefDir)
+		return nil
+		if !utils.Exists(coefDir+"/Coef_poly_C001.txt") ||
+			!utils.Exists(coefDir+"/Coef_poly_C002.txt") ||
+			!utils.Exists(coefDir+"/Coef_poly_C003.txt") ||
+			!utils.Exists(coefDir+"/Coef_poly_C004.txt") {
+			fmt.Printf("could not find at least one of the Coef_poly_C00?.txt file\n")
+			return nil
+		}
+	}
+	_, linkName := path.Split(coefDir)
+	if !utils.Exists(linkName) {
+		fmt.Println("link not existing, making it")
+		err := os.Symlink(coefDir, linkName)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return &HVexec{
+		execName: execName,
+	}
+}
+
+type HVvalues [4][16]float64 // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
+
+func NewHVvalues(hvex *HVexec) *HVvalues {
+	fmt.Println("Reading hvvals")
+	hvvals := &HVvalues{}
+	for iHVcard := int64(1); iHVcard <= 4; iHVcard++ {
+		cmd := exec.Command(hvex.execName, "--serial", strconv.FormatInt(iHVcard, 10), "--display")
+		fmt.Println(cmd.Args)
+		cmdReader, err := cmd.StdoutPipe()
+		if err != nil {
+			log.Fatalf("error executing %v\n", hvex.execName)
+		}
+		scanner := bufio.NewScanner(cmdReader)
+
+		err = cmd.Start()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error starting Cmd", err)
+			os.Exit(1)
+		}
+		for scanner.Scan() {
+			fmt.Printf("docker build out | %s\n", scanner.Text())
+			line := scanner.Text()
+			fields := strings.Split(line, " ")
+			if fields[0] == "Read" {
+				fmt.Println(fields[3], fields[11])
+				channelIdx, err := strconv.ParseInt(fields[3], 10, 64)
+				if err != nil {
+					panic(err)
+				}
+				val, err := strconv.ParseFloat(fields[11], 64)
+				if err != nil {
+					panic(err)
+				}
+				(*hvvals)[iHVcard][channelIdx] = val
+			}
+		}
+		err = cmd.Wait()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error waiting for Cmd", err)
+			os.Exit(1)
+		}
+	} // end of loop over HV cards
+	return hvvals
+}
+
 type Data struct {
 	Time    float64  `json:"time"` // time at which monitoring data are taken
 	Freq    float64  `json:"freq"` // number of events processed per second
@@ -81,6 +161,7 @@ type Data struct {
 	FreqH   string   `json:"freqh"`   // frequency histogram
 	ChargeL string   `json:"chargel"` // charge histograms for left hemisphere
 	ChargeR string   `json:"charger"` // charge histograms for right hemisphere
+	HVvals  HVvalues `json:"hv"`      // hv values
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -393,6 +474,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 	if *refplots != "" {
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
 	}
+	hvexec := NewHVexec(os.Getenv("HOME")+"/Acquisition/HvProg/ht-caen", os.Getenv("HOME")+"/Acquisition/HvProg/Coeff")
 	start := time.Now()
 	startabs := start
 	for {
@@ -447,6 +529,13 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						tpchargeR := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Right)
 						chargeLsvg := utils.RenderSVG(tpchargeL, 45, 30)
 						chargeRsvg := utils.RenderSVG(tpchargeR, 45, 30)
+
+						// Read HV
+						var hvvals *HVvalues
+						if hvexec != nil {
+							hvvals = NewHVvalues(hvexec)
+						}
+
 						// send to channel
 						datac <- Data{
 							Time:    time,
@@ -456,6 +545,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							FreqH:   freqhsvg,
 							ChargeL: chargeLsvg,
 							ChargeR: chargeRsvg,
+							HVvals:  *hvvals,
 						}
 						noEventsForMon = 0
 					}
