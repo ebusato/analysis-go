@@ -90,16 +90,16 @@
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					optsR = new options('#FFFF00') // yellow
-					optsR.zoom = {interactive: true}
-					optsR.pan = {interactive: true}
+					//optsR.zoom = {interactive: true}
+					//optsR.pan = {interactive: true}
 					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], optsR); 
 					p.setupGrid();
 					p.draw();
 				}
 				else {
 					optsL = new options('#E0F2F7') // blue
-					optsL.zoom = {interactive: true}
-					optsL.pan = {interactive: true}
+					//optsL.zoom = {interactive: true}
+					//optsL.pan = {interactive: true}
 					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], optsL); 
 					p.setupGrid();
 					p.draw();
