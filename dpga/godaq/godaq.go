@@ -108,14 +108,19 @@ func NewHVexec(execName string, coefDir string) *HVexec {
 	}
 }
 
-type HVvalues [4][16]float64 // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
+type HVvalue struct {
+	Raw float64
+	HV  float64
+}
 
+type HVvalues [4][16]HVvalue // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
+
+// NewHVvalues creates a new HVvalues object from a HVexec.
 func NewHVvalues(hvex *HVexec) *HVvalues {
-	fmt.Println("Reading hvvals")
 	hvvals := &HVvalues{}
 	for iHVcard := int64(1); iHVcard <= 4; iHVcard++ {
 		cmd := exec.Command(hvex.execName, "--serial", strconv.FormatInt(iHVcard, 10), "--display")
-		fmt.Println(cmd.Args)
+		//fmt.Println(cmd.Args)
 		cmdReader, err := cmd.StdoutPipe()
 		if err != nil {
 			log.Fatalf("error executing %v\n", hvex.execName)
@@ -128,20 +133,25 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 			os.Exit(1)
 		}
 		for scanner.Scan() {
-			fmt.Printf("docker build out | %s\n", scanner.Text())
 			line := scanner.Text()
 			fields := strings.Split(line, " ")
 			if fields[0] == "Read" {
-				fmt.Println(fields[3], fields[11])
+				//fmt.Println("debug: ", fields[3], fields[8], fields[11])
 				channelIdx, err := strconv.ParseInt(fields[3], 10, 64)
 				if err != nil {
 					panic(err)
 				}
-				val, err := strconv.ParseFloat(fields[11], 64)
+				raw, err := strconv.ParseFloat(fields[8], 64)
 				if err != nil {
 					panic(err)
 				}
-				(*hvvals)[iHVcard][channelIdx] = val
+				svalwithunwantedchar := fields[11]
+				sval := strings.TrimRight(svalwithunwantedchar, " ")
+				val, err := strconv.ParseFloat(sval, 64)
+				if err != nil {
+					panic(err)
+				}
+				(*hvvals)[iHVcard-1][channelIdx] = HVvalue{Raw: raw, HV: val}
 			}
 		}
 		err = cmd.Wait()
@@ -474,7 +484,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 	if *refplots != "" {
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
 	}
-	hvexec := NewHVexec(os.Getenv("HOME")+"/Acquisition/HvProg/ht-caen", os.Getenv("HOME")+"/Acquisition/HvProg/Coeff")
+	hvexec := NewHVexec(os.Getenv("HOME")+"/Acquisition/HV/ht-caen", os.Getenv("HOME")+"/Acquisition/HV/Coeff")
 	start := time.Now()
 	startabs := start
 	for {
