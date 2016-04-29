@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-hep/hbook"
 	"github.com/go-hep/hplot"
+	"github.com/gonum/plot"
 	"github.com/gonum/plot/plotter"
 	"github.com/gonum/plot/plotutil"
 	"github.com/gonum/plot/vg"
@@ -29,7 +30,7 @@ type DQPlot struct {
 	HCharge          [][]hbook.H1D
 	HAmplitude       [][]hbook.H1D
 
-	HV               [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
+	HV [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
 
 	DQPlotRef *DQPlot
 }
@@ -114,7 +115,7 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 // AddHVPoint adds a point to the HV curve.
 // abscissa is whatever you think is more relevant in your case.
 func (d *DQPlot) AddHVPoint(idCard int, idChannel int, abscissa float64, val float64) {
-	d.HV[idCard][idChannel] = append(d.HV[idCard][idChannel], struct{X, Y float64}{X: abscissa, Y: val})
+	d.HV[idCard][idChannel] = append(d.HV[idCard][idChannel], struct{ X, Y float64 }{X: abscissa, Y: val})
 }
 
 func (d *DQPlot) Finalize() {
@@ -335,20 +336,77 @@ func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
 		panic(err)
 	}
 	//var TextsAndXYs []interface{}
-	for irow := 0; irow < tp.Tiles.Rows; irow++ {
-		for icol := 0;  icol < tp.Tiles.Cols; icol++ {
-			p := tp.Plot(irow, icol)
-			p.Title.Text = "Put some text here"
-			//p.Add(plot.NewGrid())
-			p.Plot.X.LineStyle.Width = 2
-			p.Plot.Y.LineStyle.Width = 2
-			p.Plot.X.Tick.LineStyle.Width = 2
-			p.Plot.Y.Tick.LineStyle.Width = 2
-			//TextsAndXYs = append(TextsAndXYs, "toto")
-			err = plotutil.AddLinePoints(&p.Plot, d.HV[0][0])
-			if err != nil {
-				panic(err)
-			}
+
+	var irow int
+	var icol int
+	for iHV := uint(0); iHV < 60; iHV++ {
+		if iHV >= 0 && iHV <= 4 { // right hemisphere of DPGA
+			irow = 0
+			icol = 1
+		} else if iHV >= 10 && iHV <= 14 {
+			irow = 1
+			icol = 1
+		} else if iHV >= 20 && iHV <= 24 {
+			irow = 2
+			icol = 1
+		} else if iHV >= 30 && iHV <= 34 {
+			irow = 3
+			icol = 1
+		} else if iHV >= 40 && iHV <= 44 {
+			irow = 4
+			icol = 1
+		} else if iHV >= 50 && iHV <= 54 {
+			irow = 5
+			icol = 1
+		} else if iHV >= 5 && iHV <= 9 { // left hemisphere of DPGA
+			irow = 0
+			icol = 0
+		} else if iHV >= 15 && iHV <= 19 {
+			irow = 1
+			icol = 0
+		} else if iHV >= 25 && iHV <= 29 {
+			irow = 2
+			icol = 0
+		} else if iHV >= 35 && iHV <= 39 {
+			irow = 3
+			icol = 0
+		} else if iHV >= 45 && iHV <= 49 {
+			irow = 4
+			icol = 0
+		} else if iHV >= 55 && iHV <= 59 {
+			irow = 5
+			icol = 0
+		}
+
+		p := tp.Plot(irow, icol)
+		p.Y.Min = 0
+		p.X.Label.Text = "event"
+		p.Y.Label.Text = "HV"
+		//p.Add(plot.NewGrid())
+		p.Plot.X.LineStyle.Width = 2
+		p.Plot.Y.LineStyle.Width = 2
+		p.Plot.X.Tick.LineStyle.Width = 2
+		p.Plot.Y.Tick.LineStyle.Width = 2
+		//TextsAndXYs = append(TextsAndXYs, "toto")
+		hvserialchan := dpgadetector.HVmap[iHV]
+		ser := hvserialchan.SerialNumber
+		ch := hvserialchan.ChannelNumber
+		
+		// test
+		var ps []plot.Plotter
+		l, s, err := plotter.NewLinePoints(d.HV[ser-1][ch])
+		iii := int(iHV % 5)
+		l.Color = plotutil.Color(iii)
+		l.Dashes = plotutil.Dashes(iii)
+		s.Color = plotutil.Color(iii)
+		s.Shape = plotutil.Shape(iii)
+		ps = append(ps, l, s)
+		p.Add(ps...)
+		// end test
+		
+		//err = plotutil.AddLinePoints(&p.Plot, "HV"+strconv.FormatUint(uint64(iHV), 10)+" ("+strconv.FormatUint(uint64(ser), 10)+", "+strconv.FormatUint(uint64(ch), 10)+") ", d.HV[ser-1][ch])
+		if err != nil {
+			panic(err)
 		}
 	}
 	return tp

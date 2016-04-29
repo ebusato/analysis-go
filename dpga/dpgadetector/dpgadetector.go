@@ -630,6 +630,7 @@ func init() {
 	//Det.DumpFullGeom()
 	//Det.Print()
 	
+	HVmap = make(map[uint]HVSerialChan)
 	HVmap[0] = HVSerialChan{SerialNumber: 1, ChannelNumber: 1}
 	HVmap[1] = HVSerialChan{SerialNumber: 1, ChannelNumber: 2}
 	HVmap[2] = HVSerialChan{SerialNumber: 1, ChannelNumber: 3}
