@@ -50,6 +50,7 @@ var (
 	runcsvtest  = flag.Bool("runcsvtest", false, "If set, update runs_test.csv rather than the \"official\" runs.csv file")
 	refplots    = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
 		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
+	hvMonDegrad = flag.Uint("hvmondeg", 20, "HV monitoring frequency degradation factor")
 )
 
 type XY struct {
@@ -97,7 +98,7 @@ func NewHVexec(execName string, coefDir string) *HVexec {
 	}
 	_, linkName := path.Split(coefDir)
 	if !utils.Exists(linkName) {
-		fmt.Println("link not existing, making it")
+		fmt.Println("Link to coeff directory not existing, making it")
 		err := os.Symlink(coefDir, linkName)
 		if err != nil {
 			panic(err)
@@ -164,6 +165,7 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 }
 
 type Data struct {
+	EvtID   uint     `json:"evt"`  // event id
 	Time    float64  `json:"time"` // time at which monitoring data are taken
 	Freq    float64  `json:"freq"` // number of events processed per second
 	Qs      Quartets `json:"quartets"`
@@ -171,7 +173,7 @@ type Data struct {
 	FreqH   string   `json:"freqh"`   // frequency histogram
 	ChargeL string   `json:"chargel"` // charge histograms for left hemisphere
 	ChargeR string   `json:"charger"` // charge histograms for right hemisphere
-	HVvals  HVvalues `json:"hv"`      // hv values
+	HVvals  string   `json:"hv"`      // hv values
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -477,7 +479,6 @@ func GetMonData(noSamples uint16, pulse pulse.Pulse) []XY {
 
 func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
-	//nFrames := uint(0)
 	noEventsForMon := uint64(0)
 	hMult := hbook.NewH1D(8, -0.5, 7.5)
 	dqplots := dq.NewDQPlot()
@@ -541,13 +542,21 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						chargeRsvg := utils.RenderSVG(tpchargeR, 45, 30)
 
 						// Read HV
-						var hvvals *HVvalues
-						if hvexec != nil {
+						hvvals := &HVvalues{}
+						if hvexec != nil && *iEvent%(*monFreq**hvMonDegrad) == 0 {
 							hvvals = NewHVvalues(hvexec)
+							for iHVCard := 0; iHVCard < 4; iHVCard++ {
+								for iHVChannel := 0; iHVChannel < 16; iHVChannel++ {
+									dqplots.AddHVPoint(iHVCard, iHVChannel, float64(event.ID), hvvals[iHVCard][iHVChannel].HV)
+								}
+							}
 						}
+						hvTiled := dqplots.MakeHVTiledPlot()
+						hvsvg := utils.RenderSVG(hvTiled, 45, 30)
 
 						// send to channel
 						datac <- Data{
+							EvtID:   event.ID,
 							Time:    time,
 							Freq:    freq,
 							Qs:      qs,
@@ -555,7 +564,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							FreqH:   freqhsvg,
 							ChargeL: chargeLsvg,
 							ChargeR: chargeRsvg,
-							HVvals:  *hvvals,
+							HVvals:  hvsvg,
 						}
 						noEventsForMon = 0
 					}

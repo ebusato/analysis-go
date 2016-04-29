@@ -30,6 +30,7 @@
 		var freqhplot = ""
 		var chargelhplot = ""
 		var chargerhplot = ""
+		var hvplot = ""
 		
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
@@ -87,6 +88,8 @@
 			p2.innerHTML = chargelhplot;
 			var p3 = document.getElementById("my-chargerh-plot");
 			p3.innerHTML = chargerhplot;
+			var p4 = document.getElementById("my-hv-plot");
+			p4.innerHTML = hvplot;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					optsR = new options('#FFFF00') // yellow
@@ -113,7 +116,8 @@
 				var data = JSON.parse(event.data);
 				console.log("data: "+JSON.stringify(data));
 				if (data.freq != 0) {
-					freqplot.data.push([data.time, data.freq])
+					//freqplot.data.push([data.time, data.freq])
+					freqplot.data.push([data.evt, data.freq])
 				}
 				for (var i = 0; i < 8; i += 1) {
 					multplot.data.push([data.mult[i].X, data.mult[i].Y])
@@ -121,6 +125,7 @@
 				freqhplot = data.freqh;
 				chargelhplot = data.chargel;
 				chargerhplot = data.charger;
+				hvplot = data.hv;
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < 999; is += 5) {
@@ -197,7 +202,7 @@
 			<ul class="tab-links">
 			<li class="active"><a href="#tab1">Occupancy and pulses</a></li>
 			<li><a href="#tab2">Charge distribution</a></li>
-			<!--li><a href="#tab3">Tab #3</a></li-->
+			<li><a href="#tab3">HV</a></li>
 			<img border="0" src="DPGAmapping.png" style="width:304px;" align="right">
 			</ul>
 			<div class="tab-content">
@@ -314,10 +319,9 @@
 					</tr>
 				</table -->
 				</div> <!-- tab 2 content -->
-				<!--div id="tab3" class="tab">
-					<p>Tab #3 content goes here!</p>
-					<p>Donec pulvinar neque.</p>
-				</div-->
+				<div id="tab3" class="tab">
+				<div id="my-hv-plot" class="my-plot-stylefreq"></div>
+				</div>
 			</div>
 		</div>
 	</div><!--end .main-->

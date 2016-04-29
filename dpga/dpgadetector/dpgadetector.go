@@ -615,6 +615,13 @@ func (d *Detector) ReadPedestalsFile(fileName string) {
 	}
 }
 
+type HVSerialChan struct {
+	SerialNumber uint8
+	ChannelNumber uint8
+}
+
+var HVmap map[uint]HVSerialChan
+
 var Det *Detector
 
 func init() {
@@ -622,4 +629,65 @@ func init() {
 	//Det.DumpGeom()
 	//Det.DumpFullGeom()
 	//Det.Print()
+	
+	HVmap[0] = HVSerialChan{SerialNumber: 1, ChannelNumber: 1}
+	HVmap[1] = HVSerialChan{SerialNumber: 1, ChannelNumber: 2}
+	HVmap[2] = HVSerialChan{SerialNumber: 1, ChannelNumber: 3}
+	HVmap[3] = HVSerialChan{SerialNumber: 1, ChannelNumber: 4}
+	HVmap[4] = HVSerialChan{SerialNumber: 1, ChannelNumber: 5}
+	HVmap[5] = HVSerialChan{SerialNumber: 4, ChannelNumber: 15}
+	HVmap[6] = HVSerialChan{SerialNumber: 4, ChannelNumber: 14}
+	HVmap[7] = HVSerialChan{SerialNumber: 4, ChannelNumber: 13}
+	HVmap[8] = HVSerialChan{SerialNumber: 4, ChannelNumber: 12}
+	HVmap[9] = HVSerialChan{SerialNumber: 4, ChannelNumber: 11}
+	HVmap[10] = HVSerialChan{SerialNumber: 1, ChannelNumber: 6}
+	HVmap[11] = HVSerialChan{SerialNumber: 1, ChannelNumber: 7}
+	HVmap[12] = HVSerialChan{SerialNumber: 1, ChannelNumber: 8}
+	HVmap[13] = HVSerialChan{SerialNumber: 1, ChannelNumber: 9}
+	HVmap[14] = HVSerialChan{SerialNumber: 1, ChannelNumber: 10}
+	HVmap[15] = HVSerialChan{SerialNumber: 4, ChannelNumber: 9}  // this inversion between 15 and 16 is weird
+	HVmap[16] = HVSerialChan{SerialNumber: 4, ChannelNumber: 10} // this inversion between 15 and 16 is weird
+	HVmap[17] = HVSerialChan{SerialNumber: 4, ChannelNumber: 8}
+	HVmap[18] = HVSerialChan{SerialNumber: 4, ChannelNumber: 7}
+	HVmap[19] = HVSerialChan{SerialNumber: 4, ChannelNumber: 6}
+	HVmap[20] = HVSerialChan{SerialNumber: 1, ChannelNumber: 11}
+	HVmap[21] = HVSerialChan{SerialNumber: 1, ChannelNumber: 12}
+	HVmap[22] = HVSerialChan{SerialNumber: 1, ChannelNumber: 13}
+	HVmap[23] = HVSerialChan{SerialNumber: 1, ChannelNumber: 14}
+	HVmap[24] = HVSerialChan{SerialNumber: 1, ChannelNumber: 15}
+	HVmap[25] = HVSerialChan{SerialNumber: 4, ChannelNumber: 5}
+	HVmap[26] = HVSerialChan{SerialNumber: 4, ChannelNumber: 4}
+	HVmap[27] = HVSerialChan{SerialNumber: 4, ChannelNumber: 3}
+	HVmap[28] = HVSerialChan{SerialNumber: 4, ChannelNumber: 2}
+	HVmap[29] = HVSerialChan{SerialNumber: 4, ChannelNumber: 1}
+	HVmap[30] = HVSerialChan{SerialNumber: 2, ChannelNumber: 1}
+	HVmap[31] = HVSerialChan{SerialNumber: 2, ChannelNumber: 2}
+	HVmap[32] = HVSerialChan{SerialNumber: 2, ChannelNumber: 3}
+	HVmap[33] = HVSerialChan{SerialNumber: 2, ChannelNumber: 4}
+	HVmap[34] = HVSerialChan{SerialNumber: 2, ChannelNumber: 5}
+	HVmap[35] = HVSerialChan{SerialNumber: 3, ChannelNumber: 15}
+	HVmap[36] = HVSerialChan{SerialNumber: 3, ChannelNumber: 14}
+	HVmap[37] = HVSerialChan{SerialNumber: 3, ChannelNumber: 13}
+	HVmap[38] = HVSerialChan{SerialNumber: 3, ChannelNumber: 12}
+	HVmap[39] = HVSerialChan{SerialNumber: 3, ChannelNumber: 11}
+	HVmap[40] = HVSerialChan{SerialNumber: 2, ChannelNumber: 6}
+	HVmap[41] = HVSerialChan{SerialNumber: 2, ChannelNumber: 7}
+	HVmap[42] = HVSerialChan{SerialNumber: 2, ChannelNumber: 8}
+	HVmap[43] = HVSerialChan{SerialNumber: 2, ChannelNumber: 9}
+	HVmap[44] = HVSerialChan{SerialNumber: 2, ChannelNumber: 10}
+	HVmap[45] = HVSerialChan{SerialNumber: 3, ChannelNumber: 10}
+	HVmap[46] = HVSerialChan{SerialNumber: 3, ChannelNumber: 9}
+	HVmap[47] = HVSerialChan{SerialNumber: 3, ChannelNumber: 8}
+	HVmap[48] = HVSerialChan{SerialNumber: 3, ChannelNumber: 7}
+	HVmap[49] = HVSerialChan{SerialNumber: 3, ChannelNumber: 6}
+	HVmap[50] = HVSerialChan{SerialNumber: 2, ChannelNumber: 11}
+	HVmap[51] = HVSerialChan{SerialNumber: 2, ChannelNumber: 12}
+	HVmap[52] = HVSerialChan{SerialNumber: 2, ChannelNumber: 13}
+	HVmap[53] = HVSerialChan{SerialNumber: 2, ChannelNumber: 14}
+	HVmap[54] = HVSerialChan{SerialNumber: 2, ChannelNumber: 15}
+	HVmap[55] = HVSerialChan{SerialNumber: 3, ChannelNumber: 5}
+	HVmap[56] = HVSerialChan{SerialNumber: 3, ChannelNumber: 4}
+	HVmap[57] = HVSerialChan{SerialNumber: 3, ChannelNumber: 3}
+	HVmap[58] = HVSerialChan{SerialNumber: 3, ChannelNumber: 2}
+	HVmap[59] = HVSerialChan{SerialNumber: 3, ChannelNumber: 1}
 }

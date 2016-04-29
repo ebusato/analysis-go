@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-hep/hbook"
 	"github.com/go-hep/hplot"
+	"github.com/gonum/plot/plotter"
 	"github.com/gonum/plot/plotutil"
 	"github.com/gonum/plot/vg"
 	"github.com/gonum/plot/vg/draw"
@@ -27,6 +28,8 @@ type DQPlot struct {
 	HSatMultiplicity *hbook.H1D
 	HCharge          [][]hbook.H1D
 	HAmplitude       [][]hbook.H1D
+
+	HV               [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
 
 	DQPlotRef *DQPlot
 }
@@ -106,6 +109,12 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 
 	d.HMultiplicity.Fill(float64(mult), 1)
 	d.HSatMultiplicity.Fill(float64(satmult), 1)
+}
+
+// AddHVPoint adds a point to the HV curve.
+// abscissa is whatever you think is more relevant in your case.
+func (d *DQPlot) AddHVPoint(idCard int, idChannel int, abscissa float64, val float64) {
+	d.HV[idCard][idChannel] = append(d.HV[idCard][idChannel], struct{X, Y float64}{X: abscissa, Y: val})
 }
 
 func (d *DQPlot) Finalize() {
@@ -315,6 +324,31 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 			irow--
 		case dpgadetector.Right:
 			irow++
+		}
+	}
+	return tp
+}
+
+func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 2, Rows: 6, PadY: 0 * vg.Centimeter})
+	if err != nil {
+		panic(err)
+	}
+	//var TextsAndXYs []interface{}
+	for irow := 0; irow < tp.Tiles.Rows; irow++ {
+		for icol := 0;  icol < tp.Tiles.Cols; icol++ {
+			p := tp.Plot(irow, icol)
+			p.Title.Text = "Put some text here"
+			//p.Add(plot.NewGrid())
+			p.Plot.X.LineStyle.Width = 2
+			p.Plot.Y.LineStyle.Width = 2
+			p.Plot.X.Tick.LineStyle.Width = 2
+			p.Plot.Y.Tick.LineStyle.Width = 2
+			//TextsAndXYs = append(TextsAndXYs, "toto")
+			err = plotutil.AddLinePoints(&p.Plot, d.HV[0][0])
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 	return tp
