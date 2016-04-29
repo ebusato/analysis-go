@@ -484,7 +484,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 	if *refplots != "" {
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
 	}
-	hvexec := NewHVexec(os.Getenv("HOME")+"/Acquisition/HV/ht-caen", os.Getenv("HOME")+"/Acquisition/HV/Coeff")
+	hvexec := NewHVexec(os.Getenv("HOME")+"/Acquisition/hv/ht-caen", os.Getenv("HOME")+"/Acquisition/hv/Coeff")
 	start := time.Now()
 	startabs := start
 	for {
