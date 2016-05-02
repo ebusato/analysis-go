@@ -383,10 +383,10 @@ func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
 		p := tp.Plot(irow, icol)
 		grid := hplot.NewGrid()
 		grid.Vertical.Width = 0
-		grid.Vertical.Dashes = plotutil.Dashes(1)
+		grid.Horizontal.Dashes = plotutil.Dashes(1)
 		p.Add(grid)
-		p.Y.Min = 800
-		p.Y.Max = 1200
+		//p.Y.Min = 800
+		//p.Y.Max = 1200
 		p.X.Label.Text = "event"
 		p.Y.Label.Text = "HV"
 		//p.Add(plot.NewGrid())
