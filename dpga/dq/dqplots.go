@@ -183,7 +183,7 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 }
 
 func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.HemisphereType) *hplot.TiledPlot {
-	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 5, Rows: 6, PadY: 0 * vg.Centimeter})
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 5, Rows: 6, PadY: 0.5 * vg.Centimeter})
 	if err != nil {
 		panic(err)
 	}
@@ -313,10 +313,10 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 			iCluster++
 			switch whichH {
 			case dpgadetector.Left:
-				p.BackgroundColor = color.RGBA{R: 224, G: 242, B: 247, A: 255}
+				p.BackgroundColor = color.RGBA{R: 224, G: 242, B: 247, A: 255} // blue
 				icol++
 			case dpgadetector.Right:
-				p.BackgroundColor = color.RGBA{R: 255, G: 255, B: 0, A: 255}
+				p.BackgroundColor = color.RGBA{R: 255, G: 255, B: 0, A: 255} // yellow
 				icol--
 			}
 		}
@@ -331,12 +331,14 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 }
 
 func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
-	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 2, Rows: 6, PadY: 0 * vg.Centimeter})
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 2, Rows: 6, PadX: 3.5 * vg.Centimeter, PadY: 1 * vg.Centimeter})
 	if err != nil {
 		panic(err)
 	}
 	//var TextsAndXYs []interface{}
 
+	//color := color.RGBA{R: 224, G: 242, B: 247, A: 255}
+	
 	var irow int
 	var icol int
 	for iHV := uint(0); iHV < 60; iHV++ {
@@ -379,7 +381,12 @@ func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
 		}
 
 		p := tp.Plot(irow, icol)
-		p.Y.Min = 0
+		grid := hplot.NewGrid()
+		grid.Vertical.Width = 0
+		grid.Vertical.Dashes = plotutil.Dashes(1)
+		p.Add(grid)
+		p.Y.Min = 800
+		p.Y.Max = 1200
 		p.X.Label.Text = "event"
 		p.Y.Label.Text = "HV"
 		//p.Add(plot.NewGrid())
@@ -397,11 +404,15 @@ func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
 		l, s, err := plotter.NewLinePoints(d.HV[ser-1][ch])
 		iii := int(iHV % 5)
 		l.Color = plotutil.Color(iii)
-		l.Dashes = plotutil.Dashes(iii)
+		//l.Dashes = plotutil.Dashes(iii)
+		l.LineStyle.Width = 0.1 * vg.Centimeter
 		s.Color = plotutil.Color(iii)
-		s.Shape = plotutil.Shape(iii)
+		s.Shape = draw.CircleGlyph{} //plotutil.Shape(iii)
+		s.GlyphStyle.Radius = 0.1 * vg.Centimeter
 		ps = append(ps, l, s)
 		p.Add(ps...)
+		p.Legend.Add("HV"+strconv.FormatUint(uint64(iHV), 10)+"("+strconv.FormatUint(uint64(ser), 10)+", "+strconv.FormatUint(uint64(ch), 10)+") ", l, s)
+		p.Legend.XOffs = 3.2 * vg.Centimeter
 		// end test
 		
 		//err = plotutil.AddLinePoints(&p.Plot, "HV"+strconv.FormatUint(uint64(iHV), 10)+" ("+strconv.FormatUint(uint64(ser), 10)+", "+strconv.FormatUint(uint64(ch), 10)+") ", d.HV[ser-1][ch])
