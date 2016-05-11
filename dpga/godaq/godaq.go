@@ -53,18 +53,32 @@ var (
 	hvMonDegrad = flag.Uint("hvmondeg", 20, "HV monitoring frequency degradation factor")
 )
 
+// XY is a struct used to store a couple of values
+// It occupies 2*64 = 128 bits
 type XY struct {
 	X float64
 	Y float64
 }
 
+// Pulse is a slice of XY
+// A value of type Pulse occupies N*128, where N is the length of the slice
+// N is by default equal to 999, so a value of type Pulse occupies 999*128 = 127872 bits
 type Pulse []XY
 
+// Quartet is an array of 4 pulses
+// A value of type Quartet occupies 4*N*128 = 511488 bits (taking N=999)
 type Quartet [4]Pulse
 
+// Quartets is an array of 60 Quartet
+// A value of type Quartets occupies 60*4*N*128 = 30689280 bits (taking N=999)
 type Quartets [60]Quartet
 
-type H1D []XY // X is the bin center and Y the bin content
+// H1D is a local struct representing a histogram
+// The length of the slice is the number of bins
+// X is the bin center and Y the bin content
+// By default, the number of bins is 8
+// A value of type H1D therefore occupies by default 8*128 = 1024 bits
+type H1D []XY
 
 func NewH1D(h *hbook.H1D) H1D {
 	var hist H1D
@@ -164,16 +178,17 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 	return hvvals
 }
 
+// Data is the struct that is sent via the websocket to the web client.
 type Data struct {
-	EvtID   uint     `json:"evt"`  // event id
-	Time    float64  `json:"time"` // time at which monitoring data are taken
-	Freq    float64  `json:"freq"` // number of events processed per second
-	Qs      Quartets `json:"quartets"`
-	Mult    H1D      `json:"mult"`    // multiplicity of pulses
-	FreqH   string   `json:"freqh"`   // frequency histogram
-	ChargeL string   `json:"chargel"` // charge histograms for left hemisphere
-	ChargeR string   `json:"charger"` // charge histograms for right hemisphere
-	HVvals  string   `json:"hv"`      // hv values
+	EvtID   uint     `json:"evt"`      // event id (64 bits a priori)
+	Time    float64  `json:"time"`     // time at which monitoring data are taken (64 bits)
+	Freq    float64  `json:"freq"`     // number of events processed per second (64 bits)
+	Qs      Quartets `json:"quartets"` // (30689280 bits)
+	Mult    H1D      `json:"mult"`     // multiplicity of pulses (1024 bits)
+	FreqH   string   `json:"freqh"`    // frequency histogram
+	ChargeL string   `json:"chargel"`  // charge histograms for left hemisphere
+	ChargeR string   `json:"charger"`  // charge histograms for right hemisphere
+	HVvals  string   `json:"hv"`       // hv values
 }
 
 func TCPConn(p *string) *net.TCPConn {
