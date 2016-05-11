@@ -52,6 +52,7 @@ var (
 	refplots    = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
 		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
 	hvMonDegrad = flag.Uint("hvmondeg", 20, "HV monitoring frequency degradation factor")
+	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
 )
 
 // XY is a struct used to store a couple of values
@@ -376,6 +377,7 @@ type RunsCSV struct {
 	ExecDir     string
 	StartTime   string
 	StopTime    string
+	Comment     string
 }
 
 func getPreviousRunNumber(fileName string) uint32 {
@@ -431,6 +433,7 @@ func updateRunsCSV(csvFileName string, runNumber uint32, timeStop uint32, noEven
 		ExecDir:     pwd,
 		StartTime:   time.Unix(int64(hdr.TimeStart), 0).Format(time.UnixDate),
 		StopTime:    time.Unix(int64(timeStop), 0).Format(time.UnixDate),
+		Comment:     *comment,
 	}
 	err = tbl.WriteRow(data)
 	if err != nil {
