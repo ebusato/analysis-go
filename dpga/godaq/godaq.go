@@ -528,14 +528,6 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 					if *iEvent%*monFreq == 0 {
 						//cevent <- *event
 						// Webserver data
-						stop := time.Now()
-						duration := stop.Sub(start).Seconds()
-						start = stop
-						time := stop.Sub(startabs).Seconds()
-						freq := float64(noEventsForMon) / duration
-						if *iEvent == 0 {
-							freq = 0
-						}
 
 						var qs Quartets
 						for iq := 0; iq < len(qs); iq++ {
@@ -570,6 +562,15 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						hvTiled := dqplots.MakeHVTiledPlot()
 						hvsvg := utils.RenderSVG(hvTiled, 45, 30)
 
+						stop := time.Now()
+						duration := stop.Sub(start).Seconds()
+						start = stop
+						time := stop.Sub(startabs).Seconds()
+						freq := float64(noEventsForMon) / duration
+						if *iEvent == 0 {
+							freq = 0
+						}
+						
 						// send to channel
 						datac <- Data{
 							EvtID:   event.ID,
