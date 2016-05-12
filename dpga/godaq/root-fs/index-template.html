@@ -128,7 +128,7 @@
 				hvplot = data.hv;
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
-						for (var is = 0; is < 999; is += 5) {
+						for (var is = 0; is < data.quartets[iq][ip].length; is += 1) {
 							quartetplots[iq][ip].data.push([data.quartets[iq][ip][is].X, data.quartets[iq][ip][is].Y]);
 						}
 					}

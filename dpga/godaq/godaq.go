@@ -499,16 +499,18 @@ func GetMonData(noSamples uint16, pulse pulse.Pulse) []XY {
 }
 */
 
-func GetMonData(noSamples uint16, pulse pulse.Pulse) []XY {
-	data := make([]XY, noSamples)
-	if pulse.NoSamples() == 0 {
+func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
+	noSamplesPulse := int(pulse.NoSamples())
+	data := make([]XY, noSamplesPulse/sampFreq+1)
+	if noSamplesPulse == 0 {
 		return data
 	}
+	counter := 0
 	for i := range pulse.Samples {
-		samp := &pulse.Samples[i]
-		data[i] = XY{
-			X: float64(samp.Index),
-			Y: samp.Amplitude,
+		if i%sampFreq == 0 {
+			samp := &pulse.Samples[i]
+			data[counter] = XY{X: float64(samp.Index), Y: samp.Amplitude}
+			counter++
 		}
 	}
 	return data
@@ -551,11 +553,15 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						// Webserver data
 
 						var qs Quartets
+						sampFreq := 5
+						if *monLight {
+							sampFreq = 20
+						}
 						for iq := 0; iq < len(qs); iq++ {
-							qs[iq][0] = GetMonData(r.NoSamples(), event.Clusters[iq].Pulses[0])
-							qs[iq][1] = GetMonData(r.NoSamples(), event.Clusters[iq].Pulses[1])
-							qs[iq][2] = GetMonData(r.NoSamples(), event.Clusters[iq].Pulses[2])
-							qs[iq][3] = GetMonData(r.NoSamples(), event.Clusters[iq].Pulses[3])
+							qs[iq][0] = GetMonData(sampFreq, event.Clusters[iq].Pulses[0])
+							qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])
+							qs[iq][2] = GetMonData(sampFreq, event.Clusters[iq].Pulses[2])
+							qs[iq][3] = GetMonData(sampFreq, event.Clusters[iq].Pulses[3])
 						}
 
 						//fmt.Println("data:", time, noEventsForMon, duration, freq)
