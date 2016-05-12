@@ -42,6 +42,7 @@ var (
 	ip          = flag.String("ip", "192.168.100.11", "IP address")
 	port        = flag.String("p", "1024", "Port number")
 	monFreq     = flag.Uint("mf", 50, "Monitoring frequency")
+	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
 	evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
 	st          = flag.Bool("st", false, "If set, server start time is used rather than client's one")
 	debug       = flag.Bool("d", false, "If set, debugging informations are printed")
@@ -546,24 +547,29 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						tpfreq := dqplots.MakeFreqTiledPlot()
 						freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
 
-						// Make charge distrib histo plot
-						tpchargeL := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Left)
-						tpchargeR := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Right)
-						chargeLsvg := utils.RenderSVG(tpchargeL, 45, 30)
-						chargeRsvg := utils.RenderSVG(tpchargeR, 45, 30)
+						chargeLsvg := ""
+						chargeRsvg := ""
+						hvsvg := ""
+						if !*monLight {
+							// Make charge distrib histo plot
+							tpchargeL := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Left)
+							tpchargeR := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Right)
+							chargeLsvg = utils.RenderSVG(tpchargeL, 45, 30)
+							chargeRsvg = utils.RenderSVG(tpchargeR, 45, 30)
 
-						// Read HV
-						hvvals := &HVvalues{}
-						if hvexec != nil && *iEvent%(*monFreq**hvMonDegrad) == 0 {
-							hvvals = NewHVvalues(hvexec)
-							for iHVCard := 0; iHVCard < 4; iHVCard++ {
-								for iHVChannel := 0; iHVChannel < 16; iHVChannel++ {
-									dqplots.AddHVPoint(iHVCard, iHVChannel, float64(event.ID), hvvals[iHVCard][iHVChannel].HV)
+							// Read HV
+							hvvals := &HVvalues{}
+							if hvexec != nil && *iEvent%(*monFreq**hvMonDegrad) == 0 {
+								hvvals = NewHVvalues(hvexec)
+								for iHVCard := 0; iHVCard < 4; iHVCard++ {
+									for iHVChannel := 0; iHVChannel < 16; iHVChannel++ {
+										dqplots.AddHVPoint(iHVCard, iHVChannel, float64(event.ID), hvvals[iHVCard][iHVChannel].HV)
+									}
 								}
 							}
+							hvTiled := dqplots.MakeHVTiledPlot()
+							hvsvg = utils.RenderSVG(hvTiled, 45, 30)
 						}
-						hvTiled := dqplots.MakeHVTiledPlot()
-						hvsvg := utils.RenderSVG(hvTiled, 45, 30)
 
 						stop := time.Now()
 						duration := stop.Sub(start).Seconds()
@@ -573,7 +579,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						if *iEvent == 0 {
 							freq = 0
 						}
-						
+
 						// send to channel
 						datac <- Data{
 							EvtID:   event.ID,
