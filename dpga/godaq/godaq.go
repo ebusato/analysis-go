@@ -476,6 +476,7 @@ func control(terminateStream chan bool, commandIsEnded chan bool) {
 	terminateStream <- true
 }
 
+/*
 func GetMonData(noSamples uint16, pulse pulse.Pulse) []XY {
 	data := make([]XY, noSamples)
 	for i := range data {
@@ -492,6 +493,22 @@ func GetMonData(noSamples uint16, pulse pulse.Pulse) []XY {
 		data[i] = XY{
 			X: x,
 			Y: y,
+		}
+	}
+	return data
+}
+*/
+
+func GetMonData(noSamples uint16, pulse pulse.Pulse) []XY {
+	data := make([]XY, noSamples)
+	if pulse.NoSamples() == 0 {
+		return data
+	}
+	for i := range pulse.Samples {
+		samp := &pulse.Samples[i]
+		data[i] = XY{
+			X: float64(samp.Index),
+			Y: samp.Amplitude,
 		}
 	}
 	return data
