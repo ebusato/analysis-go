@@ -8,6 +8,7 @@ import (
 	"log"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
 // Writer wraps an io.Writer and writes an ASM stream.
@@ -48,33 +49,17 @@ func (w *Writer) Header(hdr Header) error {
 	if w.err != nil {
 		return w.err
 	}
-	if w.hdr.Size != 0 {
-		return fmt.Errorf("asm: header already written")
-	}
 	w.hdr = hdr
 	w.writeHeader(w.hdr)
 	return w.err
 }
 
 // Frame writes a Frame to the ASM stream.
-func (w *Writer) Frame(f Frame) error {
+func (w *Writer) Frame(f *Frame) error {
 	if w.err != nil {
 		return w.err
 	}
-	if w.hdr.Size == 0 {
-		w.hdr.Size = uint32(len(f.Block.Data))
-		w.hdr.NumFrame = 0
-
-		w.writeHeader(w.hdr)
-		if w.err != nil {
-			return w.err
-		}
-	}
-
-	if int(numSamples) != len(f.Block.Data) {
-		return fmt.Errorf("asm: inconsistent number of samples")
-	}
-	w.writeFrame(&f)
+	w.writeFrame(f)
 	return w.err
 }
 
@@ -85,21 +70,57 @@ func (w *Writer) write(v uint32) {
 	w.err = binary.Write(w.w, binary.BigEndian, v)
 }
 
+func (w *Writer) writeU32(v uint32) {
+	if w.err != nil {
+		return
+	}
+	var buf [4]byte
+	binary.BigEndian.PutUint32(buf[:], v)
+	_, w.err = w.w.Write(buf[:])
+}
+
 func (w *Writer) writeHeader(hdr Header) {
-	w.write(hdr.Size)
-	w.write(hdr.NumFrame)
+	switch {
+	case hdr.HdrType == HeaderCAL:
+		w.writeU32(hdr.History)
+		w.writeU32(hdr.RunNumber)
+		w.writeU32(hdr.FreeField)
+		if clientTime {
+			// Hack: set time from client clock rather than from server's
+			// since the later is not correct.
+			hdr.TimeStart = uint32(time.Now().Unix())
+		}
+		w.writeU32(hdr.TimeStart)
+		w.writeU32(hdr.TimeStop)
+		w.writeU32(hdr.NoEvents)
+		w.writeU32(hdr.NoASMCards)
+		w.writeU32(hdr.NoSamples)
+		w.writeU32(hdr.DataToRead)
+		w.writeU32(hdr.TriggerEq)
+		w.writeU32(hdr.TriggerDelay)
+		w.writeU32(hdr.ChanUsedForTrig)
+		w.writeU32(hdr.Threshold)
+		w.writeU32(hdr.LowHighThres)
+		w.writeU32(hdr.TrigSigShapingHighThres)
+		w.writeU32(hdr.TrigSigShapingLowThres)
+	case hdr.HdrType == HeaderOld:
+		w.writeU32(hdr.Size)
+		w.writeU32(hdr.NumFrame)
+	default:
+		panic("error ! header type not known")
+	}
 }
 
 func (w *Writer) writeFrame(f *Frame) {
 	if w.err != nil {
 		return
 	}
-	w.write(f.ID)
+	w.writeU32(f.ID)
 	if f.ID == lastFrame {
 		w.err = io.EOF
 		return
 	}
-	w.writeBlock(&f.Block)
+	w.writeBlock(&f.Block, 0)
 }
 
 func (w *Writer) writeBlock(blk *Block) {
@@ -123,15 +144,65 @@ func (w *Writer) writeBlockData(blk *Block) {
 		return
 	}
 	for _, v := range blk.Data {
-		w.write(v)
+		w.writeU32(v)
 	}
-	w.write(blk.SRout)
+	w.writeU32(blk.SRout)
 	for _, v := range blk.Counters {
-		w.write(v)
+		w.writeU32(v)
 	}
 }
 
+
+func (w *Writer) MakeFrame(iCluster int, evtID uint32, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse) *Frame {
+	frame := &Frame{ID: w.frameCounter}
+	w.frameCounter++
+	block := &frame.Block
+	block.Evt = evtID
+	if pulse0.Channel.FifoID144() != pulse1.Channel.FifoID144() {
+		log.Fatalf("pulses[0].Channel.FifoID() != pulses[1].Channel.FifoID()")
+	}
+	block.ID = uint32(pulse0.Channel.FifoID144())
+	if pulse0.SRout != pulse1.SRout {
+		log.Fatalf("pulse0.SRout != pulse1.SRout")
+	}
+	block.SRout = uint32(pulse0.SRout)
+	if pulse0.NoSamples() != pulse1.NoSamples() {
+		log.Fatalf("pulse0.NoSamples() != pulse1.NoSamples()\n")
+	}
+	for j := uint16(0); j < pulse0.NoSamples(); j++ {
+		amp0, amp1 := uint32(pulse0.Samples[j].Amplitude), uint32(pulse1.Samples[j].Amplitude)
+		word := (amp0&0xFFF)<<16 | (amp1 & 0xFFF)
+		block.Data = append(block.Data, word)
+	}
+	return frame
+}
+
 func (w *Writer) Event(event *event.Event) {
+	for iCluster := range event.Clusters {
+		cluster := &event.Clusters[iCluster]
+		pulses := &cluster.Pulses
+
+		if pulses[0].NoSamples() != 0 || pulses[1].NoSamples() != 0 {
+			frame := w.MakeFrame(iCluster, uint32(event.ID), &pulses[0], &pulses[1])
+			if uint8(len(cluster.Counters)) != numCounters {
+				log.Fatalf("rw: len(cluster.Counters) = %v, numCounters = %v", len(cluster.Counters), numCounters)
+			}
+			for j := 0; j < int(numCounters); j++ {
+				frame.Block.Counters[j] = cluster.Counter(j)
+			}
+			w.Frame(frame)
+		}
+		if pulses[2].NoSamples() != 0 || pulses[3].NoSamples() != 0 {
+			frame := w.MakeFrame(iCluster, uint32(event.ID), &pulses[2], &pulses[3])
+			for j := 0; j < int(numCounters); j++ {
+				frame.Block.Counters[j] = cluster.Counter(j)
+			}
+			w.Frame(frame)
+		}
+	}
+}
+
+func (w *Writer) EventFull(event *event.Event) {
 	for i := range event.Clusters {
 		if i >= 6 {
 			log.Fatalf("rw: i out of range (=%v)", i)

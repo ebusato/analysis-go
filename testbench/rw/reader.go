@@ -17,22 +17,37 @@ var MissBADCAFEi = errors.New("missing 0xBADCAFEi")
 
 // Reader wraps an io.Reader and reads avirm data files
 type Reader struct {
-	r     io.Reader
-	err   error
-	hdr   Header
-	Debug bool
+	r                 io.Reader
+	err               error
+	hdr               Header
+	noSamples         uint16
+	evtIDPrevFrame    uint32
+	firstFrameOfEvent *Frame
+	Debug             bool
+}
+
+// NoSamples returns the number of samples
+func (r *Reader) NoSamples() uint16 {
+	return r.noSamples
+}
+
+// Err return the reader error
+func (r *Reader) Err() error {
+	return r.err
 }
 
 // Header returns the ASM-stream header
-func (r *Reader) Header() Header {
-	return r.hdr
+func (r *Reader) Header() *Header {
+	return &r.hdr
 }
 
 // NewReader returns a new ASM stream in read mode
-func NewReader(r io.Reader) (*Reader, error) {
+func NewReader(r io.Reader, ht HeaderType) (*Reader, error) {
 	rr := &Reader{
-		r: r,
+		r:              r,
+		evtIDPrevFrame: 0,
 	}
+	rr.hdr.HdrType = ht
 	rr.readHeader(&rr.hdr)
 	return rr, rr.err
 }
@@ -40,24 +55,6 @@ func NewReader(r io.Reader) (*Reader, error) {
 // Read implements io.Reader
 func (r *Reader) Read(data []byte) (int, error) {
 	return r.r.Read(data)
-}
-
-// read reads words from the binary file
-func (r *Reader) read(v interface{}) {
-	if r.err != nil {
-		return
-	}
-	r.err = binary.Read(r.r, binary.BigEndian, v)
-	if r.Debug {
-		fmt.Printf("word = %x\n", *(v.(*uint32)))
-	}
-}
-
-// readHeader reads the header of the binary files
-func (r *Reader) readHeader(hdr *Header) {
-	r.read(&hdr.Size)
-	r.read(&hdr.NumFrame)
-	//fmt.Printf("rw: reading header %v %v\n", hdr.Size, hdr.NumFrame)
 }
 
 // Frame reads a single frame from the underlying io.Reader.
@@ -69,18 +66,92 @@ func (r *Reader) Frame() (*Frame, error) {
 	}
 	f := &Frame{
 		Block: Block{
-			Data: make([]uint32, numSamples),
+			Data: make([]uint32, r.noSamples),
 		},
 	}
 	r.readFrame(f)
 	return f, r.err
 }
 
+func (r *Reader) read(v interface{}) {
+	if r.err != nil {
+		return
+	}
+	r.err = binary.Read(r.r, binary.BigEndian, v)
+	if r.Debug {
+		switch v := v.(type) {
+		case *uint32:
+			fmt.Printf("word = %x\n", *v)
+		case *[]uint32:
+			for _, vv := range *v {
+				fmt.Printf("word = %x\n", vv)
+			}
+		}
+		//fmt.Printf("word = %x\n", *(v.(*uint32)))
+	}
+}
+
+func (r *Reader) readU32(v *uint32) {
+	if r.err != nil {
+		return
+	}
+	var buf [4]byte
+	_, r.err = r.r.Read(buf[:])
+	if r.err != nil {
+		return
+	}
+	*v = binary.BigEndian.Uint32(buf[:])
+	if r.Debug {
+		fmt.Printf("word = %x\n", *v)
+	}
+}
+
+// readHeader reads the header of the binary files
+func (r *Reader) readHeader(hdr *Header) {
+	switch {
+	case r.hdr.HdrType == HeaderCAL:
+		r.readU32(&hdr.History)
+		r.readU32(&hdr.RunNumber)
+		r.readU32(&hdr.FreeField)
+		r.readU32(&hdr.TimeStart)
+		r.readU32(&hdr.TimeStop)
+		r.readU32(&hdr.NoEvents)
+		r.readU32(&hdr.NoASMCards)
+		r.readU32(&hdr.NoSamples)
+		r.readU32(&hdr.DataToRead)
+		r.readU32(&hdr.TriggerEq)
+		r.readU32(&hdr.TriggerDelay)
+		r.readU32(&hdr.ChanUsedForTrig)
+		r.readU32(&hdr.Threshold)
+		r.readU32(&hdr.LowHighThres)
+		r.readU32(&hdr.TrigSigShapingHighThres)
+		r.readU32(&hdr.TrigSigShapingLowThres)
+		// When setting the number of samples to 1000 it's actually 999
+		// hence the -1 subtraction
+		r.noSamples = uint16(hdr.NoSamples) - 1
+	case r.hdr.HdrType == HeaderOld:
+		r.readU32(&hdr.Size)
+		r.readU32(&hdr.NumFrame)
+		// In the case of old header, the number of samples
+		// is retrieved from the header.Size field
+		// When header.Size = 1007, the number of samples is 999
+		// hence the -8 subtraction
+		r.noSamples = uint16(hdr.Size) - 8
+		//fmt.Printf("rw: reading header %v %v\n", hdr.Size, hdr.NumFrame)
+	default:
+		panic("error ! header type not known")
+	}
+}
+
+func (r *Reader) ReadFrame(f *Frame) {
+	r.readFrame(f)
+}
+
 func (r *Reader) readFrame(f *Frame) {
 	if r.Debug {
 		fmt.Printf("rw: start reading frame\n")
 	}
-	r.read(&f.ID)
+	r.readU32(&f.ID)
 	if f.ID == lastFrame {
 		r.err = io.EOF
 		return
@@ -109,10 +180,10 @@ func (r *Reader) readBlockHeader(blk *Block) {
 	if r.err != nil {
 		return
 	}
-	r.read(&blk.Evt)
-	r.read(&blk.ID)
+	r.readU32(&blk.Evt)
+	r.readU32(&blk.ID)
 	var ctrl uint32
-	r.read(&ctrl)
+	r.readU32(&ctrl)
 	if ctrl != blockHeader { // && r.err == nil {
 		fmt.Println("warning: missing 0xCAFEDECA")
 		//r.err = fmt.Errorf("missing 0xCAFEDECA")
@@ -121,22 +192,24 @@ func (r *Reader) readBlockHeader(blk *Block) {
 }
 
 func (r *Reader) readBlockData(blk *Block) {
-	// 	if r.err != nil {
-	// 		return
-	// 	}
-	for i := range blk.Data {
-		r.read(&blk.Data[i])
+	if r.err != nil {
+		return
 	}
-	r.read(&blk.SRout)
+	r.read(&blk.Data)
+	//for i := range blk.Data {
+	//	r.readU32(&blk.Data[i])
+	//}
+	r.readU32(&blk.SRout)
+	r.read(&blk.Counters)
 	//fmt.Printf("rw: srout = %v\n", blk.SRout)
-	for i := range blk.Counters {
-		r.read(&blk.Counters[i])
-	}
+	//for i := range blk.Counters {
+	//	r.readU32(&blk.Counters[i])
+	//}
 }
 
 func (r *Reader) readBlockTrailer(blk *Block) {
 	var ctrl uint32
-	r.read(&ctrl)
+	r.readU32(&ctrl)
 	//fmt.Printf("rw: block trailer = %x\n", ctrl)
 	if (ctrl >> 4) != blockTrailer { //&& r.err == nil {
 		fmt.Println("warning: missing 0xBADCAFEi")
@@ -278,94 +351,3 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 
 	return event, true
 }
-
-/*
-// Old stuff used when tb considered only 4 channels
-// Could eventually be removed
-func MakePulses(f *Frame) (*pulse.Pulse, *pulse.Pulse) {
-	//iChannel_1 := uint8(0)
-	//iChannel_2 := uint8(1)
-	iChannel_1 := uint8(2 * f.Block.ID)
-	iChannel_2 := uint8(iChannel_1 + 1)
-
-	if iChannel_1 >= 24 || iChannel_2 >= 24 {
-		log.Fatalf("reader: iChannel_1 >= 24 || iChannel_2 >= 24 (iChannel_1 = %v, iChannel_2 = %v)\n", iChannel_1, iChannel_2)
-	}
-
-	//fmt.Printf("iChannel_1=%v iChannel_2=%v\n", iChannel_1, iChannel_2)
-
-	detChannel1 := tbdetector.Det.Channel(iChannel_1)
-	detChannel2 := tbdetector.Det.Channel(iChannel_2)
-
-	pulse1 := pulse.NewPulse(detChannel1)
-	pulse2 := pulse.NewPulse(detChannel2)
-
-	b := &f.Block
-	pulse1.SRout = uint16(b.SRout)
-	pulse2.SRout = uint16(b.SRout)
-
-	for i := range b.Data {
-		word := b.Data[i]
-
-		ampl2 := float64(word & 0xFFF)
-		ampl1 := float64(word >> 16)
-
-		sample1 := pulse.NewSample(ampl1, uint16(i), float64(i)*tbdetector.Det.SamplingFreq())
-		sample2 := pulse.NewSample(ampl2, uint16(i), float64(i)*tbdetector.Det.SamplingFreq())
-
-		pulse1.AddSample(sample1, tbdetector.Det.Capacitor(pulse1.Channel.ID(), sample1.CapaIndex(pulse1.SRout)))
-		pulse2.AddSample(sample2, tbdetector.Det.Capacitor(pulse2.Channel.ID(), sample2.CapaIndex(pulse2.SRout)))
-	}
-
-	return pulse1, pulse2
-}
-
-
-func MakeEventFromFrames(frames *[12]Frame) *event.Event {
-	event := event.NewEventFromID(0)
-	pulse0, pulse1 := MakePulses(frame1)
-	pulse2, pulse3 := MakePulses(frame2)
-
-	event.Cluster = *pulse.NewCluster(0, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
-	event.Cluster.Counters = make([]uint32, numCounters)
-	for i := uint8(0); i < numCounters; i++ {
-		counterf1 := frame1.Block.Counters[i]
-		counterf2 := frame2.Block.Counters[i]
-		if counterf1 != counterf2 {
-			log.Fatalf("rw: countersf1 != countersf2")
-		}
-		event.Cluster.Counters[i] = counterf1
-	}
-	return event
-}
-
-func (r *Reader) ReadNextEvent() (*event.Event, bool) {
-	frame1, err := r.Frame()
-	if err != nil {
-		if err == io.EOF {
-			fmt.Println("reached EOF")
-			return nil, false
-		}
-		log.Fatal("error not nil", err)
-	}
-	frame1.typeOfFrame = FirstFrameOfCluster
-	frame2, err := r.Frame()
-	if err != nil {
-		log.Fatal("error not nil")
-	}
-	frame2.typeOfFrame = SecondFrameOfCluster
-
-	event := MakeEventFromFrames(frame1, frame2)
-
-	// 		frame1.Print()
-	// 		frame2.Print()
-
-	evtID := uint(frame1.Block.Evt)
-	if evtID != uint(frame2.Block.Evt) {
-		log.Fatal("event IDs of two consecutive frames differ")
-	}
-	event.ID = evtID
-
-	return event, true
-}
-*/
