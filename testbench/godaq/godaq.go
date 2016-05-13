@@ -2,95 +2,331 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
+	"path"
+	"runtime/pprof"
+	"strconv"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
+	"github.com/go-hep/csvutil"
+	"github.com/go-hep/hbook"
 	"github.com/toqueteos/webbrowser"
 
 	"golang.org/x/net/websocket"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/testbench/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/rw"
+	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
 var (
-	datac = make(chan Data)
+	datac       = make(chan Data, 10)
+	hdrType     = rw.HeaderCAL
+	cpuprof     = flag.String("cpuprof", "", "Name of file for CPU profiling")
+	noEvents    = flag.Uint("n", 100000, "Number of events")
+	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
+	ip          = flag.String("ip", "192.168.100.11", "IP address")
+	port        = flag.String("p", "1024", "Port number")
+	monFreq     = flag.Uint("mf", 50, "Monitoring frequency")
+	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
+	evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
+	st          = flag.Bool("st", false, "If set, server start time is used rather than client's one")
+	debug       = flag.Bool("d", false, "If set, debugging informations are printed")
+	webad       = flag.String("webad", ":5555", "server address:port")
+	nobro       = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
+	sleep       = flag.Bool("s", false, "If set, sleep a bit between events")
+	runcsvtest  = flag.Bool("runcsvtest", false, "If set, update runs_test.csv rather than the \"official\" runs.csv file")
+	refplots    = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
+		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
+	hvMonDegrad = flag.Uint("hvmondeg", 20, "HV monitoring frequency degradation factor")
+	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
 )
 
+// XY is a struct used to store a couple of values
+// It occupies 2*64 = 128 bits
 type XY struct {
 	X float64
 	Y float64
 }
 
+// Pulse is a slice of XY
+// A value of type Pulse occupies N*128, where N is the length of the slice
+// N is by default equal to 999, so a value of type Pulse occupies 999*128 = 127872 bits
 type Pulse []XY
 
+// Quartet is an array of 4 pulses
+// A value of type Quartet occupies 4*N*128 = 511488 bits (taking N=999)
 type Quartet [4]Pulse
 
-type Data struct {
-	Time float64 `json:"time"` // time at which monitoring data are taken
-	Freq float64 `json:"freq"` // number of events processed per second
-	Q    Quartet `json:"quartet"`
+// Quartets is an array of 60 Quartet
+// A value of type Quartets occupies 60*4*N*128 = 30689280 bits (taking N=999)
+type Quartets [60]Quartet
+
+// H1D is a local struct representing a histogram
+// The length of the slice is the number of bins
+// X is the bin center and Y the bin content
+// By default, the number of bins is 8
+// A value of type H1D therefore occupies by default 8*128 = 1024 bits
+type H1D []XY
+
+func NewH1D(h *hbook.H1D) H1D {
+	var hist H1D
+	nbins := h.Len()
+	for i := 0; i < nbins; i++ {
+		x, y := h.XY(i)
+		hist = append(hist, XY{X: x, Y: y})
+	}
+	return hist
 }
 
-func main() {
-	log.SetFlags(log.Llongfile | log.LstdFlags)
+type HVexec struct {
+	execName string
+}
 
-	var (
-		noEvents    = flag.Uint("n", 100000, "Number of events")
-		outfileName = flag.String("o", "out.bin", "Name of the output file")
-		ip          = flag.String("ip", "192.168.100.11", "IP address")
-		port        = flag.String("p", "1024", "Port number")
-		monFreq     = flag.Uint("mf", 50, "Monitoring frequency")
-		evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
-		debug       = flag.Bool("d", false, "If set, debugging informations are printed")
-		webad       = flag.String("webad", "localhost:5555", "server address:port")
-	)
+func NewHVexec(execName string, coefDir string) *HVexec {
+	if !utils.Exists(execName) {
+		fmt.Printf("could not find executable %v\n", execName)
+		return nil
+	}
+	if !utils.Exists(coefDir) {
+		fmt.Printf("could not find directory %v\n", coefDir)
+		return nil
+		if !utils.Exists(coefDir+"/Coef_poly_C001.txt") ||
+			!utils.Exists(coefDir+"/Coef_poly_C002.txt") ||
+			!utils.Exists(coefDir+"/Coef_poly_C003.txt") ||
+			!utils.Exists(coefDir+"/Coef_poly_C004.txt") {
+			fmt.Printf("could not find at least one of the Coef_poly_C00?.txt file\n")
+			return nil
+		}
+	}
+	_, linkName := path.Split(coefDir)
+	if !utils.Exists(linkName) {
+		fmt.Println("Link to coeff directory not existing, making it")
+		err := os.Symlink(coefDir, linkName)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return &HVexec{
+		execName: execName,
+	}
+}
 
-	flag.Parse()
+type HVvalue struct {
+	Raw float64
+	HV  float64
+}
 
-	// Reader
-	laddr, err := net.ResolveTCPAddr("tcp", *ip+":"+*port)
+type HVvalues [4][16]HVvalue // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
+
+// NewHVvalues creates a new HVvalues object from a HVexec.
+func NewHVvalues(hvex *HVexec) *HVvalues {
+	hvvals := &HVvalues{}
+	for iHVcard := int64(1); iHVcard <= 4; iHVcard++ {
+		cmd := exec.Command(hvex.execName, "--serial", strconv.FormatInt(iHVcard, 10), "--display")
+		//fmt.Println(cmd.Args)
+		cmdReader, err := cmd.StdoutPipe()
+		if err != nil {
+			log.Fatalf("error executing %v\n", hvex.execName)
+		}
+		scanner := bufio.NewScanner(cmdReader)
+
+		err = cmd.Start()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error starting Cmd", err)
+			os.Exit(1)
+		}
+		for scanner.Scan() {
+			line := scanner.Text()
+			fields := strings.Split(line, " ")
+			if fields[0] == "Read" {
+				//fmt.Println("debug: ", fields[3], fields[8], fields[11])
+				channelIdx, err := strconv.ParseInt(fields[3], 10, 64)
+				if err != nil {
+					panic(err)
+				}
+				raw, err := strconv.ParseFloat(fields[8], 64)
+				if err != nil {
+					panic(err)
+				}
+				svalwithunwantedchar := fields[11]
+				sval := strings.TrimRight(svalwithunwantedchar, " ")
+				val, err := strconv.ParseFloat(sval, 64)
+				if err != nil {
+					panic(err)
+				}
+				(*hvvals)[iHVcard-1][channelIdx] = HVvalue{Raw: raw, HV: val}
+			}
+		}
+		err = cmd.Wait()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error waiting for Cmd", err)
+			os.Exit(1)
+		}
+	} // end of loop over HV cards
+	return hvvals
+}
+
+// Data is the struct that is sent via the websocket to the web client.
+type Data struct {
+	EvtID   uint     `json:"evt"`      // event id (64 bits a priori)
+	Time    float64  `json:"time"`     // time at which monitoring data are taken (64 bits)
+	Freq    float64  `json:"freq"`     // number of events processed per second (64 bits)
+	Qs      Quartets `json:"quartets"` // (30689280 bits)
+	Mult    H1D      `json:"mult"`     // multiplicity of pulses (1024 bits)
+	FreqH   string   `json:"freqh"`    // frequency histogram
+	ChargeL string   `json:"chargel"`  // charge histograms for left hemisphere
+	ChargeR string   `json:"charger"`  // charge histograms for right hemisphere
+	HVvals  string   `json:"hv"`       // hv values
+}
+
+func TCPConn(p *string) *net.TCPConn {
+	laddr, err := net.ResolveTCPAddr("tcp", *ip+":"+*p)
 	if err != nil {
 		log.Fatal(err)
 	}
 	tcp, err := net.DialTCP("tcp", nil, laddr)
 	if err != nil {
-		log.Fatal(err)
+		return nil
+	}
+	return tcp
+}
+
+func main() {
+	log.SetFlags(log.Llongfile | log.LstdFlags)
+
+	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
+	flag.Parse()
+
+	if *cpuprof != "" {
+		f, err := os.Create(*cpuprof)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
 	}
 
-	r, err := rw.NewReader(bufio.NewReader(tcp))
+	// Reader
+	var tcp *net.TCPConn = nil
+	tcp = TCPConn(port)
+	for i := 0; tcp == nil; i++ {
+		newportu, err := strconv.ParseUint(*port, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		newportu += 1
+		newport := strconv.FormatUint(newportu, 10)
+		fmt.Printf("Port %v not responding, trying %v\n", *port, newport)
+		*port = newport
+		tcp = TCPConn(port)
+		if i >= 5 {
+			log.Fatalf("Cannot find port to connect to server")
+		}
+	}
+
+	//for i := 0; i < 4; i++ {
+	r, err := rw.NewReader(bufio.NewReader(tcp), hdrType)
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
 
-	// Writer
+	// determine run number
+	var runCSVFileName string
+	switch *runcsvtest {
+	case true:
+		runCSVFileName = os.Getenv("HOME") + "/godaq/runs/runs_test.csv"
+	case false:
+		runCSVFileName = os.Getenv("HOME") + "/godaq/runs/runs.csv"
+	}
+	if !utils.Exists(runCSVFileName) {
+		fmt.Printf("could not open %v -> nothing will be written to it.\n", runCSVFileName)
+		return
+	}
+	prevRunNumber := getPreviousRunNumber(runCSVFileName)
+	currentRunNumber := prevRunNumber + 1
+	fmt.Printf("Previous run number is %v -> setting current run number to %v\n", prevRunNumber, currentRunNumber)
+
+	// Writer for binary file
+	if *outfileName == "" {
+		*outfileName = "run" + strconv.FormatUint(uint64(currentRunNumber), 10) + ".bin"
+	}
 	filew, err := os.Create(*outfileName)
 	if err != nil {
 		log.Fatalf("could not create data file: %v\n", err)
 	}
 	defer filew.Close()
 
-	w := rw.NewWriter(bufio.NewWriter(filew))
-	if err != nil {
-		log.Fatalf("could not open file: %v\n", err)
-	}
+	bufiow := bufio.NewWriter(filew)
+	w := rw.NewWriter(bufiow)
 	defer w.Close()
 
 	// Start reading TCP stream
 	hdr := r.Header()
-	hdr.Print()
 
-	err = w.Header(hdr)
+	err = w.Header(hdr, !*st)
 	if err != nil {
 		log.Fatalf("error writing header: %v\n", err)
+	}
+	hdr.Print()
+
+	// web address handling
+	webadSlice := strings.Split(*webad, ":")
+	if webadSlice[0] == "" {
+		webadSlice[0] = utils.GetHostIP()
+	}
+	*webad = webadSlice[0] + ":" + webadSlice[1]
+	fmt.Printf("Monitoring served at %v\n", *webad)
+
+	// html template
+	t := template.New("index-template.html")
+	t, err = t.ParseFiles("root-fs/index-template.html")
+	if err != nil {
+		panic(err)
+	}
+
+	// Writer for html template file
+	filehtml, err := os.Create("root-fs/index.html")
+	if err != nil {
+		log.Fatalf("could not create data file: %v\n", err)
+	}
+	defer filehtml.Close()
+
+	htmlw := rw.NewWriter(filehtml)
+	defer htmlw.Close()
+
+	err = t.Execute(htmlw, map[string]interface{}{
+		"WebAd":                   *webad,
+		"RunNumber":               currentRunNumber,
+		"TimeStart":               time.Unix(int64(hdr.TimeStart), 0).Format(time.UnixDate),
+		"TimeStop":                time.Unix(int64(hdr.TimeStop), 0).Format(time.UnixDate),
+		"NoEvents":                strconv.FormatUint(uint64(hdr.NoEvents), 10),
+		"NoASMCards":              strconv.FormatUint(uint64(hdr.NoASMCards), 10),
+		"NoSamples":               strconv.FormatUint(uint64(r.NoSamples()), 10),
+		"DataToRead":              "0x" + strconv.FormatUint(uint64(hdr.DataToRead), 16),
+		"TriggerEq":               "0x" + strconv.FormatUint(uint64(hdr.TriggerEq), 16),
+		"TriggerDelay":            "0x" + strconv.FormatUint(uint64(hdr.TriggerDelay), 16),
+		"ChanUsedForTrig":         "0x" + strconv.FormatUint(uint64(hdr.ChanUsedForTrig), 16),
+		"Threshold":               strconv.FormatUint(uint64(hdr.Threshold), 10),
+		"LowHighThres":            "0x" + strconv.FormatUint(uint64(hdr.LowHighThres), 16),
+		"TrigSigShapingHighThres": "0x" + strconv.FormatUint(uint64(hdr.TrigSigShapingHighThres), 16),
+		"TrigSigShapingLowThres":  "0x" + strconv.FormatUint(uint64(hdr.TrigSigShapingLowThres), 16),
+	})
+	if err != nil {
+		panic(err)
 	}
 
 	// Start goroutines
@@ -106,18 +342,114 @@ func main() {
 		r.Debug = true
 	}
 
+	iEvent := uint(0)
 	go control(terminateStream, commandIsEnded)
-	go stream(terminateStream, cevent, r, w, noEvents, monFreq, evtFreq, &wg)
+	go stream(terminateStream, cevent, r, w, &iEvent, &wg)
 	go command(commandIsEnded)
-	go webserver(webad)
+	go webserver()
 	//go monitoring(cevent)
 
 	wg.Wait()
+
+	// Update header
+	//bufiow.Flush()
+	timeStop := uint32(time.Now().Unix())
+	noEvents := uint32(iEvent)
+	updateHeader(filew, 16, timeStop)
+	updateHeader(filew, 20, noEvents)
+
+	// Dump run info in csv. Only relevant when ran on DAQ PC, where the csv file is present.
+	updateRunsCSV(runCSVFileName, currentRunNumber, timeStop, noEvents, *outfileName, hdr)
+	updateHeader(filew, 4, currentRunNumber)
 }
 
-func webserver(webad *string) {
-	webbrowser.Open("http://" + *webad)
-	http.HandleFunc("/", plotHandle)
+func updateHeader(f *os.File, offset int64, val uint32) {
+	var buf [4]byte
+	binary.BigEndian.PutUint32(buf[:], val)
+	f.WriteAt(buf[:], offset)
+}
+
+type RunsCSV struct {
+	RunNumber   uint32
+	NoEvents    uint32
+	Threshold   uint32
+	OutFileName string
+	ExecDir     string
+	StartTime   string
+	StopTime    string
+	Comment     string
+}
+
+func getPreviousRunNumber(fileName string) uint32 {
+	tbl, err := csvutil.Open(fileName)
+	if err != nil {
+		log.Fatalf("could not open runs.csv.\n")
+	}
+	defer tbl.Close()
+	tbl.Reader.Comma = ' '
+	tbl.Reader.Comment = '#'
+
+	nLines, err := utils.LineCounter(fileName)
+	if err != nil {
+		log.Fatalf("error reading the number of lines in runs.csv\n", err)
+	}
+
+	// the -2 is because there are two lines of header at the beginning
+	rows, err := tbl.ReadRows(int64(nLines-2-1), -1)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+	var data RunsCSV
+	rows.Next()
+	err = rows.Scan(&data)
+	if err != nil {
+		log.Fatalf("error reading row: %v\n", err)
+	}
+	return data.RunNumber
+}
+
+func updateRunsCSV(csvFileName string, runNumber uint32, timeStop uint32, noEvents uint32, outfileName string, hdr *rw.Header) {
+	// Determine working directory
+	pwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// Open csv file in append mode
+	tbl, err := csvutil.Append(csvFileName)
+	if err != nil {
+		log.Fatalf("could not create dpgageom.csv: %v\n", err)
+	}
+	defer tbl.Close()
+	tbl.Writer.Comma = ' '
+
+	data := RunsCSV{
+		RunNumber:   runNumber,
+		NoEvents:    noEvents,
+		Threshold:   hdr.Threshold,
+		OutFileName: outfileName,
+		ExecDir:     pwd,
+		StartTime:   time.Unix(int64(hdr.TimeStart), 0).Format(time.UnixDate),
+		StopTime:    time.Unix(int64(timeStop), 0).Format(time.UnixDate),
+		Comment:     *comment,
+	}
+	err = tbl.WriteRow(data)
+	if err != nil {
+		log.Fatalf("error writing row: %v\n", err)
+	}
+
+	// implement git commit
+}
+
+func webserver() {
+	if !*nobro {
+		webbrowser.Open("http://" + *webad)
+	}
+	//http.HandleFunc("/", plotHandle)
+	http.Handle("/", http.FileServer(http.Dir("./root-fs")))
+	//http.Handle("/", http.FileServer(assetFS()))
 	http.Handle("/data", websocket.Handler(dataHandler))
 	err := http.ListenAndServe(*webad, nil)
 	if err != nil {
@@ -126,45 +458,84 @@ func webserver(webad *string) {
 }
 
 func control(terminateStream chan bool, commandIsEnded chan bool) {
-	for {
-		select {
-		case <-commandIsEnded:
-			fmt.Printf("command is ended, terminating stream.\n")
-			terminateStream <- true
-		default:
-			// do nothing
+	/*
+		for {
+			time.Sleep(1 * time.Second)
+			select {
+			case <-commandIsEnded:
+				fmt.Printf("command is ended, terminating stream.\n")
+				terminateStream <- true
+			default:
+				// do nothing
+			}
 		}
-	}
+	*/
+	<-commandIsEnded
+	fmt.Printf("command is ended, terminating stream.\n")
+	terminateStream <- true
 }
 
-func GetMonData(pulse pulse.Pulse) []XY {
-	data := make([]XY, pulse.NoSamples())
+/*
+func GetMonData(noSamples uint16, pulse pulse.Pulse) []XY {
+	data := make([]XY, noSamples)
 	for i := range data {
+		var x float64
+		var y float64
+		switch pulse.NoSamples() == noSamples {
+		case true:
+			x = float64(pulse.Samples[i].Index)
+			y = pulse.Samples[i].Amplitude
+		case false:
+			x = 0
+			y = 0
+		}
 		data[i] = XY{
-			X: float64(pulse.Samples[i].Index),
-			Y: pulse.Samples[i].Amplitude,
+			X: x,
+			Y: y,
+		}
+	}
+	return data
+}
+*/
+
+func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
+	noSamplesPulse := int(pulse.NoSamples())
+	data := make([]XY, noSamplesPulse/sampFreq+1)
+	if noSamplesPulse == 0 {
+		return data
+	}
+	counter := 0
+	for i := range pulse.Samples {
+		if i%sampFreq == 0 {
+			samp := &pulse.Samples[i]
+			data[counter] = XY{X: float64(samp.Index), Y: samp.Amplitude}
+			counter++
 		}
 	}
 	return data
 }
 
-func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w *rw.Writer, noEvents *uint, monFreq *uint, evtFreq *uint, wg *sync.WaitGroup) {
+func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
-	//nFrames := uint(0)
-	iEvent := uint(0)
 	noEventsForMon := uint64(0)
+	hMult := hbook.NewH1D(8, -0.5, 7.5)
+	dqplots := dq.NewDQPlot()
+	if *refplots != "" {
+		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
+	}
+	hvexec := NewHVexec(os.Getenv("HOME")+"/Acquisition/hv/ht-caen", os.Getenv("HOME")+"/Acquisition/hv/Coeff")
 	start := time.Now()
 	startabs := start
 	for {
 		select {
 		case <-terminateStream:
-			*noEvents = iEvent + 1
+			*noEvents = *iEvent + 1
 			fmt.Printf("terminating stream for total number of events = %v.\n", *noEvents)
 		default:
-			switch iEvent < *noEvents {
+			switch *iEvent < *noEvents {
 			case true:
-				if iEvent%*evtFreq == 0 {
-					fmt.Printf("event %v\n", iEvent)
+				if *iEvent%*evtFreq == 0 {
+					fmt.Printf("event %v\n", *iEvent)
 				}
 				event, status := r.ReadNextEvent()
 				if status == false {
@@ -172,32 +543,84 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				}
 				switch event.IsCorrupted {
 				case false:
+					//event.Print(true, false)
 					w.Event(event)
-					if iEvent%*monFreq == 0 {
+					hMult.Fill(float64(event.Multiplicity()), 1)
+					dqplots.FillHistos(event)
+					if *iEvent%*monFreq == 0 {
 						//cevent <- *event
 						// Webserver data
+
+						var qs Quartets
+						sampFreq := 5
+						if *monLight {
+							sampFreq = 20
+						}
+						for iq := 0; iq < len(qs); iq++ {
+							qs[iq][0] = GetMonData(sampFreq, event.Clusters[iq].Pulses[0])
+							qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])
+							qs[iq][2] = GetMonData(sampFreq, event.Clusters[iq].Pulses[2])
+							qs[iq][3] = GetMonData(sampFreq, event.Clusters[iq].Pulses[3])
+						}
+
+						//fmt.Println("data:", time, noEventsForMon, duration, freq)
+
+						// Make frequency histo plot
+						tpfreq := dqplots.MakeFreqTiledPlot()
+						freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
+
+						chargeLsvg := ""
+						chargeRsvg := ""
+						hvsvg := ""
+						if !*monLight {
+							// Make charge distrib histo plot
+							tpchargeQ1 := dqplots.MakeChargeAmplTiledPlot(dq.Charge, tbdetector.Q1)
+							tpchargeQ2 := dqplots.MakeChargeAmplTiledPlot(dq.Charge, tbdetector.Q2)
+							chargeQ1svg = utils.RenderSVG(tpchargeQ1, 45, 30)
+							chargeQ2svg = utils.RenderSVG(tpchargeQ2, 45, 30)
+
+							// Read HV
+							hvvals := &HVvalues{}
+							if hvexec != nil && *iEvent%(*monFreq**hvMonDegrad) == 0 {
+								hvvals = NewHVvalues(hvexec)
+								for iHVCard := 0; iHVCard < 4; iHVCard++ {
+									for iHVChannel := 0; iHVChannel < 16; iHVChannel++ {
+										dqplots.AddHVPoint(iHVCard, iHVChannel, float64(event.ID), hvvals[iHVCard][iHVChannel].HV)
+									}
+								}
+							}
+							hvTiled := dqplots.MakeHVTiledPlot()
+							hvsvg = utils.RenderSVG(hvTiled, 45, 30)
+						}
+
 						stop := time.Now()
 						duration := stop.Sub(start).Seconds()
 						start = stop
 						time := stop.Sub(startabs).Seconds()
 						freq := float64(noEventsForMon) / duration
-						if iEvent == 0 {
+						if *iEvent == 0 {
 							freq = 0
 						}
-						//fmt.Println("data:", time, noEventsForMon, duration, freq)
-						pulse0 := GetMonData(event.Clusters[0].Pulses[0])
-						pulse1 := GetMonData(event.Clusters[0].Pulses[1])
-						pulse2 := GetMonData(event.Clusters[0].Pulses[2])
-						pulse3 := GetMonData(event.Clusters[0].Pulses[3])
+
+						// send to channel
 						datac <- Data{
-							Time: time,
-							Freq: freq,
-							Q:    [4]Pulse{pulse0, pulse1, pulse2, pulse3},
+							EvtID:   event.ID,
+							Time:    time,
+							Freq:    freq,
+							Qs:      qs,
+							Mult:    NewH1D(hMult),
+							FreqH:   freqhsvg,
+							ChargeL: chargeLsvg,
+							ChargeR: chargeRsvg,
+							HVvals:  hvsvg,
 						}
 						noEventsForMon = 0
 					}
-					iEvent++
+					*iEvent++
 					noEventsForMon++
+					if *sleep {
+						time.Sleep(1 * time.Second)
+					}
 				case true:
 					fmt.Println("warning, event is corrupted and therefore not written to output file.")
 					log.Fatalf(" -> quitting")
@@ -233,141 +656,21 @@ func monitoring(cevent chan event.Event) {
 	}
 }
 
-func plotHandle(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, page)
-}
-
 func dataHandler(ws *websocket.Conn) {
 	for data := range datac {
-		err := websocket.JSON.Send(ws, data)
+		/////////////////////////////////////////////////
+		// uncomment to have an estimation of the total
+		// amount of data that passes through the websocket
+		sb, err := json.Marshal(data)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
+		/////////////////////////////////////////////////
+		err = websocket.JSON.Send(ws, data)
 		if err != nil {
 			log.Printf("error sending data: %v\n", err)
 			return
 		}
 	}
 }
-
-const page = `
-<html>
-	<head>
-		<title>Test bench monitoring</title>
-		<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
-		<script src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
-		<script type="text/javascript">
-		var sock = null;
-		
-		function options(color) {
-			this.series = {stack: true};
-			this.yaxis = {min: 0, max: 4096};
-			this.xaxis = {tickDecimals: 0};
-			this.colors = [color]
-		}
-		
-		function plot(label, data, color) {
-			this.label = label;
-			this.data = data;
-			this.options = new options(color);
-		}
-		
-		var freqplot = new plot("frequency (Hz)", [], [])
-		
-		var Nplots = 4
-		
-		var colors = ['blue', 'red', 'black', 'green']
-		var pulseplots = []
-		for (var i = 0; i < Nplots; i += 1) {
-			pulseplots.push(new plot("channel "+i+" (ampl. vs sample index)", [], colors[i]))
-		}
-		
-		function update() {
-			var freq = $.plot("#my-freq-plot", [freqplot]);
-			freq.setupGrid(); // needed as x-axis changes
-			freq.draw();
-			for (var i = 0; i < Nplots; i += 1) {
-				var p = $.plot("#my-pulse"+i+"-plot", [pulseplots[i]], pulseplots[i].options);
-				p.setupGrid();
-				p.draw();
-			}
-		};
-
-		window.onload = function() {
-			sock = new WebSocket("ws://localhost:5555/data");
-
-			sock.onmessage = function(event) {
-				var data = JSON.parse(event.data);
-				console.log("data: "+JSON.stringify(data));
-				if (data.freq != 0) {	
-					freqplot.data.push([data.time, data.freq])
-				}
-				for (var i = 0; i < 999; i += 1) {
-					for (var j = 0; j < Nplots; j += 1) {
-						pulseplots[j].data.push([data.quartet[j][i].X, data.quartet[j][i].Y]);
-					}
-				}
-				update();
-				for (var j = 0; j < Nplots; j += 1) {
-					pulseplots[j].data = []
-				}
-			};
-		};
-		
-		</script>
-
-		<style>
-		.my-plot-style {
-			width: 400px;
-			height: 200px;
-			font-size: 14px;
-			line-height: 1.2em;
-		}
-		</style>
-	</head>
-
-	<body>
-		<div id="header">
-			<h2>Test bench monitoring</h2>
-		</div>
-		<div id="my-freq-plot" class="my-plot-style"></div>
-		<table>
-			<tr>
-				<td>
-				<div id="my-pulse0-plot" class="my-plot-style"></div>
-				</td>
-				<td>
-				<div id="my-pulse1-plot" class="my-plot-style"></div>
-				</td>
-			</tr>
-			<tr>
-				<td>
-				<div id="my-pulse2-plot" class="my-plot-style"></div>
-				</td>
-				<td>
-				<div id="my-pulse3-plot" class="my-plot-style"></div>
-				</td>
-			</tr>
-		</table>
-		
-		<!-- script>
-			var x = document.createElement("TABLE");
-			x.setAttribute("id", "myTable");
-			document.body.appendChild(x);
-			
-			var Nrows = 2
-			var Ncolumns = 2
-			
-			var table = document.getElementById("myTable");
-			
-			var counter = 0;
-			for (var i = 0; i < Nrows; i += 1) {
-				var row = table.insertRow(i);
-				for (var j = 0; j < Ncolumns; j += 1) {
-					var cell = row.insertCell(j);
-					//cell.innerHTML = "cell"+i+j;
-					cell.innerHTML = '<div id="my-pulse0-plot" class="my-plot-style"></div>';
-					counter += 1;
-				}					
-			}
-		</script -->
-	</body>
-</html>
-`
