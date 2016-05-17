@@ -1,6 +1,6 @@
 <html>
 <head>
-	<title>DPGA monitoring</title>
+	<title>Test bench monitoring</title>
 	<link rel="stylesheet" type="text/css" href="tabs.css">
 	<script src="static/jquery-2.2.2.min.js"></script>
 	<script src="static/jquery.flot-0.8.3.min.js"></script>
@@ -28,8 +28,7 @@
 		multplot.bars = { show: true }
 		
 		var freqhplot = ""
-		var chargelhplot = ""
-		var chargerhplot = ""
+		var chargehplot = ""
 		var hvplot = ""
 		
 		// colors are red, green, blue, pink
@@ -109,8 +108,7 @@
 					multplot.data.push([data.mult[i].X, data.mult[i].Y])
 				}
 				freqhplot = data.freqh;
-				chargelhplot = data.chargel;
-				chargerhplot = data.charger;
+				chargehplot = data.charge;
 				hvplot = data.hv;
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
@@ -151,7 +149,7 @@
 <body>
 	<header class="site-header-wrap">
 		<div class="site-header">
-			<h2>DPGA monitoring</h2>
+			<h2>Test bench monitoring</h2>
 			<table cellspacing="15">
 			<tr> 
 			<td valign="top">
@@ -212,11 +210,7 @@
 				</table>
 				</div> <!-- tab 1 content -->
 				<div id="tab2" class="tab">
-				<div id="my-chargelh-plot" class="my-plot-stylefreq"></div>
-				<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-				<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-				<br><br><br><br><br><br><br><br>
-				<div id="my-chargerh-plot" class="my-plot-stylefreq"></div>
+				<div id="my-chargeh-plot" class="my-plot-stylefreq"></div>
 				<!--table>
 					<tr>    
 						<td height="1100"><div id="my-chargelh-plot" class="my-plot-stylefreq"></div></td>
@@ -236,9 +230,6 @@
 					</tr>
 				</table -->
 				</div> <!-- tab 2 content -->
-				<div id="tab3" class="tab">
-				<div id="my-hv-plot" class="my-plot-stylefreq"></div>
-				</div>
 			</div>
 		</div>
 	</div><!--end .main-->

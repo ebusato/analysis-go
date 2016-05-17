@@ -40,7 +40,7 @@ var (
 	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
 	ip          = flag.String("ip", "192.168.100.11", "IP address")
 	port        = flag.String("p", "1024", "Port number")
-	monFreq     = flag.Uint("mf", 50, "Monitoring frequency")
+	monFreq     = flag.Uint("mf", 100, "Monitoring frequency")
 	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
 	evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
 	st          = flag.Bool("st", false, "If set, server start time is used rather than client's one")
@@ -49,7 +49,7 @@ var (
 	nobro       = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
 	sleep       = flag.Bool("s", false, "If set, sleep a bit between events")
 	runcsvtest  = flag.Bool("runcsvtest", false, "If set, update runs_test.csv rather than the \"official\" runs.csv file")
-	refplots    = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
+	refplots    = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/testbench/dqref/dq-run37020evtsPedReference.gob",
 		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
 	hvMonDegrad = flag.Uint("hvmondeg", 20, "HV monitoring frequency degradation factor")
 	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
@@ -188,7 +188,7 @@ type Data struct {
 	Qs     Quartets `json:"quartets"` // (30689280 bits)
 	Mult   H1D      `json:"mult"`     // multiplicity of pulses (1024 bits)
 	FreqH  string   `json:"freqh"`    // frequency histogram
-	Charge string   `json:"chargel"`  // charge histograms
+	Charge string   `json:"charge"`  // charge histograms
 	HVvals string   `json:"hv"`       // hv values
 }
 
