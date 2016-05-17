@@ -325,7 +325,10 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			event.ID = evtID
 		case false:
 			if evtID != event.ID {
-				log.Fatal("error: switched to next event")
+				fmt.Printf("Error: \n")
+				fmt.Printf("  - evtID = %v, event.ID = %v\n", evtID, event.ID)
+				fmt.Printf("  - iCluster = %v\n", iCluster)
+				log.Fatal(" => switched to next event")
 			}
 		}
 

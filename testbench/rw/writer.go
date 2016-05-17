@@ -15,7 +15,7 @@ import (
 type Writer struct {
 	w            io.Writer
 	err          error
-	hdr          Header
+	hdr          *Header
 	frameCounter uint32
 }
 
@@ -32,9 +32,9 @@ func (w *Writer) Write(data []byte) (int, error) {
 // Close closes the ASM stream.
 //
 // Close flushes any pending data.
-// Close does not close the underlying io.Reader.
+// Close does not close the underlying io.Writer.
 func (w *Writer) Close() error {
-	w.write(lastFrame)
+	w.writeU32(lastFrame)
 	if ww, ok := w.w.(*bufio.Writer); ok {
 		ww.Flush()
 	}
@@ -45,7 +45,7 @@ func (w *Writer) Close() error {
 }
 
 // Header writes the Header to the ASM stream.
-func (w *Writer) Header(hdr Header, clientTime bool) error {
+func (w *Writer) Header(hdr *Header, clientTime bool) error {
 	if w.err != nil {
 		return w.err
 	}
@@ -63,7 +63,7 @@ func (w *Writer) Frame(f *Frame) error {
 	return w.err
 }
 
-func (w *Writer) write(v uint32) {
+func (w *Writer) write(v interface{}) {
 	if w.err != nil {
 		return
 	}
@@ -79,7 +79,7 @@ func (w *Writer) writeU32(v uint32) {
 	_, w.err = w.w.Write(buf[:])
 }
 
-func (w *Writer) writeHeader(hdr Header, clientTime bool) {
+func (w *Writer) writeHeader(hdr *Header, clientTime bool) {
 	switch {
 	case hdr.HdrType == HeaderCAL:
 		w.writeU32(hdr.History)
@@ -126,7 +126,7 @@ func (w *Writer) writeFrame(f *Frame) {
 func (w *Writer) writeBlock(blk *Block, fid uint32) {
 	w.writeBlockHeader(blk)
 	w.writeBlockData(blk)
-	w.write((blockTrailer << 4) + fid)
+	w.writeU32((blockTrailer << 4) + fid)
 }
 
 func (w *Writer) writeBlockHeader(blk *Block) {
@@ -134,9 +134,9 @@ func (w *Writer) writeBlockHeader(blk *Block) {
 		return
 	}
 	//fmt.Printf("rw: writing block header: %v %v %x\n", blk.Evt, blk.ID, blockHeader)
-	w.write(blk.Evt)
-	w.write(blk.ID)
-	w.write(blockHeader)
+	w.writeU32(blk.Evt)
+	w.writeU32(blk.ID)
+	w.writeU32(blockHeader)
 }
 
 func (w *Writer) writeBlockData(blk *Block) {

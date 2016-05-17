@@ -73,7 +73,7 @@ type Quartet [4]Pulse
 
 // Quartets is an array of 60 Quartet
 // A value of type Quartets occupies 60*4*N*128 = 30689280 bits (taking N=999)
-type Quartets [60]Quartet
+type Quartets [6]Quartet
 
 // H1D is a local struct representing a histogram
 // The length of the slice is the number of bins
@@ -182,15 +182,14 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 
 // Data is the struct that is sent via the websocket to the web client.
 type Data struct {
-	EvtID   uint     `json:"evt"`      // event id (64 bits a priori)
-	Time    float64  `json:"time"`     // time at which monitoring data are taken (64 bits)
-	Freq    float64  `json:"freq"`     // number of events processed per second (64 bits)
-	Qs      Quartets `json:"quartets"` // (30689280 bits)
-	Mult    H1D      `json:"mult"`     // multiplicity of pulses (1024 bits)
-	FreqH   string   `json:"freqh"`    // frequency histogram
-	ChargeL string   `json:"chargel"`  // charge histograms for left hemisphere
-	ChargeR string   `json:"charger"`  // charge histograms for right hemisphere
-	HVvals  string   `json:"hv"`       // hv values
+	EvtID  uint     `json:"evt"`      // event id (64 bits a priori)
+	Time   float64  `json:"time"`     // time at which monitoring data are taken (64 bits)
+	Freq   float64  `json:"freq"`     // number of events processed per second (64 bits)
+	Qs     Quartets `json:"quartets"` // (30689280 bits)
+	Mult   H1D      `json:"mult"`     // multiplicity of pulses (1024 bits)
+	FreqH  string   `json:"freqh"`    // frequency histogram
+	Charge string   `json:"chargel"`  // charge histograms
+	HVvals string   `json:"hv"`       // hv values
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -569,15 +568,12 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						tpfreq := dqplots.MakeFreqTiledPlot()
 						freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
 
-						chargeLsvg := ""
-						chargeRsvg := ""
+						chargesvg := ""
 						hvsvg := ""
 						if !*monLight {
 							// Make charge distrib histo plot
-							tpchargeQ1 := dqplots.MakeChargeAmplTiledPlot(dq.Charge, tbdetector.Q1)
-							tpchargeQ2 := dqplots.MakeChargeAmplTiledPlot(dq.Charge, tbdetector.Q2)
-							chargeQ1svg = utils.RenderSVG(tpchargeQ1, 45, 30)
-							chargeQ2svg = utils.RenderSVG(tpchargeQ2, 45, 30)
+							tpcharge := dqplots.MakeChargeAmplTiledPlot(dq.Charge)
+							chargesvg = utils.RenderSVG(tpcharge, 45, 30)
 
 							// Read HV
 							hvvals := &HVvalues{}
@@ -604,15 +600,14 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 
 						// send to channel
 						datac <- Data{
-							EvtID:   event.ID,
-							Time:    time,
-							Freq:    freq,
-							Qs:      qs,
-							Mult:    NewH1D(hMult),
-							FreqH:   freqhsvg,
-							ChargeL: chargeLsvg,
-							ChargeR: chargeRsvg,
-							HVvals:  hvsvg,
+							EvtID:  event.ID,
+							Time:   time,
+							Freq:   freq,
+							Qs:     qs,
+							Mult:   NewH1D(hMult),
+							FreqH:  freqhsvg,
+							Charge: chargesvg,
+							HVvals: hvsvg,
 						}
 						noEventsForMon = 0
 					}

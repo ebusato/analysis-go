@@ -21,16 +21,16 @@ func main() {
 
 		// set of flags when dumping to ascii
 		ascii     = flag.Bool("ascii", false, "Dump binary to ascii if set to true")
-		noFrames  = flag.Uint("n", 10000000000000000000, "Number of frames")
-		verbosity = flag.String("v", "full", "Verbosity of the output (short, medium, long, full)")
+		noFrames  = flag.Uint("n", 10000000000000000000, "Number of frames (relevant only when -ascii is specified)")
+		verbosity = flag.String("v", "full", "Verbosity of the output (short, medium, long, full) (relevant only when -ascii is specified)")
 
 		// set of flags when printing general informations
 		info = flag.Bool("info", false, "Print general informations about binary file when set tot true")
 
 		// set of flags when writting new binary file with only good events
 		wgoodevts   = flag.Bool("wgoodevts", false, "Write good events to new binary file (skip events having corrupted frames)")
-		outfileName = flag.String("o", "", "Name of the output file")
-		nevts       = flag.Int("nevts", -1, "Number of events to write")
+		outfileName = flag.String("o", "", "Name of the output file (relevant only when -wgoodevts is specified)")
+		nevts       = flag.Int("nevts", -1, "Number of events to write (relevant only when -wgoodevts is specified)")
 	)
 
 	flag.Parse()
@@ -42,7 +42,7 @@ func main() {
 	}
 	defer f.Close()
 
-	r, err := rw.NewReader(bufio.NewReader(f))
+	r, err := rw.NewReader(bufio.NewReader(f), rw.HeaderCAL)
 	if err != nil {
 		log.Fatalf("could not open asm file: %v\n", err)
 	}
@@ -90,10 +90,10 @@ func main() {
 	// Start processing input file
 	hdr := r.Header()
 	switch {
-	case *ascii:
+	case *ascii || *info:
 		hdr.Print()
 	case *wgoodevts:
-		err = w.Header(hdr)
+		err = w.Header(hdr, false)
 		if err != nil {
 			log.Fatalf("error writing header: %v\n", err)
 		}
@@ -135,19 +135,17 @@ func main() {
 	}
 A:
 	if *info {
-		fmt.Printf("\nInformations for file %v\n", *infileName)
-		fmt.Printf("  -> number of frames = %v", nFrames)
+		fmt.Printf("\nNumber of frames = %v", nFrames)
 		if nFrames%nFramesPerEvent != 0 {
-			fmt.Printf(" (WARNING: not a multiple of %v)", nFramesPerEvent)
+			fmt.Printf("  (WARNING: not a multiple of %v)", nFramesPerEvent)
 		}
 		fmt.Printf("\n")
-		fmt.Printf("  -> number of events = %v\n", float64(nFrames)/float64(nFramesPerEvent))
 	}
 }
 
 func writeFrames(w *rw.Writer, frames []*rw.Frame) {
 	for i := range frames {
-		err := w.Frame(*frames[i])
+		err := w.Frame(frames[i])
 		if err != nil {
 			log.Fatalf("error writing frame: %v\n", err)
 		}
