@@ -3,9 +3,9 @@ package rw
 import (
 	"bufio"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"log"
+	"time"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
@@ -45,12 +45,12 @@ func (w *Writer) Close() error {
 }
 
 // Header writes the Header to the ASM stream.
-func (w *Writer) Header(hdr Header) error {
+func (w *Writer) Header(hdr Header, clientTime bool) error {
 	if w.err != nil {
 		return w.err
 	}
 	w.hdr = hdr
-	w.writeHeader(w.hdr)
+	w.writeHeader(w.hdr, clientTime)
 	return w.err
 }
 
@@ -79,7 +79,7 @@ func (w *Writer) writeU32(v uint32) {
 	_, w.err = w.w.Write(buf[:])
 }
 
-func (w *Writer) writeHeader(hdr Header) {
+func (w *Writer) writeHeader(hdr Header, clientTime bool) {
 	switch {
 	case hdr.HdrType == HeaderCAL:
 		w.writeU32(hdr.History)
@@ -123,10 +123,10 @@ func (w *Writer) writeFrame(f *Frame) {
 	w.writeBlock(&f.Block, 0)
 }
 
-func (w *Writer) writeBlock(blk *Block) {
+func (w *Writer) writeBlock(blk *Block, fid uint32) {
 	w.writeBlockHeader(blk)
 	w.writeBlockData(blk)
-	w.write((blockTrailer << 4) + blk.ID)
+	w.write((blockTrailer << 4) + fid)
 }
 
 func (w *Writer) writeBlockHeader(blk *Block) {
@@ -151,7 +151,6 @@ func (w *Writer) writeBlockData(blk *Block) {
 		w.writeU32(v)
 	}
 }
-
 
 func (w *Writer) MakeFrame(iCluster int, evtID uint32, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse) *Frame {
 	frame := &Frame{ID: w.frameCounter}
@@ -221,25 +220,21 @@ func (w *Writer) EventFull(event *event.Event) {
 
 		cluster := &event.Clusters[i]
 
-		if cluster.NoSamples() != numSamples {
-			log.Fatalf("rw: cluster.NoSamples() != numSamples")
-		}
-
 		pulses := &cluster.Pulses
 
-		if pulses[0].Channel.FifoID() != pulses[1].Channel.FifoID() {
+		if pulses[0].Channel.FifoID144() != pulses[1].Channel.FifoID144() {
 			log.Fatalf("pulses[0].Channel.FifoID() != pulses[1].Channel.FifoID()")
 		}
-		if pulses[2].Channel.FifoID() != pulses[3].Channel.FifoID() {
+		if pulses[2].Channel.FifoID144() != pulses[3].Channel.FifoID144() {
 			log.Fatalf("pulses[2].Channel.FifoID() != pulses[3].Channel.FifoID()")
 		}
-		block1.ID = uint32(pulses[0].Channel.FifoID())
-		block2.ID = uint32(pulses[2].Channel.FifoID())
+		block1.ID = uint32(pulses[0].Channel.FifoID144())
+		block2.ID = uint32(pulses[2].Channel.FifoID144())
 
 		block1.SRout = uint32(cluster.SRout())
 		block2.SRout = block1.SRout
 
-		for j := uint16(0); j < numSamples; j++ {
+		for j := uint16(0); j < cluster.NoSamples(); j++ {
 			// Make block1 data from pulse[0] and pulse[1]
 			amp0, amp1 := uint32(pulses[0].Samples[j].Amplitude), uint32(pulses[1].Samples[j].Amplitude)
 			word := (amp0&0xFFF)<<16 | (amp1 & 0xFFF)
@@ -259,7 +254,7 @@ func (w *Writer) EventFull(event *event.Event) {
 			block2.Counters[j] = cluster.Counter(j)
 		}
 
-		w.Frame(frame1)
-		w.Frame(frame2)
+		w.Frame(&frame1)
+		w.Frame(&frame2)
 	}
 }

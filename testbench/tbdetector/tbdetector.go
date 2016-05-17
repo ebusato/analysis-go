@@ -36,7 +36,7 @@ func NewDetector() *Detector {
 				ch := quartet.Channel(uint8(iChannel))
 				ch.SetName("PMT" + strconv.FormatUint(uint64(iChannel), 10))
 				ch.SetID(uint8(iChannel))
-				ch.SetFifoID(FifoID(uint8(iDRS), uint8(iQuartet), uint8(iChannel)))
+				ch.SetFifoID144(FifoID(uint8(iDRS), uint8(iQuartet), uint8(iChannel)))
 				for iCapacitor := range ch.Capacitors() {
 					capa := ch.Capacitor(uint16(iCapacitor))
 					capa.SetID(uint16(iCapacitor))

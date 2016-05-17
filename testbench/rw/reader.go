@@ -281,8 +281,8 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 		sample1 := pulse.NewSample(ampl1, uint16(i), float64(i)*tbdetector.Det.SamplingFreq())
 		sample2 := pulse.NewSample(ampl2, uint16(i), float64(i)*tbdetector.Det.SamplingFreq())
 
-		pulse1.AddSample(sample1, tbdetector.Det.Capacitor(iDRS, iQuartet, pulse1.Channel.ID(), sample1.CapaIndex(pulse1.SRout)))
-		pulse2.AddSample(sample2, tbdetector.Det.Capacitor(iDRS, iQuartet, pulse2.Channel.ID(), sample2.CapaIndex(pulse2.SRout)))
+		pulse1.AddSample(sample1, tbdetector.Det.Capacitor(iDRS, iQuartet, pulse1.Channel.ID(), sample1.CapaIndex(pulse1.SRout)), 800)
+		pulse2.AddSample(sample2, tbdetector.Det.Capacitor(iDRS, iQuartet, pulse2.Channel.ID(), sample2.CapaIndex(pulse2.SRout)), 800)
 	}
 
 	return pulse1, pulse2
