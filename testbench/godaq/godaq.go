@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -188,7 +187,7 @@ type Data struct {
 	Qs     Quartets `json:"quartets"` // (30689280 bits)
 	Mult   H1D      `json:"mult"`     // multiplicity of pulses (1024 bits)
 	FreqH  string   `json:"freqh"`    // frequency histogram
-	Charge string   `json:"charge"`  // charge histograms
+	Charge string   `json:"charge"`   // charge histograms
 	HVvals string   `json:"hv"`       // hv values
 }
 
@@ -656,13 +655,15 @@ func dataHandler(ws *websocket.Conn) {
 		/////////////////////////////////////////////////
 		// uncomment to have an estimation of the total
 		// amount of data that passes through the websocket
-		sb, err := json.Marshal(data)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
+		/*
+			sb, err := json.Marshal(data)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
+		*/
 		/////////////////////////////////////////////////
-		err = websocket.JSON.Send(ws, data)
+		err := websocket.JSON.Send(ws, data)
 		if err != nil {
 			log.Printf("error sending data: %v\n", err)
 			return

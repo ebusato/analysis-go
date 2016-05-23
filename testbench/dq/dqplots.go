@@ -62,7 +62,7 @@ func NewDQPlotFromGob(fileName string) *DQPlot {
 	fmt.Printf("Reading gob file %s\n", fileName)
 	f, err := os.Open(fileName)
 	if err != nil {
-		panic(err)
+		return nil
 	}
 	defer f.Close()
 
