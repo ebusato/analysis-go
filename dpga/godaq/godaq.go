@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -29,6 +30,7 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/reconstruction"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
@@ -60,6 +62,14 @@ var (
 type XY struct {
 	X float64
 	Y float64
+}
+
+// XYZ is a struct used to store a triplet of values
+// It occupies 3*64 = 192 bits
+type XYZ struct {
+	X float64
+	Y float64
+	Z float64
 }
 
 // Pulse is a slice of XY
@@ -191,6 +201,7 @@ type Data struct {
 	ChargeL string   `json:"chargel"`  // charge histograms for left hemisphere
 	ChargeR string   `json:"charger"`  // charge histograms for right hemisphere
 	HVvals  string   `json:"hv"`       // hv values
+	MinRec  XYZ      `json:"minrec"`   // outcome of the minimal reconstruction algorithm
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -524,6 +535,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
 	}
 	hvexec := NewHVexec(os.Getenv("HOME")+"/Acquisition/hv/ht-caen", os.Getenv("HOME")+"/Acquisition/hv/Coeff")
+	var minrec XYZ
 	start := time.Now()
 	startabs := start
 	for {
@@ -545,8 +557,17 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				case false:
 					//event.Print(true, false)
 					w.Event(event)
-					hMult.Fill(float64(event.Multiplicity()), 1)
+					mult, pulsesWithSignal := event.Multiplicity()
+					hMult.Fill(float64(mult), 1)
 					dqplots.FillHistos(event)
+					if mult == 2 {
+						if len(pulsesWithSignal) != 2 {
+							panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
+						}
+						xbeam, ybeam := 0., 0.
+						x, y, z := reconstruction.Minimal(pulsesWithSignal[0].Channel, pulsesWithSignal[1].Channel, xbeam, ybeam)
+						minrec = XYZ{X: x, Y: y, Z: z}
+					}
 					if *iEvent%*monFreq == 0 {
 						//cevent <- *event
 						// Webserver data
@@ -613,6 +634,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							ChargeL: chargeLsvg,
 							ChargeR: chargeRsvg,
 							HVvals:  hvsvg,
+							MinRec:  minrec,
 						}
 						noEventsForMon = 0
 					}
@@ -661,15 +683,15 @@ func dataHandler(ws *websocket.Conn) {
 		/////////////////////////////////////////////////
 		// uncomment to have an estimation of the total
 		// amount of data that passes through the websocket
-		/*
-			sb, err := json.Marshal(data)
-			if err != nil {
-				panic(err)
-			}
-			fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
-		*/
+
+		sb, err := json.Marshal(data)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
+
 		/////////////////////////////////////////////////
-		err := websocket.JSON.Send(ws, data)
+		err = websocket.JSON.Send(ws, data)
 		if err != nil {
 			log.Printf("error sending data: %v\n", err)
 			return

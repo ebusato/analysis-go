@@ -70,12 +70,15 @@ func (e *Event) Print(printClusters bool, printClusterDetails bool) {
 	}
 }
 
-func (e *Event) Multiplicity() uint8 {
+func (e *Event) Multiplicity() (uint8, []*pulse.Pulse) {
 	var mult uint8 = 0
+	var pulsesWSig []*pulse.Pulse
 	for i := range e.Clusters {
-		mult += uint8(len(e.Clusters[i].PulsesWithSignal()))
+		pulsesWSigInCluster := e.Clusters[i].PulsesWithSignal()
+		pulsesWSig = append(pulsesWSig, pulsesWSigInCluster...)
+		mult += uint8(len(pulsesWSigInCluster))
 	}
-	return mult
+	return mult, pulsesWSig
 }
 
 func (e *Event) PlotPulses(x pulse.XaxisType, pedestalRange bool) {

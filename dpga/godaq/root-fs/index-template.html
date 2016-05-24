@@ -2,9 +2,11 @@
 <head>
 	<title>DPGA monitoring</title>
 	<link rel="stylesheet" type="text/css" href="tabs.css">
+	<link rel="stylesheet" type="text/css" href="vis.min.css">
 	<script src="static/jquery-2.2.2.min.js"></script>
 	<script src="static/jquery.flot-0.8.3.min.js"></script>
 	<script src="static/jquery.flot.navigate-0.8.3.min.js"></script>
+	<script type="text/javascript" src="vis.min.js"></script>
 	<script type="text/javascript" src="tabs.js"></script>
 	<script type="text/javascript">
 		var sock = null;
@@ -109,7 +111,74 @@
 				}	
 			}
 		};
+		
+		var dataMinReco = new vis.DataSet();
+		
+		var optionsMinReco = {
+			width:  '600px',
+			height: '600px',
+			style: 'dot',
+			showPerspective: false,
+			showGrid: true,
+			keepAspectRatio: false,
+			legendLabel:'value',
+			verticalRatio: 0.8,
+			cameraPosition: {
+			horizontal: -0.54,
+			vertical: 0.5,
+			distance: 1.6
+			}
+		};
+		
+		/*
+		var dataMinReco = null;
+		var graphMinReco = null;
 
+		// Called when the Visualization API is loaded.
+		function drawMinReco3D() {
+			// create the data table.
+			dataMinReco = new vis.DataSet();
+
+			// create some shortcuts to math functions
+			var sqrt = Math.sqrt;
+			var pow = Math.pow;
+			var random = Math.random;
+
+			// create the animation data
+			var imax = 100;
+			for (var i = 0; i < imax; i++) {
+				var x = pow(random(), 2);
+				var y = pow(random(), 2);
+				var z = pow(random(), 2);
+		
+				var dist = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
+				var range = sqrt(2) - dist;
+		
+				dataMinReco.add({x:x,y:y,z:z});
+			}
+
+			// specify options
+			var optionsMinReco = {
+				width:  '600px',
+				height: '600px',
+				style: 'dot',
+				showPerspective: false,
+				showGrid: true,
+				keepAspectRatio: true,
+				legendLabel:'value',
+				verticalRatio: 0.8,
+				cameraPosition: {
+				horizontal: -0.54,
+				vertical: 0.5,
+				distance: 1.6
+				}
+			};
+
+			// create our graph
+			var containerMinReco = document.getElementById('graph3DMinReco');
+			graphMinReco = new vis.Graph3d(containerMinReco, dataMinReco, optionsMinReco);
+		}
+		*/
 		window.onload = function() {
 			sock = new WebSocket("ws://{{.WebAd}}/data");
 			sock.onmessage = function(event) {
@@ -135,6 +204,14 @@
 				}
 				update();
 				clearplots();
+				// Possible improvement : transfer via websocket only last reconstruction outcome
+				// (i.e. store all outcomes on web client side only rather than on both web server and web client
+				// as is the case now)
+				for (var iminrec = 0; iminrec < data.minrec.length; iminrec += 1) {
+					dataMinReco.add({x:data.minrec.X,y:data.minrec.Y,z:data.minrec.Z});
+				}
+				var containerMinReco = document.getElementById('graph3DMinReco');
+				graphMinReco = new vis.Graph3d(containerMinReco, dataMinReco, optionsMinReco);
 			};
 		};
 		
@@ -193,8 +270,8 @@
 			</tr>
 			</table>
 		</div>
+		<!--div id="graph3DMinReco"></div-->
 	</header>
-
 
 	<div class="main">
 	<hr size="5" noshade>
