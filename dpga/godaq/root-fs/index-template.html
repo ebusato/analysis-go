@@ -112,24 +112,6 @@
 			}
 		};
 		
-		var dataMinReco = new vis.DataSet();
-		
-		var optionsMinReco = {
-			width:  '600px',
-			height: '600px',
-			style: 'dot',
-			showPerspective: false,
-			showGrid: true,
-			keepAspectRatio: false,
-			legendLabel:'value',
-			verticalRatio: 0.8,
-			cameraPosition: {
-			horizontal: -0.54,
-			vertical: 0.5,
-			distance: 1.6
-			}
-		};
-		
 		/*
 		var dataMinReco = null;
 		var graphMinReco = null;
@@ -179,6 +161,24 @@
 			graphMinReco = new vis.Graph3d(containerMinReco, dataMinReco, optionsMinReco);
 		}
 		*/
+		var dataMinReco = new vis.DataSet();
+		
+		var optionsMinReco = {
+			width:  '600px',
+			height: '600px',
+			style: 'dot',
+			showPerspective: false,
+			showGrid: true,
+			keepAspectRatio: false,
+			legendLabel:'value',
+			verticalRatio: 0.8,
+			cameraPosition: {
+			horizontal: +0.54,
+			vertical: 0.5,
+			distance: 1.6
+			}
+		};
+		
 		window.onload = function() {
 			sock = new WebSocket("ws://{{.WebAd}}/data");
 			sock.onmessage = function(event) {
@@ -204,12 +204,8 @@
 				}
 				update();
 				clearplots();
-				// Possible improvement : transfer via websocket only last reconstruction outcome
-				// (i.e. store all outcomes on web client side only rather than on both web server and web client
-				// as is the case now)
-				for (var iminrec = 0; iminrec < data.minrec.length; iminrec += 1) {
-					dataMinReco.add({x:data.minrec.X,y:data.minrec.Y,z:data.minrec.Z});
-				}
+
+				dataMinReco.add({x:data.minrec.X,y:data.minrec.Y,z:data.minrec.Z});
 				var containerMinReco = document.getElementById('graph3DMinReco');
 				graphMinReco = new vis.Graph3d(containerMinReco, dataMinReco, optionsMinReco);
 			};
@@ -270,7 +266,7 @@
 			</tr>
 			</table>
 		</div>
-		<!--div id="graph3DMinReco"></div-->
+		<div id="graph3DMinReco"></div>
 	</header>
 
 	<div class="main">

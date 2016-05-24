@@ -560,14 +560,6 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 					mult, pulsesWithSignal := event.Multiplicity()
 					hMult.Fill(float64(mult), 1)
 					dqplots.FillHistos(event)
-					if mult == 2 {
-						if len(pulsesWithSignal) != 2 {
-							panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
-						}
-						xbeam, ybeam := 0., 0.
-						x, y, z := reconstruction.Minimal(pulsesWithSignal[0].Channel, pulsesWithSignal[1].Channel, xbeam, ybeam)
-						minrec = XYZ{X: x, Y: y, Z: z}
-					}
 					if *iEvent%*monFreq == 0 {
 						//cevent <- *event
 						// Webserver data
@@ -621,6 +613,15 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						freq := float64(noEventsForMon) / duration
 						if *iEvent == 0 {
 							freq = 0
+						}
+
+						if mult == 2 {
+							if len(pulsesWithSignal) != 2 {
+								panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
+							}
+							xbeam, ybeam := 0., 0.
+							x, y, z := reconstruction.Minimal(pulsesWithSignal[0].Channel, pulsesWithSignal[1].Channel, xbeam, ybeam)
+							minrec = XYZ{X: x, Y: y, Z: z}
 						}
 
 						// send to channel
