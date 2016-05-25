@@ -529,7 +529,6 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
 	noEventsForMon := uint64(0)
-	hMult := hbook.NewH1D(8, -0.5, 7.5)
 	dqplots := dq.NewDQPlot()
 	if *refplots != "" {
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
@@ -557,8 +556,6 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				case false:
 					//event.Print(true, false)
 					w.Event(event)
-					mult, pulsesWithSignal := event.Multiplicity()
-					hMult.Fill(float64(mult), 1)
 					dqplots.FillHistos(event)
 					if *iEvent%*monFreq == 0 {
 						//cevent <- *event
@@ -615,12 +612,16 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							freq = 0
 						}
 
+						mult, pulsesWithSignal := event.Multiplicity()
 						if mult == 2 {
 							if len(pulsesWithSignal) != 2 {
 								panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
 							}
+							ch0 := pulsesWithSignal[0].Channel
+							ch1 := pulsesWithSignal[1].Channel
+							fmt.Println(ch0.Quartet.DRS.ASMCard.UpStr.Which(), ch1.Quartet.DRS.ASMCard.UpStr.Which())
 							xbeam, ybeam := 0., 0.
-							x, y, z := reconstruction.Minimal(pulsesWithSignal[0].Channel, pulsesWithSignal[1].Channel, xbeam, ybeam)
+							x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
 							minrec = XYZ{X: x, Y: y, Z: z}
 						}
 
@@ -630,7 +631,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							Time:    time,
 							Freq:    freq,
 							Qs:      qs,
-							Mult:    NewH1D(hMult),
+							Mult:    NewH1D(dqplots.HMultiplicity),
 							FreqH:   freqhsvg,
 							ChargeL: chargeLsvg,
 							ChargeR: chargeRsvg,

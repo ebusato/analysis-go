@@ -41,8 +41,8 @@ func NewDQPlot() *DQPlot {
 	dqp := &DQPlot{
 		HFrequency:       hbook.NewH1D(240, 0, 240),
 		HSatFrequency:    hbook.NewH1D(240, 0, 240),
-		HMultiplicity:    hbook.NewH1D(8, 0, 8),
-		HSatMultiplicity: hbook.NewH1D(8, 0, 8),
+		HMultiplicity:    hbook.NewH1D(8, -0.5, 7.5),
+		HSatMultiplicity: hbook.NewH1D(8, -0.5, 7.5),
 		HCharge:          make([][]hbook.H1D, NoClusters),
 		HAmplitude:       make([][]hbook.H1D, NoClusters),
 	}

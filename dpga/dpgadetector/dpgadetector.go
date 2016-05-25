@@ -35,6 +35,10 @@ func (h *Hemisphere) Print() {
 	}
 }
 
+func (h *Hemisphere) Which() HemisphereType {
+	return h.which
+}
+
 // Detector describes the 288 channels of the 12 ASM cards used the DPGA acquisition
 // Out of these 288 channels, 240 are associated to the DPGA physical channels.
 // The 48 remaining ones are not associated to any physical object.
@@ -59,7 +63,8 @@ func NewDetector() *Detector {
 		}
 		for iASM := range hemi.asm {
 			asm := &hemi.asm[iASM]
-			// The value of 148.4 for the radial distance is the one used by Christophe is Catia.
+			asm.UpStr = hemi
+			// The value 148.4 for the radial distance is the one used by Christophe Insa is Catia.
 			// We use this same value here for consistency, but note that it is slighlty different
 			// than the one we find in some papers (e.g. 148.336, but the difference is
 			// way smaller than the incertainty (of the order of 1 mm) so it's no big deal)
@@ -76,9 +81,11 @@ func NewDetector() *Detector {
 			for iDRS := range asm.DRSs() {
 				drs := asm.DRS(uint8(iDRS))
 				drs.SetID(uint8(iDRS))
+				drs.ASMCard = asm
 				for iQuartet := range drs.Quartets() {
 					quartet := drs.Quartet(uint8(iQuartet))
 					quartet.SetID(uint8(iQuartet))
+					quartet.DRS = drs
 					// iqtemp is a temporary index refering to the quartet within a line.
 					// iqtemp goes from 0 to 4 (5 quartets per line). It is equal to 0 for
 					// the quartet on the front side of the DPGA and equal to 4 for the
@@ -97,6 +104,7 @@ func NewDetector() *Detector {
 					qCartCoord := utils.CylindricalToCartesian(quartet.CylCoord)
 					for iChannel := range quartet.Channels() {
 						ch := quartet.Channel(uint8(iChannel))
+						ch.Quartet = quartet
 						ch.SetName("PMT" + strconv.FormatUint(uint64(iChannel), 10))
 						ch.SetID(uint8(iChannel))
 						_, iChannelAbs288 := RelIdxToAbsIdx288(uint8(iHemi), uint8(iASM), uint8(iDRS), uint8(iQuartet), uint8(iChannel))

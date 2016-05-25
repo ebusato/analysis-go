@@ -109,6 +109,8 @@ type Channel struct {
 
 	// Full coordinates of the scintillator
 	ScintCoords RectParallelepiped
+	
+	Quartet *Quartet
 }
 
 // Capacitors returns the capacitors for this channel
@@ -249,6 +251,8 @@ type Quartet struct {
 	id       uint8
 
 	utils.CylCoord
+	
+	DRS *DRS
 }
 
 // SetID sets the quartet id.
@@ -351,6 +355,8 @@ type DRS struct {
 	// The first four and last four channels correspond to two different quartets
 	quartets [2]Quartet
 	id       uint8
+	
+	ASMCard *ASMCard
 }
 
 // Print prints DRS informations.
@@ -376,6 +382,11 @@ func (d *DRS) Quartet(iQuartet uint8) *Quartet {
 	return &d.quartets[iQuartet]
 }
 
+// UpperStruct is an interface to the upper structure to which 
+// the ASM card belong in the full detector.
+// For example, for the LAPD detector UpperStruct is a hemisphere
+type UpperStruct interface{}
+
 // ASMCard describes an ASM card.
 // An ASMCard is made of 3 DRS, one on each mezzanine.
 // In the DPGA, an ASM card processes signals from one line of the detector.
@@ -386,6 +397,8 @@ type ASMCard struct {
 	id   uint8
 
 	utils.CylCoord
+	
+	UpStr UpperStruct
 }
 
 // Print prints the ASMCard informations.
