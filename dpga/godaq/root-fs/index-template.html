@@ -167,8 +167,18 @@
 		var optionsMinReco = {
 			width:  '600px',
 			height: '600px',
+			xLabel: "x (mm)",
+			yLabel: "y (mm)",
+			zLabel: "z (mm)",
+			xMin: -150,
+			xMax: 150,
+			yMin: -100,
+			yMax: 100,
+			zMin: -150,
+			zMax: 150,
+			dotSizeRatio: 0.005,
 			style: 'dot',
-			showPerspective: false,
+			showPerspective: true,
 			showGrid: true,
 			keepAspectRatio: false,
 			legendLabel:'value',
@@ -176,7 +186,7 @@
 			cameraPosition: {
 			horizontal: +0.54,
 			vertical: 0.5,
-			distance: 1.6
+			distance: 2
 			}
 		};
 		
