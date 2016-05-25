@@ -358,7 +358,6 @@ func main() {
 	go stream(terminateStream, cevent, r, w, &iEvent, &wg)
 	go command(commandIsEnded)
 	go webserver()
-	//go monitoring(cevent)
 
 	wg.Wait()
 
@@ -619,7 +618,6 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							}
 							ch0 := pulsesWithSignal[0].Channel
 							ch1 := pulsesWithSignal[1].Channel
-							fmt.Println(ch0.Quartet.DRS.ASMCard.UpStr.Which(), ch1.Quartet.DRS.ASMCard.UpStr.Which())
 							xbeam, ybeam := 0., 0.
 							x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
 							minrec = XYZ{X: x, Y: y, Z: z}
@@ -669,14 +667,6 @@ func command(commandIsEnded chan bool) {
 			fmt.Println("stopping run")
 			commandIsEnded <- true
 		}
-	}
-}
-
-func monitoring(cevent chan event.Event) {
-	for {
-		//fmt.Println("receiving from cframe1")
-		event := <-cevent
-		event.Clusters[0].PlotPulses(0, pulse.XaxisIndex, false)
 	}
 }
 

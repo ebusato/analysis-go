@@ -35,8 +35,15 @@ func (h *Hemisphere) Print() {
 	}
 }
 
-func (h *Hemisphere) Which() HemisphereType {
-	return h.which
+func (h *Hemisphere) GoString() string {
+	switch h.which {
+	case Right:
+		return "right"
+	case Left:
+		return "left"
+	default:
+		return fmt.Sprintf("InputType(%d)", h.which)
+	}
 }
 
 // Detector describes the 288 channels of the 12 ASM cards used the DPGA acquisition
