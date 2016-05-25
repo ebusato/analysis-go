@@ -34,27 +34,27 @@ import (
 )
 
 var (
-	datac           = make(chan Data, 10)
-	terminateStream = make(chan bool)
-	terminateRun    = make(chan bool)
-	pauseRun        = make(chan bool)
-	resumeRun       = make(chan bool)
-	hdrType         = rw.HeaderCAL
-	cpuprof         = flag.String("cpuprof", "", "Name of file for CPU profiling")
-	noEvents        = flag.Uint("n", 100000, "Number of events")
-	outfileName     = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
-	ip              = flag.String("ip", "192.168.100.11", "IP address")
-	port            = flag.String("p", "1024", "Port number")
-	monFreq         = flag.Uint("mf", 50, "Monitoring frequency")
-	monLight        = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
-	evtFreq         = flag.Uint("ef", 100, "Event printing frequency")
-	st              = flag.Bool("st", false, "If set, server start time is used rather than client's one")
-	debug           = flag.Bool("d", false, "If set, debugging informations are printed")
-	webad           = flag.String("webad", ":5555", "server address:port")
-	nobro           = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
-	sleep           = flag.Bool("s", false, "If set, sleep a bit between events")
-	runcsvtest      = flag.Bool("runcsvtest", false, "If set, update runs_test.csv rather than the \"official\" runs.csv file")
-	refplots        = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
+	datac = make(chan Data, 10)
+	//terminateStream = make(chan bool)
+	terminateRun = make(chan bool)
+	pauseRun     = make(chan bool)
+	resumeRun    = make(chan bool)
+	hdrType      = rw.HeaderCAL
+	cpuprof      = flag.String("cpuprof", "", "Name of file for CPU profiling")
+	noEvents     = flag.Uint("n", 100000, "Number of events")
+	outfileName  = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
+	ip           = flag.String("ip", "192.168.100.11", "IP address")
+	port         = flag.String("p", "1024", "Port number")
+	monFreq      = flag.Uint("mf", 50, "Monitoring frequency")
+	monLight     = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
+	evtFreq      = flag.Uint("ef", 100, "Event printing frequency")
+	st           = flag.Bool("st", false, "If set, server start time is used rather than client's one")
+	debug        = flag.Bool("d", false, "If set, debugging informations are printed")
+	webad        = flag.String("webad", ":5555", "server address:port")
+	nobro        = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
+	sleep        = flag.Bool("s", false, "If set, sleep a bit between events")
+	runcsvtest   = flag.Bool("runcsvtest", false, "If set, update runs_test.csv rather than the \"official\" runs.csv file")
+	refplots     = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
 		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
 	hvMonDegrad = flag.Uint("hvmondeg", 20, "HV monitoring frequency degradation factor")
 	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
@@ -470,11 +470,11 @@ func webserver() {
 }
 
 // func control(terminateStream chan bool, terminateRun chan bool) {
-func control() {
-	<-terminateRun
-	fmt.Printf("command is ended, terminating stream.\n")
-	terminateStream <- true
-}
+// func control() {
+// 	<-terminateRun
+// 	fmt.Printf("command is ended, terminating stream.\n")
+// 	terminateStream <- true
+// }
 
 // func command(terminateRun, pauseRun chan bool) {
 func command() {
@@ -494,7 +494,7 @@ func command() {
 		case "resume":
 			fmt.Println("resume run")
 			resumeRun <- true
-				
+
 		}
 	}
 }
@@ -553,10 +553,12 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 	startabs := start
 	for {
 		select {
-// 		case <-terminateStream:
+		// 		case <-terminateStream:
 		case <-terminateRun:
 			*noEvents = *iEvent + 1
 			fmt.Printf("terminating stream for total number of events = %v.\n", *noEvents)
+		case <-pauseRun:
+			<-resumeRun
 		default:
 			switch *iEvent < *noEvents {
 			case true:
