@@ -543,7 +543,8 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				case false:
 					//event.Print(true, false)
 					w.Event(event)
-					hMult.Fill(float64(event.Multiplicity()), 1)
+					mult, _ := event.Multiplicity()
+					hMult.Fill(float64(mult), 1)
 					dqplots.FillHistos(event)
 					if *iEvent%*monFreq == 0 {
 						//cevent <- *event
@@ -565,14 +566,14 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 
 						// Make frequency histo plot
 						tpfreq := dqplots.MakeFreqTiledPlot()
-						freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
+						freqhsvg := utils.RenderSVG(tpfreq, 40, 10)
 
 						chargesvg := ""
 						hvsvg := ""
 						if !*monLight {
 							// Make charge distrib histo plot
 							tpcharge := dqplots.MakeChargeAmplTiledPlot(dq.Charge)
-							chargesvg = utils.RenderSVG(tpcharge, 45, 30)
+							chargesvg = utils.RenderSVG(tpcharge, 40, 30)
 
 							// Read HV
 							hvvals := &HVvalues{}
