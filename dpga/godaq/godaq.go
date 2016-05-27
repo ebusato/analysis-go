@@ -28,30 +28,33 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
-	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/reconstruction"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
 var (
-	datac       = make(chan Data, 10)
-	hdrType     = rw.HeaderCAL
-	cpuprof     = flag.String("cpuprof", "", "Name of file for CPU profiling")
-	noEvents    = flag.Uint("n", 100000, "Number of events")
-	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
-	ip          = flag.String("ip", "192.168.100.11", "IP address")
-	port        = flag.String("p", "1024", "Port number")
-	monFreq     = flag.Uint("mf", 50, "Monitoring frequency")
-	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
-	evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
-	st          = flag.Bool("st", false, "If set, server start time is used rather than client's one")
-	debug       = flag.Bool("d", false, "If set, debugging informations are printed")
-	webad       = flag.String("webad", ":5555", "server address:port")
-	nobro       = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
-	sleep       = flag.Bool("s", false, "If set, sleep a bit between events")
-	runcsvtest  = flag.Bool("runcsvtest", false, "If set, update runs_test.csv rather than the \"official\" runs.csv file")
-	refplots    = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
+	datac = make(chan Data, 10)
+	//terminateStream = make(chan bool)
+	terminateRun = make(chan bool)
+	pauseRun     = make(chan bool)
+	resumeRun    = make(chan bool)
+	hdrType      = rw.HeaderCAL
+	cpuprof      = flag.String("cpuprof", "", "Name of file for CPU profiling")
+	noEvents     = flag.Uint("n", 100000, "Number of events")
+	outfileName  = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
+	ip           = flag.String("ip", "192.168.100.11", "IP address")
+	port         = flag.String("p", "1024", "Port number")
+	monFreq      = flag.Uint("mf", 50, "Monitoring frequency")
+	monLight     = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
+	evtFreq      = flag.Uint("ef", 100, "Event printing frequency")
+	st           = flag.Bool("st", false, "If set, server start time is used rather than client's one")
+	debug        = flag.Bool("d", false, "If set, debugging informations are printed")
+	webad        = flag.String("webad", ":5555", "server address:port")
+	nobro        = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
+	sleep        = flag.Bool("s", false, "If set, sleep a bit between events")
+	runcsvtest   = flag.Bool("runcsvtest", false, "If set, update runs_test.csv rather than the \"official\" runs.csv file")
+	refplots     = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
 		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
 	hvMonDegrad = flag.Uint("hvmondeg", 20, "HV monitoring frequency degradation factor")
 	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
@@ -345,20 +348,18 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(N)
 
-	terminateStream := make(chan bool)
-	commandIsEnded := make(chan bool)
-	cevent := make(chan event.Event)
-
 	if *debug {
 		r.Debug = true
 	}
 
 	iEvent := uint(0)
-	go control(terminateStream, commandIsEnded)
-	go stream(terminateStream, cevent, r, w, &iEvent, &wg)
-	go command(commandIsEnded)
+	// 	go control(terminateStream, terminateRun)
+	// 	go stream(terminateStream, r, w, &iEvent, &wg)
+	// 	go command(terminateRun, pauseRun)
+	//go control()
+	go stream(r, w, &iEvent, &wg)
+	go command()
 	go webserver()
-	//go monitoring(cevent)
 
 	wg.Wait()
 
@@ -468,22 +469,34 @@ func webserver() {
 	}
 }
 
-func control(terminateStream chan bool, commandIsEnded chan bool) {
-	/*
-		for {
-			time.Sleep(1 * time.Second)
-			select {
-			case <-commandIsEnded:
-				fmt.Printf("command is ended, terminating stream.\n")
-				terminateStream <- true
-			default:
-				// do nothing
-			}
+// func control(terminateStream chan bool, terminateRun chan bool) {
+// func control() {
+// 	<-terminateRun
+// 	fmt.Printf("command is ended, terminating stream.\n")
+// 	terminateStream <- true
+// }
+
+// func command(terminateRun, pauseRun chan bool) {
+func command() {
+	for {
+		in := bufio.NewReader(os.Stdin) // to be replaced by Scanner
+		word, _ := in.ReadString('\n')
+		word = strings.Replace(word, "\n", "", -1)
+		switch word {
+		default:
+			fmt.Println("command not known, what do you mean ?", word)
+		case "stop":
+			fmt.Println("stopping run")
+			terminateRun <- true
+		case "pause":
+			fmt.Println("pausing run")
+			pauseRun <- true
+		case "resume":
+			fmt.Println("resume run")
+			resumeRun <- true
+
 		}
-	*/
-	<-commandIsEnded
-	fmt.Printf("command is ended, terminating stream.\n")
-	terminateStream <- true
+	}
 }
 
 /*
@@ -526,10 +539,10 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 	return data
 }
 
-func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
+// func stream(terminateStream chan bool, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
+func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
 	noEventsForMon := uint64(0)
-	hMult := hbook.NewH1D(8, -0.5, 7.5)
 	dqplots := dq.NewDQPlot()
 	if *refplots != "" {
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
@@ -540,9 +553,12 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 	startabs := start
 	for {
 		select {
-		case <-terminateStream:
+		// 		case <-terminateStream:
+		case <-terminateRun:
 			*noEvents = *iEvent + 1
 			fmt.Printf("terminating stream for total number of events = %v.\n", *noEvents)
+		case <-pauseRun:
+			<-resumeRun
 		default:
 			switch *iEvent < *noEvents {
 			case true:
@@ -557,11 +573,8 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				case false:
 					//event.Print(true, false)
 					w.Event(event)
-					mult, pulsesWithSignal := event.Multiplicity()
-					hMult.Fill(float64(mult), 1)
 					dqplots.FillHistos(event)
 					if *iEvent%*monFreq == 0 {
-						//cevent <- *event
 						// Webserver data
 
 						var qs Quartets
@@ -615,12 +628,15 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							freq = 0
 						}
 
+						mult, pulsesWithSignal := event.Multiplicity()
 						if mult == 2 {
 							if len(pulsesWithSignal) != 2 {
 								panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
 							}
+							ch0 := pulsesWithSignal[0].Channel
+							ch1 := pulsesWithSignal[1].Channel
 							xbeam, ybeam := 0., 0.
-							x, y, z := reconstruction.Minimal(pulsesWithSignal[0].Channel, pulsesWithSignal[1].Channel, xbeam, ybeam)
+							x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
 							minrec = XYZ{X: x, Y: y, Z: z}
 						}
 
@@ -630,7 +646,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							Time:    time,
 							Freq:    freq,
 							Qs:      qs,
-							Mult:    NewH1D(hMult),
+							Mult:    NewH1D(dqplots.HMultiplicity),
 							FreqH:   freqhsvg,
 							ChargeL: chargeLsvg,
 							ChargeR: chargeRsvg,
@@ -653,29 +669,6 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				return
 			}
 		}
-	}
-}
-
-func command(commandIsEnded chan bool) {
-	for {
-		in := bufio.NewReader(os.Stdin) // to be replaced by Scanner
-		word, _ := in.ReadString('\n')
-		word = strings.Replace(word, "\n", "", -1)
-		switch word {
-		default:
-			fmt.Println("command not known, what do you mean ?", word)
-		case "stop":
-			fmt.Println("stopping run")
-			commandIsEnded <- true
-		}
-	}
-}
-
-func monitoring(cevent chan event.Event) {
-	for {
-		//fmt.Println("receiving from cframe1")
-		event := <-cevent
-		event.Clusters[0].PlotPulses(0, pulse.XaxisIndex, false)
 	}
 }
 
