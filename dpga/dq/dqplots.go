@@ -189,7 +189,7 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 }
 
 func (d *DQPlot) MakeMinRecTiledPlot() *hplot.TiledPlot {
-	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 3, PadY: 1 * vg.Centimeter})
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 3, PadY: 0 * vg.Centimeter})
 	if err != nil {
 		panic(err)
 	}

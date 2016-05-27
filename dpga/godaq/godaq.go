@@ -39,6 +39,7 @@ var (
 	terminateRun = make(chan bool)
 	pauseRun     = make(chan bool)
 	resumeRun    = make(chan bool)
+	pauseMonBool bool
 	hdrType      = rw.HeaderCAL
 	cpuprof      = flag.String("cpuprof", "", "Name of file for CPU profiling")
 	noEvents     = flag.Uint("n", 100000, "Number of events")
@@ -204,7 +205,7 @@ type Data struct {
 	ChargeL     string   `json:"chargel"`     // charge histograms for left hemisphere
 	ChargeR     string   `json:"charger"`     // charge histograms for right hemisphere
 	HVvals      string   `json:"hv"`          // hv values
-	MinRec      XYZ      `json:"minrec"`      // outcome of the minimal reconstruction algorithm
+	MinRec      []XYZ    `json:"minrec"`      // outcome of the minimal reconstruction algorithm
 	MinRecDistr string   `json:"minrecdistr"` // minimal reconstruction X, Y, Z distributions
 }
 
@@ -493,9 +494,14 @@ func command() {
 			fmt.Println("pausing run")
 			pauseRun <- true
 		case "resume":
-			fmt.Println("resume run")
+			fmt.Println("resuming run")
 			resumeRun <- true
-
+		case "pause mon":
+			fmt.Println("pausing monitoring")
+			pauseMonBool = true
+		case "resume mon":
+			fmt.Println("resuming monitoring")
+			pauseMonBool = false
 		}
 	}
 }
@@ -549,7 +555,7 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
 	}
 	hvexec := NewHVexec(os.Getenv("HOME")+"/Acquisition/hv/ht-caen", os.Getenv("HOME")+"/Acquisition/hv/Coeff")
-	var minrec XYZ
+	var minrec []XYZ
 	minrecsvg := ""
 	start := time.Now()
 	startabs := start
@@ -575,61 +581,11 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 				case false:
 					//event.Print(true, false)
 					w.Event(event)
-					dqplots.FillHistos(event)
-					if *iEvent%*monFreq == 0 {
-						// Webserver data
 
-						var qs Quartets
-						sampFreq := 5
-						if *monLight {
-							sampFreq = 20
-						}
-						for iq := 0; iq < len(qs); iq++ {
-							qs[iq][0] = GetMonData(sampFreq, event.Clusters[iq].Pulses[0])
-							qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])
-							qs[iq][2] = GetMonData(sampFreq, event.Clusters[iq].Pulses[2])
-							qs[iq][3] = GetMonData(sampFreq, event.Clusters[iq].Pulses[3])
-						}
-
-						//fmt.Println("data:", time, noEventsForMon, duration, freq)
-
-						// Make frequency histo plot
-						tpfreq := dqplots.MakeFreqTiledPlot()
-						freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
-
-						chargeLsvg := ""
-						chargeRsvg := ""
-						hvsvg := ""
-						if !*monLight {
-							// Make charge distrib histo plot
-							tpchargeL := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Left)
-							tpchargeR := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Right)
-							chargeLsvg = utils.RenderSVG(tpchargeL, 45, 30)
-							chargeRsvg = utils.RenderSVG(tpchargeR, 45, 30)
-
-							// Read HV
-							hvvals := &HVvalues{}
-							if hvexec != nil && *iEvent%(*monFreq**hvMonDegrad) == 0 {
-								hvvals = NewHVvalues(hvexec)
-								for iHVCard := 0; iHVCard < 4; iHVCard++ {
-									for iHVChannel := 0; iHVChannel < 16; iHVChannel++ {
-										dqplots.AddHVPoint(iHVCard, iHVChannel, float64(event.ID), hvvals[iHVCard][iHVChannel].HV)
-									}
-								}
-							}
-							hvTiled := dqplots.MakeHVTiledPlot()
-							hvsvg = utils.RenderSVG(hvTiled, 45, 30)
-						}
-
-						stop := time.Now()
-						duration := stop.Sub(start).Seconds()
-						start = stop
-						time := stop.Sub(startabs).Seconds()
-						freq := float64(noEventsForMon) / duration
-						if *iEvent == 0 {
-							freq = 0
-						}
-
+					////////////////////////////////////////////////////////////////////////////////////////////
+					// Monitoring
+					if !pauseMonBool {
+						dqplots.FillHistos(event)
 						mult, pulsesWithSignal := event.Multiplicity()
 						if mult == 2 {
 							if len(pulsesWithSignal) != 2 {
@@ -639,30 +595,88 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 							ch1 := pulsesWithSignal[1].Channel
 							xbeam, ybeam := 0., 0.
 							x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
-							minrec = XYZ{X: x, Y: y, Z: z}
+							minrec = append(minrec, XYZ{X: x, Y: y, Z: z})
 							dqplots.HMinRecX.Fill(x, 1)
 							dqplots.HMinRecY.Fill(y, 1)
 							dqplots.HMinRecZ.Fill(z, 1)
-							tpMinRec := dqplots.MakeMinRecTiledPlot()
-							minrecsvg = utils.RenderSVG(tpMinRec, 50, 10)
 						}
+						if *iEvent%*monFreq == 0 {
+							// Webserver data
 
-						// send to channel
-						datac <- Data{
-							EvtID:       event.ID,
-							Time:        time,
-							Freq:        freq,
-							Qs:          qs,
-							Mult:        NewH1D(dqplots.HMultiplicity),
-							FreqH:       freqhsvg,
-							ChargeL:     chargeLsvg,
-							ChargeR:     chargeRsvg,
-							HVvals:      hvsvg,
-							MinRec:      minrec,
-							MinRecDistr: minrecsvg,
+							var qs Quartets
+							sampFreq := 5
+							if *monLight {
+								sampFreq = 20
+							}
+							for iq := 0; iq < len(qs); iq++ {
+								qs[iq][0] = GetMonData(sampFreq, event.Clusters[iq].Pulses[0])
+								qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])
+								qs[iq][2] = GetMonData(sampFreq, event.Clusters[iq].Pulses[2])
+								qs[iq][3] = GetMonData(sampFreq, event.Clusters[iq].Pulses[3])
+							}
+
+							//fmt.Println("data:", time, noEventsForMon, duration, freq)
+
+							// Make frequency histo plot
+							tpfreq := dqplots.MakeFreqTiledPlot()
+							freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
+
+							chargeLsvg := ""
+							chargeRsvg := ""
+							hvsvg := ""
+							if !*monLight {
+								// Make charge distrib histo plot
+								tpchargeL := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Left)
+								tpchargeR := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Right)
+								chargeLsvg = utils.RenderSVG(tpchargeL, 45, 30)
+								chargeRsvg = utils.RenderSVG(tpchargeR, 45, 30)
+
+								// Read HV
+								hvvals := &HVvalues{}
+								if hvexec != nil && *iEvent%(*monFreq**hvMonDegrad) == 0 {
+									hvvals = NewHVvalues(hvexec)
+									for iHVCard := 0; iHVCard < 4; iHVCard++ {
+										for iHVChannel := 0; iHVChannel < 16; iHVChannel++ {
+											dqplots.AddHVPoint(iHVCard, iHVChannel, float64(event.ID), hvvals[iHVCard][iHVChannel].HV)
+										}
+									}
+								}
+								hvTiled := dqplots.MakeHVTiledPlot()
+								hvsvg = utils.RenderSVG(hvTiled, 45, 30)
+							}
+
+							stop := time.Now()
+							duration := stop.Sub(start).Seconds()
+							start = stop
+							time := stop.Sub(startabs).Seconds()
+							freq := float64(noEventsForMon) / duration
+							if *iEvent == 0 {
+								freq = 0
+							}
+
+							tpMinRec := dqplots.MakeMinRecTiledPlot()
+							minrecsvg = utils.RenderSVG(tpMinRec, 30, 13)
+
+							// send to channel
+							datac <- Data{
+								EvtID:       event.ID,
+								Time:        time,
+								Freq:        freq,
+								Qs:          qs,
+								Mult:        NewH1D(dqplots.HMultiplicity),
+								FreqH:       freqhsvg,
+								ChargeL:     chargeLsvg,
+								ChargeR:     chargeRsvg,
+								HVvals:      hvsvg,
+								MinRec:      minrec,
+								MinRecDistr: minrecsvg,
+							}
+							noEventsForMon = 0
+							minrec = nil
 						}
-						noEventsForMon = 0
 					}
+					// End of monitoring
+					////////////////////////////////////////////////////////////////////////////////////////////
 					*iEvent++
 					noEventsForMon++
 					if *sleep {

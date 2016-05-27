@@ -160,7 +160,7 @@
 				chargelhplot = data.chargel;
 				chargerhplot = data.charger;
 				hvplot = data.hv;
-				minrecdistrib = data.minrecdistr
+				minrecdistr = data.minrecdistr
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < data.quartets[iq][ip].length; is += 1) {
@@ -171,7 +171,12 @@
 				update();
 				clearplots();
 
-				dataMinReco.add({x:data.minrec.X,y:data.minrec.Y,z:data.minrec.Z});
+				//for (var iminrec = 0; iminrec < data.minrec.length; iminrec += 1) {
+					//dataMinReco.add({x:data.minrec[iminrec].X,y:data.minrec[iminrec].Y,z:data.minrec[iminrec].Z});
+				//}
+				if ( data.minrec.length >= 1) {
+					dataMinReco.add({x:data.minrec[0].X,y:data.minrec[0].Y,z:data.minrec[0].Z});
+				}
 				var containerMinReco = document.getElementById('graph3DMinReco');
 				graphMinReco = new vis.Graph3d(containerMinReco, dataMinReco, optionsMinReco);
 			};
@@ -234,10 +239,10 @@
 		</div>
 		<table cellspacing="15">
 		<tr>
-		<td>
+		<td valign="top">
 			<div id="graph3DMinReco"></div>
 		</td>
-		<td>
+		<td valign="top">
 			<div id="my-minrecdistr-plot" class="my-plot-stylefreq"></div>
 		</td>
 		</tr>
