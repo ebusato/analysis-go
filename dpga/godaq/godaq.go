@@ -34,7 +34,8 @@ import (
 )
 
 var (
-	datac = make(chan Data, 10)
+	datacsize int = 10
+	datac         = make(chan Data, datacsize)
 	//terminateStream = make(chan bool)
 	terminateRun = make(chan bool)
 	pauseRun     = make(chan bool)
@@ -198,6 +199,7 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 type Data struct {
 	EvtID       uint     `json:"evt"`         // event id (64 bits a priori)
 	Time        float64  `json:"time"`        // time at which monitoring data are taken (64 bits)
+	MonBufSize  int      `json:"monbufsize"`  // monitoring channel buffer size
 	Freq        float64  `json:"freq"`        // number of events processed per second (64 bits)
 	Qs          Quartets `json:"quartets"`    // (30689280 bits)
 	Mult        H1D      `json:"mult"`        // multiplicity of pulses (1024 bits)
@@ -581,7 +583,7 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 				case false:
 					//event.Print(true, false)
 					w.Event(event)
-
+					noEventsForMon++
 					////////////////////////////////////////////////////////////////////////////////////////////
 					// Monitoring
 					if !pauseMonBool {
@@ -615,8 +617,6 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 								qs[iq][3] = GetMonData(sampFreq, event.Clusters[iq].Pulses[3])
 							}
 
-							//fmt.Println("data:", time, noEventsForMon, duration, freq)
-
 							// Make frequency histo plot
 							tpfreq := dqplots.MakeFreqTiledPlot()
 							freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
@@ -643,6 +643,9 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 								}
 								hvTiled := dqplots.MakeHVTiledPlot()
 								hvsvg = utils.RenderSVG(hvTiled, 45, 30)
+
+								tpMinRec := dqplots.MakeMinRecTiledPlot()
+								minrecsvg = utils.RenderSVG(tpMinRec, 30, 13)
 							}
 
 							stop := time.Now()
@@ -654,13 +657,14 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 								freq = 0
 							}
 
-							tpMinRec := dqplots.MakeMinRecTiledPlot()
-							minrecsvg = utils.RenderSVG(tpMinRec, 30, 13)
-
 							// send to channel
+							if float64(len(datac)) >= 0.6*float64(datacsize) {
+								fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
+							}
 							datac <- Data{
 								EvtID:       event.ID,
 								Time:        time,
+								MonBufSize:  len(datac),
 								Freq:        freq,
 								Qs:          qs,
 								Mult:        NewH1D(dqplots.HMultiplicity),
@@ -678,8 +682,9 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 					// End of monitoring
 					////////////////////////////////////////////////////////////////////////////////////////////
 					*iEvent++
-					noEventsForMon++
+					//noEventsForMon++
 					if *sleep {
+						fmt.Println("Warning: sleeping for 1 second")
 						time.Sleep(1 * time.Second)
 					}
 				case true:
