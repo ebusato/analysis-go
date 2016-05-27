@@ -34,6 +34,7 @@
 		var chargelhplot = ""
 		var chargerhplot = ""
 		var hvplot = ""
+		var minrecdistr = ""
 		
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
@@ -93,6 +94,8 @@
 			p3.innerHTML = chargerhplot;
 			var p4 = document.getElementById("my-hv-plot");
 			p4.innerHTML = hvplot;
+			var p5 = document.getElementById("my-minrecdistr-plot");
+			p5.innerHTML = minrecdistr;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					optsR = new options('#FFFF00') // yellow
@@ -113,55 +116,6 @@
 			}
 		};
 		
-		/*
-		var dataMinReco = null;
-		var graphMinReco = null;
-
-		// Called when the Visualization API is loaded.
-		function drawMinReco3D() {
-			// create the data table.
-			dataMinReco = new vis.DataSet();
-
-			// create some shortcuts to math functions
-			var sqrt = Math.sqrt;
-			var pow = Math.pow;
-			var random = Math.random;
-
-			// create the animation data
-			var imax = 100;
-			for (var i = 0; i < imax; i++) {
-				var x = pow(random(), 2);
-				var y = pow(random(), 2);
-				var z = pow(random(), 2);
-		
-				var dist = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
-				var range = sqrt(2) - dist;
-		
-				dataMinReco.add({x:x,y:y,z:z});
-			}
-
-			// specify options
-			var optionsMinReco = {
-				width:  '600px',
-				height: '600px',
-				style: 'dot',
-				showPerspective: false,
-				showGrid: true,
-				keepAspectRatio: true,
-				legendLabel:'value',
-				verticalRatio: 0.8,
-				cameraPosition: {
-				horizontal: -0.54,
-				vertical: 0.5,
-				distance: 1.6
-				}
-			};
-
-			// create our graph
-			var containerMinReco = document.getElementById('graph3DMinReco');
-			graphMinReco = new vis.Graph3d(containerMinReco, dataMinReco, optionsMinReco);
-		}
-		*/
 		var dataMinReco = new vis.DataSet();
 		
 		var optionsMinReco = {
@@ -206,6 +160,7 @@
 				chargelhplot = data.chargel;
 				chargerhplot = data.charger;
 				hvplot = data.hv;
+				minrecdistrib = data.minrecdistr
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < data.quartets[iq][ip].length; is += 1) {
@@ -277,7 +232,16 @@
 			</tr>
 			</table>
 		</div>
-		<div id="graph3DMinReco"></div>
+		<table cellspacing="15">
+		<tr>
+		<td>
+			<div id="graph3DMinReco"></div>
+		</td>
+		<td>
+			<div id="my-minrecdistr-plot" class="my-plot-stylefreq"></div>
+		</td>
+		</tr>
+		</table>
 	</header>
 
 	<div class="main">

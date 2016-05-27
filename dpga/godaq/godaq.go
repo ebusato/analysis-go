@@ -195,16 +195,17 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 
 // Data is the struct that is sent via the websocket to the web client.
 type Data struct {
-	EvtID   uint     `json:"evt"`      // event id (64 bits a priori)
-	Time    float64  `json:"time"`     // time at which monitoring data are taken (64 bits)
-	Freq    float64  `json:"freq"`     // number of events processed per second (64 bits)
-	Qs      Quartets `json:"quartets"` // (30689280 bits)
-	Mult    H1D      `json:"mult"`     // multiplicity of pulses (1024 bits)
-	FreqH   string   `json:"freqh"`    // frequency histogram
-	ChargeL string   `json:"chargel"`  // charge histograms for left hemisphere
-	ChargeR string   `json:"charger"`  // charge histograms for right hemisphere
-	HVvals  string   `json:"hv"`       // hv values
-	MinRec  XYZ      `json:"minrec"`   // outcome of the minimal reconstruction algorithm
+	EvtID       uint     `json:"evt"`         // event id (64 bits a priori)
+	Time        float64  `json:"time"`        // time at which monitoring data are taken (64 bits)
+	Freq        float64  `json:"freq"`        // number of events processed per second (64 bits)
+	Qs          Quartets `json:"quartets"`    // (30689280 bits)
+	Mult        H1D      `json:"mult"`        // multiplicity of pulses (1024 bits)
+	FreqH       string   `json:"freqh"`       // frequency histogram
+	ChargeL     string   `json:"chargel"`     // charge histograms for left hemisphere
+	ChargeR     string   `json:"charger"`     // charge histograms for right hemisphere
+	HVvals      string   `json:"hv"`          // hv values
+	MinRec      XYZ      `json:"minrec"`      // outcome of the minimal reconstruction algorithm
+	MinRecDistr string   `json:"minrecdistr"` // minimal reconstruction X, Y, Z distributions
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -549,6 +550,7 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 	}
 	hvexec := NewHVexec(os.Getenv("HOME")+"/Acquisition/hv/ht-caen", os.Getenv("HOME")+"/Acquisition/hv/Coeff")
 	var minrec XYZ
+	minrecsvg := ""
 	start := time.Now()
 	startabs := start
 	for {
@@ -638,20 +640,26 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 							xbeam, ybeam := 0., 0.
 							x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
 							minrec = XYZ{X: x, Y: y, Z: z}
+							dqplots.HMinRecX.Fill(x, 1)
+							dqplots.HMinRecY.Fill(y, 1)
+							dqplots.HMinRecZ.Fill(z, 1)
+							tpMinRec := dqplots.MakeMinRecTiledPlot()
+							minrecsvg = utils.RenderSVG(tpMinRec, 50, 10)
 						}
 
 						// send to channel
 						datac <- Data{
-							EvtID:   event.ID,
-							Time:    time,
-							Freq:    freq,
-							Qs:      qs,
-							Mult:    NewH1D(dqplots.HMultiplicity),
-							FreqH:   freqhsvg,
-							ChargeL: chargeLsvg,
-							ChargeR: chargeRsvg,
-							HVvals:  hvsvg,
-							MinRec:  minrec,
+							EvtID:       event.ID,
+							Time:        time,
+							Freq:        freq,
+							Qs:          qs,
+							Mult:        NewH1D(dqplots.HMultiplicity),
+							FreqH:       freqhsvg,
+							ChargeL:     chargeLsvg,
+							ChargeR:     chargeRsvg,
+							HVvals:      hvsvg,
+							MinRec:      minrec,
+							MinRecDistr: minrecsvg,
 						}
 						noEventsForMon = 0
 					}
