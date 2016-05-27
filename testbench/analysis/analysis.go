@@ -31,10 +31,9 @@ func main() {
 		noEvents  = flag.Int("n", -1, "Number of events to process (-1 means all events are processed)")
 		pedCorr   = flag.String("pedcorr", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 		wGob      = flag.String("wgob", "dqplots.gob", "Name of the output gob file containing dq plots. If not set, the gob file is not produced.")
-		refGob    = flag.String("refgob", "", "Name of the gob file containing reference dq plots. If not set, reference dq plots are not overlaid to current dq plots.")
 		inputType = reader.HexInput
 	)
-	flag.Var(&inputType, "inType", "Type of input file (possible values: Dec,Hex,Bin)")
+	flag.Var(&inputType, "inType", "Type of input file. Relevant only with hexadecimal or decimal input. Possible values: Dec,Hex.")
 	flag.Parse()
 
 	err := os.RemoveAll("output")
@@ -57,7 +56,7 @@ func main() {
 
 	if filepath.Ext(*infileName) == ".bin" {
 		// Binary file reader
-		rner, err = rw.NewReader(bufio.NewReader(file))
+		rner, err = rw.NewReader(bufio.NewReader(file), rw.HeaderCAL)
 		if err != nil {
 			log.Fatalf("could not open asm file: %v\n", err)
 		}
@@ -149,7 +148,7 @@ func main() {
 	///////////////////////////////////////////////////
 	dqplot.Finalize()
 	dqplot.WriteGob(*wGob)
-	dqplot.SaveHistos(*refGob)
+	dqplot.SaveHistos()
 }
 
 /*

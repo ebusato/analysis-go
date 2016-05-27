@@ -35,7 +35,7 @@ var (
 	datac       = make(chan Data, 10)
 	hdrType     = rw.HeaderCAL
 	cpuprof     = flag.String("cpuprof", "", "Name of file for CPU profiling")
-	noEvents    = flag.Uint("n", 100000, "Number of events")
+	noEvents    = flag.Uint("n", 1000000, "Number of events")
 	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
 	ip          = flag.String("ip", "192.168.100.11", "IP address")
 	port        = flag.String("p", "1024", "Port number")
