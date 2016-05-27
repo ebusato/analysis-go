@@ -29,6 +29,9 @@ type DQPlot struct {
 	HSatMultiplicity *hbook.H1D
 	HCharge          [][]hbook.H1D
 	HAmplitude       [][]hbook.H1D
+	HMinRecX         *hbook.H1D
+	HMinRecY         *hbook.H1D
+	HMinRecZ         *hbook.H1D
 
 	HV [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
 
@@ -45,6 +48,9 @@ func NewDQPlot() *DQPlot {
 		HSatMultiplicity: hbook.NewH1D(8, -0.5, 7.5),
 		HCharge:          make([][]hbook.H1D, NoClusters),
 		HAmplitude:       make([][]hbook.H1D, NoClusters),
+		HMinRecX:         hbook.NewH1D(150,-150,150),
+		HMinRecY:         hbook.NewH1D(100,-100,100),
+		HMinRecZ:         hbook.NewH1D(150,-150,150),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
@@ -179,6 +185,66 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 		log.Fatalf("error creating histogram \n")
 	}
 	p2.Title.Text = fmt.Sprintf("Number of saturating pulses vs channel\n")
+	return tp
+}
+
+func (d *DQPlot) MakeMinRecTiledPlot() *hplot.TiledPlot {
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 3, PadY: 0 * vg.Centimeter})
+	if err != nil {
+		panic(err)
+	}
+
+	p1 := tp.Plot(0, 0)
+	p1.X.Min = -150
+	p1.X.Max = 150
+// 	p1.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
+	p1.Add(hplot.NewGrid())
+	hplotX, err := hplot.NewH1D(d.HMinRecX)
+	if err != nil {
+		panic(err)
+	}
+	hplotX.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
+	hplotX.Color = plotutil.Color(3)
+	p1.Add(hplotX)
+	if err != nil {
+		panic(err)
+	}
+	p1.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction X\n")
+
+	p2 := tp.Plot(1, 0)
+	p2.X.Min = -100
+	p2.X.Max = 100
+// 	p2.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
+	p2.Add(hplot.NewGrid())
+	hplotY, err := hplot.NewH1D(d.HMinRecY)
+	if err != nil {
+		panic(err)
+	}
+	hplotY.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
+	hplotY.Color = plotutil.Color(3)
+	p2.Add(hplotY)
+	if err != nil {
+		log.Fatalf("error creating histogram \n")
+	}
+	p2.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction Y\n")
+	
+	p3 := tp.Plot(2, 0)
+	p3.X.Min = -150
+	p3.X.Max = 150
+// 	p3.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
+	p3.Add(hplot.NewGrid())
+	hplotZ, err := hplot.NewH1D(d.HMinRecZ)
+	if err != nil {
+		panic(err)
+	}
+	hplotZ.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
+	hplotZ.Color = plotutil.Color(3)
+	p3.Add(hplotZ)
+	if err != nil {
+		log.Fatalf("error creating histogram \n")
+	}
+	p3.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction Z\n")
+	
 	return tp
 }
 
