@@ -36,7 +36,7 @@
 		var chargelhplot = ""
 		var chargerhplot = ""
 		var hvplot = ""
-		var minrecdistr = ""
+		var minrec1Ddistr = ""
 		
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
@@ -99,8 +99,8 @@
 			p3.innerHTML = chargerhplot;
 			var p4 = document.getElementById("my-hv-plot");
 			p4.innerHTML = hvplot;
-			var p5 = document.getElementById("my-minrecdistr-plot");
-			p5.innerHTML = minrecdistr;
+			var p5 = document.getElementById("my-minrec1Ddistr-plot");
+			p5.innerHTML = minrec1Ddistr;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					optsR = new options('#FFFF00') // yellow
@@ -165,7 +165,7 @@
 				chargelhplot = data.chargel;
 				chargerhplot = data.charger;
 				hvplot = data.hv;
-				minrecdistr = data.minrecdistr
+				minrec1Ddistr = data.minrec1Ddistrs
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < data.quartets[iq][ip].length; is += 1) {
@@ -234,9 +234,6 @@
 			</td>
 			<td>
 				<div id="my-freq-plot" class="my-plot-stylefreq"></div>
-			</td>		
-			<td>
-				<div id="my-mult-plot" class="my-plot-stylefreq"></div>
 			</td>
 			<td>
 				<div id="my-monbufsize-plot" class="my-plot-stylefreq"></div>
@@ -247,15 +244,18 @@
 		<table cellspacing="15">
 		<tr>
 		<td valign="top">
-			<div id="graph3DMinReco"></div>
+			<!--div id="graph3DMinReco"></div-->
+		</td>		
+		<td>
+			<div id="my-mult-plot" class="my-plot-stylefreq"></div>
 		</td>
 		<td valign="top">
-			<div id="my-minrecdistr-plot" class="my-plot-stylefreq"></div>
+			<div id="my-minrec1Ddistr-plot" class="my-plot-stylefreq"></div>
 		</td>
 		</tr>
 		</table>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 	</header>
-
 	<div class="main">
 	<hr size="5" noshade>
 		<div class="tabs standard">
