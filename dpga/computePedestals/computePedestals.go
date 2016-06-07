@@ -10,12 +10,13 @@ import (
 	"os"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
 )
 
 func ComputePedestals(data *event.Data) {
-	for iEvent := range *data {
-		event := &(*data)[iEvent]
+	for iEvent := range data.Events {
+		event := data.Events[iEvent]
 		for iCluster := range event.Clusters {
 			cluster := &event.Clusters[iCluster]
 			for iPulse := range cluster.Pulses {
@@ -45,8 +46,10 @@ func main() {
 		infileName  = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
 		outfileName = flag.String("o", "output/pedestals.csv", "Name of the output file")
 		noEvents    = flag.Uint("n", 10000000, "Number of events to process")
+		hdrType     = rw.HeaderCAL
 	)
 
+	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
 	flag.Parse()
 
 	err := os.RemoveAll("output")
@@ -65,7 +68,7 @@ func main() {
 	}
 	defer file.Close()
 
-	r, err := reader.NewReader(bufio.NewReader(file))
+	r, err := rw.NewReader(bufio.NewReader(file), hdrType)
 	if err != nil {
 		log.Fatalf("could not open asm file: %v\n", err)
 	}
@@ -77,7 +80,7 @@ func main() {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
 		//event.Print(true)
-		data = append(data, *event)
+		data.Events = append(data.Events, *event)
 	}
 
 	//data.CheckIntegrity()
