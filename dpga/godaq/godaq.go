@@ -197,17 +197,17 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 
 // Data is the struct that is sent via the websocket to the web client.
 type Data struct {
-	EvtID          uint     `json:"evt"`            // event id (64 bits a priori)
-	Time           float64  `json:"time"`           // time at which monitoring data are taken (64 bits)
-	MonBufSize     int      `json:"monbufsize"`     // monitoring channel buffer size
-	Freq           float64  `json:"freq"`           // number of events processed per second (64 bits)
-	Qs             Quartets `json:"quartets"`       // (30689280 bits)
-	Mult           H1D      `json:"mult"`           // multiplicity of pulses (1024 bits)
-	FreqH          string   `json:"freqh"`          // frequency histogram
-	ChargeL        string   `json:"chargel"`        // charge histograms for left hemisphere
-	ChargeR        string   `json:"charger"`        // charge histograms for right hemisphere
-	HVvals         string   `json:"hv"`             // hv values
-	MinRec         []XYZ    `json:"minrec"`         // outcome of the minimal reconstruction algorithm
+	EvtID       uint     `json:"evt"`         // event id (64 bits a priori)
+	Time        float64  `json:"time"`        // time at which monitoring data are taken (64 bits)
+	MonBufSize  int      `json:"monbufsize"`  // monitoring channel buffer size
+	Freq        float64  `json:"freq"`        // number of events processed per second (64 bits)
+	Qs          Quartets `json:"quartets"`    // (30689280 bits)
+	Mult        H1D      `json:"mult"`        // multiplicity of pulses (1024 bits)
+	FreqH       string   `json:"freqh"`       // frequency histogram
+	ChargeL     string   `json:"chargel"`     // charge histograms for left hemisphere
+	ChargeR     string   `json:"charger"`     // charge histograms for right hemisphere
+	HVvals      string   `json:"hv"`          // hv values
+	MinRec      []XYZ    `json:"minrec"`      // outcome of the minimal reconstruction algorithm
 	MinRec1DDistrs string   `json:"minrec1Ddistrs"` // minimal reconstruction X, Y, Z distributions
 }
 
@@ -610,6 +610,7 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 							if *monLight {
 								sampFreq = 20
 							}
+							//event2 = applyCorrCalib.RemovePedestal(event)
 							for iq := 0; iq < len(qs); iq++ {
 								qs[iq][0] = GetMonData(sampFreq, event.Clusters[iq].Pulses[0])
 								qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])
@@ -662,17 +663,17 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 								fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
 							}
 							datac <- Data{
-								EvtID:          event.ID,
-								Time:           time,
-								MonBufSize:     len(datac),
-								Freq:           freq,
-								Qs:             qs,
-								Mult:           NewH1D(dqplots.HMultiplicity),
-								FreqH:          freqhsvg,
-								ChargeL:        chargeLsvg,
-								ChargeR:        chargeRsvg,
-								HVvals:         hvsvg,
-								MinRec:         minrec,
+								EvtID:       event.ID,
+								Time:        time,
+								MonBufSize:  len(datac),
+								Freq:        freq,
+								Qs:          qs,
+								Mult:        NewH1D(dqplots.HMultiplicity),
+								FreqH:       freqhsvg,
+								ChargeL:     chargeLsvg,
+								ChargeR:     chargeRsvg,
+								HVvals:      hvsvg,
+								MinRec:      minrec,
 								MinRec1DDistrs: minrec1Dsvg,
 							}
 							noEventsForMon = 0
