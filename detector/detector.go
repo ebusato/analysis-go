@@ -20,12 +20,12 @@ type Capacitor struct {
 	id              uint16 // possible values: 0, 1, ..., 1023 (1024 capacitors per channel)
 	pedestalSamples []float64
 	pedestalMean    float64
-	pedestalStdDev  float64
+	pedestalMeanErr float64
 }
 
 // Print prints capacitor informations.
 func (c *Capacitor) Print() {
-	fmt.Printf("    # Capacitor: id = %v, pedestal mean = %v, stddev = %v (address=%p)\n", c.id, c.pedestalMean, c.pedestalStdDev, c)
+	fmt.Printf("    # Capacitor: id = %v, pedestal mean = %v, stddev = %v (address=%p)\n", c.id, c.pedestalMean, c.pedestalMeanErr, c)
 }
 
 // ID returns the capacitor id.
@@ -53,8 +53,8 @@ func (c *Capacitor) AddPedestalSample(n float64) {
 	c.pedestalSamples = append(c.pedestalSamples, n)
 }
 
-// ComputePedestalMeanStdDevFromSamples computes the pedestal mean and standard deviation on mean.
-func (c *Capacitor) ComputePedestalMeanStdDevFromSamples() {
+// ComputePedestalMeanErrFromSamples computes the pedestal mean and standard deviation on mean.
+func (c *Capacitor) ComputePedestalMeanErrFromSamples() {
 	var weights []float64
 	mean, variance := stat.MeanVariance(c.pedestalSamples, weights)
 	if math.IsNaN(mean) {
@@ -66,9 +66,9 @@ func (c *Capacitor) ComputePedestalMeanStdDevFromSamples() {
 	c.pedestalMean = mean
 	switch c.NoPedestalSamples() != 0 {
 	case true:
-		c.pedestalStdDev = math.Sqrt(variance / float64(c.NoPedestalSamples()))
+		c.pedestalMeanErr = math.Sqrt(variance / float64(c.NoPedestalSamples()))
 	default:
-		c.pedestalStdDev = 0
+		c.pedestalMeanErr = 0
 	}
 }
 
@@ -77,15 +77,15 @@ func (c *Capacitor) PedestalMean() float64 {
 	return c.pedestalMean
 }
 
-// PedestalStdDev returns the pedestal standard deviation.
-func (c *Capacitor) PedestalStdDev() float64 {
-	return c.pedestalStdDev
+// PedestalMeanErr returns the pedestal standard deviation.
+func (c *Capacitor) PedestalMeanErr() float64 {
+	return c.pedestalMeanErr
 }
 
-// SetPedestalMeanStdDev sets the pedestal mean and standard deviation to the given values.
-func (c *Capacitor) SetPedestalMeanStdDev(mean float64, stddev float64) {
+// SetPedestalMeanErr sets the pedestal mean and standard deviation to the given values.
+func (c *Capacitor) SetPedestalMeanErr(mean float64, err float64) {
 	c.pedestalMean = mean
-	c.pedestalStdDev = stddev
+	c.pedestalMeanErr = err
 }
 
 // RectParallelepiped describes the geometry of the scintillator used in the detector (which
@@ -163,7 +163,7 @@ func (c *Channel) YError(iCapacitor int) (down float64, up float64) {
 	capacitor := &c.capacitors[iCapacitor]
 	switch c.plotStat {
 	case false:
-		down = capacitor.pedestalStdDev
+		down = capacitor.pedestalMeanErr
 		up = down
 	case true:
 		down = 0

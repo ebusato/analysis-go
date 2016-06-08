@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
 )
 
@@ -16,10 +17,10 @@ func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
-		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
-		//outfileName = flag.String("o", "output/pedestals.csv", "Name of the output file")
-		noEvents = flag.Uint("n", 10000000, "Number of events to process")
-		hdrType  = rw.HeaderCAL
+		infileName  = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
+		outfileName = flag.String("o", "output/pedestals.csv", "Name of the output file")
+		noEvents    = flag.Uint("n", 10000000, "Number of events to process")
+		hdrType     = rw.HeaderCAL
 	)
 
 	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
@@ -55,9 +56,9 @@ func main() {
 		event.PushPedestalSamples()
 	}
 
-	/*dpgadetector.Det.ComputePedestalsMeanStdDevFromSamples()
+	dpgadetector.Det.ComputePedestalsMeanStdDevFromSamples()
 	dpgadetector.Det.WritePedestalsToFile(*outfileName)
-	*/
+
 	//dpgadetector.Det.PlotPedestals(true)
-	//	dpgadetector.Det.PlotPedestals(false)
+	dpgadetector.Det.PlotPedestals(false)
 }

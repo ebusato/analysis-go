@@ -476,7 +476,7 @@ func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
 						ch := quartet.Channel(uint8(iChannel))
 						for iCapacitor := range ch.Capacitors() {
 							capa := ch.Capacitor(uint16(iCapacitor))
-							capa.ComputePedestalMeanStdDevFromSamples()
+							capa.ComputePedestalMeanErrFromSamples()
 						}
 					}
 				}
@@ -549,7 +549,7 @@ type PedestalFile struct {
 	IChannel   uint8
 	ICapacitor uint16
 	Mean       float64
-	StdDev     float64
+	MeanErr    float64
 }
 
 func (d *Detector) WritePedestalsToFile(outFileName string) {
@@ -562,7 +562,7 @@ func (d *Detector) WritePedestalsToFile(outFileName string) {
 	tbl.Writer.Comma = ' '
 
 	err = tbl.WriteHeader(fmt.Sprintf("# DPGA pedestal file (creation date: %v)\n", time.Now()))
-	err = tbl.WriteHeader("# iHemi iASM iDRS iQuartet iChannel iCapacitor pedestalMean pedestalStdDev")
+	err = tbl.WriteHeader("# iHemi iASM iDRS iQuartet iChannel iCapacitor pedestalMean pedestalMeanErr")
 
 	for iHemi := range d.hemispheres {
 		hemi := &d.hemispheres[iHemi]
@@ -584,7 +584,7 @@ func (d *Detector) WritePedestalsToFile(outFileName string) {
 								IChannel:   uint8(iChannel),
 								ICapacitor: uint16(iCapacitor),
 								Mean:       capa.PedestalMean(),
-								StdDev:     capa.PedestalStdDev(),
+								MeanErr:    capa.PedestalMeanErr(),
 							}
 							err = tbl.WriteRow(data)
 							if err != nil {
@@ -626,7 +626,7 @@ func (d *Detector) ReadPedestalsFile(fileName string) {
 			log.Fatalf("error reading row: %v\n", err)
 		}
 		capacitor := d.Capacitor(data.IHemi, data.IASM, data.IDRS, data.IQuartet, data.IChannel, data.ICapacitor)
-		capacitor.SetPedestalMeanStdDev(data.Mean, data.StdDev)
+		capacitor.SetPedestalMeanErr(data.Mean, data.MeanErr)
 	}
 	err = rows.Err()
 	if err != nil && err.Error() != "EOF" {
