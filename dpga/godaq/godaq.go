@@ -197,17 +197,17 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 
 // Data is the struct that is sent via the websocket to the web client.
 type Data struct {
-	EvtID       uint     `json:"evt"`         // event id (64 bits a priori)
-	Time        float64  `json:"time"`        // time at which monitoring data are taken (64 bits)
-	MonBufSize  int      `json:"monbufsize"`  // monitoring channel buffer size
-	Freq        float64  `json:"freq"`        // number of events processed per second (64 bits)
-	Qs          Quartets `json:"quartets"`    // (30689280 bits)
-	Mult        H1D      `json:"mult"`        // multiplicity of pulses (1024 bits)
-	FreqH       string   `json:"freqh"`       // frequency histogram
-	ChargeL     string   `json:"chargel"`     // charge histograms for left hemisphere
-	ChargeR     string   `json:"charger"`     // charge histograms for right hemisphere
-	HVvals      string   `json:"hv"`          // hv values
-	MinRec      []XYZ    `json:"minrec"`      // outcome of the minimal reconstruction algorithm
+	EvtID          uint     `json:"evt"`            // event id (64 bits a priori)
+	Time           float64  `json:"time"`           // time at which monitoring data are taken (64 bits)
+	MonBufSize     int      `json:"monbufsize"`     // monitoring channel buffer size
+	Freq           float64  `json:"freq"`           // number of events processed per second (64 bits)
+	Qs             Quartets `json:"quartets"`       // (30689280 bits)
+	Mult           H1D      `json:"mult"`           // multiplicity of pulses (1024 bits)
+	FreqH          string   `json:"freqh"`          // frequency histogram
+	ChargeL        string   `json:"chargel"`        // charge histograms for left hemisphere
+	ChargeR        string   `json:"charger"`        // charge histograms for right hemisphere
+	HVvals         string   `json:"hv"`             // hv values
+	MinRec         []XYZ    `json:"minrec"`         // outcome of the minimal reconstruction algorithm
 	MinRec1DDistrs string   `json:"minrec1Ddistrs"` // minimal reconstruction X, Y, Z distributions
 }
 
@@ -595,12 +595,31 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 							}
 							ch0 := pulsesWithSignal[0].Channel
 							ch1 := pulsesWithSignal[1].Channel
-							xbeam, ybeam := 0., 0.
-							x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
-							minrec = append(minrec, XYZ{X: x, Y: y, Z: z})
-							dqplots.HMinRecX.Fill(x, 1)
-							dqplots.HMinRecY.Fill(y, 1)
-							dqplots.HMinRecZ.Fill(z, 1)
+							doMinRec := true
+							if r.Header().TriggerEq == 3 {
+								// In case TriggerEq = 3 (pulser), one has to check that the two pulses are
+								// on different hemispheres, otherwise the minimal reconstruction is not well
+								// defined
+								hemi0, ok := ch0.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
+								if !ok {
+									panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
+								}
+								hemi1, ok := ch1.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
+								if !ok {
+									panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
+								}
+								if hemi0.Which() == hemi1.Which() {
+									doMinRec = false
+								}
+							}
+							if doMinRec {
+								xbeam, ybeam := 0., 0.
+								x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
+								minrec = append(minrec, XYZ{X: x, Y: y, Z: z})
+								dqplots.HMinRecX.Fill(x, 1)
+								dqplots.HMinRecY.Fill(y, 1)
+								dqplots.HMinRecZ.Fill(z, 1)
+							}
 						}
 						if *iEvent%*monFreq == 0 {
 							// Webserver data
@@ -663,17 +682,17 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 								fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
 							}
 							datac <- Data{
-								EvtID:       event.ID,
-								Time:        time,
-								MonBufSize:  len(datac),
-								Freq:        freq,
-								Qs:          qs,
-								Mult:        NewH1D(dqplots.HMultiplicity),
-								FreqH:       freqhsvg,
-								ChargeL:     chargeLsvg,
-								ChargeR:     chargeRsvg,
-								HVvals:      hvsvg,
-								MinRec:      minrec,
+								EvtID:          event.ID,
+								Time:           time,
+								MonBufSize:     len(datac),
+								Freq:           freq,
+								Qs:             qs,
+								Mult:           NewH1D(dqplots.HMultiplicity),
+								FreqH:          freqhsvg,
+								ChargeL:        chargeLsvg,
+								ChargeR:        chargeRsvg,
+								HVvals:         hvsvg,
+								MinRec:         minrec,
 								MinRec1DDistrs: minrec1Dsvg,
 							}
 							noEventsForMon = 0

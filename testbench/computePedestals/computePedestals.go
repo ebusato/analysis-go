@@ -18,27 +18,6 @@ type ReadNextEventer interface {
 	ReadNextEvent() (*event.Event, bool)
 }
 
-func addSamples(event *event.Event) {
-	for iCluster := range event.Clusters {
-		cluster := &event.Clusters[iCluster]
-		for iPulse := range cluster.Pulses {
-			pulse := &cluster.Pulses[iPulse]
-			if pulse.HasSignal {
-				continue
-			}
-			for iSample := range pulse.Samples {
-				sample := &pulse.Samples[iSample]
-				capacitor := sample.Capacitor
-				noSamples := capacitor.NoPedestalSamples()
-				if event.ID == 0 && noSamples != 0 {
-					log.Fatal("noSamples != 0!")
-				}
-				capacitor.AddPedestalSample(sample.Amplitude)
-			}
-		}
-	}
-}
-
 func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
@@ -91,7 +70,7 @@ func main() {
 		if event.ID%500 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
-		addSamples(event)
+		event.PushPedestalSamples()
 	}
 
 	tbdetector.Det.ComputePedestalsMeanStdDevFromSamples()

@@ -89,3 +89,24 @@ func (e *Event) PlotPulses(x pulse.XaxisType, pedestalRange bool) {
 		}
 	}
 }
+
+func (e *Event) PushPedestalSamples() {
+	for iCluster := range e.Clusters {
+		cluster := &e.Clusters[iCluster]
+		for iPulse := range cluster.Pulses {
+			pulse := &cluster.Pulses[iPulse]
+			if pulse.HasSignal {
+				continue
+			}
+			for iSample := range pulse.Samples {
+				sample := &pulse.Samples[iSample]
+				capacitor := sample.Capacitor
+				noSamples := capacitor.NoPedestalSamples()
+				if e.ID == 0 && noSamples != 0 {
+					log.Fatal("noSamples != 0!")
+				}
+				capacitor.AddPedestalSample(sample.Amplitude)
+			}
+		}
+	}
+}

@@ -35,6 +35,10 @@ func (h *Hemisphere) Print() {
 	}
 }
 
+func (h *Hemisphere) Which() HemisphereType {
+	return h.which
+}
+
 func (h *Hemisphere) GoString() string {
 	switch h.which {
 	case Right:
