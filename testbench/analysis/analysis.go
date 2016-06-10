@@ -29,7 +29,7 @@ func main() {
 		//outFileNamePulses = flag.String("oP", "output/pulses.csv", "Name of the output file containing pulse data")
 		//outFileNameGlobal = flag.String("oG", "output/globalEventVariables.csv", "Name of the output file containing global event variables")
 		noEvents  = flag.Int("n", -1, "Number of events to process (-1 means all events are processed)")
-		pedCorr   = flag.String("pedcorr", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
+		pedCorr   = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 		wGob      = flag.String("wgob", "dqplots.gob", "Name of the output gob file containing dq plots. If not set, the gob file is not produced.")
 		inputType = reader.HexInput
 	)

@@ -23,9 +23,8 @@ func main() {
 	var (
 		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file.")
 		noEvents   = flag.Uint("n", 10000000, "Number of events to process.")
-		pedCorr    = flag.String("pedcorr", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
+		pedCorr    = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 		wGob       = flag.String("wgob", "dqplots.gob", "Name of the output gob file containing dq plots. If not set, the gob file is not produced.")
-		refGob     = flag.String("refgob", "", "Name of the gob file containing reference dq plots. If not set, reference dq plots are not overlaid to current dq plots.")
 	)
 
 	flag.Parse()
@@ -70,11 +69,32 @@ func main() {
 		}
 		///////////////////////////////////////////////////////////
 
+		// begin here
+		for iCluster := range event.Clusters {
+			cluster := &event.Clusters[iCluster]
+			for iPulse := range cluster.Pulses {
+				pulse := &cluster.Pulses[iPulse]
+				if pulse.HasSignal {
+					continue
+				}
+				for iSample := range pulse.Samples {
+					sample := &pulse.Samples[iSample]
+					capacitor := sample.Capacitor
+					noSamples := capacitor.NoPedestalSamples()
+					if event.ID == 0 && noSamples != 0 {
+						log.Fatal("noSamples != 0!")
+					}
+					capacitor.TempSum += sample.Amplitude
+				}
+			}
+		}
+		// end here
+
 		///////////////////////////////////////////////////////////
 		// Plotting
 		// pulses
-		if event.ID < 20 {
-			event.PlotPulses(pulse.XaxisCapacitor, false)
+		if event.ID < 2 {
+			event.PlotPulses(pulse.XaxisCapacitor, false, true)
 		}
 		// dq
 		dqplots.FillHistos(event)
@@ -82,15 +102,34 @@ func main() {
 
 		//event.Print(true)
 	}
-
 	dqplots.Finalize()
-
+	// begin here
+	for iHemi := range dpgadetector.Det.Hemispheres() {
+		hemi := dpgadetector.Det.Hemisphere(iHemi)
+		for iASM := range hemi.ASMs() {
+			asm := hemi.ASM(iASM)
+			for iDRS := range asm.DRSs() {
+				drs := asm.DRS(uint8(iDRS))
+				for iQuartet := range drs.Quartets() {
+					quartet := drs.Quartet(uint8(iQuartet))
+					for iChannel := range quartet.Channels() {
+						ch := quartet.Channel(uint8(iChannel))
+						for iCapacitor := range ch.Capacitors() {
+							capa := ch.Capacitor(uint16(iCapacitor))
+							fmt.Println("value (", iCapacitor, iChannel, iQuartet, iDRS, iASM, iHemi, ") =", capa.TempSum)
+						}
+					}
+				}
+			}
+		}
+	}
+	// end here
 	tpL := dqplots.MakeChargeAmplTiledPlot(dq.Amplitude, dpgadetector.Left)
 	tpL.Save(150*vg.Centimeter, 100*vg.Centimeter, "ChargeDistribTiledLeftHemi.png")
 	tpR := dqplots.MakeChargeAmplTiledPlot(dq.Amplitude, dpgadetector.Right)
 	tpR.Save(150*vg.Centimeter, 100*vg.Centimeter, "ChargeDistribTiledRightHemi.png")
 
 	dqplots.WriteGob(*wGob)
-	dqplots.SaveHistos(*refGob)
+	dqplots.SaveHistos()
 
 }

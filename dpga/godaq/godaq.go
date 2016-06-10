@@ -25,6 +25,7 @@ import (
 
 	"golang.org/x/net/websocket"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
@@ -60,6 +61,7 @@ var (
 		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
 	hvMonDegrad = flag.Uint("hvmondeg", 100, "HV monitoring frequency degradation factor")
 	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
+	pedCorr     = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 )
 
 // XY is a struct used to store a couple of values
@@ -541,7 +543,10 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 	for i := range pulse.Samples {
 		if i%sampFreq == 0 {
 			samp := &pulse.Samples[i]
-			data[counter] = XY{X: float64(samp.Index), Y: samp.Amplitude}
+			var x float64
+			x = float64(samp.Index)
+			//x = float64(samp.Capacitor.ID())
+			data[counter] = XY{X: x, Y: samp.Amplitude}
 			counter++
 		}
 	}
@@ -551,6 +556,9 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 // func stream(terminateStream chan bool, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
+	if *pedCorr != "" {
+		dpgadetector.Det.ReadPedestalsFile(*pedCorr)
+	}
 	noEventsForMon := uint64(0)
 	dqplots := dq.NewDQPlot()
 	if *refplots != "" {
@@ -629,7 +637,9 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 							if *monLight {
 								sampFreq = 20
 							}
-							//event2 = applyCorrCalib.RemovePedestal(event)
+							if *pedCorr != "" {
+								event = applyCorrCalib.RemovePedestal(event)
+							}
 							for iq := 0; iq < len(qs); iq++ {
 								qs[iq][0] = GetMonData(sampFreq, event.Clusters[iq].Pulses[0])
 								qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])

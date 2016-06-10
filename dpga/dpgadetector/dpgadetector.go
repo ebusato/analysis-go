@@ -28,6 +28,14 @@ type Hemisphere struct {
 	which HemisphereType
 }
 
+func (h *Hemisphere) ASMs() [6]detector.ASMCard {
+	return h.asm
+}
+
+func (h *Hemisphere) ASM(i int) *detector.ASMCard {
+	return &h.asm[i]
+}
+
 func (h *Hemisphere) Print() {
 	fmt.Printf("Printing Hemisphere %v\n", h.which)
 	for iASM := range h.asm {
@@ -511,6 +519,14 @@ func (d *Detector) Print() {
 	for iHemi := range d.hemispheres {
 		d.hemispheres[iHemi].Print()
 	}
+}
+
+func (d *Detector) Hemispheres() [2]Hemisphere {
+	return d.hemispheres
+}
+
+func (d *Detector) Hemisphere(i int) *Hemisphere {
+	return &d.hemispheres[i]
 }
 
 func (d *Detector) NoClusters() uint8 {

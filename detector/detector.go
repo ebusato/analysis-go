@@ -20,8 +20,8 @@ type Capacitor struct {
 	noPedestalSamples uint64
 	pedestalMean      float64
 	pedestalMeanErr   float64
-
-	Channel *Channel
+	TempSum           float64
+	Channel           *Channel
 }
 
 // Print prints capacitor informations.
@@ -49,7 +49,6 @@ func (c *Capacitor) AddPedestalSample(ampl float64) {
 	c.noPedestalSamples++
 	c.pedestalMean += ampl
 	c.pedestalMeanErr += ampl * ampl
-
 }
 
 // FinalizePedestalMeanErr computes the pedestal sample mean and standard deviation on mean.

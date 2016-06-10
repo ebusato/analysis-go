@@ -368,6 +368,9 @@ func (c *Cluster) PlotPulses(evtID uint, x XaxisType, pedestalRange bool) string
 	case true:
 		p.Y.Min = 300
 		p.Y.Max = 700
+		// 				p.Y.Min = -50
+		// 				p.Y.Max = 50
+
 	case false:
 		p.Y.Min = -500
 		p.Y.Max = 4096

@@ -24,6 +24,7 @@ func NewEvent(noClusters uint8) *Event {
 func (e *Event) Copy() *Event {
 	newevent := NewEvent(uint8(e.NoClusters()))
 	newevent.ID = e.ID
+	newevent.IsCorrupted = e.IsCorrupted
 	for i := range e.Clusters {
 		oldPulses := e.Clusters[i].Pulses
 		newevent.Clusters[i].Pulses = [4]pulse.Pulse{
@@ -81,10 +82,10 @@ func (e *Event) Multiplicity() (uint8, []*pulse.Pulse) {
 	return mult, pulsesWSig
 }
 
-func (e *Event) PlotPulses(x pulse.XaxisType, pedestalRange bool) {
+func (e *Event) PlotPulses(x pulse.XaxisType, onlyClustersWithSig bool, pedestalRange bool) {
 	for i := range e.Clusters {
 		cluster := &e.Clusters[i]
-		if len(cluster.PulsesWithSignal()) > 0 {
+		if (onlyClustersWithSig == true && len(cluster.PulsesWithSignal()) > 0) || !onlyClustersWithSig {
 			cluster.PlotPulses(e.ID, x, pedestalRange)
 		}
 	}
