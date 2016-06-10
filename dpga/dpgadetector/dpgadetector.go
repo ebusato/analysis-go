@@ -291,6 +291,7 @@ func NewDetector() *Detector {
 						for iCapacitor := range ch.Capacitors() {
 							capa := ch.Capacitor(uint16(iCapacitor))
 							capa.SetID(uint16(iCapacitor))
+							capa.Channel = ch
 						}
 					}
 				}
@@ -463,7 +464,8 @@ func (d *Detector) DumpFullGeom() {
 	}
 }
 
-func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
+// FinalizePedestalsMeanErr finalizes the computations of the pedestals for all capacitors.
+func (d *Detector) FinalizePedestalsMeanErr() {
 	for iHemi := range d.hemispheres {
 		hemi := &d.hemispheres[iHemi]
 		for iASM := range hemi.asm {
@@ -476,7 +478,7 @@ func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
 						ch := quartet.Channel(uint8(iChannel))
 						for iCapacitor := range ch.Capacitors() {
 							capa := ch.Capacitor(uint16(iCapacitor))
-							capa.ComputePedestalMeanErrFromSamples()
+							capa.FinalizePedestalMeanErr()
 						}
 					}
 				}
@@ -635,7 +637,7 @@ func (d *Detector) ReadPedestalsFile(fileName string) {
 }
 
 type HVSerialChan struct {
-	SerialNumber uint8
+	SerialNumber  uint8
 	ChannelNumber uint8
 }
 
@@ -648,7 +650,7 @@ func init() {
 	//Det.DumpGeom()
 	//Det.DumpFullGeom()
 	//Det.Print()
-	
+
 	HVmap = make(map[uint]HVSerialChan)
 	HVmap[0] = HVSerialChan{SerialNumber: 1, ChannelNumber: 1}
 	HVmap[1] = HVSerialChan{SerialNumber: 1, ChannelNumber: 2}

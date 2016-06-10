@@ -12,15 +12,16 @@ import (
 	"github.com/gonum/plot/plotter"
 	"github.com/gonum/plot/plotutil"
 	"github.com/gonum/plot/vg"
-	"github.com/gonum/stat"
 )
 
 // Capacitor describes a DRS capacitor.
 type Capacitor struct {
-	id              uint16 // possible values: 0, 1, ..., 1023 (1024 capacitors per channel)
-	pedestalSamples []float64
-	pedestalMean    float64
-	pedestalMeanErr float64
+	id                uint16 // possible values: 0, 1, ..., 1023 (1024 capacitors per channel)
+	noPedestalSamples uint64
+	pedestalMean      float64
+	pedestalMeanErr   float64
+
+	Channel *Channel
 }
 
 // Print prints capacitor informations.
@@ -39,38 +40,46 @@ func (c *Capacitor) SetID(id uint16) {
 }
 
 // NoPedestalSamples returns the number of samples used for the pedestal calculation.
-func (c *Capacitor) NoPedestalSamples() int {
-	return len(c.pedestalSamples)
-}
-
-// PedestalSamples returns the slice of pedestal samples.
-func (c *Capacitor) PedestalSamples() []float64 {
-	return c.pedestalSamples
+func (c *Capacitor) NoPedestalSamples() uint64 {
+	return c.noPedestalSamples
 }
 
 // AddPedestalSample adds a sample for pedestal calculation.
-func (c *Capacitor) AddPedestalSample(n float64) {
-	c.pedestalSamples = append(c.pedestalSamples, n)
+func (c *Capacitor) AddPedestalSample(ampl float64) {
+	c.noPedestalSamples++
+	c.pedestalMean += ampl
+	c.pedestalMeanErr += ampl * ampl
+
+}
+
+// FinalizePedestalMeanErr computes the pedestal sample mean and standard deviation on mean.
+func (c *Capacitor) FinalizePedestalMeanErr() {
+	if c.noPedestalSamples != 0 && c.noPedestalSamples != 1 {
+		c.pedestalMean /= float64(c.noPedestalSamples)
+		c.pedestalMeanErr /= float64(c.noPedestalSamples) - 1
+		c.pedestalMeanErr -= float64(c.noPedestalSamples) / (float64(c.noPedestalSamples) - 1) * c.pedestalMean * c.pedestalMean
+		c.pedestalMeanErr = math.Sqrt(c.pedestalMeanErr / float64(c.noPedestalSamples))
+	}
 }
 
 // ComputePedestalMeanErrFromSamples computes the pedestal mean and standard deviation on mean.
-func (c *Capacitor) ComputePedestalMeanErrFromSamples() {
-	var weights []float64
-	mean, variance := stat.MeanVariance(c.pedestalSamples, weights)
-	if math.IsNaN(mean) {
-		mean = 0
-	}
-	if math.IsNaN(variance) {
-		variance = 0
-	}
-	c.pedestalMean = mean
-	switch c.NoPedestalSamples() != 0 {
-	case true:
-		c.pedestalMeanErr = math.Sqrt(variance / float64(c.NoPedestalSamples()))
-	default:
-		c.pedestalMeanErr = 0
-	}
-}
+// func (c *Capacitor) ComputePedestalMeanErrFromSamples() {
+// 	var weights []float64
+// 	mean, variance := stat.MeanVariance(c.pedestalSamples, weights)
+// 	if math.IsNaN(mean) {
+// 		mean = 0
+// 	}
+// 	if math.IsNaN(variance) {
+// 		variance = 0
+// 	}
+// 	c.pedestalMean = mean
+// 	switch c.NoPedestalSamples() != 0 {
+// 	case true:
+// 		c.pedestalMeanErr = math.Sqrt(variance / float64(c.NoPedestalSamples()))
+// 	default:
+// 		c.pedestalMeanErr = 0
+// 	}
+// }
 
 // PedestalMean returns the pedestal mean.
 func (c *Capacitor) PedestalMean() float64 {
@@ -109,7 +118,7 @@ type Channel struct {
 
 	// Full coordinates of the scintillator
 	ScintCoords RectParallelepiped
-	
+
 	Quartet *Quartet
 }
 
@@ -251,7 +260,7 @@ type Quartet struct {
 	id       uint8
 
 	utils.CylCoord
-	
+
 	DRS *DRS
 }
 
@@ -355,7 +364,7 @@ type DRS struct {
 	// The first four and last four channels correspond to two different quartets
 	quartets [2]Quartet
 	id       uint8
-	
+
 	ASMCard *ASMCard
 }
 
@@ -382,7 +391,7 @@ func (d *DRS) Quartet(iQuartet uint8) *Quartet {
 	return &d.quartets[iQuartet]
 }
 
-// UpperStruct is an interface to the upper structure to which 
+// UpperStruct is an interface to the upper structure to which
 // the ASM card belong in the full detector.
 // For example, for the LAPD detector UpperStruct is a hemisphere
 type UpperStruct interface{}
@@ -397,7 +406,7 @@ type ASMCard struct {
 	id   uint8
 
 	utils.CylCoord
-	
+
 	UpStr UpperStruct
 }
 

@@ -56,7 +56,7 @@ func main() {
 		event.PushPedestalSamples()
 	}
 
-	dpgadetector.Det.ComputePedestalsMeanStdDevFromSamples()
+	dpgadetector.Det.FinalizePedestalsMeanErr()
 	dpgadetector.Det.WritePedestalsToFile(*outfileName)
 
 	//dpgadetector.Det.PlotPedestals(true)
