@@ -62,7 +62,8 @@ var (
 		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
 	hvMonDegrad = flag.Uint("hvmondeg", 100, "HV monitoring frequency degradation factor")
 	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
-	pedCorr     = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
+	ped         = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
+	tdo         = flag.String("tdo", "", "Name of the csv file containing time dependent offsets. If not set, time dependent offsets are not applied. Relevant only when ped!=\"\".")
 )
 
 // XY is a struct used to store a couple of values
@@ -561,8 +562,11 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 // func stream(terminateStream chan bool, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
-	if *pedCorr != "" {
-		dpgadetector.Det.ReadPedestalsFile(*pedCorr)
+	if *ped != "" {
+		dpgadetector.Det.ReadPedestalsFile(*ped)
+	}
+	if *tdo != "" {
+		dpgadetector.Det.ReadTimeDepOffsetsFile(*tdo)
 	}
 	noEventsForMon := uint64(0)
 	dqplots := dq.NewDQPlot()
@@ -600,6 +604,18 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 					////////////////////////////////////////////////////////////////////////////////////////////
 					// Monitoring
 					if !pauseMonBool {
+						//////////////////////////////////////////////////////
+						// Corrections
+						doPedestal := false
+						doTimeDepOffset := false
+						if *ped != "" {
+							doPedestal = true
+						}
+						if *tdo != "" {
+							doTimeDepOffset = true
+						}
+						event = applyCorrCalib.HV(event, doPedestal, doTimeDepOffset)
+						//////////////////////////////////////////////////////
 						dqplots.FillHistos(event)
 						mult, pulsesWithSignal := event.Multiplicity()
 						if mult == 2 {
@@ -641,9 +657,6 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 							sampFreq := 5
 							if *monLight {
 								sampFreq = 20
-							}
-							if *pedCorr != "" {
-								event = applyCorrCalib.RemovePedestal(event)
 							}
 							for iq := 0; iq < len(qs); iq++ {
 								qs[iq][0] = GetMonData(sampFreq, event.Clusters[iq].Pulses[0])
