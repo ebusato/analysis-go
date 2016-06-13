@@ -112,6 +112,10 @@ type Channel struct {
 	name       string
 	plotStat   bool
 
+	noTimeDepOffsetSamples uint64    // number of samples used to compute the time dependent offsets
+	timeDepOffsetMean      []float64 // slice containing time dependent offset calibration coefficients (to be applied after per-capacitor pedestal correction has been applied)
+	timeDepOffsetMeanErr   []float64 // slice containing time dependent offset calibration coefficient errors
+
 	// The coordinates are those of the center of the front face of the cristal.
 	utils.CartCoord
 
@@ -119,6 +123,12 @@ type Channel struct {
 	ScintCoords RectParallelepiped
 
 	Quartet *Quartet
+}
+
+//
+func (c *Channel) SetNoSamples(noSamples int) {
+	c.timeDepOffsetMean = make([]float64, noSamples)
+	c.timeDepOffsetMeanErr = make([]float64, noSamples)
 }
 
 // Capacitors returns the capacitors for this channel

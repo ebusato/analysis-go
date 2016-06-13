@@ -136,6 +136,7 @@ func (r *Reader) readHeader(hdr *Header) {
 	default:
 		panic("error ! header type not known")
 	}
+	dpgadetector.Det.SetNoSamples(int(r.noSamples))
 }
 
 func (r *Reader) ReadFrame(f *Frame) {

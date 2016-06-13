@@ -514,6 +514,26 @@ func (d *Detector) PlotPedestals(plotStat bool) {
 	}
 }
 
+// SetNoSamples sets the number of physical samples
+func (d *Detector) SetNoSamples(noSamples int) {
+	for iHemi := range d.hemispheres {
+		hemi := &d.hemispheres[iHemi]
+		for iASM := range hemi.asm {
+			asm := &hemi.asm[iASM]
+			for iDRS := range asm.DRSs() {
+				drs := asm.DRS(uint8(iDRS))
+				for iQuartet := range drs.Quartets() {
+					quartet := drs.Quartet(uint8(iQuartet))
+					for iChannel := range quartet.Channels() {
+						ch := quartet.Channel(uint8(iChannel))
+						ch.SetNoSamples(noSamples)
+					}
+				}
+			}
+		}
+	}
+}
+
 func (d *Detector) Print() {
 	fmt.Printf("Printing information for detector %v (sampling freq = %v)\n", d.scintillator, d.samplingFreq)
 	for iHemi := range d.hemispheres {
