@@ -82,11 +82,11 @@ func (e *Event) Multiplicity() (uint8, []*pulse.Pulse) {
 	return mult, pulsesWSig
 }
 
-func (e *Event) PlotPulses(x pulse.XaxisType, onlyClustersWithSig bool, pedestalRange bool) {
+func (e *Event) PlotPulses(x pulse.XaxisType, onlyClustersWithSig bool, yrange pulse.YRange) {
 	for i := range e.Clusters {
 		cluster := &e.Clusters[i]
 		if (onlyClustersWithSig == true && len(cluster.PulsesWithSignal()) > 0) || !onlyClustersWithSig {
-			cluster.PlotPulses(e.ID, x, pedestalRange)
+			cluster.PlotPulses(e.ID, x, yrange)
 		}
 	}
 }
@@ -107,6 +107,27 @@ func (e *Event) PushPedestalSamples() {
 					log.Fatal("noSamples != 0!")
 				}
 				capacitor.AddPedestalSample(sample.Amplitude)
+			}
+		}
+	}
+}
+
+func (e *Event) PushTimeDepOffsetSamples() {
+	for iCluster := range e.Clusters {
+		cluster := &e.Clusters[iCluster]
+		for iPulse := range cluster.Pulses {
+			pulse := &cluster.Pulses[iPulse]
+			if pulse.HasSignal {
+				continue
+			}
+			ch := pulse.Channel
+			if ch == nil {
+				panic("pulse has no channel associated to it.")
+			}
+			ch.IncrementNoTimeDepOffsetSamples()
+			for iSample := range pulse.Samples {
+				sample := &pulse.Samples[iSample]
+				ch.AddTimeDepOffsetSample(iSample, sample.Amplitude)
 			}
 		}
 	}

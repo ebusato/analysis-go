@@ -20,7 +20,6 @@ type Capacitor struct {
 	noPedestalSamples uint64
 	pedestalMean      float64
 	pedestalMeanErr   float64
-	TempSum           float64
 	Channel           *Channel
 }
 
@@ -112,6 +111,8 @@ type Channel struct {
 	name       string
 	plotStat   bool
 
+	// The following three quantities are used for the the determination and usage of
+	// the time dependent offset calibration
 	noTimeDepOffsetSamples uint64    // number of samples used to compute the time dependent offsets
 	timeDepOffsetMean      []float64 // slice containing time dependent offset calibration coefficients (to be applied after per-capacitor pedestal correction has been applied)
 	timeDepOffsetMeanErr   []float64 // slice containing time dependent offset calibration coefficient errors
@@ -125,10 +126,54 @@ type Channel struct {
 	Quartet *Quartet
 }
 
-//
+// SetNoSamples sets the size of the timeDepOffsetMean and timeDepOffsetMeanErr slices to the number of samples
 func (c *Channel) SetNoSamples(noSamples int) {
 	c.timeDepOffsetMean = make([]float64, noSamples)
 	c.timeDepOffsetMeanErr = make([]float64, noSamples)
+}
+
+// IncrementNoTimeDepOffsetSamples increments c.noTimeDepOffsetSamples by one unit
+func (c *Channel) IncrementNoTimeDepOffsetSamples() {
+	c.noTimeDepOffsetSamples++
+}
+
+// AddTimeDepOffsetSample adds a sample for the calculation of the time dependent offset mean and error
+func (c *Channel) AddTimeDepOffsetSample(iSample int, ampl float64) {
+	c.timeDepOffsetMean[iSample] += ampl
+	c.timeDepOffsetMeanErr[iSample] += ampl * ampl
+}
+
+// FinalizePedestalMeanErr computes the pedestal sample mean and standard deviation on mean.
+func (c *Channel) FinalizeTimeDepOffsetMeanErr() {
+	if c.noTimeDepOffsetSamples != 0 && c.noTimeDepOffsetSamples != 1 {
+		for iSample := 0; iSample < len(c.timeDepOffsetMean); iSample++ {
+			c.timeDepOffsetMean[iSample] /= float64(c.noTimeDepOffsetSamples)
+			c.timeDepOffsetMeanErr[iSample] /= float64(c.noTimeDepOffsetSamples) - 1
+			c.timeDepOffsetMeanErr[iSample] -= float64(c.noTimeDepOffsetSamples) / (float64(c.noTimeDepOffsetSamples) - 1) * c.timeDepOffsetMean[iSample] * c.timeDepOffsetMean[iSample]
+			c.timeDepOffsetMeanErr[iSample] = math.Sqrt(c.timeDepOffsetMeanErr[iSample] / float64(c.noTimeDepOffsetSamples))
+		}
+	}
+}
+
+// TimeDepOffsetMeans returns the time dependent offset slice.
+func (c *Channel) TimeDepOffsetMeans() []float64 {
+	return c.timeDepOffsetMean
+}
+
+// TimeDepOffsetMean returns the time dependent offset mean for sample iSample.
+func (c *Channel) TimeDepOffsetMean(iSample int) float64 {
+	return c.timeDepOffsetMean[iSample]
+}
+
+// PedestalMeanErr returns the pedestal standard deviation for sample iSample.
+func (c *Channel) TimeDepOffsetMeanErr(iSample int) float64 {
+	return c.timeDepOffsetMeanErr[iSample]
+}
+
+// SetTimDepOffsetMeanErr sets the time dependent offset mean and standard deviation to the given values for sample iSample.
+func (c *Channel) SetTimeDepOffsetMeanErr(iSample int, mean float64, err float64) {
+	c.timeDepOffsetMean[iSample] = mean
+	c.timeDepOffsetMeanErr[iSample] = err
 }
 
 // Capacitors returns the capacitors for this channel

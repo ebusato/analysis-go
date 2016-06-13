@@ -23,7 +23,8 @@ func main() {
 	var (
 		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file.")
 		noEvents   = flag.Uint("n", 10000000, "Number of events to process.")
-		pedCorr    = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
+		ped        = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
+		tdo        = flag.String("tdo", "", "Name of the csv file containing time dependent offsets. If not set, time dependent offsets are not applied. Relevant only when ped!=\"\".")
 		wGob       = flag.String("wgob", "dqplots.gob", "Name of the output gob file containing dq plots. If not set, the gob file is not produced.")
 	)
 
@@ -53,8 +54,11 @@ func main() {
 
 	// Start doing concrete analysis
 
-	if *pedCorr != "" {
-		dpgadetector.Det.ReadPedestalsFile(*pedCorr)
+	if *ped != "" {
+		dpgadetector.Det.ReadPedestalsFile(*ped)
+	}
+	if *tdo != "" {
+		dpgadetector.Det.ReadTimeDepOffsetsFile(*tdo)
 	}
 	dqplots := dq.NewDQPlot()
 
@@ -64,37 +68,22 @@ func main() {
 		}
 		///////////////////////////////////////////////////////////
 		// Corrections
-		if *pedCorr != "" {
-			event = applyCorrCalib.RemovePedestal(event)
+		doPedestal := false
+		doTimeDepOffset := false
+		if *ped != "" {
+			doPedestal = true
 		}
+		if *tdo != "" {
+			doTimeDepOffset = true
+		}
+		event = applyCorrCalib.HV(event, doPedestal, doTimeDepOffset)
 		///////////////////////////////////////////////////////////
-
-		// begin here
-		for iCluster := range event.Clusters {
-			cluster := &event.Clusters[iCluster]
-			for iPulse := range cluster.Pulses {
-				pulse := &cluster.Pulses[iPulse]
-				if pulse.HasSignal {
-					continue
-				}
-				for iSample := range pulse.Samples {
-					sample := &pulse.Samples[iSample]
-					capacitor := sample.Capacitor
-					noSamples := capacitor.NoPedestalSamples()
-					if event.ID == 0 && noSamples != 0 {
-						log.Fatal("noSamples != 0!")
-					}
-					capacitor.TempSum += sample.Amplitude
-				}
-			}
-		}
-		// end here
 
 		///////////////////////////////////////////////////////////
 		// Plotting
 		// pulses
 		if event.ID < 2 {
-			event.PlotPulses(pulse.XaxisCapacitor, false, true)
+			event.PlotPulses(pulse.XaxisCapacitor, false, pulse.YRangeAuto)
 		}
 		// dq
 		dqplots.FillHistos(event)
@@ -103,27 +92,7 @@ func main() {
 		//event.Print(true)
 	}
 	dqplots.Finalize()
-	// begin here
-	for iHemi := range dpgadetector.Det.Hemispheres() {
-		hemi := dpgadetector.Det.Hemisphere(iHemi)
-		for iASM := range hemi.ASMs() {
-			asm := hemi.ASM(iASM)
-			for iDRS := range asm.DRSs() {
-				drs := asm.DRS(uint8(iDRS))
-				for iQuartet := range drs.Quartets() {
-					quartet := drs.Quartet(uint8(iQuartet))
-					for iChannel := range quartet.Channels() {
-						ch := quartet.Channel(uint8(iChannel))
-						for iCapacitor := range ch.Capacitors() {
-							capa := ch.Capacitor(uint16(iCapacitor))
-							fmt.Println("value (", iCapacitor, iChannel, iQuartet, iDRS, iASM, iHemi, ") =", capa.TempSum)
-						}
-					}
-				}
-			}
-		}
-	}
-	// end here
+
 	tpL := dqplots.MakeChargeAmplTiledPlot(dq.Amplitude, dpgadetector.Left)
 	tpL.Save(150*vg.Centimeter, 100*vg.Centimeter, "ChargeDistribTiledLeftHemi.png")
 	tpR := dqplots.MakeChargeAmplTiledPlot(dq.Amplitude, dpgadetector.Right)

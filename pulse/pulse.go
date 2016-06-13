@@ -49,6 +49,11 @@ func (s *Sample) Print() {
 	fmt.Printf("  -> Amplitude, Time, Index, Capacitor = %v, %v, %v, %p\n", s.Amplitude, s.Time, s.Index, s.Capacitor)
 }
 
+// Subtract subtracts the provided number to the sample amplitude.
+func (s *Sample) Subtract(a float64) {
+	s.Amplitude -= a
+}
+
 // SubtractPedestal subtracts pedestal for the sample.
 // This assumes that pedestals have been computed before.
 func (s *Sample) SubtractPedestal() {
@@ -158,6 +163,15 @@ func (p *Pulse) SubtractPedestal() {
 	for i := range p.Samples {
 		sample := &p.Samples[i]
 		sample.SubtractPedestal()
+	}
+}
+
+// SubtractTimeDepOffset subtracts time dependent offsets for all the samples of the pulse
+func (p *Pulse) SubtractTimeDepOffsets() {
+	ch := p.Channel
+	for iSample := range p.Samples {
+		sample := &p.Samples[iSample]
+		sample.Subtract(ch.TimeDepOffsetMean(iSample))
 	}
 }
 
@@ -329,8 +343,16 @@ func (c *Cluster) Counter(i int) uint32 {
 	return c.Counters[i]
 }
 
+type YRange byte
+
+const (
+	YRangeAuto YRange = iota
+	YRangePedestal
+	YRangeFullDynamics
+)
+
 // PlotPulses plots the four pulses of the cluster in one canvas
-func (c *Cluster) PlotPulses(evtID uint, x XaxisType, pedestalRange bool) string {
+func (c *Cluster) PlotPulses(evtID uint, x XaxisType, yrange YRange) string {
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
@@ -364,16 +386,15 @@ func (c *Cluster) PlotPulses(evtID uint, x XaxisType, pedestalRange bool) string
 		panic(err)
 	}
 
-	switch pedestalRange {
-	case true:
+	switch yrange {
+	case YRangePedestal:
 		p.Y.Min = 300
 		p.Y.Max = 700
-		// 				p.Y.Min = -50
-		// 				p.Y.Max = 50
-
-	case false:
+	case YRangeFullDynamics:
 		p.Y.Min = -500
 		p.Y.Max = 4096
+	default:
+		// do nothing, automatic range
 	}
 
 	outFile := "output/pulses_event" + strconv.Itoa(int(evtID)) + "_cluster" + strconv.Itoa(int(c.ID)) + ".png"
