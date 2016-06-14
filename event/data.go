@@ -111,11 +111,12 @@ func (d *Data) PrintGlobalVarsToFile(outFileName string) {
 			if pulse.HasSignal {
 				hasSignal = 1
 			}
+			_, ampl := pulse.Amplitude()
 			data := ClusterCSV{
 				EventID:   e.ID,
 				PulseID:   uint(j),
 				HasSignal: hasSignal,
-				Amplitude: pulse.Amplitude(),
+				Amplitude: ampl,
 				Charge:    pulse.Charge(),
 				SRout:     pulse.SRout,
 			}
@@ -139,11 +140,13 @@ func (d *Data) PlotAmplitudeCorrelationWithinCluster() {
 		pulses := cluster.PulsesWithSignal()
 		multiplicity := len(pulses)
 		if multiplicity == 2 {
+			_, ampl0 := pulses[0].Amplitude()
+			_, ampl1 := pulses[1].Amplitude()
 			mydata := struct {
 				X, Y, Z float64
 			}{
-				X: pulses[0].Amplitude(),
-				Y: pulses[1].Amplitude(),
+				X: ampl0,
+				Y: ampl1,
 				Z: 0,
 			}
 			data = append(data, mydata)

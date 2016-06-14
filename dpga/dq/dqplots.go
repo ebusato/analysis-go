@@ -48,9 +48,9 @@ func NewDQPlot() *DQPlot {
 		HSatMultiplicity: hbook.NewH1D(8, -0.5, 7.5),
 		HCharge:          make([][]hbook.H1D, NoClusters),
 		HAmplitude:       make([][]hbook.H1D, NoClusters),
-		HMinRecX:         hbook.NewH1D(200,-50,50),
-		HMinRecY:         hbook.NewH1D(240,-60,60),
-		HMinRecZ:         hbook.NewH1D(300,-150,150),
+		HMinRecX:         hbook.NewH1D(200, -50, 50),
+		HMinRecY:         hbook.NewH1D(240, -60, 60),
+		HMinRecZ:         hbook.NewH1D(300, -150, 150),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
@@ -108,7 +108,8 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 			}
 			if pulse.HasSignal {
 				d.HCharge[i][j].Fill(float64(pulse.Charge()/1e6), 1)
-				d.HAmplitude[i][j].Fill(float64(pulse.Amplitude()), 1)
+				_, ampl := pulse.Amplitude()
+				d.HAmplitude[i][j].Fill(ampl, 1)
 			}
 			counter++
 		}
@@ -197,7 +198,7 @@ func (d *DQPlot) MakeMinRec1DTiledPlot() *hplot.TiledPlot {
 	p1 := tp.Plot(0, 0)
 	p1.X.Min = -50
 	p1.X.Max = 50
- 	p1.X.Tick.Marker = &hplot.FreqTicks{N: 101, Freq: 5}
+	p1.X.Tick.Marker = &hplot.FreqTicks{N: 101, Freq: 5}
 	p1.Add(hplot.NewGrid())
 	hplotX, err := hplot.NewH1D(d.HMinRecX)
 	if err != nil {
@@ -227,7 +228,7 @@ func (d *DQPlot) MakeMinRec1DTiledPlot() *hplot.TiledPlot {
 		log.Fatalf("error creating histogram \n")
 	}
 	p2.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction Y (mm)\n")
-	
+
 	p3 := tp.Plot(2, 0)
 	p3.X.Min = -150
 	p3.X.Max = 150
@@ -244,7 +245,7 @@ func (d *DQPlot) MakeMinRec1DTiledPlot() *hplot.TiledPlot {
 		log.Fatalf("error creating histogram \n")
 	}
 	p3.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction Z (mm)\n")
-	
+
 	return tp
 }
 
@@ -404,7 +405,7 @@ func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
 	//var TextsAndXYs []interface{}
 
 	//color := color.RGBA{R: 224, G: 242, B: 247, A: 255}
-	
+
 	var irow int
 	var icol int
 	for iHV := uint(0); iHV < 60; iHV++ {
@@ -464,7 +465,7 @@ func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
 		hvserialchan := dpgadetector.HVmap[iHV]
 		ser := hvserialchan.SerialNumber
 		ch := hvserialchan.ChannelNumber
-		
+
 		// test
 		var ps []plot.Plotter
 		l, s, err := plotter.NewLinePoints(d.HV[ser-1][ch])
@@ -480,7 +481,7 @@ func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
 		p.Legend.Add("HV"+strconv.FormatUint(uint64(iHV), 10)+"("+strconv.FormatUint(uint64(ser), 10)+", "+strconv.FormatUint(uint64(ch), 10)+") ", l, s)
 		p.Legend.XOffs = 3.2 * vg.Centimeter
 		// end test
-		
+
 		//err = plotutil.AddLinePoints(&p.Plot, "HV"+strconv.FormatUint(uint64(iHV), 10)+" ("+strconv.FormatUint(uint64(ser), 10)+", "+strconv.FormatUint(uint64(ch), 10)+") ", d.HV[ser-1][ch])
 		if err != nil {
 			panic(err)

@@ -176,14 +176,16 @@ func (p *Pulse) SubtractTimeDepOffsets() {
 }
 
 // Amplitude returns the amplitude of the sample having the highest amplitude
-func (p *Pulse) Amplitude() float64 {
-	var ampl float64 = 0
-	for _, s := range p.Samples {
+func (p *Pulse) Amplitude() (int, float64) {
+	var ampl float64
+	var amplIndex int
+	for i, s := range p.Samples {
 		if s.Amplitude > ampl {
 			ampl = s.Amplitude
+			amplIndex = i
 		}
 	}
-	return ampl
+	return amplIndex, ampl
 }
 
 // Charge returns the area under the pulse
@@ -319,11 +321,12 @@ func (c *Cluster) PulsesWithSatSignal() []*Pulse {
 
 // Amplitude returns the sum of the pulse amplitudes
 func (c *Cluster) Amplitude() float64 {
-	amp := 0.
+	amplitude := 0.
 	for i := range c.Pulses {
-		amp += c.Pulses[i].Amplitude()
+		_, amp := c.Pulses[i].Amplitude()
+		amplitude += amp
 	}
-	return amp
+	return amplitude
 }
 
 // Charge returns the sum of the pulse charges
