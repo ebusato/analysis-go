@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-hep/csvutil"
 	"github.com/go-hep/hbook"
+	"github.com/go-hep/hplot"
 	"github.com/toqueteos/webbrowser"
 
 	"golang.org/x/net/websocket"
@@ -213,6 +214,7 @@ type Data struct {
 	HVvals         string   `json:"hv"`             // hv values
 	MinRec         []XYZ    `json:"minrec"`         // outcome of the minimal reconstruction algorithm
 	MinRec1DDistrs string   `json:"minrec1Ddistrs"` // minimal reconstruction X, Y, Z distributions
+	DeltaT30       string   `json:"deltat30"`       // distribution of the difference of T30
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -648,6 +650,9 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 								dqplots.HMinRecX.Fill(x, 1)
 								dqplots.HMinRecY.Fill(y, 1)
 								dqplots.HMinRecZ.Fill(z, 1)
+								if doPedestal {
+									dqplots.DeltaT30.Fill(pulsesWithSignal[0].T30(true)-pulsesWithSignal[1].T30(true), 1)
+								}
 							}
 						}
 						if *iEvent%*monFreq == 0 {
@@ -705,6 +710,21 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 								freq = 0
 							}
 
+							// Make DeltaT30 plot
+							pDeltaT30, err := hplot.New()
+							if err != nil {
+								panic(err)
+							}
+							pDeltaT30.X.Label.Text = "Delta T30 (ns)"
+							pDeltaT30.Y.Label.Text = "No entries"
+							pDeltaT30.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
+							hpDeltaT30, err := hplot.NewH1D(dqplots.DeltaT30)
+							if err != nil {
+								panic(err)
+							}
+							pDeltaT30.Add(hpDeltaT30)
+							DeltaT30svg := utils.RenderSVG(pDeltaT30, 15, 7)
+
 							// send to channel
 							if float64(len(datac)) >= 0.6*float64(datacsize) {
 								fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
@@ -722,6 +742,7 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 								HVvals:         hvsvg,
 								MinRec:         minrec,
 								MinRec1DDistrs: minrec1Dsvg,
+								DeltaT30:       DeltaT30svg,
 							}
 							noEventsForMon = 0
 							minrec = nil

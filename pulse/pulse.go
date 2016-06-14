@@ -71,6 +71,8 @@ type Pulse struct {
 	SRout        uint16 // SRout is the number of the first capacitor for this pulse, it can take 1024 values (0 -> 1023)
 	HasSignal    bool
 	HasSatSignal bool
+	Ampl         float64
+	AmplIndex    int
 	Channel      *detector.Channel
 }
 
@@ -185,6 +187,8 @@ func (p *Pulse) Amplitude() (int, float64) {
 			amplIndex = i
 		}
 	}
+	p.Ampl = ampl
+	p.AmplIndex = amplIndex
 	return amplIndex, ampl
 }
 
@@ -195,6 +199,51 @@ func (p *Pulse) Charge() float64 {
 		sum += s.Amplitude
 	}
 	return sum * float64(p.TimeStep)
+}
+
+// T30 returns the time at which the signal is 30% of its amplitude
+func (p *Pulse) T30(recomputeAmpl bool) float64 {
+	if recomputeAmpl {
+		p.Amplitude()
+	} else if p.Ampl == 0 {
+		panic("pulse amplitude is 0, meaning that the amplitude was never calculated before. You should set the recomputeAmpl flag to true")
+	}
+	fmt.Println("debug T30:", p.Ampl)
+	// Determination of i30low
+	// i30low is the index of the sample for which the amplitude is just below 30% of the pulse amplitude
+	var i30low int
+	var ampl30low float64
+	for i := p.AmplIndex; ; i-- {
+		fmt.Println("   ->", i, p.Samples[i].Amplitude)
+		if p.Samples[i].Amplitude < 0.3*p.Ampl {
+			i30low = i
+			ampl30low = p.Samples[i].Amplitude
+			fmt.Println("   -> found i30low, breaking")
+			break
+		}
+	}
+	i30high := i30low + 1
+	ampl30high := p.Samples[i30high].Amplitude
+	// Sanity check
+	if ampl30high < 0.3*p.Ampl {
+		panic("p.Samples[i30high] < 0.3 * p.Ampl, this should never happen")
+	}
+	if ampl30high == ampl30low {
+		// This should never happen but just to be sure
+		// Following calculations are undefined in this case
+		return 0
+	}
+	// As of now, work with time rather than with indices
+	t30low := p.Samples[i30low].Time
+	t30high := p.Samples[i30high].Time
+	// Linear interpolation between t30low and t30high
+	fmt.Println("  -> i30low, i30high, t30low, t30high, ampl30low, ampl30high:", i30low, i30high, t30low, t30high, ampl30low, ampl30high)
+	T30 := ((0.3*p.Ampl-ampl30low)*t30high + (ampl30high-0.3*p.Ampl)*t30low) / (ampl30high - ampl30low)
+	fmt.Println("  -> T30 =", T30)
+	if T30 > t30high || T30 < t30low {
+		panic("T30 > t30high || T30 < t30low")
+	}
+	return T30
 }
 
 // XaxisType defines the x axis type for plotting

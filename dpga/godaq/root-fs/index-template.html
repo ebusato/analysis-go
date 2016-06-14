@@ -38,6 +38,7 @@
 		var chargerhplot = ""
 		var hvplot = ""
 		var minrec1Ddistr = ""
+		var deltat30plot = ""
 		
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
@@ -102,6 +103,8 @@
 			p4.innerHTML = hvplot;
 			var p5 = document.getElementById("my-minrec1Ddistr-plot");
 			p5.innerHTML = minrec1Ddistr;
+			var p6 = document.getElementById("my-deltat30-plot");
+			p6.innerHTML = deltat30plot;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					optsR = new options('#FFFF00') // yellow
@@ -167,6 +170,7 @@
 				chargerhplot = data.charger;
 				hvplot = data.hv;
 				minrec1Ddistr = data.minrec1Ddistrs
+				deltat30plot = data.deltat30
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < data.quartets[iq][ip].length; is += 1) {
@@ -247,8 +251,9 @@
 		<td valign="top">
 			<!--div id="graph3DMinReco"></div-->
 		</td>		
-		<td>
+		<td width="600">
 			<div id="my-mult-plot" class="my-plot-stylefreq"></div>
+			<div id="my-deltat30-plot" class="my-plot-stylefreq"></div>
 		</td>
 		<td valign="top">
 			<div id="my-minrec1Ddistr-plot" class="my-plot-stylefreq"></div>

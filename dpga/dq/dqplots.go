@@ -32,7 +32,8 @@ type DQPlot struct {
 	HMinRecX         *hbook.H1D
 	HMinRecY         *hbook.H1D
 	HMinRecZ         *hbook.H1D
-
+	DeltaT30         *hbook.H1D
+	
 	HV [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
 
 	DQPlotRef *DQPlot
@@ -51,6 +52,7 @@ func NewDQPlot() *DQPlot {
 		HMinRecX:         hbook.NewH1D(200, -50, 50),
 		HMinRecY:         hbook.NewH1D(240, -60, 60),
 		HMinRecZ:         hbook.NewH1D(300, -150, 150),
+		DeltaT30:         hbook.NewH1D(300, -30, 30),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
