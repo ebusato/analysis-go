@@ -723,6 +723,7 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 								panic(err)
 							}
 							pDeltaT30.Add(hpDeltaT30)
+							pDeltaT30.Add(hplot.NewGrid())
 							DeltaT30svg := utils.RenderSVG(pDeltaT30, 15, 7)
 
 							// send to channel

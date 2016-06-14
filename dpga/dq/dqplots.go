@@ -33,7 +33,7 @@ type DQPlot struct {
 	HMinRecY         *hbook.H1D
 	HMinRecZ         *hbook.H1D
 	DeltaT30         *hbook.H1D
-	
+
 	HV [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
 
 	DQPlotRef *DQPlot
@@ -158,6 +158,8 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 	p1 := tp.Plot(0, 0)
 	p1.X.Min = 0
 	p1.X.Max = 240
+	p1.X.Label.Text = "channel"
+	p1.Y.Label.Text = "No pulses"
 	p1.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
 	p1.Add(hplot.NewGrid())
 	hplotfreq, err := hplot.NewH1D(d.HFrequency)
@@ -170,11 +172,13 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 	if err != nil {
 		panic(err)
 	}
-	p1.Title.Text = fmt.Sprintf("Number of pulses vs channel\n")
+	//p1.Title.Text = fmt.Sprintf("Number of pulses vs channel\n")
 
 	p2 := tp.Plot(1, 0)
 	p2.X.Min = 0
 	p2.X.Max = 240
+	p2.X.Label.Text = "channel"
+	p2.Y.Label.Text = "No sat. pulses"
 	p2.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
 	p2.Add(hplot.NewGrid())
 	hplotsatfreq, err := hplot.NewH1D(d.HSatFrequency)
@@ -187,7 +191,7 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 	if err != nil {
 		log.Fatalf("error creating histogram \n")
 	}
-	p2.Title.Text = fmt.Sprintf("Number of saturating pulses vs channel\n")
+	//p2.Title.Text = fmt.Sprintf("Number of saturating pulses vs channel\n")
 	return tp
 }
 
@@ -200,6 +204,8 @@ func (d *DQPlot) MakeMinRec1DTiledPlot() *hplot.TiledPlot {
 	p1 := tp.Plot(0, 0)
 	p1.X.Min = -50
 	p1.X.Max = 50
+	p1.X.Label.Text = "X (mm)"
+	p1.Y.Label.Text = "No entries"
 	p1.X.Tick.Marker = &hplot.FreqTicks{N: 101, Freq: 5}
 	p1.Add(hplot.NewGrid())
 	hplotX, err := hplot.NewH1D(d.HMinRecX)
@@ -212,11 +218,13 @@ func (d *DQPlot) MakeMinRec1DTiledPlot() *hplot.TiledPlot {
 	if err != nil {
 		panic(err)
 	}
-	p1.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction X (mm)\n")
+	//p1.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction X (mm)\n")
 
 	p2 := tp.Plot(1, 0)
 	p2.X.Min = -60
 	p2.X.Max = 60
+	p2.X.Label.Text = "Y (mm)"
+	p2.Y.Label.Text = "No entries"
 	p2.X.Tick.Marker = &hplot.FreqTicks{N: 121, Freq: 5}
 	p2.Add(hplot.NewGrid())
 	hplotY, err := hplot.NewH1D(d.HMinRecY)
@@ -229,11 +237,13 @@ func (d *DQPlot) MakeMinRec1DTiledPlot() *hplot.TiledPlot {
 	if err != nil {
 		log.Fatalf("error creating histogram \n")
 	}
-	p2.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction Y (mm)\n")
+	//p2.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction Y (mm)\n")
 
 	p3 := tp.Plot(2, 0)
 	p3.X.Min = -150
 	p3.X.Max = 150
+	p3.X.Label.Text = "Z (mm)"
+	p3.Y.Label.Text = "No entries"
 	p3.X.Tick.Marker = &hplot.FreqTicks{N: 151, Freq: 10}
 	p3.Add(hplot.NewGrid())
 	hplotZ, err := hplot.NewH1D(d.HMinRecZ)
@@ -246,7 +256,7 @@ func (d *DQPlot) MakeMinRec1DTiledPlot() *hplot.TiledPlot {
 	if err != nil {
 		log.Fatalf("error creating histogram \n")
 	}
-	p3.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction Z (mm)\n")
+	//p3.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction Z (mm)\n")
 
 	return tp
 }
