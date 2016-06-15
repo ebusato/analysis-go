@@ -49,8 +49,9 @@ var (
 	webad       = flag.String("webad", ":5555", "server address:port")
 	nobro       = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
 	sleep       = flag.Bool("s", false, "If set, sleep a bit between events")
-	runcsvtest  = flag.Bool("runcsvtest", false, "If set, update runs_test.csv rather than the \"official\" runs.csv file")
-	refplots    = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/testbench/dqref/dq-run37020evtsPedReference.gob",
+	test        = flag.Bool("test", false,
+		"If set, update runs_test.csv rather than the \"official\" runs.csv file and name by default the output binary file using the following scheme: runXXX_test.bin")
+	refplots = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/testbench/dqref/dq-run37020evtsPedReference.gob",
 		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
 	hvMonDegrad = flag.Uint("hvmondeg", 20, "HV monitoring frequency degradation factor")
 	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
@@ -249,7 +250,7 @@ func main() {
 
 	// determine run number
 	var runCSVFileName string
-	switch *runcsvtest {
+	switch *test {
 	case true:
 		runCSVFileName = os.Getenv("HOME") + "/godaq/runs/runs_test.csv"
 	case false:
@@ -265,7 +266,11 @@ func main() {
 
 	// Writer for binary file
 	if *outfileName == "" {
-		*outfileName = "run" + strconv.FormatUint(uint64(currentRunNumber), 10) + ".bin"
+		*outfileName = "run" + strconv.FormatUint(uint64(currentRunNumber), 10)
+		if *test {
+			*outfileName += "_test"
+		}
+		*outfileName += ".bin"
 	}
 	filew, err := os.Create(*outfileName)
 	if err != nil {
