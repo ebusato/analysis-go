@@ -349,7 +349,7 @@ func (q *Quartet) Channel(iChannel uint8) *Channel {
 // PlotPedestals plots pedestals for this quartet.
 // If plotStat is true, the statistics used to compute pedestals are plotted.
 // Otherwise the pedestals are plotted.
-func (q *Quartet) PlotPedestals(plotStat bool, text string) {
+func (q *Quartet) PlotPedestals(outDir string, plotStat bool, text string) {
 	for i := range q.channels {
 		q.channels[i].PlotStat(plotStat)
 	}
@@ -390,7 +390,7 @@ func (q *Quartet) PlotPedestals(plotStat bool, text string) {
 	}
 
 	//outFile := "output/pedestal_quartet_" + strconv.FormatUint(uint64(q.id), 10)
-	outFile := "output/pedestal_quartet_" + text
+	outFile := outDir + "/pedestal_quartet_" + text
 	if plotStat {
 		outFile += "_Stat"
 	}

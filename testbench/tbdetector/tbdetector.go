@@ -109,7 +109,7 @@ func (d *Detector) FinalizeTimeDepOffsetsMeanErr() {
 	}
 }
 
-func (d *Detector) PlotPedestals(plotStat bool) {
+func (d *Detector) PlotPedestals(outDir string, plotStat bool) {
 	for iDRS := range d.asm.DRSs() {
 		drs := d.asm.DRS(uint8(iDRS))
 		for iQuartet := range drs.Quartets() {
@@ -117,7 +117,7 @@ func (d *Detector) PlotPedestals(plotStat bool) {
 			text := fmt.Sprintf("iDRS%v_iQuartet%v",
 				strconv.FormatUint(uint64(iDRS), 10),
 				strconv.FormatUint(uint64(iQuartet), 10))
-			quartet.PlotPedestals(plotStat, text)
+			quartet.PlotPedestals(outDir, plotStat, text)
 		}
 	}
 }
