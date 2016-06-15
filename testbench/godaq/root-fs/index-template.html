@@ -27,6 +27,8 @@
 		var multplot = new plot("Pulse multiplicity", [], 'orange')
 		multplot.bars = { show: true }
 		
+		var monbufsizeplot = new plot("Monitoring buffer size", [], 'blue')
+		
 		var freqhplot = ""
 		var chargehplot = ""
 		var hvplot = ""
@@ -76,6 +78,9 @@
 			var freq = $.plot("#my-freq-plot", [freqplot], opts);
 			freq.setupGrid(); // needed as x-axis changes
 			freq.draw();
+			var bufsize = $.plot("#my-monbufsize-plot", [monbufsizeplot], opts);
+			bufsize.setupGrid(); // needed as x-axis changes
+			bufsize.draw();
 			var multopts = $.extend(true, {}, opts); // deep copy of options
 			multopts.xaxis = {ticks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
 			var mult = $.plot("#my-mult-plot", [multplot], multopts);
@@ -103,6 +108,7 @@
 				if (data.freq != 0) {
 					//freqplot.data.push([data.time, data.freq])
 					freqplot.data.push([data.evt, data.freq])
+					monbufsizeplot.data.push([data.evt, data.monbufsize])
 				}
 				for (var i = 0; i < 8; i += 1) {
 					multplot.data.push([data.mult[i].X, data.mult[i].Y])
@@ -170,6 +176,9 @@
 			</td>
 			<td>
 				<div id="my-freq-plot" class="my-plot-stylefreq"></div>
+			</td>		
+			<td>
+				<div id="my-monbufsize-plot" class="my-plot-stylefreq"></div>
 			</td>		
 			<td>
 				<div id="my-mult-plot" class="my-plot-stylefreq"></div>

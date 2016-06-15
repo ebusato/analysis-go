@@ -29,6 +29,7 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/rw"
+	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
@@ -184,14 +185,15 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 
 // Data is the struct that is sent via the websocket to the web client.
 type Data struct {
-	EvtID  uint     `json:"evt"`      // event id (64 bits a priori)
-	Time   float64  `json:"time"`     // time at which monitoring data are taken (64 bits)
-	Freq   float64  `json:"freq"`     // number of events processed per second (64 bits)
-	Qs     Quartets `json:"quartets"` // (30689280 bits)
-	Mult   H1D      `json:"mult"`     // multiplicity of pulses (1024 bits)
-	FreqH  string   `json:"freqh"`    // frequency histogram
-	Charge string   `json:"charge"`   // charge histograms
-	HVvals string   `json:"hv"`       // hv values
+	EvtID      uint     `json:"evt"`        // event id (64 bits a priori)
+	Time       float64  `json:"time"`       // time at which monitoring data are taken (64 bits)
+	MonBufSize int      `json:"monbufsize"` // monitoring channel buffer size
+	Freq       float64  `json:"freq"`       // number of events processed per second (64 bits)
+	Qs         Quartets `json:"quartets"`   // (30689280 bits)
+	Mult       H1D      `json:"mult"`       // multiplicity of pulses (1024 bits)
+	FreqH      string   `json:"freqh"`      // frequency histogram
+	Charge     string   `json:"charge"`     // charge histograms
+	HVvals     string   `json:"hv"`         // hv values
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -518,6 +520,12 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 
 func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
+	if *ped != "" {
+		tbdetector.Det.ReadPedestalsFile(*ped)
+	}
+	if *tdo != "" {
+		tbdetector.Det.ReadTimeDepOffsetsFile(*tdo)
+	}
 	noEventsForMon := uint64(0)
 	dqplots := dq.NewDQPlot()
 	if *refplots != "" {
@@ -558,7 +566,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 					event = applyCorrCalib.HV(event, doPedestal, doTimeDepOffset)
 					//////////////////////////////////////////////////////
 					dqplots.FillHistos(event)
-					mult, _ := event.Multiplicity()
+					//mult, _ := event.Multiplicity()
 					if *iEvent%*monFreq == 0 {
 						//cevent <- *event
 						// Webserver data
@@ -613,14 +621,15 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 
 						// send to channel
 						datac <- Data{
-							EvtID:  event.ID,
-							Time:   time,
-							Freq:   freq,
-							Qs:     qs,
-							Mult:   NewH1D(dqplots.HMultiplicity),
-							FreqH:  freqhsvg,
-							Charge: chargesvg,
-							HVvals: hvsvg,
+							EvtID:      event.ID,
+							Time:       time,
+							MonBufSize: len(datac),
+							Freq:       freq,
+							Qs:         qs,
+							Mult:       NewH1D(dqplots.HMultiplicity),
+							FreqH:      freqhsvg,
+							Charge:     chargesvg,
+							HVvals:     hvsvg,
 						}
 						noEventsForMon = 0
 					}
