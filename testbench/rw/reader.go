@@ -141,6 +141,7 @@ func (r *Reader) readHeader(hdr *Header) {
 	default:
 		panic("error ! header type not known")
 	}
+	tbdetector.Det.SetNoSamples(int(r.noSamples))
 }
 
 func (r *Reader) ReadFrame(f *Frame) {

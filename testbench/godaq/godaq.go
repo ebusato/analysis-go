@@ -24,6 +24,7 @@ import (
 
 	"golang.org/x/net/websocket"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/dq"
@@ -41,7 +42,7 @@ var (
 	port        = flag.String("p", "1024", "Port number")
 	monFreq     = flag.Uint("mf", 100, "Monitoring frequency")
 	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
-	evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
+	evtFreq     = flag.Uint("ef", 500, "Event printing frequency")
 	st          = flag.Bool("st", false, "If set, server start time is used rather than client's one")
 	debug       = flag.Bool("d", false, "If set, debugging informations are printed")
 	webad       = flag.String("webad", ":5555", "server address:port")
@@ -52,6 +53,8 @@ var (
 		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
 	hvMonDegrad = flag.Uint("hvmondeg", 20, "HV monitoring frequency degradation factor")
 	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
+	ped         = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
+	tdo         = flag.String("tdo", "", "Name of the csv file containing time dependent offsets. If not set, time dependent offsets are not applied. Relevant only when ped!=\"\".")
 )
 
 // XY is a struct used to store a couple of values
@@ -516,7 +519,6 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
 	noEventsForMon := uint64(0)
-	hMult := hbook.NewH1D(8, -0.5, 7.5)
 	dqplots := dq.NewDQPlot()
 	if *refplots != "" {
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
@@ -543,9 +545,20 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				case false:
 					//event.Print(true, false)
 					w.Event(event)
-					mult, _ := event.Multiplicity()
-					hMult.Fill(float64(mult), 1)
+					//////////////////////////////////////////////////////
+					// Corrections
+					doPedestal := false
+					doTimeDepOffset := false
+					if *ped != "" {
+						doPedestal = true
+					}
+					if *tdo != "" {
+						doTimeDepOffset = true
+					}
+					event = applyCorrCalib.HV(event, doPedestal, doTimeDepOffset)
+					//////////////////////////////////////////////////////
 					dqplots.FillHistos(event)
+					mult, _ := event.Multiplicity()
 					if *iEvent%*monFreq == 0 {
 						//cevent <- *event
 						// Webserver data
@@ -604,7 +617,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							Time:   time,
 							Freq:   freq,
 							Qs:     qs,
-							Mult:   NewH1D(hMult),
+							Mult:   NewH1D(dqplots.HMultiplicity),
 							FreqH:  freqhsvg,
 							Charge: chargesvg,
 							HVvals: hvsvg,
