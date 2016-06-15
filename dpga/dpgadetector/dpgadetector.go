@@ -516,7 +516,7 @@ func (d *Detector) FinalizeTimeDepOffsetsMeanErr() {
 }
 
 // PlotPedestals plots pedestals
-func (d *Detector) PlotPedestals(plotStat bool) {
+func (d *Detector) PlotPedestals(outDir string, plotStat bool) {
 	fmt.Println("Plotting pedestals")
 	for iHemi := range d.hemispheres {
 		for iASM := range d.hemispheres[iHemi].asm {
@@ -528,7 +528,7 @@ func (d *Detector) PlotPedestals(plotStat bool) {
 						strconv.FormatUint(uint64(iASM), 10),
 						strconv.FormatUint(uint64(iDRS), 10),
 						strconv.FormatUint(uint64(iQuartet), 10))
-					quartet.PlotPedestals(plotStat, text)
+					quartet.PlotPedestals(outDir, plotStat, text)
 				}
 			}
 		}
