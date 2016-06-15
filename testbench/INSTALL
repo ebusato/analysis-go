@@ -46,3 +46,27 @@ rm $GOPATH/bin/godaq
 rm $GOPATH/bin/computePedestals
 rm $GOPATH/bin/computeTimeDepOffset
 cp -r $PATHSOURCE/root-fs $PATHINSTALL/.
+
+mkdir $PATHINSTALL/calib
+
+/bin/cat <<EOM > $PATHINSTALL/runCalib.sh
+#!/bin/bash
+
+if  [[ -e calib/pedestals.csv ]]; then
+    echo "calib/pedestals.csv already exists, pedestals are not recalculated"
+else
+    echo "calib/pedestals.csv does not exists, calculating pedestals and copying constants to outputPedestals/pedestals.csv"
+    ./computePedestals -i \$1
+    cp outputPedestals/pedestals.csv calib/.
+fi
+
+if  [[ -e calib/timeDepOffsets.csv ]]; then
+    echo "calib/timeDepOffsets.csv already exists, TDO are not recalculted"
+else
+    echo "calib/timeDepOffsets.csv does not exists, calculating TDO and copying constants to calib/timeDepOffsets.csv"
+    ./computeTimeDepOffset -i \$1 -ped outputPedestals/pedestals.csv
+    cp outputTDO/timeDepOffsets.csv calib/.
+fi
+EOM
+
+chmod +x $PATHINSTALL/runCalib.sh
