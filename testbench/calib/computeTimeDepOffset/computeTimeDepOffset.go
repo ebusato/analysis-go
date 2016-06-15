@@ -68,7 +68,7 @@ func main() {
 	}
 
 	tbdetector.Det.FinalizeTimeDepOffsetsMeanErr()
-	tbdetector.Det.WriteTimeDepOffsetsToFile(*outfileName)
+	tbdetector.Det.WriteTimeDepOffsetsToFile(*outfileName, *infileName)
 
 	tbdetector.Det.PlotTimeDepOffsets()
 }

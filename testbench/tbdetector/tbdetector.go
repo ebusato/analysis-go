@@ -174,7 +174,7 @@ func (p *PedROOTData) Print() {
 	fmt.Println(p.IDRS, p.IQuartet, p.IChannel, p.ICapacitor)
 }
 
-func (d *Detector) WritePedestalsToFile(outFileName string, outrootfileName string) {
+func (d *Detector) WritePedestalsToFile(outFileName string, inFileName string, outrootfileName string) {
 	tbl, err := csvutil.Create(outFileName)
 	if err != nil {
 		log.Fatalf("could not create %s: %v\n", outFileName, err)
@@ -182,8 +182,8 @@ func (d *Detector) WritePedestalsToFile(outFileName string, outrootfileName stri
 	defer tbl.Close()
 	tbl.Writer.Comma = ' '
 
-	err = tbl.WriteHeader(fmt.Sprintf("# Test bench pedestal file (creation date: %v)\n", time.Now()))
-	err = tbl.WriteHeader("# iDRS iQuartet iChannel iCapacitor pedestalMean pedestalStdDev")
+	err = tbl.WriteHeader(fmt.Sprintf("# Test bench pedestal file (creation date: %v, input file: %v)\n", time.Now(), inFileName))
+	err = tbl.WriteHeader("# iDRS iQuartet iChannel iCapacitor pedestalMean pedestalMeanErr")
 
 	if err != nil {
 		log.Fatalf("error writing header: %v\n", err)
@@ -291,7 +291,7 @@ type TimeDepOffsetFile struct {
 	MeanErr  float64
 }
 
-func (d *Detector) WriteTimeDepOffsetsToFile(outFileName string) {
+func (d *Detector) WriteTimeDepOffsetsToFile(outFileName string, inFileName string) {
 	fmt.Println("Writing time dependent offsets to", outFileName)
 	tbl, err := csvutil.Create(outFileName)
 	if err != nil {
@@ -300,7 +300,7 @@ func (d *Detector) WriteTimeDepOffsetsToFile(outFileName string) {
 	defer tbl.Close()
 	tbl.Writer.Comma = ' '
 
-	err = tbl.WriteHeader(fmt.Sprintf("# Test bench time dependent offset file (creation date: %v)\n", time.Now()))
+	err = tbl.WriteHeader(fmt.Sprintf("# Test bench time dependent offset file (creation date: %v, input file: %v)\n", time.Now(), inFileName))
 	err = tbl.WriteHeader("# iDRS iQuartet iChannel iSample timeDepOffsetMean timeDepOffsetMeanErr")
 
 	for iDRS := range d.asm.DRSs() {

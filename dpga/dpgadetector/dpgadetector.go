@@ -631,7 +631,7 @@ type PedestalFile struct {
 	MeanErr    float64
 }
 
-func (d *Detector) WritePedestalsToFile(outFileName string) {
+func (d *Detector) WritePedestalsToFile(outFileName string, inFileName string) {
 	fmt.Println("Writing pedestals to", outFileName)
 	tbl, err := csvutil.Create(outFileName)
 	if err != nil {
@@ -640,7 +640,7 @@ func (d *Detector) WritePedestalsToFile(outFileName string) {
 	defer tbl.Close()
 	tbl.Writer.Comma = ' '
 
-	err = tbl.WriteHeader(fmt.Sprintf("# DPGA pedestal file (creation date: %v)\n", time.Now()))
+	err = tbl.WriteHeader(fmt.Sprintf("# DPGA pedestal file (creation date: %v, input file: %v)\n", time.Now(), inFileName))
 	err = tbl.WriteHeader("# iHemi iASM iDRS iQuartet iChannel iCapacitor pedestalMean pedestalMeanErr")
 
 	for iHemi := range d.hemispheres {
@@ -724,7 +724,7 @@ type TimeDepOffsetFile struct {
 	MeanErr  float64
 }
 
-func (d *Detector) WriteTimeDepOffsetsToFile(outFileName string) {
+func (d *Detector) WriteTimeDepOffsetsToFile(outFileName string, inFileName string) {
 	fmt.Println("Writing time dependent offsets to", outFileName)
 	tbl, err := csvutil.Create(outFileName)
 	if err != nil {
@@ -733,7 +733,7 @@ func (d *Detector) WriteTimeDepOffsetsToFile(outFileName string) {
 	defer tbl.Close()
 	tbl.Writer.Comma = ' '
 
-	err = tbl.WriteHeader(fmt.Sprintf("# DPGA time dependent offset file (creation date: %v)\n", time.Now()))
+	err = tbl.WriteHeader(fmt.Sprintf("# DPGA time dependent offset file (creation date: %v, input file: %v)\n", time.Now(), inFileName))
 	err = tbl.WriteHeader("# iHemi iASM iDRS iQuartet iChannel iSample timeDepOffsetMean timeDepOffsetMeanErr")
 
 	for iHemi := range d.hemispheres {

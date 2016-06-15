@@ -76,7 +76,7 @@ func main() {
 	}
 
 	tbdetector.Det.FinalizePedestalsMeanErr()
-	tbdetector.Det.WritePedestalsToFile(*outfileName, *outrootfileName)
+	tbdetector.Det.WritePedestalsToFile(*outfileName, *infileName, *outrootfileName)
 
 	tbdetector.Det.PlotPedestals(true)
 	tbdetector.Det.PlotPedestals(false)
