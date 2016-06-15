@@ -23,10 +23,10 @@ func main() {
 
 	var (
 		infileName      = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
-		outfileName     = flag.String("o", "output/pedestals.csv", "Name of the output pedestal csv file")
-		outrootfileName = flag.String("oroot", "output/pedestals.root", "Name of the output pedestal root file")
-		//outFileNamePulses = flag.String("oP", "output/pulses.csv", "Name of the output file containing pulse data")
-		//outFileNameGlobal = flag.String("oG", "output/globalEventVariables.csv", "Name of the output file containing global event variables")
+		outfileName     = flag.String("o", "outputPedestals/pedestals.csv", "Name of the output pedestal csv file")
+		outrootfileName = flag.String("oroot", "outputPedestals/pedestals.root", "Name of the output pedestal root file")
+		//outFileNamePulses = flag.String("oP", "outputPedestals/pulses.csv", "Name of the output file containing pulse data")
+		//outFileNameGlobal = flag.String("oG", "outputPedestals/globalEventVariables.csv", "Name of the output file containing global event variables")
 		noEvents  = flag.Int("n", -1, "Number of events to process (-1 means all events are processed)")
 		inputType = reader.HexInput
 		hdrType   = rw.HeaderCAL
@@ -35,14 +35,14 @@ func main() {
 	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
 	flag.Parse()
 
-	err := os.RemoveAll("output")
+	err := os.RemoveAll("outputPedestals")
 	if err != nil {
-		log.Fatalf("error removing output directory", err)
+		log.Fatalf("error removing outputPedestals directory", err)
 	}
 
-	err = os.Mkdir("output", 0777)
+	err = os.Mkdir("outputPedestals", 0777)
 	if err != nil {
-		log.Fatalf("error creating output directory", err)
+		log.Fatalf("error creating outputPedestals directory", err)
 	}
 
 	file, err := os.Open(*infileName)

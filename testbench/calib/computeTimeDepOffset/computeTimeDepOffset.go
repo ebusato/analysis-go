@@ -19,7 +19,7 @@ func main() {
 
 	var (
 		infileName  = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file")
-		outfileName = flag.String("o", "output/timeDepOffsets.csv", "Name of the output file")
+		outfileName = flag.String("o", "outputTDO/timeDepOffsets.csv", "Name of the output file")
 		noEvents    = flag.Uint("n", 10000000, "Number of events to process")
 		ped         = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 		hdrType     = rw.HeaderCAL
@@ -28,14 +28,14 @@ func main() {
 	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
 	flag.Parse()
 
-	err := os.RemoveAll("output")
+	err := os.RemoveAll("outputTDO")
 	if err != nil {
-		log.Fatalf("error removing output directory", err)
+		log.Fatalf("error removing outputTDO directory", err)
 	}
 
-	err = os.Mkdir("output", 0777)
+	err = os.Mkdir("outputTDO", 0777)
 	if err != nil {
-		log.Fatalf("error creating output directory", err)
+		log.Fatalf("error creating outputTDO directory", err)
 	}
 
 	file, err := os.Open(*infileName)
