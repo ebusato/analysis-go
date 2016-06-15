@@ -1,0 +1,48 @@
+# This script installs the latest git tag in the ~/godaq directory
+# It assumes that the latest source code matches the latest git tag
+#!/bin/bash
+
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Compiling latest source
+echo -e "${RED}Compiling latest source${NC}"
+PATHANALYSISGO=/home/daq2/analysis-go
+PATHSOURCE=$PATHANALYSISGO"/"testbench/godaq
+echo " PATHANALYSISGO="$PATHANALYSISGO
+echo " PATHSOURCE="$PATHSOURCE
+cd $PATHSOURCE
+mk install
+cd ../calib/computePedestals
+mk install
+cd ../computeTimeDepOffset
+mk install
+
+# Creating directory in ~/godaq
+echo -e "${RED}Creating directory in ~/godaq${NC}"
+PATHBASE=~/godaq
+echo " PATHBASE="$PATHBASE
+
+LATESTTAG=`git tag | tail -1`
+echo " LATESTTAG="$LATESTTAG
+
+PATHINSTALL=$PATHBASE"/"$LATESTTAG
+echo " PATHINSTALL="$PATHINSTALL
+
+if [[ -e $PATHINSTALL ]]; then
+	echo " "$PATHINSTALL" already exists, quitting"
+	exit
+else
+	echo " "$PATHINSTALL" does not exists, creating it"
+	mkdir $PATHINSTALL
+fi
+
+# Copying godaq, computePedestals, computeTimeDepOffset executables and root-fs directory to $PATHINSTALL
+echo -e "${RED}Copying godaq, computePedestals, computeTimeDepOffset executables and root-fs directory to "$PATHINSTALL"${NC}"
+cp $GOPATH/bin/godaq $PATHINSTALL/.
+cp $GOPATH/bin/computePedestals $PATHINSTALL/.
+cp $GOPATH/bin/computeTimeDepOffset $PATHINSTALL/.
+rm $GOPATH/bin/godaq
+rm $GOPATH/bin/computePedestals
+rm $GOPATH/bin/computeTimeDepOffset
+cp -r $PATHSOURCE/root-fs $PATHINSTALL/.
