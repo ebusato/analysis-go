@@ -430,6 +430,11 @@ func (d *DRS) Print() {
 	}
 }
 
+// ID returns the DRS id.
+func (d *DRS) ID() uint8 {
+	return d.id
+}
+
 // SetID sets the DRS id.
 func (d *DRS) SetID(id uint8) {
 	d.id = id

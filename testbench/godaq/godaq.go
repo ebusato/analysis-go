@@ -571,7 +571,25 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 					event = applyCorrCalib.HV(event, doPedestal, doTimeDepOffset)
 					//////////////////////////////////////////////////////
 					dqplots.FillHistos(event)
-					//mult, _ := event.Multiplicity()
+					mult, pulsesWithSignal := event.Multiplicity()
+					if mult == 2 {
+						if len(pulsesWithSignal) != 2 {
+							panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
+						}
+						ch0 := pulsesWithSignal[0].Channel
+						ch1 := pulsesWithSignal[1].Channel
+						//doRec := true
+						fmt.Println("printt:", ch0.Quartet.DRS.ID(), ch1.Quartet.DRS.ID(), ch0.Quartet.ID(), ch1.Quartet.ID())
+						// check that the two pulses are on the first two quartets and that they are not in the same quartet
+						/*if ch0.Quartet.DRS.ID() {
+
+						}
+						if doRec {
+							if doPedestal {
+								dqplots.DeltaT30.Fill(pulsesWithSignal[0].T30(true)-pulsesWithSignal[1].T30(true), 1)
+							}
+						}*/
+					}
 					if *iEvent%*monFreq == 0 {
 						//cevent <- *event
 						// Webserver data

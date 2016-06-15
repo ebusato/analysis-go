@@ -31,14 +31,17 @@ func NewDetector() *Detector {
 		for iQuartet := range drs.Quartets() {
 			quartet := drs.Quartet(uint8(iQuartet))
 			quartet.SetID(uint8(iQuartet))
+			quartet.DRS = drs
 			for iChannel := range quartet.Channels() {
 				ch := quartet.Channel(uint8(iChannel))
+				ch.Quartet = quartet
 				ch.SetName("PMT" + strconv.FormatUint(uint64(iChannel), 10))
 				ch.SetID(uint8(iChannel))
 				ch.SetFifoID144(FifoID(uint8(iDRS), uint8(iQuartet), uint8(iChannel)))
 				for iCapacitor := range ch.Capacitors() {
 					capa := ch.Capacitor(uint16(iCapacitor))
 					capa.SetID(uint16(iCapacitor))
+					capa.Channel = ch
 				}
 			}
 		}
