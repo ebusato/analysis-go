@@ -103,7 +103,8 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 			}
 			if pulse.HasSignal {
 				d.HCharge[i][j].Fill(float64(pulse.Charge()/1e6), 1)
-				d.HAmplitude[i][j].Fill(float64(pulse.Amplitude()), 1)
+				_, ampl := pulse.Amplitude()
+				d.HAmplitude[i][j].Fill(ampl, 1)
 			}
 			counter++
 		}

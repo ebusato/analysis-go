@@ -29,8 +29,10 @@ func main() {
 		//outFileNameGlobal = flag.String("oG", "output/globalEventVariables.csv", "Name of the output file containing global event variables")
 		noEvents  = flag.Int("n", -1, "Number of events to process (-1 means all events are processed)")
 		inputType = reader.HexInput
+		hdrType   = rw.HeaderCAL
 	)
 	flag.Var(&inputType, "inType", "Type of input file (possible values: Dec,Hex,Bin)")
+	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
 	flag.Parse()
 
 	err := os.RemoveAll("output")
@@ -53,7 +55,7 @@ func main() {
 
 	if filepath.Ext(*infileName) == ".bin" {
 		// Binary file reader
-		rner, err = rw.NewReader(bufio.NewReader(file))
+		rner, err = rw.NewReader(bufio.NewReader(file), hdrType)
 		if err != nil {
 			log.Fatalf("could not open asm file: %v\n", err)
 		}
@@ -73,8 +75,9 @@ func main() {
 		event.PushPedestalSamples()
 	}
 
-	tbdetector.Det.ComputePedestalsMeanStdDevFromSamples()
+	tbdetector.Det.FinalizePedestalsMeanErr()
 	tbdetector.Det.WritePedestalsToFile(*outfileName, *outrootfileName)
+
 	tbdetector.Det.PlotPedestals(true)
 	tbdetector.Det.PlotPedestals(false)
 	// detector.TBDet.Print()

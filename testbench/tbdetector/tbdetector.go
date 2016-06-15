@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-hep/croot"
 	"github.com/go-hep/csvutil"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/detector"
@@ -76,7 +75,8 @@ func (d *Detector) Quartet(iDRS uint8, iQuartet uint8) *detector.Quartet {
 	return d.asm.DRS(iDRS).Quartet(iQuartet)
 }
 
-func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
+// FinalizePedestalsMeanErr finalizes the computations of the pedestals for all capacitors.
+func (d *Detector) FinalizePedestalsMeanErr() {
 	for iDRS := range d.asm.DRSs() {
 		drs := d.asm.DRS(uint8(iDRS))
 		for iQuartet := range drs.Quartets() {
@@ -85,7 +85,7 @@ func (d *Detector) ComputePedestalsMeanStdDevFromSamples() {
 				ch := quartet.Channel(uint8(iChannel))
 				for iCapacitor := range ch.Capacitors() {
 					capa := ch.Capacitor(uint16(iCapacitor))
-					capa.ComputePedestalMeanStdDevFromSamples()
+					capa.FinalizePedestalMeanErr()
 				}
 			}
 		}
@@ -111,7 +111,7 @@ type PedestalCSV struct {
 	IChannel   uint8
 	ICapacitor uint16
 	Mean       float64
-	StdDev     float64
+	MeanErr    float64
 }
 
 type PedROOTData struct {
@@ -141,7 +141,7 @@ func (d *Detector) WritePedestalsToFile(outFileName string, outrootfileName stri
 		log.Fatalf("error writing header: %v\n", err)
 	}
 
-	ofile, err := croot.OpenFile(outrootfileName, "recreate", "Pedestal file", 1, 0)
+	/*ofile, err := croot.OpenFile(outrootfileName, "recreate", "Pedestal file", 1, 0)
 	if err != nil {
 		panic(err)
 	}
@@ -155,7 +155,7 @@ func (d *Detector) WritePedestalsToFile(outFileName string, outrootfileName stri
 	if err != nil {
 		panic(err)
 	}
-
+	*/
 	for iDRS := range d.asm.DRSs() {
 		drs := d.asm.DRS(uint8(iDRS))
 		for iQuartet := range drs.Quartets() {
@@ -170,23 +170,25 @@ func (d *Detector) WritePedestalsToFile(outFileName string, outrootfileName stri
 						IChannel:   uint8(iChannel),
 						ICapacitor: uint16(iCapacitor),
 						Mean:       capa.PedestalMean(),
-						StdDev:     capa.PedestalStdDev(),
+						MeanErr:    capa.PedestalMeanErr(),
 					}
 					err = tbl.WriteRow(data)
 					if err != nil {
 						log.Fatalf("error writing row: %v\n", err)
 					}
 
-					peddata.IDRS = float64(iDRS)
-					peddata.IQuartet = float64(iQuartet)
-					peddata.IChannel = float64(iChannel)
-					peddata.ICapacitor = float64(iCapacitor)
-					peddata.PedestalSamples = capa.PedestalSamples()
-					//peddata.Print()
-					_, err = tree.Fill()
-					if err != nil {
-						panic(err)
-					}
+					/*
+						peddata.IDRS = float64(iDRS)
+						peddata.IQuartet = float64(iQuartet)
+						peddata.IChannel = float64(iChannel)
+						peddata.ICapacitor = float64(iCapacitor)
+						//peddata.PedestalSamples = capa.PedestalSamples()
+						//peddata.Print()
+						_, err = tree.Fill()
+						if err != nil {
+							panic(err)
+						}
+					*/
 				}
 			}
 		}
@@ -197,7 +199,7 @@ func (d *Detector) WritePedestalsToFile(outFileName string, outrootfileName stri
 		log.Fatalf("error closing table: %v\n", err)
 	}
 
-	ofile.Write("", 0, 0)
+	//ofile.Write("", 0, 0)
 }
 
 func (d *Detector) ReadPedestalsFile(fileName string) {
@@ -224,7 +226,7 @@ func (d *Detector) ReadPedestalsFile(fileName string) {
 		}
 		//fmt.Printf("data: %+v\n", data)
 		capacitor := d.Capacitor(data.IDRS, data.IQuartet, data.IChannel, data.ICapacitor)
-		capacitor.SetPedestalMeanStdDev(data.Mean, data.StdDev)
+		capacitor.SetPedestalMeanErr(data.Mean, data.MeanErr)
 	}
 	err = rows.Err()
 	if err != nil && err.Error() != "EOF" {
