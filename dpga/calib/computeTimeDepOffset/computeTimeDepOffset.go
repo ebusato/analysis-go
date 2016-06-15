@@ -61,9 +61,8 @@ func main() {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
 
-		// this should be safe as pedestals calibration coefficients have been loaded
-		// previously.
-		event = applyCorrCalib.RemovePedestal(event)
+		// this should be safe as pedestals calibration coefficients have been loaded previously.
+		event = applyCorrCalib.HV(event, true, false)
 
 		event.PushTimeDepOffsetSamples()
 	}
