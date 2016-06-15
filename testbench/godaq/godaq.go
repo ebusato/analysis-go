@@ -20,6 +20,7 @@ import (
 
 	"github.com/go-hep/csvutil"
 	"github.com/go-hep/hbook"
+	"github.com/go-hep/hplot"
 	"github.com/toqueteos/webbrowser"
 
 	"golang.org/x/net/websocket"
@@ -41,7 +42,7 @@ var (
 	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
 	ip          = flag.String("ip", "192.168.100.11", "IP address")
 	port        = flag.String("p", "1024", "Port number")
-	monFreq     = flag.Uint("mf", 100, "Monitoring frequency")
+	monFreq     = flag.Uint("mf", 150, "Monitoring frequency")
 	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
 	evtFreq     = flag.Uint("ef", 500, "Event printing frequency")
 	st          = flag.Bool("st", false, "If set, server start time is used rather than client's one")
@@ -57,6 +58,7 @@ var (
 	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
 	ped         = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 	tdo         = flag.String("tdo", "", "Name of the csv file containing time dependent offsets. If not set, time dependent offsets are not applied. Relevant only when ped!=\"\".")
+	tep         = flag.Bool("tep", false, "If set, tep mode is set on")
 )
 
 // XY is a struct used to store a couple of values
@@ -195,6 +197,7 @@ type Data struct {
 	FreqH      string   `json:"freqh"`      // frequency histogram
 	Charge     string   `json:"charge"`     // charge histograms
 	HVvals     string   `json:"hv"`         // hv values
+	DeltaT30   string   `json:"deltat30"`   // distribution of the difference of T30
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -572,23 +575,29 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 					//////////////////////////////////////////////////////
 					dqplots.FillHistos(event)
 					mult, pulsesWithSignal := event.Multiplicity()
-					if mult == 2 {
-						if len(pulsesWithSignal) != 2 {
-							panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
-						}
-						ch0 := pulsesWithSignal[0].Channel
-						ch1 := pulsesWithSignal[1].Channel
-						//doRec := true
-						fmt.Println("printt:", ch0.Quartet.DRS.ID(), ch1.Quartet.DRS.ID(), ch0.Quartet.ID(), ch1.Quartet.ID())
-						// check that the two pulses are on the first two quartets and that they are not in the same quartet
-						/*if ch0.Quartet.DRS.ID() {
-
-						}
-						if doRec {
-							if doPedestal {
-								dqplots.DeltaT30.Fill(pulsesWithSignal[0].T30(true)-pulsesWithSignal[1].T30(true), 1)
+					if *tep {
+						if mult == 2 {
+							if len(pulsesWithSignal) != 2 {
+								panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
 							}
-						}*/
+							ch0 := pulsesWithSignal[0].Channel
+							ch1 := pulsesWithSignal[1].Channel
+							doRec := false
+							//fmt.Println("printt:", ch0.Quartet.DRS.ID(), ch1.Quartet.DRS.ID(), ch0.Quartet.ID(), ch1.Quartet.ID())
+							// check that the two pulses are in the same DRS and in different quartets
+							if ch0.Quartet.DRS.ID() == ch1.Quartet.DRS.ID() && ch0.Quartet.ID() != ch1.Quartet.ID() {
+								doRec = true
+							}
+							if doRec {
+								if doPedestal {
+									T30_0 := pulsesWithSignal[0].T30(true)
+									T30_1 := pulsesWithSignal[1].T30(true)
+									if T30_0 != 0 && T30_1 != 0 {
+										dqplots.DeltaT30.Fill(T30_0-T30_1, 1)
+									}
+								}
+							}
+						}
 					}
 					if *iEvent%*monFreq == 0 {
 						//cevent <- *event
@@ -642,6 +651,25 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							freq = 0
 						}
 
+						DeltaT30svg := ""
+						if *tep {
+							// Make DeltaT30 plot
+							pDeltaT30, err := hplot.New()
+							if err != nil {
+								panic(err)
+							}
+							pDeltaT30.X.Label.Text = "Delta T30 (ns)"
+							pDeltaT30.Y.Label.Text = "No entries"
+							pDeltaT30.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
+							hpDeltaT30, err := hplot.NewH1D(dqplots.DeltaT30)
+							if err != nil {
+								panic(err)
+							}
+							pDeltaT30.Add(hpDeltaT30)
+							pDeltaT30.Add(hplot.NewGrid())
+							DeltaT30svg = utils.RenderSVG(pDeltaT30, 15, 7)
+						}
+
 						// send to channel
 						datac <- Data{
 							EvtID:      event.ID,
@@ -653,6 +681,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							FreqH:      freqhsvg,
 							Charge:     chargesvg,
 							HVvals:     hvsvg,
+							DeltaT30:   DeltaT30svg,
 						}
 						noEventsForMon = 0
 					}

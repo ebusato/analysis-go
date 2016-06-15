@@ -32,6 +32,7 @@
 		var freqhplot = ""
 		var chargehplot = ""
 		var hvplot = ""
+		var deltat30plot = ""
 		
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
@@ -90,6 +91,8 @@
 			p1.innerHTML = freqhplot;
 			var p2 = document.getElementById("my-chargeh-plot");
 			p2.innerHTML = chargehplot;
+			var p3 = document.getElementById("my-deltat30-plot");
+			p3.innerHTML = deltat30plot;
 			for (var i = 0; i < Nquartets; i++) {
 				optsR = new options('#FFFF00') // yellow
 				//optsR.zoom = {interactive: true}
@@ -116,6 +119,7 @@
 				freqhplot = data.freqh;
 				chargehplot = data.charge;
 				hvplot = data.hv;
+				deltat30plot = data.deltat30
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < data.quartets[iq][ip].length; is += 1) {
@@ -180,12 +184,19 @@
 			<td>
 				<div id="my-monbufsize-plot" class="my-plot-stylefreq"></div>
 			</td>		
-			<td>
-				<div id="my-mult-plot" class="my-plot-stylefreq"></div>
-			</td>
 			</tr>
 			</table>
 		</div>
+		<table>
+		<tr>
+		<td height="300" width="300">
+			<div id="my-mult-plot" class="my-plot-stylefreq"></div>
+		</td>
+		<td>
+			<div id="my-deltat30-plot" class="my-plot-stylefreq"></div>
+		</td>
+		</tr>
+		</table>
 	</header>
 
 

@@ -30,6 +30,7 @@ type DQPlot struct {
 	HSatMultiplicity *hbook.H1D
 	HCharge          [][]hbook.H1D
 	HAmplitude       [][]hbook.H1D
+	DeltaT30         *hbook.H1D
 
 	HV [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
 
@@ -46,13 +47,14 @@ func NewDQPlot() *DQPlot {
 		HSatMultiplicity: hbook.NewH1D(8, -0.5, 7.5),
 		HCharge:          make([][]hbook.H1D, NoClusters),
 		HAmplitude:       make([][]hbook.H1D, NoClusters),
+		DeltaT30:         hbook.NewH1D(300, -30, 30),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
 		dqp.HAmplitude[i] = make([]hbook.H1D, N)
 		for j := 0; j < N; j++ {
-			dqp.HCharge[i][j] = *hbook.NewH1D(50, 0, 1)
-			dqp.HAmplitude[i][j] = *hbook.NewH1D(100, 0, 4096)
+			dqp.HCharge[i][j] = *hbook.NewH1D(400, 0, 0.3)
+			dqp.HAmplitude[i][j] = *hbook.NewH1D(300, 0, 4096)
 		}
 	}
 	return dqp
@@ -243,22 +245,22 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar) *hplot.TiledPlot {
 		hplot1.Color = color.RGBA{R: 0, G: 140, B: 72, A: 255}   // green
 		hplot2.Color = color.RGBA{R: 24, G: 90, B: 169, A: 255}  // blue
 		hplot3.Color = color.RGBA{R: 250, G: 88, B: 244, A: 255} // pink
-		// 			hplot0.FillColor = color.NRGBA{R: 238, G: 46, B: 47, A: 80}
-		// 			hplot1.FillColor = color.NRGBA{R: 0, G: 140, B: 72, A: 80}
-		// 			hplot2.FillColor = color.NRGBA{R: 24, G: 90, B: 169, A: 80}
-		// 			hplot3.FillColor = color.NRGBA{R: 250, G: 88, B: 244, A: 80}
-		hplot0.FillColor = nil
-		hplot1.FillColor = nil
-		hplot2.FillColor = nil
-		hplot3.FillColor = nil
-		hplot0.LineStyle.Width = 1
-		hplot1.LineStyle.Width = 1
-		hplot2.LineStyle.Width = 1
-		hplot3.LineStyle.Width = 1
-		hplot0.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
-		hplot1.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
-		hplot2.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
-		hplot3.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
+		hplot0.FillColor = color.NRGBA{R: 238, G: 46, B: 47, A: 80}
+		hplot1.FillColor = color.NRGBA{R: 0, G: 140, B: 72, A: 80}
+		hplot2.FillColor = color.NRGBA{R: 24, G: 90, B: 169, A: 80}
+		hplot3.FillColor = color.NRGBA{R: 250, G: 88, B: 244, A: 80}
+// 		hplot0.FillColor = nil
+// 		hplot1.FillColor = nil
+// 		hplot2.FillColor = nil
+// 		hplot3.FillColor = nil
+		hplot0.LineStyle.Width = 2
+		hplot1.LineStyle.Width = 2
+		hplot2.LineStyle.Width = 2
+		hplot3.LineStyle.Width = 2
+// 		hplot0.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
+// 		hplot1.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
+// 		hplot2.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
+// 		hplot3.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
 		p.Add(hplot0, hplot1, hplot2, hplot3)
 		if len(histosref) != 0 {
 			if histos[0].Integral() != 0 && histos[1].Integral() != 0 && histos[2].Integral() != 0 && histos[3].Integral() != 0 {
