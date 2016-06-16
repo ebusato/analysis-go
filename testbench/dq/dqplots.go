@@ -47,7 +47,7 @@ func NewDQPlot() *DQPlot {
 		HSatMultiplicity: hbook.NewH1D(8, -0.5, 7.5),
 		HCharge:          make([][]hbook.H1D, NoClusters),
 		HAmplitude:       make([][]hbook.H1D, NoClusters),
-		DeltaT30:         hbook.NewH1D(300, -30, 30),
+		DeltaT30:         hbook.NewH1D(150, -15, 15),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
@@ -225,6 +225,7 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar) *hplot.TiledPlot {
 		p.Plot.Y.LineStyle.Width = 2
 		p.Plot.X.Tick.LineStyle.Width = 2
 		p.Plot.Y.Tick.LineStyle.Width = 2
+		p.Plot.X.Tick.Marker = &hplot.FreqTicks{N: 31, Freq: 2}
 		hplot0, err := hplot.NewH1D(&histos[0])
 		if err != nil {
 			panic(err)

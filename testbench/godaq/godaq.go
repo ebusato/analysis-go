@@ -58,7 +58,7 @@ var (
 	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
 	ped         = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 	tdo         = flag.String("tdo", "", "Name of the csv file containing time dependent offsets. If not set, time dependent offsets are not applied. Relevant only when ped!=\"\".")
-	tep         = flag.Bool("tep", false, "If set, tep mode is set on")
+	pet         = flag.Bool("pet", false, "If set, pet mode is set on")
 )
 
 // XY is a struct used to store a couple of values
@@ -575,7 +575,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 					//////////////////////////////////////////////////////
 					dqplots.FillHistos(event)
 					mult, pulsesWithSignal := event.Multiplicity()
-					if *tep {
+					if *pet {
 						if mult == 2 {
 							if len(pulsesWithSignal) != 2 {
 								panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
@@ -652,7 +652,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						}
 
 						DeltaT30svg := ""
-						if *tep {
+						if *pet {
 							// Make DeltaT30 plot
 							pDeltaT30, err := hplot.New()
 							if err != nil {
@@ -660,7 +660,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							}
 							pDeltaT30.X.Label.Text = "Delta T30 (ns)"
 							pDeltaT30.Y.Label.Text = "No entries"
-							pDeltaT30.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
+							pDeltaT30.X.Tick.Marker = &hplot.FreqTicks{N: 31, Freq: 5}
 							hpDeltaT30, err := hplot.NewH1D(dqplots.DeltaT30)
 							if err != nil {
 								panic(err)
