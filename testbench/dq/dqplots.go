@@ -31,6 +31,7 @@ type DQPlot struct {
 	HCharge          [][]hbook.H1D
 	HAmplitude       [][]hbook.H1D
 	DeltaT30         *hbook.H1D
+	ClustersXYs      []plotter.XYZs
 
 	HV [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
 
@@ -48,6 +49,7 @@ func NewDQPlot() *DQPlot {
 		HCharge:          make([][]hbook.H1D, NoClusters),
 		HAmplitude:       make([][]hbook.H1D, NoClusters),
 		DeltaT30:         hbook.NewH1D(150, -15, 15),
+		ClustersXYs:      make([]plotter.XYZs, NoClusters),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
@@ -90,7 +92,6 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 	var mult uint8 = 0
 	var satmult uint8 = 0
 	var counter float64 = 0
-
 	for i := range event.Clusters {
 		cluster := &event.Clusters[i]
 		mult += uint8(len(cluster.PulsesWithSignal()))
@@ -110,6 +111,17 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 			}
 			counter++
 		}
+		// Pulses' charges are recalculated. If cpu time becomes critical, this could
+		// possibly be optimized
+		xClus, yClus := cluster.XY(true)
+		xyz := struct {
+			X, Y, Z float64
+		}{
+			X: xClus,
+			Y: yClus,
+			Z: 0,
+		}
+		d.ClustersXYs[i] = append(d.ClustersXYs[i], xyz)
 	}
 
 	d.HMultiplicity.Fill(float64(mult), 1)
@@ -250,18 +262,18 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar) *hplot.TiledPlot {
 		hplot1.FillColor = color.NRGBA{R: 0, G: 140, B: 72, A: 80}
 		hplot2.FillColor = color.NRGBA{R: 24, G: 90, B: 169, A: 80}
 		hplot3.FillColor = color.NRGBA{R: 250, G: 88, B: 244, A: 80}
-// 		hplot0.FillColor = nil
-// 		hplot1.FillColor = nil
-// 		hplot2.FillColor = nil
-// 		hplot3.FillColor = nil
+		// 		hplot0.FillColor = nil
+		// 		hplot1.FillColor = nil
+		// 		hplot2.FillColor = nil
+		// 		hplot3.FillColor = nil
 		hplot0.LineStyle.Width = 2
 		hplot1.LineStyle.Width = 2
 		hplot2.LineStyle.Width = 2
 		hplot3.LineStyle.Width = 2
-// 		hplot0.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
-// 		hplot1.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
-// 		hplot2.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
-// 		hplot3.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
+		// 		hplot0.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
+		// 		hplot1.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
+		// 		hplot2.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
+		// 		hplot3.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(1)}
 		p.Add(hplot0, hplot1, hplot2, hplot3)
 		if len(histosref) != 0 {
 			if histos[0].Integral() != 0 && histos[1].Integral() != 0 && histos[2].Integral() != 0 && histos[3].Integral() != 0 {
@@ -396,6 +408,22 @@ func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
 		}
 	}
 	return tp
+}
+
+// MakeClustersXYTilePlot makes a tiled plot with the X vs Y scatter
+// plots for each cluster
+func (d *DQPlot) MakeClustersXYTilePlot() *hplot.TiledPlot {
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 6, Rows: 1, PadX: 3.5 * vg.Centimeter})
+	if err != nil {
+		panic(err)
+	}
+	for i := range ClustersXYs {
+		p := tp.Plot(0, i)
+		grid := hplot.NewGrid()
+		grid.Vertical.Width = 0
+		grid.Horizontal.Dashes = plotutil.Dashes(1)
+		p.Add(grid)
+	}
 }
 
 // SaveHistos saves histograms on disk.

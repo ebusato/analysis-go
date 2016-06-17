@@ -73,6 +73,7 @@ type Pulse struct {
 	HasSatSignal bool
 	Ampl         float64
 	AmplIndex    int
+	Charg        float64 // Charge, removed the final "e" because the name "Charge" is already used by the method
 	Channel      *detector.Channel
 }
 
@@ -198,7 +199,8 @@ func (p *Pulse) Charge() float64 {
 	for _, s := range p.Samples {
 		sum += s.Amplitude
 	}
-	return sum * float64(p.TimeStep)
+	p.Charg = sum * float64(p.TimeStep)
+	return p.Charg
 }
 
 // T30 returns the time at which the signal is 30% of its amplitude
@@ -383,12 +385,42 @@ func (c *Cluster) Amplitude() float64 {
 }
 
 // Charge returns the sum of the pulse charges
-func (c *Cluster) Charge() float64 {
+func (c *Cluster) Charge(recalcPulsesCharges bool) float64 {
 	charge := 0.
 	for i := range c.Pulses {
-		charge += c.Pulses[i].Charge()
+		var pulseCharge float64
+		switch recalcPulsesCharges {
+		case true:
+			pulseCharge = c.Pulses[i].Charge()
+		case false:
+			if c.Pulses[i].Charg == 0 {
+				log.Printf("warning, c.Pulses[i].Charg == 0 (this is probably a mistake, fix it !)\n")
+			}
+			pulseCharge = c.Pulses[i].Charg
+		}
+		charge += pulseCharge
 	}
 	return charge
+}
+
+// XY return the X and Y coordinates of the incoming particle
+// Calculated according a a formula found in
+//
+//     An Improved Multicrystal 2-D BGO Detector for PET J.G. Rogers
+//     IEEE TRANSACTIONS ON NUCLEAR SCIENCE, VOL. 39. NO. 4,1992
+//
+// which is also available on our gitlab:
+//     https://gitlab.in2p3.fr/avirm/Docs/blob/master/MiscPapers/Rogers_1992_IEEE.pdf
+func (c *Cluster) XY(recalcPulsesCharges bool) (x, y float64) {
+	chTot := c.Charge(recalcPulsesCharges)
+	ch0 := c.Pulses[0].Charg
+	ch1 := c.Pulses[1].Charg
+	ch2 := c.Pulses[2].Charg
+	ch3 := c.Pulses[3].Charg
+
+	x = ((ch1 + ch3) - (ch0 + ch2)) / (chTot)
+	y = ((ch1 + ch0) - (ch3 + ch2)) / (chTot)
+	return
 }
 
 // Counter return the value of counter for the given index

@@ -149,7 +149,7 @@ func NewDetector() *Detector {
 							//
 							// This idxPMT index is different from the electronics channel index (or the index within the Quartet.channels array, which is
 							// the same as the electronics channel index). The electronics channel index is the index specifying on which pin of the connector
-							// on the HV divider card the signal is leaving to card.
+							// on the HV divider card the signal is leaving the card.
 							// Let's call this index idxElec (0 -> 3). We have, representing the connector on the HV divider card :
 							//
 							//            ________________________________________________
