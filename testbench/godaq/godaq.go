@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -198,6 +199,7 @@ type Data struct {
 	Charge     string   `json:"charge"`     // charge histograms
 	HVvals     string   `json:"hv"`         // hv values
 	DeltaT30   string   `json:"deltat30"`   // distribution of the difference of T30
+	ClustersXY string   `json:"clusterxy"`  // scatter plots of clusters (X, Y) pairs
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -670,6 +672,10 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							DeltaT30svg = utils.RenderSVG(pDeltaT30, 15, 7)
 						}
 
+						// Clusters XY scatter plots
+						//clustersXYPlot := dqplots.MakeClustersXYTilePlot()
+						clustersXYPlotsvg := "" //utils.RenderSVG(clustersXYPlot, 30, 7)
+
 						// send to channel
 						datac <- Data{
 							EvtID:      event.ID,
@@ -682,6 +688,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							Charge:     chargesvg,
 							HVvals:     hvsvg,
 							DeltaT30:   DeltaT30svg,
+							ClustersXY: clustersXYPlotsvg,
 						}
 						noEventsForMon = 0
 					}
@@ -730,15 +737,15 @@ func dataHandler(ws *websocket.Conn) {
 		/////////////////////////////////////////////////
 		// uncomment to have an estimation of the total
 		// amount of data that passes through the websocket
-		/*
-			sb, err := json.Marshal(data)
-			if err != nil {
-				panic(err)
-			}
-			fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
-		*/
+
+		sb, err := json.Marshal(data)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
+
 		/////////////////////////////////////////////////
-		err := websocket.JSON.Send(ws, data)
+		err = websocket.JSON.Send(ws, data)
 		if err != nil {
 			log.Printf("error sending data: %v\n", err)
 			return

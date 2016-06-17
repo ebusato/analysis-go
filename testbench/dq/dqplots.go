@@ -94,7 +94,8 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 	var counter float64 = 0
 	for i := range event.Clusters {
 		cluster := &event.Clusters[i]
-		mult += uint8(len(cluster.PulsesWithSignal()))
+		clusterMult := uint8(len(cluster.PulsesWithSignal()))
+		mult += clusterMult
 		satmult += uint8(len(cluster.PulsesWithSatSignal()))
 		for j := range cluster.Pulses {
 			pulse := &cluster.Pulses[j]
@@ -111,17 +112,20 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 			}
 			counter++
 		}
-		// Pulses' charges are recalculated. If cpu time becomes critical, this could
-		// possibly be optimized
-		xClus, yClus := cluster.XY(true)
-		xyz := struct {
-			X, Y, Z float64
-		}{
-			X: xClus,
-			Y: yClus,
-			Z: 0,
+		if clusterMult != 0 {
+			// Pulses' charges are recalculated. If cpu time becomes critical, this could
+			// possibly be optimized
+			xClus, yClus := cluster.XY(true)
+			xyz := struct {
+				X, Y, Z float64
+			}{
+				X: xClus,
+				Y: yClus,
+				Z: 0,
+			}
+			d.ClustersXYs[i] = append(d.ClustersXYs[i], xyz)
+			//fmt.Println("x, y = ", xClus, yClus)
 		}
-		d.ClustersXYs[i] = append(d.ClustersXYs[i], xyz)
 	}
 
 	d.HMultiplicity.Fill(float64(mult), 1)
@@ -413,17 +417,29 @@ func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
 // MakeClustersXYTilePlot makes a tiled plot with the X vs Y scatter
 // plots for each cluster
 func (d *DQPlot) MakeClustersXYTilePlot() *hplot.TiledPlot {
-	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 6, Rows: 1, PadX: 3.5 * vg.Centimeter})
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: len(d.ClustersXYs), Rows: 1, PadX: .5 * vg.Centimeter})
 	if err != nil {
 		panic(err)
 	}
-	for i := range ClustersXYs {
-		p := tp.Plot(0, i)
-		grid := hplot.NewGrid()
-		grid.Vertical.Width = 0
-		grid.Horizontal.Dashes = plotutil.Dashes(1)
-		p.Add(grid)
+	for i := range d.ClustersXYs {
+		if len(d.ClustersXYs[i]) > 0 {
+			p := tp.Plot(0, i)
+			grid := hplot.NewGrid()
+			grid.Vertical.Width = 0
+			grid.Horizontal.Dashes = plotutil.Dashes(1)
+			p.Add(grid)
+			//p.Title.Text = "Reconstructed position of the incoming particle"
+			p.X.Label.Text = "X"
+			p.Y.Label.Text = "Y"
+			bs, err := plotter.NewBubbles(d.ClustersXYs[i], vg.Points(1), vg.Points(3))
+			if err != nil {
+				panic(err)
+			}
+			bs.Color = color.RGBA{R: 196, B: 128, A: 255}
+			p.Add(bs)
+		}
 	}
+	return tp
 }
 
 // SaveHistos saves histograms on disk.
