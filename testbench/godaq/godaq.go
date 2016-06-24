@@ -673,8 +673,8 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						}
 
 						// Clusters XY scatter plots
-						//clustersXYPlot := dqplots.MakeClustersXYTilePlot()
-						clustersXYPlotsvg := "" //utils.RenderSVG(clustersXYPlot, 30, 7)
+						clustersXYPlot := dqplots.MakeClustersXYTilePlot()
+						clustersXYPlotsvg := utils.RenderSVG(clustersXYPlot, 50, 7)
 
 						// send to channel
 						datac <- Data{

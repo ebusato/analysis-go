@@ -12,6 +12,7 @@ import (
 	"github.com/go-hep/hbook"
 	"github.com/go-hep/hplot"
 	"github.com/gonum/plot"
+	"github.com/gonum/plot/palette"
 	"github.com/gonum/plot/plotter"
 	"github.com/gonum/plot/plotutil"
 	"github.com/gonum/plot/vg"
@@ -31,7 +32,7 @@ type DQPlot struct {
 	HCharge          [][]hbook.H1D
 	HAmplitude       [][]hbook.H1D
 	DeltaT30         *hbook.H1D
-	ClustersXYs      []plotter.XYZs
+	ClustersXYs      []utils.H2D
 
 	HV [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
 
@@ -49,7 +50,7 @@ func NewDQPlot() *DQPlot {
 		HCharge:          make([][]hbook.H1D, NoClusters),
 		HAmplitude:       make([][]hbook.H1D, NoClusters),
 		DeltaT30:         hbook.NewH1D(150, -15, 15),
-		ClustersXYs:      make([]plotter.XYZs, NoClusters),
+		ClustersXYs:      make([]utils.H2D, NoClusters),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
@@ -58,6 +59,7 @@ func NewDQPlot() *DQPlot {
 			dqp.HCharge[i][j] = *hbook.NewH1D(400, 0, 0.3)
 			dqp.HAmplitude[i][j] = *hbook.NewH1D(300, 0, 4096)
 		}
+		dqp.ClustersXYs[i] = *utils.NewH2D(66, -1.1, 1.1, 66, -1.1, 1.1)
 	}
 	return dqp
 }
@@ -116,14 +118,7 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 			// Pulses' charges are recalculated. If cpu time becomes critical, this could
 			// possibly be optimized
 			xClus, yClus := cluster.XY(true)
-			xyz := struct {
-				X, Y, Z float64
-			}{
-				X: xClus,
-				Y: yClus,
-				Z: 0,
-			}
-			d.ClustersXYs[i] = append(d.ClustersXYs[i], xyz)
+			d.ClustersXYs[i].Fill(xClus, yClus)
 			//fmt.Println("x, y = ", xClus, yClus)
 		}
 	}
@@ -422,21 +417,23 @@ func (d *DQPlot) MakeClustersXYTilePlot() *hplot.TiledPlot {
 		panic(err)
 	}
 	for i := range d.ClustersXYs {
-		if len(d.ClustersXYs[i]) > 0 {
-			p := tp.Plot(0, i)
-			grid := hplot.NewGrid()
-			grid.Vertical.Width = 0
-			grid.Horizontal.Dashes = plotutil.Dashes(1)
-			p.Add(grid)
-			//p.Title.Text = "Reconstructed position of the incoming particle"
-			p.X.Label.Text = "X"
-			p.Y.Label.Text = "Y"
-			bs, err := plotter.NewBubbles(d.ClustersXYs[i], vg.Points(1), vg.Points(3))
-			if err != nil {
-				panic(err)
-			}
-			bs.Color = color.RGBA{R: 196, B: 128, A: 255}
-			p.Add(bs)
+		p := tp.Plot(0, i)
+		// 		grid := hplot.NewGrid()
+		// 		grid.Vertical.Width = 0
+		// 		grid.Horizontal.Dashes = plotutil.Dashes(1)
+		// 		p.Add(grid)
+		//p.Title.Text = "Reconstructed position of the incoming particle"
+		p.X.Label.Text = "X"
+		p.Y.Label.Text = "Y"
+		p.X.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
+		p.Y.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
+		p.X.Min = d.ClustersXYs[i].LowX
+		p.Y.Min = d.ClustersXYs[i].LowY
+		p.X.Max = d.ClustersXYs[i].HighX
+		p.Y.Max = d.ClustersXYs[i].HighY
+		if d.ClustersXYs[i].Nentries >= 1 {
+			hm := plotter.NewHeatMap(d.ClustersXYs[i], palette.Heat(200, 1))
+			p.Add(hm)
 		}
 	}
 	return tp
