@@ -60,6 +60,7 @@ var (
 	ped         = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 	tdo         = flag.String("tdo", "", "Name of the csv file containing time dependent offsets. If not set, time dependent offsets are not applied. Relevant only when ped!=\"\".")
 	pet         = flag.Bool("pet", false, "If set, pet mode is set on")
+	bgo         = flag.Bool("bgo", false, "If set, bgo mode is set on")
 )
 
 // XY is a struct used to store a couple of values
@@ -575,7 +576,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 					}
 					event = applyCorrCalib.HV(event, doPedestal, doTimeDepOffset)
 					//////////////////////////////////////////////////////
-					dqplots.FillHistos(event)
+					dqplots.FillHistos(event, *bgo)
 					mult, pulsesWithSignal := event.Multiplicity()
 					if *pet {
 						if mult == 2 {
@@ -673,8 +674,11 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						}
 
 						// Clusters XY scatter plots
-						clustersXYPlot := dqplots.MakeClustersXYTilePlot()
-						clustersXYPlotsvg := utils.RenderSVG(clustersXYPlot, 50, 7)
+						clustersXYPlotsvg := ""
+						if *bgo {
+							clustersXYPlot := dqplots.MakeClustersXYTilePlot()
+							clustersXYPlotsvg = utils.RenderSVG(clustersXYPlot, 50, 7)
+						}
 
 						// send to channel
 						datac <- Data{

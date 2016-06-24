@@ -88,7 +88,7 @@ func NewDQPlotFromGob(fileName string) *DQPlot {
 	return dqplot
 }
 
-func (d *DQPlot) FillHistos(event *event.Event) {
+func (d *DQPlot) FillHistos(event *event.Event, doClusterXY bool) {
 	d.Nevents++
 
 	var mult uint8 = 0
@@ -114,12 +114,14 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 			}
 			counter++
 		}
-		if clusterMult != 0 {
-			// Pulses' charges are recalculated. If cpu time becomes critical, this could
-			// possibly be optimized
-			xClus, yClus := cluster.XY(true)
-			d.ClustersXYs[i].Fill(xClus, yClus)
-			//fmt.Println("x, y = ", xClus, yClus)
+		if doClusterXY {
+			if clusterMult >= 3 {
+				// Pulses' charges are recalculated. If cpu time becomes critical, this could
+				// possibly be optimized
+				xClus, yClus := cluster.XY(true)
+				d.ClustersXYs[i].Fill(xClus, yClus)
+				//fmt.Println("x, y = ", xClus, yClus)
+			}
 		}
 	}
 

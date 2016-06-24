@@ -412,14 +412,48 @@ func (c *Cluster) Charge(recalcPulsesCharges bool) float64 {
 // which is also available on our gitlab:
 //     https://gitlab.in2p3.fr/avirm/Docs/blob/master/MiscPapers/Rogers_1992_IEEE.pdf
 func (c *Cluster) XY(recalcPulsesCharges bool) (x, y float64) {
-	chTot := c.Charge(recalcPulsesCharges)
-	ch0 := c.Pulses[0].Charg
-	ch1 := c.Pulses[1].Charg
-	ch2 := c.Pulses[2].Charg
-	ch3 := c.Pulses[3].Charg
+	var ch0, ch1, ch2, ch3 float64
+	if c.Pulses[0].HasSignal {
+		switch recalcPulsesCharges {
+		case true:
+			ch0 = c.Pulses[0].Charge()
+		case false:
+			ch0 = c.Pulses[0].Charg
+		}
+	}
+	if c.Pulses[1].HasSignal {
+		switch recalcPulsesCharges {
+		case true:
+			ch1 = c.Pulses[1].Charge()
+		case false:
+			ch1 = c.Pulses[1].Charg
+		}
+	}
+	if c.Pulses[2].HasSignal {
+		switch recalcPulsesCharges {
+		case true:
+			ch2 = c.Pulses[2].Charge()
+		case false:
+			ch2 = c.Pulses[2].Charg
+		}
+	}
+	if c.Pulses[3].HasSignal {
+		switch recalcPulsesCharges {
+		case true:
+			ch3 = c.Pulses[3].Charge()
+		case false:
+			ch3 = c.Pulses[3].Charg
+		}
+	}
 
-	x = ((ch1 + ch3) - (ch0 + ch2)) / (chTot)
-	y = ((ch1 + ch0) - (ch3 + ch2)) / (chTot)
+	chTot := ch0 + ch1 + ch2 + ch3
+
+	x = ((ch1 + ch3) - (ch0 + ch2)) / chTot
+	y = ((ch1 + ch0) - (ch3 + ch2)) / chTot
+
+	// 	fmt.Println("  -> ch0, ch1, ch2, ch3 =", ch0, ch1, ch2, ch3)
+	// 	fmt.Println("  -> x, y =", x, y)
+
 	return
 }
 
