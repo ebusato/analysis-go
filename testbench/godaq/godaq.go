@@ -337,6 +337,9 @@ func main() {
 		"LowHighThres":            "0x" + strconv.FormatUint(uint64(hdr.LowHighThres), 16),
 		"TrigSigShapingHighThres": "0x" + strconv.FormatUint(uint64(hdr.TrigSigShapingHighThres), 16),
 		"TrigSigShapingLowThres":  "0x" + strconv.FormatUint(uint64(hdr.TrigSigShapingLowThres), 16),
+		"ClusterSigThresShaping":  "0x" + strconv.FormatUint(uint64(hdr.ClusterSigThresShaping), 16),
+		"FirmwareASM":             strconv.FormatUint(uint64(hdr.FirmwareASM), 10),
+		"FirmwareBlond":           strconv.FormatUint(uint64(hdr.FirmwareBlond), 10),
 	})
 	if err != nil {
 		panic(err)
