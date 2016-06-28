@@ -109,7 +109,7 @@ func (r *Reader) readU32(v *uint32) {
 // readHeader reads the header of the binary files
 func (r *Reader) readHeader(hdr *Header) {
 	switch {
-	case r.hdr.HdrType == HeaderCAL:
+	case r.hdr.HdrType == HeaderGANIL:
 		r.readU32(&hdr.History)
 		r.readU32(&hdr.RunNumber)
 		r.readU32(&hdr.FreeField)
@@ -126,6 +126,9 @@ func (r *Reader) readHeader(hdr *Header) {
 		r.readU32(&hdr.LowHighThres)
 		r.readU32(&hdr.TrigSigShapingHighThres)
 		r.readU32(&hdr.TrigSigShapingLowThres)
+		r.readU32(&hdr.ClusterSigThresShaping)
+		r.readU32(&hdr.FirmwareASM)
+		r.readU32(&hdr.FirmwareBlond)
 		// When setting the number of samples to 1000 it's actually 999
 		// hence the -1 subtraction
 		r.noSamples = uint16(hdr.NoSamples) - 1

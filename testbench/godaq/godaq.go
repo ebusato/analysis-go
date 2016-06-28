@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -37,7 +36,7 @@ import (
 
 var (
 	datac       = make(chan Data, 10)
-	hdrType     = rw.HeaderCAL
+	hdrType     = rw.HeaderGANIL
 	cpuprof     = flag.String("cpuprof", "", "Name of file for CPU profiling")
 	noEvents    = flag.Uint("n", 1000000, "Number of events")
 	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
@@ -218,7 +217,7 @@ func TCPConn(p *string) *net.TCPConn {
 func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
-	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
+	flag.Var(&hdrType, "h", "Type of header: HeaderGANIL or HeaderOld")
 	flag.Parse()
 
 	if *cpuprof != "" {
@@ -741,15 +740,15 @@ func dataHandler(ws *websocket.Conn) {
 		/////////////////////////////////////////////////
 		// uncomment to have an estimation of the total
 		// amount of data that passes through the websocket
-
-		sb, err := json.Marshal(data)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
-
+		/*
+			sb, err := json.Marshal(data)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
+		*/
 		/////////////////////////////////////////////////
-		err = websocket.JSON.Send(ws, data)
+		err := websocket.JSON.Send(ws, data)
 		if err != nil {
 			log.Printf("error sending data: %v\n", err)
 			return

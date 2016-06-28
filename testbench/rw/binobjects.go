@@ -17,20 +17,20 @@ func LastFrame() uint32 {
 }
 
 // HeaderType defines the type of header
-// It can take two values: HeaderOld and HeaderCAL
+// It can take two values: HeaderOld and HeaderGANIL
 type HeaderType int
 
 const (
 	HeaderOld HeaderType = iota + 1
-	HeaderCAL
+	HeaderGANIL
 )
 
 func (ht *HeaderType) String() string {
 	switch *ht {
 	case HeaderOld:
 		return "HeaderOld"
-	case HeaderCAL:
-		return "HeaderCAL"
+	case HeaderGANIL:
+		return "HeaderGANIL"
 	default:
 		return fmt.Sprintf("HeaderType(%v)", *ht)
 	}
@@ -39,8 +39,8 @@ func (ht *HeaderType) String() string {
 // Set is the method to set the flag value.
 func (ht *HeaderType) Set(value string) error {
 	switch value {
-	case "HeaderCAL":
-		*ht = HeaderCAL
+	case "HeaderGANIL":
+		*ht = HeaderGANIL
 	case "HeaderOld":
 		*ht = HeaderOld
 	default:
@@ -68,6 +68,9 @@ type Header struct {
 	LowHighThres            uint32     // low and high trigger thresholds
 	TrigSigShapingHighThres uint32     // trigger signal shaping for high threshold
 	TrigSigShapingLowThres  uint32     // trigger signal shaping for low threshold
+	ClusterSigThresShaping  uint32     // cluster signal threshold and shaping
+	FirmwareASM             uint32     // firmware of ASM cards
+	FirmwareBlond           uint32     // firmware of Blond card
 	Size                    uint32     // size of the frame in the ASM stream
 	NumFrame                uint32     // number of frames x number of cards
 }
@@ -76,7 +79,7 @@ type Header struct {
 func (h *Header) Print() {
 	fmt.Printf("Header (type = %#v):\n", h.HdrType.String())
 	switch {
-	case h.HdrType == HeaderCAL:
+	case h.HdrType == HeaderGANIL:
 		fmt.Printf("   History = %v\n", h.History)
 		fmt.Printf("   RunNumber = %v\n", h.RunNumber)
 		fmt.Printf("   FreeField = %v\n", h.FreeField)
@@ -93,6 +96,9 @@ func (h *Header) Print() {
 		fmt.Printf("   LowHighThres = %x\n", h.LowHighThres)
 		fmt.Printf("   TrigSigShapingHighThres = %x\n", h.TrigSigShapingHighThres)
 		fmt.Printf("   TrigSigShapingLowThres = %x\n", h.TrigSigShapingLowThres)
+		fmt.Printf("   ClusterSigThresShaping = %x\n", h.ClusterSigThresShaping)
+		fmt.Printf("   FirmwareASM = %v\n", h.FirmwareASM)
+		fmt.Printf("   FirmwareBlond = %v\n", h.FirmwareBlond)
 	case h.HdrType == HeaderOld:
 		fmt.Printf("   Size = %v\n", h.Size)
 		fmt.Printf("   NumFrame = %v\n", h.NumFrame)

@@ -17,13 +17,13 @@ func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
-		hdrType  = rw.HeaderCAL
+		hdrType  = rw.HeaderGANIL
 		fileName = flag.String("i", "", "Input file name")
 		ip       = flag.String("ip", "localhost", "IP address")
 		port     = flag.String("p", "5556", "Port number")
 		freq     = flag.Uint("freq", 100, "Event number printing frequency")
 	)
-	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
+	flag.Var(&hdrType, "h", "Type of header: HeaderGANIL or HeaderOld")
 	flag.Parse()
 
 	// Reader

@@ -42,7 +42,7 @@ func main() {
 	}
 	defer f.Close()
 
-	r, err := rw.NewReader(bufio.NewReader(f), rw.HeaderCAL)
+	r, err := rw.NewReader(bufio.NewReader(f), rw.HeaderGANIL)
 	if err != nil {
 		log.Fatalf("could not open asm file: %v\n", err)
 	}

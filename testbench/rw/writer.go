@@ -81,7 +81,7 @@ func (w *Writer) writeU32(v uint32) {
 
 func (w *Writer) writeHeader(hdr *Header, clientTime bool) {
 	switch {
-	case hdr.HdrType == HeaderCAL:
+	case hdr.HdrType == HeaderGANIL:
 		w.writeU32(hdr.History)
 		w.writeU32(hdr.RunNumber)
 		w.writeU32(hdr.FreeField)
@@ -103,6 +103,9 @@ func (w *Writer) writeHeader(hdr *Header, clientTime bool) {
 		w.writeU32(hdr.LowHighThres)
 		w.writeU32(hdr.TrigSigShapingHighThres)
 		w.writeU32(hdr.TrigSigShapingLowThres)
+		w.writeU32(hdr.ClusterSigThresShaping)
+		w.writeU32(hdr.FirmwareASM)
+		w.writeU32(hdr.FirmwareBlond)
 	case hdr.HdrType == HeaderOld:
 		w.writeU32(hdr.Size)
 		w.writeU32(hdr.NumFrame)
