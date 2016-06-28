@@ -23,7 +23,7 @@ echo -e "${RED}Creating directory in ~/godaq${NC}"
 PATHBASE=~/godaq
 echo " PATHBASE="$PATHBASE
 
-LATESTTAG=`git tag | tail -1`
+LATESTTAG=`git tag | sort -V | tail -1`
 echo " LATESTTAG="$LATESTTAG
 
 PATHINSTALL=$PATHBASE"/"$LATESTTAG

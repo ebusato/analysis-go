@@ -22,10 +22,10 @@ func main() {
 		outfileName = flag.String("o", "outputTDO/timeDepOffsets.csv", "Name of the output file")
 		noEvents    = flag.Uint("n", 10000000, "Number of events to process")
 		ped         = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
-		hdrType     = rw.HeaderCAL
+		hdrType     = rw.HeaderGANIL
 	)
 
-	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
+	flag.Var(&hdrType, "h", "Type of header: HeaderGANIL or HeaderOld")
 	flag.Parse()
 
 	err := os.RemoveAll("outputTDO")

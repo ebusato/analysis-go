@@ -29,10 +29,10 @@ func main() {
 		//outFileNameGlobal = flag.String("oG", "outputPedestals/globalEventVariables.csv", "Name of the output file containing global event variables")
 		noEvents  = flag.Int("n", -1, "Number of events to process (-1 means all events are processed)")
 		inputType = reader.HexInput
-		hdrType   = rw.HeaderCAL
+		hdrType   = rw.HeaderGANIL
 	)
 	flag.Var(&inputType, "inType", "Type of input file (possible values: Dec,Hex,Bin)")
-	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
+	flag.Var(&hdrType, "h", "Type of header: HeaderGANIL or HeaderOld")
 	flag.Parse()
 
 	err := os.RemoveAll("outputPedestals")
