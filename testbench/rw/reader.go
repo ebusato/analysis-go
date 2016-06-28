@@ -342,9 +342,9 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 
 		event.Clusters[iCluster] = *pulse.NewCluster(iCluster, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
 
-		event.Clusters[iCluster].Counters = make([]uint32, numCounters)
+		event.Clusters[iCluster].CountersFifo1 = make([]uint32, numCounters)
+		event.Clusters[iCluster].CountersFifo2 = make([]uint32, numCounters)
 
-		/*
 		// here start
 		// Not clear why this is producing Fatalf
 		//   -> Need to investigate
@@ -352,13 +352,10 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			counterf1 := frame1.Block.Counters[i]
 			counterf2 := frame2.Block.Counters[i]
 			fmt.Println("counterf1, counterf2 = ", counterf1, counterf2)
-			if counterf1 != counterf2 {
-				log.Fatalf("rw: countersf1 != countersf2")
-			}
-			event.Clusters[iCluster].Counters[i] = counterf1
+			event.Clusters[iCluster].CountersFifo1[i] = counterf1
+			event.Clusters[iCluster].CountersFifo2[i] = counterf2
 		}
 		// here stop
-		*/
 
 	}
 

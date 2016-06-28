@@ -33,8 +33,10 @@ func (e *Event) Copy() *Event {
 			*oldPulses[2].Copy(),
 			*oldPulses[3].Copy()}
 		newevent.Clusters[i].ID = e.Clusters[i].ID
-		newevent.Clusters[i].Counters = make([]uint32, len(e.Clusters[i].Counters))
-		copy(newevent.Clusters[i].Counters, e.Clusters[i].Counters)
+		newevent.Clusters[i].CountersFifo1 = make([]uint32, len(e.Clusters[i].CountersFifo1))
+		newevent.Clusters[i].CountersFifo2 = make([]uint32, len(e.Clusters[i].CountersFifo2))
+		copy(newevent.Clusters[i].CountersFifo1, e.Clusters[i].CountersFifo1)
+		copy(newevent.Clusters[i].CountersFifo2, e.Clusters[i].CountersFifo2)
 	}
 	return newevent
 }

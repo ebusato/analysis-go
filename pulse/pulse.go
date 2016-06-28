@@ -299,9 +299,10 @@ func (p *Pulse) Correlation(pu *Pulse) float64 {
 
 // Cluster describes a quartet.
 type Cluster struct {
-	Pulses   [4]Pulse
-	ID       uint8
-	Counters []uint32 // Counters stores the counters present in the binary/hexa/decimal files
+	Pulses        [4]Pulse
+	ID            uint8
+	CountersFifo1 []uint32 // Counters stores the counters present in the binary/hexa/decimal files
+	CountersFifo2 []uint32 // Counters stores the counters present in the binary/hexa/decimal files
 }
 
 // NewClusterFromID constructs a new cluster from ID only
@@ -322,7 +323,8 @@ func NewCluster(id uint8, pulses [4]Pulse) *Cluster {
 // Print prints cluster informations
 func (c *Cluster) Print(detailed bool) {
 	fmt.Printf("-> Printing cluster with ID=%v\n", c.ID)
-	fmt.Printf(" o Number of counters=%v\n", len(c.Counters))
+	fmt.Printf(" o Number of counters first fifo=%v\n", len(c.CountersFifo1))
+	fmt.Printf(" o Number of counters second fifo=%v\n", len(c.CountersFifo2))
 	for i := range c.Pulses {
 		c.Pulses[i].Print(detailed)
 	}
@@ -457,12 +459,20 @@ func (c *Cluster) XY(recalcPulsesCharges bool) (x, y float64) {
 	return
 }
 
-// Counter return the value of counter for the given index
-func (c *Cluster) Counter(i int) uint32 {
-	if i >= len(c.Counters) {
+// Counter return the value of the first fifo counter for the given index
+func (c *Cluster) CounterFifo1(i int) uint32 {
+	if i >= len(c.CountersFifo1) {
 		log.Fatalf("pulse: counter index out of range")
 	}
-	return c.Counters[i]
+	return c.CountersFifo1[i]
+}
+
+// Counter return the value of the second fifo counter for the given index
+func (c *Cluster) CounterFifo2(i int) uint32 {
+	if i >= len(c.CountersFifo2) {
+		log.Fatalf("pulse: counter index out of range")
+	}
+	return c.CountersFifo2[i]
 }
 
 type YRange byte
