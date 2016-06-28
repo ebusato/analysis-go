@@ -100,6 +100,7 @@ func (w *Writer) writeHeader(hdr *Header, clientTime bool) {
 		w.writeU32(hdr.TriggerDelay)
 		w.writeU32(hdr.ChanUsedForTrig)
 		w.writeU32(hdr.Threshold)
+		w.writeU32(hdr.LowThresholdCluster)
 		w.writeU32(hdr.LowHighThres)
 		w.writeU32(hdr.TrigSigShapingHighThres)
 		w.writeU32(hdr.TrigSigShapingLowThres)

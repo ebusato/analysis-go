@@ -65,6 +65,7 @@ type Header struct {
 	TriggerDelay            uint32     // trigger delay
 	ChanUsedForTrig         uint32     // channels used for trigger
 	Threshold               uint32     // threshold above which fifo data are sent to socket and received on DAQ PC
+	LowThresholdCluster     uint32     // low threshold of clusters
 	LowHighThres            uint32     // low and high trigger thresholds
 	TrigSigShapingHighThres uint32     // trigger signal shaping for high threshold
 	TrigSigShapingLowThres  uint32     // trigger signal shaping for low threshold
@@ -93,6 +94,7 @@ func (h *Header) Print() {
 		fmt.Printf("   TriggerDelay = %x\n", h.TriggerDelay)
 		fmt.Printf("   ChanUsedForTrig = %x\n", h.ChanUsedForTrig)
 		fmt.Printf("   Threshold = %v\n", h.Threshold)
+		fmt.Printf("   LowThresCluster = %x\n", h.LowThresholdCluster)
 		fmt.Printf("   LowHighThres = %x\n", h.LowHighThres)
 		fmt.Printf("   TrigSigShapingHighThres = %x\n", h.TrigSigShapingHighThres)
 		fmt.Printf("   TrigSigShapingLowThres = %x\n", h.TrigSigShapingLowThres)

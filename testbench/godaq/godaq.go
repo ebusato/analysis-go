@@ -247,7 +247,6 @@ func main() {
 		}
 	}
 
-	//for i := 0; i < 4; i++ {
 	r, err := rw.NewReader(bufio.NewReader(tcp), hdrType)
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
@@ -334,6 +333,7 @@ func main() {
 		"TriggerDelay":            "0x" + strconv.FormatUint(uint64(hdr.TriggerDelay), 16),
 		"ChanUsedForTrig":         "0x" + strconv.FormatUint(uint64(hdr.ChanUsedForTrig), 16),
 		"Threshold":               strconv.FormatUint(uint64(hdr.Threshold), 10),
+		"LowThresholdCluster":     "0x" + strconv.FormatUint(uint64(hdr.LowThresholdCluster), 16),
 		"LowHighThres":            "0x" + strconv.FormatUint(uint64(hdr.LowHighThres), 16),
 		"TrigSigShapingHighThres": "0x" + strconv.FormatUint(uint64(hdr.TrigSigShapingHighThres), 16),
 		"TrigSigShapingLowThres":  "0x" + strconv.FormatUint(uint64(hdr.TrigSigShapingLowThres), 16),
@@ -564,8 +564,10 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 				}
 				switch event.IsCorrupted {
 				case false:
-					//event.Print(true, false)
+					//////////////////////////////////////////////////////
+					// Write event to disk
 					w.Event(event)
+
 					//////////////////////////////////////////////////////
 					// Corrections
 					doPedestal := false
@@ -577,7 +579,9 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						doTimeDepOffset = true
 					}
 					event = applyCorrCalib.HV(event, doPedestal, doTimeDepOffset)
+
 					//////////////////////////////////////////////////////
+					// Fill histos
 					dqplots.FillHistos(event, *bgo)
 					mult, pulsesWithSignal := event.Multiplicity()
 					if *pet {
@@ -604,10 +608,10 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							}
 						}
 					}
-					if *iEvent%*monFreq == 0 {
-						//cevent <- *event
-						// Webserver data
 
+					//////////////////////////////////////////////////////
+					// Prepare monitoring data and send them to websocket
+					if *iEvent%*monFreq == 0 {
 						var qs Quartets
 						sampFreq := 5
 						if *monLight {

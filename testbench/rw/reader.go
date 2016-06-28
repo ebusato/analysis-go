@@ -123,6 +123,7 @@ func (r *Reader) readHeader(hdr *Header) {
 		r.readU32(&hdr.TriggerDelay)
 		r.readU32(&hdr.ChanUsedForTrig)
 		r.readU32(&hdr.Threshold)
+		r.readU32(&hdr.LowThresholdCluster)
 		r.readU32(&hdr.LowHighThres)
 		r.readU32(&hdr.TrigSigShapingHighThres)
 		r.readU32(&hdr.TrigSigShapingLowThres)
@@ -342,18 +343,23 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 		event.Clusters[iCluster] = *pulse.NewCluster(iCluster, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
 
 		event.Clusters[iCluster].Counters = make([]uint32, numCounters)
+
 		/*
-			 // Not clear why this is producing Fatalf
-			 //   -> Need to investigate
-			    for i := uint8(0); i < numCounters; i++ {
-					counterf1 := frame1.Block.Counters[i]
-					counterf2 := frame2.Block.Counters[i]
-					if counterf1 != counterf2 {
-						log.Fatalf("rw: countersf1 != countersf2")
-					}
-					event.Clusters[iCluster].Counters[i] = counterf1
-				}
+		// here start
+		// Not clear why this is producing Fatalf
+		//   -> Need to investigate
+		for i := uint8(0); i < numCounters; i++ {
+			counterf1 := frame1.Block.Counters[i]
+			counterf2 := frame2.Block.Counters[i]
+			fmt.Println("counterf1, counterf2 = ", counterf1, counterf2)
+			if counterf1 != counterf2 {
+				log.Fatalf("rw: countersf1 != countersf2")
+			}
+			event.Clusters[iCluster].Counters[i] = counterf1
+		}
+		// here stop
 		*/
+
 	}
 
 	return event, true
