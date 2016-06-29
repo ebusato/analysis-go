@@ -57,7 +57,7 @@ func NewDQPlot() *DQPlot {
 		dqp.HAmplitude[i] = make([]hbook.H1D, N)
 		for j := 0; j < N; j++ {
 			dqp.HCharge[i][j] = *hbook.NewH1D(400, 0, 0.3)
-			dqp.HAmplitude[i][j] = *hbook.NewH1D(300, 0, 4096)
+			dqp.HAmplitude[i][j] = *hbook.NewH1D(300, 0, 4095)
 		}
 		dqp.ClustersXYs[i] = *utils.NewH2D(66, -1.1, 1.1, 66, -1.1, 1.1)
 	}

@@ -43,7 +43,7 @@ var (
 	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
 	ip          = flag.String("ip", "192.168.100.11", "IP address")
 	port        = flag.String("p", "1024", "Port number")
-	monFreq     = flag.Uint("mf", 150, "Monitoring frequency")
+	monFreq     = flag.Uint("mf", 200, "Monitoring frequency")
 	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
 	evtFreq     = flag.Uint("ef", 500, "Event printing frequency")
 	st          = flag.Bool("st", false, "If set, server start time is used rather than client's one")
@@ -203,6 +203,7 @@ type Data struct {
 	Mult       H1D      `json:"mult"`       // multiplicity of pulses (1024 bits)
 	FreqH      string   `json:"freqh"`      // frequency histogram
 	Charge     string   `json:"charge"`     // charge histograms
+	Ampl       string   `json:"ampl"`       // amplitude histograms
 	HVvals     string   `json:"hv"`         // hv values
 	DeltaT30   string   `json:"deltat30"`   // distribution of the difference of T30
 	ClustersXY string   `json:"clusterxy"`  // scatter plots of clusters (X, Y) pairs
@@ -650,11 +651,16 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						freqhsvg := utils.RenderSVG(tpfreq, 40, 10)
 
 						chargesvg := ""
+						amplsvg := ""
 						hvsvg := ""
 						if !*monLight {
 							// Make charge distrib histo plot
 							tpcharge := dqplots.MakeChargeAmplTiledPlot(dq.Charge)
 							chargesvg = utils.RenderSVG(tpcharge, 40, 30)
+
+							// Make amplitude distrib histo plot
+							tpampl := dqplots.MakeChargeAmplTiledPlot(dq.Amplitude)
+							amplsvg = utils.RenderSVG(tpampl, 40, 30)
 
 							// Read HV
 							hvvals := &HVvalues{}
@@ -716,11 +722,10 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							Mult:       NewH1D(dqplots.HMultiplicity),
 							FreqH:      freqhsvg,
 							Charge:     chargesvg,
+							Ampl:       amplsvg,
 							HVvals:     hvsvg,
 							DeltaT30:   DeltaT30svg,
 							ClustersXY: clustersXYPlotsvg,
-							// 							FreqH:      "",
-							// 							Charge:     "",
 						}
 						noEventsForMon = 0
 					}

@@ -31,6 +31,7 @@
 		
 		var freqhplot = ""
 		var chargehplot = ""
+		var amplhplot = ""
 		var hvplot = ""
 		var deltat30plot = ""
 		var clusterXYplot = ""
@@ -96,6 +97,8 @@
 			p1.innerHTML = freqhplot;
 			var p2 = document.getElementById("my-chargeh-plot");
 			p2.innerHTML = chargehplot;
+			var p2bis = document.getElementById("my-amplh-plot");
+			p2bis.innerHTML = amplhplot;
 			var p3 = document.getElementById("my-deltat30-plot");
 			p3.innerHTML = deltat30plot;
 			var p4 = document.getElementById("my-clusterxy-plot");
@@ -134,6 +137,7 @@
 				}
 				freqhplot = data.freqh;
 				chargehplot = data.charge;
+				amplhplot = data.ampl;
 				hvplot = data.hv;
 				deltat30plot = data.deltat30
 				clusterXYplot = data.clusterxy
@@ -237,6 +241,7 @@
 			<ul class="tab-links">
 			<li class="active"><a href="#tab1">Occupancy and pulses</a></li>
 			<li><a href="#tab2">Charge distribution</a></li>
+			<li><a href="#tab3">Amplitude distribution</a></li>
 			<!-- li><a href="#tab3">HV</a></li-->
 			</ul>
 			<div class="tab-content">
@@ -289,6 +294,9 @@
 					</tr>
 				</table -->
 				</div> <!-- tab 2 content -->
+				<div id="tab3" class="tab">
+				<div id="my-amplh-plot" class="my-plot-stylefreq"></div>
+				</div> <!-- tab 3 content -->
 			</div>
 		</div>
 	</div><!--end .main-->
