@@ -24,6 +24,7 @@ type Reader struct {
 	noSamples         uint16
 	evtIDPrevFrame    uint32
 	firstFrameOfEvent *Frame
+	SigThreshold      uint
 	Debug             bool
 }
 
@@ -47,6 +48,7 @@ func NewReader(r io.Reader, ht HeaderType) (*Reader, error) {
 	rr := &Reader{
 		r:              r,
 		evtIDPrevFrame: 0,
+		SigThreshold:   800,
 	}
 	rr.hdr.HdrType = ht
 	rr.readHeader(&rr.hdr)
@@ -224,7 +226,7 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 	}
 }
 
-func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
+func MakePulses(f *Frame, iCluster uint8, sigThreshold uint) (*pulse.Pulse, *pulse.Pulse) {
 	iChannel_1 := uint8(2 * f.Block.ID)
 	iChannel_2 := uint8(iChannel_1 + 1)
 
@@ -303,8 +305,8 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 			log.Printf("pulse2.SRout = %v (>1023)\n", pulse2.SRout)
 		}
 		//fmt.Println(" -> ", i, pulse1.SRout, pulse2.SRout, pulse1.Channel.ID(), pulse2.Channel.ID(), capaIndex1, capaIndex2)
-		pulse1.AddSample(sample1, capa1, 800)
-		pulse2.AddSample(sample2, capa2, 800)
+		pulse1.AddSample(sample1, capa1, float64(sigThreshold))
+		pulse2.AddSample(sample2, capa2, float64(sigThreshold))
 	}
 
 	return pulse1, pulse2
@@ -354,8 +356,8 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			}
 		}
 
-		pulse0, pulse1 := MakePulses(frame1, iCluster)
-		pulse2, pulse3 := MakePulses(frame2, iCluster)
+		pulse0, pulse1 := MakePulses(frame1, iCluster, r.SigThreshold)
+		pulse2, pulse3 := MakePulses(frame2, iCluster, r.SigThreshold)
 
 		event.Clusters[iCluster] = *pulse.NewCluster(iCluster, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
 
