@@ -36,6 +36,9 @@ func NewSample(amp float64, index uint16, time float64) *Sample {
 
 // CapaIndex returns the index of the capacitor associated the the sample (from 0 to 1023)
 func (s *Sample) CapaIndex(SRout uint16) uint16 {
+	if SRout > 1023 {
+		log.Fatalf("SRout = %v (>1023)\n", SRout)
+	}
 	iCapa := SRout + s.Index
 	if iCapa > 1023 {
 		iCapa -= 1024

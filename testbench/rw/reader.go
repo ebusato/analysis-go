@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/detector"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/testbench/tbdetector"
@@ -277,6 +278,7 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 	pulse1.SRout = uint16(b.SRout)
 	pulse2.SRout = uint16(b.SRout)
 
+	//fmt.Println(f.Block.ID, iDRS, iQuartet)
 	for i := range b.Data {
 		word := b.Data[i]
 
@@ -286,8 +288,23 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 		sample1 := pulse.NewSample(ampl1, uint16(i), float64(i)*tbdetector.Det.SamplingFreq())
 		sample2 := pulse.NewSample(ampl2, uint16(i), float64(i)*tbdetector.Det.SamplingFreq())
 
-		pulse1.AddSample(sample1, tbdetector.Det.Capacitor(iDRS, iQuartet, pulse1.Channel.ID(), sample1.CapaIndex(pulse1.SRout)), 800)
-		pulse2.AddSample(sample2, tbdetector.Det.Capacitor(iDRS, iQuartet, pulse2.Channel.ID(), sample2.CapaIndex(pulse2.SRout)), 800)
+		var capa1 *detector.Capacitor
+		var capa2 *detector.Capacitor
+		if pulse1.SRout <= 1023 {
+			capaIndex1 := sample1.CapaIndex(pulse1.SRout)
+			capa1 = tbdetector.Det.Capacitor(iDRS, iQuartet, pulse1.Channel.ID(), capaIndex1)
+		} else {
+			log.Printf("pulse1.SRout = %v (>1023)\n", pulse1.SRout)
+		}
+		if pulse2.SRout <= 1023 {
+			capaIndex2 := sample2.CapaIndex(pulse2.SRout)
+			capa2 = tbdetector.Det.Capacitor(iDRS, iQuartet, pulse2.Channel.ID(), capaIndex2)
+		} else {
+			log.Printf("pulse2.SRout = %v (>1023)\n", pulse2.SRout)
+		}
+		//fmt.Println(" -> ", i, pulse1.SRout, pulse2.SRout, pulse1.Channel.ID(), pulse2.Channel.ID(), capaIndex1, capaIndex2)
+		pulse1.AddSample(sample1, capa1, 800)
+		pulse2.AddSample(sample2, capa2, 800)
 	}
 
 	return pulse1, pulse2
