@@ -61,9 +61,10 @@ func (s *Sample) Subtract(a float64) {
 // This assumes that pedestals have been computed before.
 func (s *Sample) SubtractPedestal() {
 	if s.Capacitor == nil {
-		log.Fatal("Error ! no capacitor associated to this sample")
+		log.Print("warning ! no capacitor associated to this sample")
+	} else {
+		s.Amplitude -= s.Capacitor.PedestalMean()
 	}
-	s.Amplitude -= s.Capacitor.PedestalMean()
 }
 
 // Pulse describes a DRS channel.

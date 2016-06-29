@@ -104,11 +104,13 @@ func (e *Event) PushPedestalSamples() {
 			for iSample := range pulse.Samples {
 				sample := &pulse.Samples[iSample]
 				capacitor := sample.Capacitor
-				noSamples := capacitor.NoPedestalSamples()
-				if e.ID == 0 && noSamples != 0 {
-					log.Fatal("noSamples != 0!")
+				if capacitor != nil {
+					noSamples := capacitor.NoPedestalSamples()
+					if e.ID == 0 && noSamples != 0 {
+						log.Fatal("noSamples != 0!")
+					}
+					capacitor.AddPedestalSample(sample.Amplitude)
 				}
-				capacitor.AddPedestalSample(sample.Amplitude)
 			}
 		}
 	}
