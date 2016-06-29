@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -524,15 +523,21 @@ func GetMonData(noSamples uint16, pulse pulse.Pulse) []XY {
 
 func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 	noSamplesPulse := int(pulse.NoSamples())
-	data := make([]XY, noSamplesPulse/sampFreq+1)
+	//fmt.Println(noSamplesPulse)
+	// here start
+	// 	data := make([]XY, noSamplesPulse/sampFreq+1)
+	data := make([]XY, noSamplesPulse/sampFreq)
+	// here stop
 	if noSamplesPulse == 0 {
 		return data
 	}
+	//fmt.Println("\n")
 	counter := 0
 	for i := range pulse.Samples {
 		if i%sampFreq == 0 {
 			samp := &pulse.Samples[i]
 			data[counter] = XY{X: float64(samp.Index), Y: samp.Amplitude}
+			//fmt.Println(counter, float64(samp.Index), samp.Amplitude)
 			counter++
 		}
 	}
@@ -636,8 +641,8 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 						// Make single counters data
 						var cptsing CptSing
 						for iq := 0; iq < len(cptsing); iq++ {
-							cptsinglefifo1 := event.Clusters[iq].CounterFifo1(10)
-							cptsinglefifo2 := event.Clusters[iq].CounterFifo2(10)
+							cptsinglefifo1 := event.Clusters[iq].CounterFifo1(0)
+							cptsinglefifo2 := event.Clusters[iq].CounterFifo2(0)
 							cptsing[iq][0] = float64(cptsinglefifo1 >> 16)
 							cptsing[iq][1] = float64(cptsinglefifo1 & 0xFFFF)
 							cptsing[iq][2] = float64(cptsinglefifo2 >> 16)
@@ -774,15 +779,15 @@ func dataHandler(ws *websocket.Conn) {
 		/////////////////////////////////////////////////
 		// uncomment to have an estimation of the total
 		// amount of data that passes through the websocket
-
-		sb, err := json.Marshal(data)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
-
+		/*
+			sb, err := json.Marshal(data)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
+		*/
 		/////////////////////////////////////////////////
-		err = websocket.JSON.Send(ws, data)
+		err := websocket.JSON.Send(ws, data)
 		if err != nil {
 			log.Printf("error sending data: %v\n", err)
 			return

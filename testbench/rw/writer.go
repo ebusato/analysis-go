@@ -150,6 +150,9 @@ func (w *Writer) writeBlockData(blk *Block) {
 	for _, v := range blk.Data {
 		w.writeU32(v)
 	}
+	// here start
+	w.writeU32(ctrld0d0d0d0)
+	// here stop
 	w.writeU32(blk.SRout)
 	for _, v := range blk.Counters {
 		w.writeU32(v)

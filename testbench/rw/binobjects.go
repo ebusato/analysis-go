@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	numCounters  uint8  = 17
+	numCounters  uint8  = 15
 	blockHeader  uint32 = 0xCAFEDECA
+	ctrld0d0d0d0 uint32 = 0xd0d0d0d0
 	blockTrailer uint32 = 0xBADCAFE
 	lastFrame    uint32 = 0xFFFFFFFF
 )

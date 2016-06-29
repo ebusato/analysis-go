@@ -15,6 +15,7 @@ import (
 
 var MissCAFEDECA = errors.New("missing 0xCAFEDECA")
 var MissBADCAFEi = errors.New("missing 0xBADCAFEi")
+var MissD0D0D0D0 = errors.New("missing 0xd0d0d0d0")
 
 // Reader wraps an io.Reader and reads avirm data files
 type Reader struct {
@@ -135,7 +136,8 @@ func (r *Reader) readHeader(hdr *Header) {
 		r.readU32(&hdr.FirmwareBlond)
 		// When setting the number of samples to 1000 it's actually 999
 		// hence the -1 subtraction
-		r.noSamples = uint16(hdr.NoSamples) - 1
+		//r.noSamples = uint16(hdr.NoSamples) - 1
+		r.noSamples = uint16(hdr.NoSamples)
 	case r.hdr.HdrType == HeaderOld:
 		r.readU32(&hdr.Size)
 		r.readU32(&hdr.NumFrame)
@@ -207,6 +209,14 @@ func (r *Reader) readBlockData(blk *Block) {
 	//for i := range blk.Data {
 	//	r.readU32(&blk.Data[i])
 	//}
+	// here start
+	var ctrl uint32
+	r.readU32(&ctrl)
+	//if ctrl != ctrld0d0d0d0 { // && r.err == nil {
+	//	fmt.Println("warning: missing 0xd0d0d0d0", ctrl)
+	//	r.err = MissD0D0D0D0
+	//}
+	// here end
 	r.readU32(&blk.SRout)
 	r.read(&blk.Counters)
 	//fmt.Printf("rw: srout = %v\n", blk.SRout)
@@ -277,8 +287,9 @@ func MakePulses(f *Frame, iCluster uint8, sigThreshold uint) (*pulse.Pulse, *pul
 	pulse2 := pulse.NewPulse(detChannel2)
 
 	b := &f.Block
-	pulse1.SRout = uint16(b.SRout)
-	pulse2.SRout = uint16(b.SRout)
+	srout := b.SRout & 0xFFFF
+	pulse1.SRout = uint16(srout)
+	pulse2.SRout = uint16(srout)
 
 	//fmt.Println(f.Block.ID, iDRS, iQuartet)
 	for i := range b.Data {
