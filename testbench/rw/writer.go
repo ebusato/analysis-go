@@ -185,6 +185,7 @@ func (w *Writer) Event(event *event.Event) {
 		cluster := &event.Clusters[iCluster]
 		pulses := &cluster.Pulses
 
+		//fmt.Println("writer cluster", iCluster)
 		if pulses[0].NoSamples() != 0 || pulses[1].NoSamples() != 0 {
 			frame := w.MakeFrame(iCluster, uint32(event.ID), &pulses[0], &pulses[1])
 			if uint8(len(cluster.CountersFifo1)) != numCounters {
@@ -194,6 +195,7 @@ func (w *Writer) Event(event *event.Event) {
 				log.Fatalf("rw: len(cluster.Counters) = %v, numCounters = %v", len(cluster.CountersFifo2), numCounters)
 			}
 			for j := 0; j < int(numCounters); j++ {
+				//fmt.Println("writer fifo1", j, cluster.CounterFifo1(j))
 				frame.Block.Counters[j] = cluster.CounterFifo1(j)
 			}
 			w.Frame(frame)
@@ -201,6 +203,7 @@ func (w *Writer) Event(event *event.Event) {
 		if pulses[2].NoSamples() != 0 || pulses[3].NoSamples() != 0 {
 			frame := w.MakeFrame(iCluster, uint32(event.ID), &pulses[2], &pulses[3])
 			for j := 0; j < int(numCounters); j++ {
+				//fmt.Println("writer fifo2", j, cluster.CounterFifo2(j))
 				frame.Block.Counters[j] = cluster.CounterFifo2(j)
 			}
 			w.Frame(frame)

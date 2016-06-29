@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -78,9 +79,12 @@ type Pulse []XY
 // A value of type Quartet occupies 4*N*128 = 511488 bits (taking N=999)
 type Quartet [4]Pulse
 
-// Quartets is an array of 60 Quartet
+// Quartets is an array of 6 quartets
 // A value of type Quartets occupies 60*4*N*128 = 30689280 bits (taking N=999)
 type Quartets [6]Quartet
+
+// CptSing is an array of 6 quartets storing the single counters for each of the four quartets channels
+type CptSing [6][4]float64
 
 // H1D is a local struct representing a histogram
 // The length of the slice is the number of bins
@@ -194,6 +198,7 @@ type Data struct {
 	MonBufSize int      `json:"monbufsize"` // monitoring channel buffer size
 	Freq       float64  `json:"freq"`       // number of events processed per second (64 bits)
 	Qs         Quartets `json:"quartets"`   // (30689280 bits)
+	CptSingles CptSing  `json:"cptsingles"` // cpt single for all channels
 	Mult       H1D      `json:"mult"`       // multiplicity of pulses (1024 bits)
 	FreqH      string   `json:"freqh"`      // frequency histogram
 	Charge     string   `json:"charge"`     // charge histograms
@@ -612,6 +617,7 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 					//////////////////////////////////////////////////////
 					// Prepare monitoring data and send them to websocket
 					if *iEvent%*monFreq == 0 {
+						// Make pulse data
 						var qs Quartets
 						sampFreq := 5
 						if *monLight {
@@ -622,6 +628,17 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])
 							qs[iq][2] = GetMonData(sampFreq, event.Clusters[iq].Pulses[2])
 							qs[iq][3] = GetMonData(sampFreq, event.Clusters[iq].Pulses[3])
+						}
+
+						// Make single counters data
+						var cptsing CptSing
+						for iq := 0; iq < len(cptsing); iq++ {
+							cptsinglefifo1 := event.Clusters[iq].CounterFifo1(10)
+							cptsinglefifo2 := event.Clusters[iq].CounterFifo2(10)
+							cptsing[iq][0] = float64(cptsinglefifo1 >> 16)
+							cptsing[iq][1] = float64(cptsinglefifo1 & 0xFFFF)
+							cptsing[iq][2] = float64(cptsinglefifo2 >> 16)
+							cptsing[iq][3] = float64(cptsinglefifo2 & 0xFFFF)
 						}
 
 						//fmt.Println("data:", time, noEventsForMon, duration, freq)
@@ -693,12 +710,15 @@ func stream(terminateStream chan bool, cevent chan event.Event, r *rw.Reader, w 
 							MonBufSize: len(datac),
 							Freq:       freq,
 							Qs:         qs,
+							CptSingles: cptsing,
 							Mult:       NewH1D(dqplots.HMultiplicity),
 							FreqH:      freqhsvg,
 							Charge:     chargesvg,
 							HVvals:     hvsvg,
 							DeltaT30:   DeltaT30svg,
 							ClustersXY: clustersXYPlotsvg,
+							// 							FreqH:      "",
+							// 							Charge:     "",
 						}
 						noEventsForMon = 0
 					}
@@ -747,15 +767,15 @@ func dataHandler(ws *websocket.Conn) {
 		/////////////////////////////////////////////////
 		// uncomment to have an estimation of the total
 		// amount of data that passes through the websocket
-		/*
-			sb, err := json.Marshal(data)
-			if err != nil {
-				panic(err)
-			}
-			fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
-		*/
+
+		sb, err := json.Marshal(data)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
+
 		/////////////////////////////////////////////////
-		err := websocket.JSON.Send(ws, data)
+		err = websocket.JSON.Send(ws, data)
 		if err != nil {
 			log.Printf("error sending data: %v\n", err)
 			return
