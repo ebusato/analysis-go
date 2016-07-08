@@ -183,18 +183,21 @@ func (w *Writer) Event(event *event.Event) {
 
 		if pulses[0].NoSamples() != 0 || pulses[1].NoSamples() != 0 {
 			frame := w.MakeFrame(iCluster, uint32(event.ID), &pulses[0], &pulses[1])
-			if uint8(len(cluster.Counters)) != numCounters {
-				log.Fatalf("rw: len(cluster.Counters) = %v, numCounters = %v", len(cluster.Counters), numCounters)
+			if uint8(len(cluster.CountersFifo1)) != numCounters {
+				log.Fatalf("rw: len(cluster.CountersFifo1) = %v, numCounters = %v", len(cluster.CountersFifo1), numCounters)
 			}
 			for j := 0; j < int(numCounters); j++ {
-				frame.Block.Counters[j] = cluster.Counter(j)
+				frame.Block.Counters[j] = cluster.CounterFifo1(j)
 			}
 			w.Frame(frame)
 		}
 		if pulses[2].NoSamples() != 0 || pulses[3].NoSamples() != 0 {
 			frame := w.MakeFrame(iCluster, uint32(event.ID), &pulses[2], &pulses[3])
+			if uint8(len(cluster.CountersFifo2)) != numCounters {
+				log.Fatalf("rw: len(cluster.CountersFifo2) = %v, numCounters = %v", len(cluster.CountersFifo2), numCounters)
+			}
 			for j := 0; j < int(numCounters); j++ {
-				frame.Block.Counters[j] = cluster.Counter(j)
+				frame.Block.Counters[j] = cluster.CounterFifo2(j)
 			}
 			w.Frame(frame)
 		}
@@ -249,13 +252,15 @@ func (w *Writer) EventFull(event *event.Event) {
 			block2.Data = append(block2.Data, word)
 		}
 
-		if uint8(len(cluster.Counters)) != numCounters {
-			log.Fatalf("rw: len(cluster.Counters) = %v, numCounters = %v", len(cluster.Counters), numCounters)
+		if uint8(len(cluster.CountersFifo1)) != numCounters {
+			log.Fatalf("rw: len(cluster.CountersFifo1) = %v, numCounters = %v", len(cluster.CountersFifo1), numCounters)
 		}
-
+		if uint8(len(cluster.CountersFifo2)) != numCounters {
+			log.Fatalf("rw: len(cluster.CountersFifo2) = %v, numCounters = %v", len(cluster.CountersFifo2), numCounters)
+		}
 		for j := 0; j < int(numCounters); j++ {
-			block1.Counters[j] = cluster.Counter(j)
-			block2.Counters[j] = cluster.Counter(j)
+			block1.Counters[j] = cluster.CounterFifo1(j)
+			block2.Counters[j] = cluster.CounterFifo2(j)
 		}
 
 		w.Frame(&frame1)

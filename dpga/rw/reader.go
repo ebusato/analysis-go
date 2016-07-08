@@ -19,6 +19,7 @@ type Reader struct {
 	noSamples         uint16
 	evtIDPrevFrame    uint32
 	firstFrameOfEvent *Frame
+	SigThreshold      uint
 	Debug             bool
 }
 
@@ -42,6 +43,7 @@ func NewReader(r io.Reader, ht HeaderType) (*Reader, error) {
 	rr := &Reader{
 		r:              r,
 		evtIDPrevFrame: 0,
+		SigThreshold:   800,
 	}
 	rr.hdr.HdrType = ht
 	rr.readHeader(&rr.hdr)
@@ -209,7 +211,7 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 	}
 }
 
-func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
+func MakePulses(f *Frame, iCluster uint8, sigThreshold uint) (*pulse.Pulse, *pulse.Pulse) {
 	iChannelAbs288_1 := uint16(2 * f.Block.ID)
 	iChannelAbs288_2 := uint16(iChannelAbs288_1 + 1)
 
@@ -275,8 +277,8 @@ func MakePulses(f *Frame, iCluster uint8) (*pulse.Pulse, *pulse.Pulse) {
 		sample1 := pulse.NewSample(ampl1, uint16(i), float64(i)*dpgadetector.Det.SamplingFreq())
 		sample2 := pulse.NewSample(ampl2, uint16(i), float64(i)*dpgadetector.Det.SamplingFreq())
 
-		pulse1.AddSample(sample1, dpgadetector.Det.Capacitor(iHemi, iASM, iDRS, iQuartet, iChannel1, sample1.CapaIndex(pulse1.SRout)), 800)
-		pulse2.AddSample(sample2, dpgadetector.Det.Capacitor(iHemi, iASM, iDRS, iQuartet, iChannel2, sample2.CapaIndex(pulse2.SRout)), 800)
+		pulse1.AddSample(sample1, dpgadetector.Det.Capacitor(iHemi, iASM, iDRS, iQuartet, iChannel1, sample1.CapaIndex(pulse1.SRout)), float64(sigThreshold))
+		pulse2.AddSample(sample2, dpgadetector.Det.Capacitor(iHemi, iASM, iDRS, iQuartet, iChannel2, sample2.CapaIndex(pulse2.SRout)), float64(sigThreshold))
 	}
 
 	return pulse1, pulse2
@@ -322,7 +324,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			case 1:
 				frame.typeOfFrame = SecondFrameOfCluster
 			}
-			pulse0, pulse1 := MakePulses(frame, iCluster)
+			pulse0, pulse1 := MakePulses(frame, iCluster, r.SigThreshold)
 			event.Clusters[iCluster].ID = iCluster
 			switch frame.typeOfFrame {
 			case FirstFrameOfCluster:
@@ -334,8 +336,11 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			}
 			// The counter treatment should be clarified with Magali
 			// For now just initialize the slice without filling it
-			if len(event.Clusters[iCluster].Counters) == 0 {
-				event.Clusters[iCluster].Counters = make([]uint32, numCounters)
+			if len(event.Clusters[iCluster].CountersFifo1) == 0 {
+				event.Clusters[iCluster].CountersFifo1 = make([]uint32, numCounters)
+			}
+			if len(event.Clusters[iCluster].CountersFifo2) == 0 {
+				event.Clusters[iCluster].CountersFifo2 = make([]uint32, numCounters)
 			}
 		} else { // switched to next event
 			r.firstFrameOfEvent = frame
@@ -380,8 +385,8 @@ func (r *Reader) ReadNextEventFull() (*event.Event, bool) {
 			}
 		}
 
-		pulse0, pulse1 := MakePulses(frame1, iCluster)
-		pulse2, pulse3 := MakePulses(frame2, iCluster)
+		pulse0, pulse1 := MakePulses(frame1, iCluster, r.SigThreshold)
+		pulse2, pulse3 := MakePulses(frame2, iCluster, r.SigThreshold)
 
 		event.Clusters[iCluster] = *pulse.NewCluster(iCluster, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
 
@@ -390,15 +395,18 @@ func (r *Reader) ReadNextEventFull() (*event.Event, bool) {
 		// But it's not clear whether this is the right thing to do
 		// (are we supposed to have the same counters within one quartet, as the
 		// code below implies ? -> not sure, to be checked)
-		event.Clusters[iCluster].Counters = make([]uint32, numCounters)
-		for i := uint8(0); i < numCounters; i++ {
-			counterf1 := frame1.Block.Counters[i]
-			//counterf2 := frame2.Block.Counters[i]
-			//if counterf1 != counterf2 {
-			//	log.Fatalf("rw: countersf1 != countersf2")
-			//}
-			event.Clusters[iCluster].Counters[i] = counterf1
-		}
+		event.Clusters[iCluster].CountersFifo1 = make([]uint32, numCounters)
+		event.Clusters[iCluster].CountersFifo2 = make([]uint32, numCounters)
+		/*
+			for i := uint8(0); i < numCounters; i++ {
+				counterf1 := frame1.Block.Counters[i]
+				//counterf2 := frame2.Block.Counters[i]
+				//if counterf1 != counterf2 {
+				//	log.Fatalf("rw: countersf1 != countersf2")
+				//}
+				event.Clusters[iCluster].Counters[i] = counterf1
+			}
+		*/
 	}
 
 	return event, true

@@ -57,6 +57,7 @@ var (
 	webad        = flag.String("webad", ":5555", "server address:port")
 	nobro        = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
 	sleep        = flag.Bool("s", false, "If set, sleep a bit between events")
+	sigthres     = flag.Uint("sigthres", 800, "Value above which a pulse is considered to have signal")
 	test         = flag.Bool("test", false,
 		"If set, update runs_test.csv rather than the \"official\" runs.csv file and name by default the output binary file using the following scheme: runXXX_test.bin")
 	refplots = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
@@ -267,6 +268,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
+	r.SigThreshold = *sigthres
 
 	// determine run number
 	var runCSVFileName string
