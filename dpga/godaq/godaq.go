@@ -49,7 +49,7 @@ var (
 	outfileName  = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
 	ip           = flag.String("ip", "192.168.100.11", "IP address")
 	port         = flag.String("p", "1024", "Port number")
-	monFreq      = flag.Uint("mf", 50, "Monitoring frequency")
+	monFreq      = flag.Uint("mf", 100, "Monitoring frequency")
 	monLight     = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
 	evtFreq      = flag.Uint("ef", 100, "Event printing frequency")
 	st           = flag.Bool("st", false, "If set, server start time is used rather than client's one")
