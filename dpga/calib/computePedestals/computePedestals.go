@@ -57,8 +57,8 @@ func main() {
 	}
 
 	dpgadetector.Det.FinalizePedestalsMeanErr()
-	dpgadetector.Det.WritePedestalsToFile(*outfileName)
+	dpgadetector.Det.WritePedestalsToFile(*outfileName, *infileName)
 
 	//dpgadetector.Det.PlotPedestals(true)
-	dpgadetector.Det.PlotPedestals(false)
+	dpgadetector.Det.PlotPedestals("output", false)
 }

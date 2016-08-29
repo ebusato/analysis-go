@@ -68,7 +68,7 @@ func main() {
 	}
 
 	dpgadetector.Det.FinalizeTimeDepOffsetsMeanErr()
-	dpgadetector.Det.WriteTimeDepOffsetsToFile(*outfileName)
+	dpgadetector.Det.WriteTimeDepOffsetsToFile(*outfileName, *infileName)
 
 	dpgadetector.Det.PlotTimeDepOffsets()
 }
