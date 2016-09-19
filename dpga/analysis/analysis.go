@@ -82,8 +82,8 @@ func main() {
 		///////////////////////////////////////////////////////////
 		// Plotting
 		// pulses
-		if event.ID < 2 {
-			event.PlotPulses(pulse.XaxisIndex, false, pulse.YRangeAuto)
+		if event.ID < 100 {
+			event.PlotPulses(pulse.XaxisCapacitor, false, pulse.YRangePedestal, true)
 		}
 		// dq
 		dqplots.FillHistos(event)

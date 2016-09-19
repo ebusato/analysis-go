@@ -488,7 +488,7 @@ const (
 )
 
 // PlotPulses plots the four pulses of the cluster in one canvas
-func (c *Cluster) PlotPulses(evtID uint, x XaxisType, yrange YRange) string {
+func (c *Cluster) PlotPulses(evtID uint, x XaxisType, yrange YRange, xRangeZoomAround500 bool) string {
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
@@ -531,6 +531,11 @@ func (c *Cluster) PlotPulses(evtID uint, x XaxisType, yrange YRange) string {
 		p.Y.Max = 4096
 	default:
 		// do nothing, automatic range
+	}
+
+	if xRangeZoomAround500 {
+		p.X.Min = 400
+		p.X.Max = 600
 	}
 
 	outFile := "output/pulses_event" + strconv.Itoa(int(evtID)) + "_cluster" + strconv.Itoa(int(c.ID)) + ".png"

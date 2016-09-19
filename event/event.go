@@ -84,11 +84,11 @@ func (e *Event) Multiplicity() (uint8, []*pulse.Pulse) {
 	return mult, pulsesWSig
 }
 
-func (e *Event) PlotPulses(x pulse.XaxisType, onlyClustersWithSig bool, yrange pulse.YRange) {
+func (e *Event) PlotPulses(x pulse.XaxisType, onlyClustersWithSig bool, yrange pulse.YRange, xRangeZoomAround500 bool) {
 	for i := range e.Clusters {
 		cluster := &e.Clusters[i]
 		if (onlyClustersWithSig == true && len(cluster.PulsesWithSignal()) > 0) || !onlyClustersWithSig {
-			cluster.PlotPulses(e.ID, x, yrange)
+			cluster.PlotPulses(e.ID, x, yrange, xRangeZoomAround500)
 		}
 	}
 }
