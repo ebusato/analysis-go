@@ -690,9 +690,12 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 							hvsvg := ""
 							if !*monLight {
 								// Make charge (or amplitude) distrib histo plot
-								//whichVar := dq
-								tpchargeL := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Left)
-								tpchargeR := dqplots.MakeChargeAmplTiledPlot(dq.Charge, dpgadetector.Right)
+								whichVar := dq.Charge
+								if *amplDistr {
+									whichVar = dq.Amplitude
+								}
+								tpchargeL := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Left)
+								tpchargeR := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Right)
 								chargeLsvg = utils.RenderSVG(tpchargeL, 45, 30)
 								chargeRsvg = utils.RenderSVG(tpchargeR, 45, 30)
 
