@@ -39,6 +39,7 @@
 		var hvplot = ""
 		var minrec1Ddistr = ""
 		var deltat30plot = ""
+		var chargeCorrelationplot = ""
 		
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
@@ -105,6 +106,8 @@
 			p5.innerHTML = minrec1Ddistr;
 			var p6 = document.getElementById("my-deltat30-plot");
 			p6.innerHTML = deltat30plot;
+			var p7 = document.getElementById("my-chargeCorrelation-plot");
+			p7.innerHTML = chargeCorrelationplot;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					optsR = new options('#FFFF00') // yellow
@@ -171,6 +174,7 @@
 				hvplot = data.hv;
 				minrec1Ddistr = data.minrec1Ddistrs
 				deltat30plot = data.deltat30
+				chargeCorrelationplot = data.chargecorrelation
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < data.quartets[iq][ip].length; is += 1) {
@@ -248,16 +252,22 @@
 		</div>
 		<table cellspacing="15">
 		<tr>
-		<td valign="top">
-			<!--div id="graph3DMinReco"></div-->
-		</td>		
+		<!--td valign="top">
+			<div id="graph3DMinReco"></div>
+		</td-->		
 		<td width="600">
 			<div id="my-mult-plot" class="my-plot-stylefreq"></div>
 			<div id="my-deltat30-plot" class="my-plot-stylefreq"></div>
 		</td>
 		<td valign="top">
-			<div id="my-minrec1Ddistr-plot" class="my-plot-stylefreq"></div>
+			<div id="my-chargeCorrelation-plot" class="my-plot-stylefreq"></div>
 		</td>
+		</tr>
+		<tr>
+		<td width="600">
+		<br><br><br><br>
+			<div id="my-minrec1Ddistr-plot" class="my-plot-stylefreq"></div>
+		</td>	
 		</tr>
 		</table>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br>

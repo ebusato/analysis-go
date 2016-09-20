@@ -2,7 +2,10 @@
 // H2D implements the plotter.GridXYZ interface (used for making heatmap plots)
 package utils
 
-import "math"
+import (
+	"math"
+	"fmt"
+)
 
 type H2D struct {
 	NbinsX      int
@@ -78,11 +81,22 @@ func (h *H2D) IndexToCoordY(i int) float64 {
 }
 
 func (h *H2D) Fill(x, y float64) {
-	idxX := h.XCoordToIndex(x)
-	idxY := h.YCoordToIndex(y)
-	//fmt.Println("idxs: ", idxX, idxY)
-	h.Vals[idxX][idxY]++
-	h.Nentries++
+	inRange := true
+	if x < h.LowX || x > h.HighX {
+		fmt.Printf("In H2D.Fill method: x out of range (x=%v, LowX=%v, HighX=%v)\n", x, h.LowX, h.HighX)
+		inRange = false
+	}
+	if y < h.LowY || y > h.HighY {
+		fmt.Printf("In H2D.Fill method: y out of range (y=%v, LowY=%v, HighY=%v)\n", y, h.LowY, h.HighY)
+		inRange = false
+	}
+	if inRange {
+		idxX := h.XCoordToIndex(x)
+		idxY := h.YCoordToIndex(y)
+		//fmt.Println("idxs: ", idxX, idxY)
+		h.Vals[idxX][idxY]++
+		h.Nentries++
+	}
 }
 
 func (h H2D) Dims() (c, r int) {
