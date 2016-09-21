@@ -2,6 +2,8 @@ package reconstruction
 
 import (
 	"gitlab.in2p3.fr/avirm/analysis-go/detector"
+	"fmt"
+	"math"
 )
 
 // Minimal returns the coordinates of the beta+ decay according to the "minimal approach algorithm"
@@ -27,12 +29,12 @@ func Minimal(ch1, ch2 *detector.Channel, xbeam, ybeam float64) (x, y, z float64)
 	x = ch1.CartCoord.X - coeff*(ch2.CartCoord.X-ch1.CartCoord.X)
 	y = ch1.CartCoord.Y - coeff*(ch2.CartCoord.Y-ch1.CartCoord.Y)
 	z = ch1.CartCoord.Z - coeff*(ch2.CartCoord.Z-ch1.CartCoord.Z)
-	/*
+	
 	 if math.IsNaN(x) || math.IsNaN(y) || math.IsNaN(z) {
 		fmt.Printf("One is NaN: %v %v %v\n", math.IsNaN(x), math.IsNaN(y), math.IsNaN(z))
 		fmt.Printf("  %v %v %v\n", ch1.CartCoord.X,  ch1.CartCoord.Y, ch1.CartCoord.Z)
 		fmt.Printf("  %v %v %v\n", ch2.CartCoord.X,  ch2.CartCoord.Y, ch2.CartCoord.Z)
 	}
-	*/
+	
 	return
 }

@@ -624,9 +624,10 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 						}
 						event = applyCorrCalib.HV(event, doPedestal, doTimeDepOffset)
 						//////////////////////////////////////////////////////
-						dqplots.FillHistos(event)
+						//dqplots.FillHistos(event)
 						mult, pulsesWithSignal := event.Multiplicity()
 						if mult == 2 {
+							dqplots.FillHistos(event)
 							if len(pulsesWithSignal) != 2 {
 								panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
 							}
@@ -762,7 +763,7 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 							pChargeCorrelation.Add(hpChargeCorrelation)
 							pChargeCorrelation.Add(hplot.NewGrid())
 							ChargeCorrelationsvg := ""
-							if *iEvent > 0 {
+							if false { //*iEvent > 0 {
 								ChargeCorrelationsvg = utils.RenderSVG(pChargeCorrelation, 13, 13)
 							}
 
