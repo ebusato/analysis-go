@@ -32,6 +32,7 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/trees"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/reconstruction"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
@@ -60,6 +61,7 @@ var (
 	nobro        = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
 	sleep        = flag.Bool("s", false, "If set, sleep a bit between events")
 	sigthres     = flag.Uint("sigthres", 800, "Value above which a pulse is considered to have signal")
+	notree       = flag.Bool("notree", false, "If set, no root tree is produced")
 	test         = flag.Bool("test", false,
 		"If set, update runs_test.csv rather than the \"official\" runs.csv file and name by default the output binary file using the following scheme: runXXX_test.bin")
 	refplots = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
@@ -582,6 +584,11 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
 	}
 	hvexec := NewHVexec(os.Getenv("HOME")+"/Acquisition/hv/ht-caen", os.Getenv("HOME")+"/Acquisition/hv/Coeff")
+	outrootfileName := strings.Replace(*outfileName, ".bin", ".root", 1)
+	var treeMult2 *trees.TreeMult2
+	if !*notree {
+		treeMult2 = trees.NewTreeMult2(outrootfileName)
+	}
 	var minrec []XYZ
 	minrec1Dsvg := ""
 	start := time.Now()
@@ -624,10 +631,10 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 						}
 						event = applyCorrCalib.HV(event, doPedestal, doTimeDepOffset)
 						//////////////////////////////////////////////////////
-						//dqplots.FillHistos(event)
+						dqplots.FillHistos(event)
 						mult, pulsesWithSignal := event.Multiplicity()
 						if mult == 2 {
-							dqplots.FillHistos(event)
+							//dqplots.FillHistos(event)
 							if len(pulsesWithSignal) != 2 {
 								panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
 							}
@@ -662,6 +669,9 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 									T30_1 := pulsesWithSignal[1].T30(true)
 									if T30_0 != 0 && T30_1 != 0 {
 										dqplots.DeltaT30.Fill(T30_0-T30_1, 1)
+									}
+									if treeMult2 != nil {
+										treeMult2.Fill(pulsesWithSignal[0], pulsesWithSignal[1])
 									}
 								}
 								dqplots.ChargeCorrelation.Fill(pulsesWithSignal[0].Charg/1e6, pulsesWithSignal[1].Charg/1e6)
@@ -805,10 +815,13 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 				}
 			case false:
 				fmt.Println("reached specified number of events, stopping.")
+				if treeMult2 != nil {
+					treeMult2.Close()
+				}
 				return
 			}
 		}
-	}
+	} // event loop
 }
 
 func dataHandler(ws *websocket.Conn) {

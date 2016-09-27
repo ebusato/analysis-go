@@ -78,6 +78,7 @@ type Pulse struct {
 	Ampl         float64
 	AmplIndex    int
 	Charg        float64 // Charge, removed the final "e" because the name "Charge" is already used by the method
+	Time30       float64 // time at 30% on raising front of the pulse
 	Channel      *detector.Channel
 }
 
@@ -253,7 +254,8 @@ func (p *Pulse) T30(recomputeAmpl bool) float64 {
 	if T30 > t30high || T30 < t30low {
 		panic("T30 > t30high || T30 < t30low")
 	}
-	return T30
+	p.Time30 = T30
+	return p.Time30
 }
 
 // XaxisType defines the x axis type for plotting
