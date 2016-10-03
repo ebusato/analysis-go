@@ -379,7 +379,7 @@ func main() {
 	// 	go stream(terminateStream, r, w, &iEvent, &wg)
 	// 	go command(terminateRun, pauseRun)
 	//go control()
-	go stream(r, w, &iEvent, &wg)
+	go stream(currentRunNumber, r, w, &iEvent, &wg)
 	go command()
 	go webserver()
 
@@ -570,7 +570,7 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 }
 
 // func stream(terminateStream chan bool, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
-func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
+func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
 	if *ped != "" {
 		dpgadetector.Det.ReadPedestalsFile(*ped)
@@ -671,7 +671,7 @@ func stream(r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 										dqplots.DeltaT30.Fill(T30_0-T30_1, 1)
 									}
 									if treeMult2 != nil {
-										treeMult2.Fill(pulsesWithSignal[0], pulsesWithSignal[1])
+										treeMult2.Fill(run, uint32(*iEvent), pulsesWithSignal[0], pulsesWithSignal[1])
 									}
 								}
 								dqplots.ChargeCorrelation.Fill(pulsesWithSignal[0].Charg/1e6, pulsesWithSignal[1].Charg/1e6)

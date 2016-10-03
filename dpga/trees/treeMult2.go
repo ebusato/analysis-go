@@ -6,6 +6,8 @@ import (
 )
 
 type ROOTDataMult2 struct {
+	Run         uint32
+	Evt         uint32
 	IChanAbs240 [2]uint16
 	Ampl        [2]float64
 	Charge      [2]float64
@@ -32,7 +34,9 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 	return &t
 }
 
-func (t *TreeMult2) Fill(pulse0 *pulse.Pulse, pulse1 *pulse.Pulse) {
+func (t *TreeMult2) Fill(run uint32, ievent uint32, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse) {
+	t.data.Run = run
+	t.data.Evt = ievent
 	t.data.IChanAbs240[0] = uint16(pulse0.Channel.AbsID240())
 	t.data.IChanAbs240[1] = uint16(pulse1.Channel.AbsID240())
 	t.data.Ampl[0] = pulse0.Ampl
