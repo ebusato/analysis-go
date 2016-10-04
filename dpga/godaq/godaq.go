@@ -671,7 +671,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 										dqplots.DeltaT30.Fill(T30_0-T30_1, 1)
 									}
 									if treeMult2 != nil {
-										treeMult2.Fill(run, uint32(*iEvent), pulsesWithSignal[0], pulsesWithSignal[1])
+										treeMult2.Fill(run, uint32(event.ID), pulsesWithSignal[0], pulsesWithSignal[1])
 									}
 								}
 								dqplots.ChargeCorrelation.Fill(pulsesWithSignal[0].Charg/1e6, pulsesWithSignal[1].Charg/1e6)

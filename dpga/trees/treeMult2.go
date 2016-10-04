@@ -2,6 +2,7 @@ package trees
 
 import (
 	"github.com/go-hep/croot"
+	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
@@ -12,6 +13,8 @@ type ROOTDataMult2 struct {
 	Ampl        [2]float64
 	Charge      [2]float64
 	T30         [2]float64
+	SampleTimes [999]float64
+	Pulse       [2][999]float64
 }
 
 type TreeMult2 struct {
@@ -31,6 +34,8 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 	if err != nil {
 		panic(err)
 	}
+	//t.data.Pulse[0] = make([]float64, dpgadetector.Det.NoSamples())
+	//t.data.Pulse[1] = make([]float64, dpgadetector.Det.NoSamples())
 	return &t
 }
 
@@ -45,6 +50,11 @@ func (t *TreeMult2) Fill(run uint32, ievent uint32, pulse0 *pulse.Pulse, pulse1 
 	t.data.Charge[1] = pulse1.Charg
 	t.data.T30[0] = pulse0.Time30
 	t.data.T30[1] = pulse1.Time30
+	for i := range pulse0.Samples {
+		t.data.SampleTimes[i] = pulse0.Samples[i].Time
+		t.data.Pulse[0][i] =  pulse0.Samples[i].Amplitude
+		t.data.Pulse[1][i] =  pulse1.Samples[i].Amplitude
+	}
 	_, err := t.tree.Fill()
 	if err != nil {
 		panic(err)

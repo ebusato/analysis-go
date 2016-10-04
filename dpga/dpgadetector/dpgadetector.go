@@ -64,6 +64,7 @@ func (h *Hemisphere) GoString() string {
 type Detector struct {
 	scintillator string
 	samplingFreq float64 // sampling frequency in ns
+	noSamples    int // number of samples
 	hemispheres  [2]Hemisphere
 }
 
@@ -557,6 +558,7 @@ func (d *Detector) PlotTimeDepOffsets() {
 
 // SetNoSamples sets the number of physical samples
 func (d *Detector) SetNoSamples(noSamples int) {
+	d.noSamples = noSamples
 	for iHemi := range d.hemispheres {
 		hemi := &d.hemispheres[iHemi]
 		for iASM := range hemi.asm {
@@ -592,6 +594,10 @@ func (d *Detector) Hemisphere(i int) *Hemisphere {
 
 func (d *Detector) NoClusters() uint8 {
 	return uint8(5 * len(d.hemispheres) * len(d.hemispheres[0].asm))
+}
+
+func (d *Detector) NoSamples() int {
+	return d.noSamples
 }
 
 func (d *Detector) SamplingFreq() float64 {
