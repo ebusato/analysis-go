@@ -664,6 +664,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								dqplots.HMinRecX.Fill(x, 1)
 								dqplots.HMinRecY.Fill(y, 1)
 								dqplots.HMinRecZ.Fill(z, 1)
+
 								if doPedestal {
 									T30_0 := pulsesWithSignal[0].T30(true)
 									T30_1 := pulsesWithSignal[1].T30(true)
