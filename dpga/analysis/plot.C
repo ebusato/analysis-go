@@ -20,7 +20,7 @@ void plot(TString name, int evt)
 	TCanvas* c1 = new TCanvas("c1","c1",900,900);
 	c1->Divide(2,2);
 	c1->cd(1);
-	tree->Draw("T30[0] - T30[1]");
+	tree->Draw("T30[0] - T30[1]>>hCRT(200,-30,30)");
 	c1->cd(2);
 	tree->Draw("Pulse[1] : SampleTimes", Form("Evt == %i", evt),"goff");
 	TGraph *g1 = new TGraph(999,tree->GetV2(),tree->GetV1());
