@@ -70,16 +70,19 @@ func (s *Sample) SubtractPedestal() {
 // Pulse describes a DRS channel.
 // A pulse is made of several samples
 type Pulse struct {
-	Samples      []Sample
-	TimeStep     float64
-	SRout        uint16 // SRout is the number of the first capacitor for this pulse, it can take 1024 values (0 -> 1023)
-	HasSignal    bool
-	HasSatSignal bool
-	Ampl         float64
-	AmplIndex    int
-	Charg        float64 // Charge, removed the final "e" because the name "Charge" is already used by the method
-	Time30       float64 // time at 30% on raising front of the pulse
-	Channel      *detector.Channel
+	Samples             []Sample
+	TimeStep            float64
+	SRout               uint16 // SRout is the number of the first capacitor for this pulse, it can take 1024 values (0 -> 1023)
+	HasSignal           bool
+	HasSatSignal        bool
+	Ampl                float64
+	AmplIndex           int
+	Charg               float64 // Charge, removed the final "e" because the name "Charge" is already used by the method
+	Time20              float64 // time at 20% on rising front of the pulse
+	Time30              float64 // time at 30% on rising front of the pulse
+	Time80              float64 // time at 80% on rising front of the pulse
+	NoLocMaxRisingFront int     // number of local maxima on rising front (counted between 20% and 80%)
+	Channel             *detector.Channel
 }
 
 // NewPulse constructs a new pulse
@@ -208,8 +211,12 @@ func (p *Pulse) Charge() float64 {
 	return p.Charg
 }
 
-// Time returns the time at which the signal is a factor "frac" (second parameter) of its amplitude
-func (p *Pulse) T(recomputeAmpl bool, frac float64) float64 {
+// Time returns the time at which the signal is a factor "frac" (second parameter) of its amplitude plus the index ilow.
+// If recomputeAmpl is true, then idxStart is ignored and iteration start at p.AmplIndex.
+// If recomputeAmpl is false, then downwards iterations start at idxStart (it is assumed in this case that the amplitude
+// has been computed prior to the call to this method and thus that p.AmplIndex is available in case the user wants
+// idxStart=p.AmplIndex).
+func (p *Pulse) T(recomputeAmpl bool, frac float64, idxStart int) (float64, int, int) {
 	if recomputeAmpl {
 		p.Amplitude()
 	} else if p.Ampl == 0 {
@@ -220,9 +227,21 @@ func (p *Pulse) T(recomputeAmpl bool, frac float64) float64 {
 	// ilow is the index of the sample for which the amplitude is just below frac of the pulse amplitude
 	var ilow int
 	var ampllow float64
-	for i := p.AmplIndex; i >= 0; i-- {
+	var amplprev float64
+	noLocMax := 0
+	if recomputeAmpl {
+		idxStart = p.AmplIndex
+	}
+	for i := idxStart; i >= 0; i-- {
 		//fmt.Println("   ->", i, p.Samples[i].Amplitude)
-		if p.Samples[i].Amplitude < frac*p.Ampl {
+		ampl := p.Samples[i].Amplitude
+		if i != idxStart {
+			if ampl > amplprev {
+				noLocMax++
+			}
+		}
+		amplprev = ampl
+		if ampl < frac*p.Ampl {
 			ilow = i
 			ampllow = p.Samples[i].Amplitude
 			//fmt.Println("   -> found ilow, breaking")
@@ -231,7 +250,7 @@ func (p *Pulse) T(recomputeAmpl bool, frac float64) float64 {
 	}
 	// if ilow == 0, then we do not know Time -> return 0
 	if ilow == 0 {
-		return 0
+		return 0, 0, 0
 	}
 	ihigh := ilow + 1
 	amplhigh := p.Samples[ihigh].Amplitude
@@ -242,7 +261,7 @@ func (p *Pulse) T(recomputeAmpl bool, frac float64) float64 {
 	if amplhigh == ampllow {
 		// This should never happen but just to be sure
 		// Following calculations are undefined in this case
-		return 0
+		return 0, 0, 0
 	}
 	// As of now, work with time rather than with indices
 	tlow := p.Samples[ilow].Time
@@ -254,13 +273,20 @@ func (p *Pulse) T(recomputeAmpl bool, frac float64) float64 {
 	if t > thigh || t < tlow {
 		panic("t > thigh || t < tlow")
 	}
-	return t
+	return t, ilow, noLocMax
 }
 
-// T30 returns the time at which the signal is 30% of its amplitude
-func (p *Pulse) T30(recomputeAmpl bool) float64 {
-	p.Time30 = p.T(recomputeAmpl, 0.3)
-	return p.Time30
+// CalcRisingFront returns various quantities calculated on the rising front:
+//  -
+func (p *Pulse) CalcRisingFront(recomputeAmpl bool) (float64, float64, float64, int) {
+	time80, i80low, _ := p.T(recomputeAmpl, 0.8, p.AmplIndex)
+	time30, i30low, noLocMax8030 := p.T(false, 0.3, i80low)
+	time20, _, noLocMax3020 := p.T(false, 0.2, i30low)
+	p.Time80 = time80
+	p.Time30 = time30
+	p.Time20 = time20
+	p.NoLocMaxRisingFront = noLocMax8030 + noLocMax3020
+	return p.Time80, p.Time30, p.Time20, p.NoLocMaxRisingFront
 }
 
 // XaxisType defines the x axis type for plotting
