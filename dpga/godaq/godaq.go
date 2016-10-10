@@ -666,10 +666,8 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								dqplots.HMinRecZ.Fill(z, 1)
 
 								if doPedestal {
-									T80_0, T30_0, T20_0, noLocMax_0 := pulsesWithSignal[0].CalcRisingFront(true)
-									T80_1, T30_1, T20_1, noLocMax_1 := pulsesWithSignal[1].CalcRisingFront(true)
-									fmt.Println("T80_0, T30_0, T20_0, noLocMax_0 = ", T80_0, T30_0, T20_0, noLocMax_0)
-									fmt.Println("T80_1, T30_1, T20_1, noLocMax_1 = ", T80_1, T30_1, T20_1, noLocMax_1)
+									_, T30_0, _, _ := pulsesWithSignal[0].CalcRisingFront(true)
+									_, T30_1, _, _ := pulsesWithSignal[1].CalcRisingFront(true)
 									if T30_0 != 0 && T30_1 != 0 {
 										dqplots.DeltaT30.Fill(T30_0-T30_1, 1)
 									}

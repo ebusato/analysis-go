@@ -42,9 +42,15 @@ void plot(TString name, int evt)
 	amplitude1 = *tree->GetV1();
 	tree->Draw("Ampl[0]", Form("Evt == %i", evt),"goff");
 	amplitude0 = *tree->GetV1();
-	TLine* l = new TLine(0, amplitude1*0.3, 200, amplitude1*0.3);
-	l->SetLineWidth(2);
-	l->Draw("same");
+	TLine* l20 = new TLine(0, amplitude1*0.2, 200, amplitude1*0.2);
+	l20->SetLineWidth(2);
+	l20->Draw("same");
+	TLine* l30 = new TLine(0, amplitude1*0.3, 200, amplitude1*0.3);
+	l30->SetLineWidth(2);
+	l30->Draw("same");
+	TLine* l80 = new TLine(0, amplitude1*0.8, 200, amplitude1*0.8);
+	l80->SetLineWidth(2);
+	l80->Draw("same");
 	tree->Draw("T30[0] - T30[1]", Form("Evt == %i", evt),"goff");
 	TLatex* la1 = new TLatex(110, amplitude1 * 0.6, Form("#Delta t = %f ns", *tree->GetV1()));
 	la1->Draw();

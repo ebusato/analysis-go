@@ -228,6 +228,7 @@ func (p *Pulse) T(recomputeAmpl bool, frac float64, idxStart int) (float64, int,
 	var ilow int
 	var ampllow float64
 	var amplprev float64
+	PrevDerivativeIspositive := true // derivative sign computed in order of increasing time
 	noLocMax := 0
 	if recomputeAmpl {
 		idxStart = p.AmplIndex
@@ -236,8 +237,13 @@ func (p *Pulse) T(recomputeAmpl bool, frac float64, idxStart int) (float64, int,
 		//fmt.Println("   ->", i, p.Samples[i].Amplitude)
 		ampl := p.Samples[i].Amplitude
 		if i != idxStart {
-			if ampl > amplprev {
+			if ampl < amplprev && PrevDerivativeIspositive == false {
 				noLocMax++
+				//fmt.Println("frac, i, ampl, TimelocMax =", frac, i, ampl, p.Samples[i].Time)
+				PrevDerivativeIspositive = true
+			}
+			if ampl > amplprev {
+				PrevDerivativeIspositive = false
 			}
 		}
 		amplprev = ampl
@@ -277,7 +283,10 @@ func (p *Pulse) T(recomputeAmpl bool, frac float64, idxStart int) (float64, int,
 }
 
 // CalcRisingFront returns various quantities calculated on the rising front:
-//  -
+//  - Time at 80%
+//  - Time at 30%
+//  - Time at 20%
+//  - Number of local maxima on rising front, between 20% and 80%
 func (p *Pulse) CalcRisingFront(recomputeAmpl bool) (float64, float64, float64, int) {
 	time80, i80low, _ := p.T(recomputeAmpl, 0.8, p.AmplIndex)
 	time30, i30low, noLocMax8030 := p.T(false, 0.3, i80low)
