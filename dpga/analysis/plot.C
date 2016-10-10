@@ -1,12 +1,22 @@
 
+Double_t fitf(Double_t *v, Double_t *par)
+{
+	Double_t fitval = 0; 
+	if(v[0] >= par[0]) {
+		fitval = par[1] + par[2]*-1*TMath::Exp(-(v[0] - par[3])/par[4]) + par[5]*TMath::Exp(-(v[0] - par[3])/par[6]);
+	}
+	return fitval;
+}
+
 void plot(TString name, int evt)
 {
 	gStyle->SetPadGridX(true);
 	gStyle->SetPadGridY(true);
 	
 	TFile* f = new TFile(name, "read");
-	TTree* t = (TTree*) f->Get("tree");
+	TTree* tree = (TTree*) f->Get("tree");
 	
+	// Make plot
 	TCanvas* c1 = new TCanvas("c1","c1",900,900);
 	c1->Divide(2,2);
 	c1->cd(1);
@@ -26,6 +36,8 @@ void plot(TString name, int evt)
 	mg->Add(g1);
 	mg->Add(g2);
 	mg->Draw("ap");
+	
+	// Retrieve values and print them on plot
 	tree->Draw("Ampl[1]", Form("Evt == %i", evt),"goff");
 	amplitude1 = *tree->GetV1();
 	tree->Draw("Ampl[0]", Form("Evt == %i", evt),"goff");
@@ -42,4 +54,26 @@ void plot(TString name, int evt)
 	TLatex* la3 = new TLatex(110, amplitude1 * 0.7, Form("ampl[1]=%f", amplitude1));
 	la3->SetTextColor(kRed);
 	la3->Draw();
+	
+	// Make pulse plot with fit
+	//TF1 *fPulse = new TF1("fPulse",fitf,0,200,7);
+	//g1->Fit("fPulse", "", "", 20, 200);
+	
+	/*
+	TF1* fPulse = new TF1("fPulse", "[0]*-1*TMath::Exp(-(x-[4])/[1]) + [2]*TMath::Exp(-(x - [4])/[3])", 0, 200);
+	fPulse->SetLineColor(kBlack);
+	fPulse->SetParameters(1, 4, 1, 40, 20);
+	c1->cd(3);
+	g1->Fit("fPulse", "", "", 20, 200);
+	//fPulse->Draw();
+	g1->Draw("ap");
+	*/
+	
+	/*
+	TF1* f1 = new TF1("fPulse","[2]*(1 + TMath::Erf((x-[0])/[1])) + [3]*TMath::Erf(-(x-[5])/[4])", 20, 200);
+	f1->SetParameter(4, 40);
+	f1->SetParameter(2, 1200);
+	//f1->Draw();
+	g1->Fit("fPulse", "R");
+	*/
 }
