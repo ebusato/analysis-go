@@ -208,53 +208,58 @@ func (p *Pulse) Charge() float64 {
 	return p.Charg
 }
 
-// T30 returns the time at which the signal is 30% of its amplitude
-func (p *Pulse) T30(recomputeAmpl bool) float64 {
+// Time returns the time at which the signal is a factor "frac" (second parameter) of its amplitude
+func (p *Pulse) T(recomputeAmpl bool, frac float64) float64 {
 	if recomputeAmpl {
 		p.Amplitude()
 	} else if p.Ampl == 0 {
 		panic("pulse amplitude is 0, meaning that the amplitude was never calculated before. You should set the recomputeAmpl flag to true")
 	}
-	//fmt.Println("debug T30:", p.Ampl)
-	// Determination of i30low
-	// i30low is the index of the sample for which the amplitude is just below 30% of the pulse amplitude
-	var i30low int
-	var ampl30low float64
+	//fmt.Println("debug Time:", p.Ampl)
+	// Determination of ilow
+	// ilow is the index of the sample for which the amplitude is just below frac of the pulse amplitude
+	var ilow int
+	var ampllow float64
 	for i := p.AmplIndex; i >= 0; i-- {
 		//fmt.Println("   ->", i, p.Samples[i].Amplitude)
-		if p.Samples[i].Amplitude < 0.3*p.Ampl {
-			i30low = i
-			ampl30low = p.Samples[i].Amplitude
-			//fmt.Println("   -> found i30low, breaking")
+		if p.Samples[i].Amplitude < frac*p.Ampl {
+			ilow = i
+			ampllow = p.Samples[i].Amplitude
+			//fmt.Println("   -> found ilow, breaking")
 			break
 		}
 	}
-	// if i30low == 0, then we do not know T30 -> return 0
-	if i30low == 0 {
+	// if ilow == 0, then we do not know Time -> return 0
+	if ilow == 0 {
 		return 0
 	}
-	i30high := i30low + 1
-	ampl30high := p.Samples[i30high].Amplitude
+	ihigh := ilow + 1
+	amplhigh := p.Samples[ihigh].Amplitude
 	// Sanity check
-	if ampl30high < 0.3*p.Ampl {
-		panic("p.Samples[i30high] < 0.3 * p.Ampl, this should never happen")
+	if amplhigh < frac*p.Ampl {
+		panic("p.Samples[i30high] < frac * p.Ampl, this should never happen")
 	}
-	if ampl30high == ampl30low {
+	if amplhigh == ampllow {
 		// This should never happen but just to be sure
 		// Following calculations are undefined in this case
 		return 0
 	}
 	// As of now, work with time rather than with indices
-	t30low := p.Samples[i30low].Time
-	t30high := p.Samples[i30high].Time
-	// Linear interpolation between t30low and t30high
-	//fmt.Println("  -> i30low, i30high, t30low, t30high, ampl30low, ampl30high:", i30low, i30high, t30low, t30high, ampl30low, ampl30high)
-	T30 := ((0.3*p.Ampl-ampl30low)*t30high + (ampl30high-0.3*p.Ampl)*t30low) / (ampl30high - ampl30low)
+	tlow := p.Samples[ilow].Time
+	thigh := p.Samples[ihigh].Time
+	// Linear interpolation between tlow and thigh
+	//fmt.Println("  -> ilow, ihigh, tlow, thigh, ampllow, amplhigh:", ilow, ihigh, tlow, thigh, ampllow, amplhigh)
+	t := ((frac*p.Ampl-ampllow)*thigh + (amplhigh-frac*p.Ampl)*tlow) / (amplhigh - ampllow)
 	//fmt.Println("  -> T30 =", T30)
-	if T30 > t30high || T30 < t30low {
-		panic("T30 > t30high || T30 < t30low")
+	if t > thigh || t < tlow {
+		panic("t > thigh || t < tlow")
 	}
-	p.Time30 = T30
+	return t
+}
+
+// T30 returns the time at which the signal is 30% of its amplitude
+func (p *Pulse) T30(recomputeAmpl bool) float64 {
+	p.Time30 = p.T(recomputeAmpl, 0.3)
 	return p.Time30
 }
 
