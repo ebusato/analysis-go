@@ -4,6 +4,19 @@
 #include <TTreeReaderValue.h>
 #include <TTreeReaderArray.h>
 
+// Get current date/time, format is YYYY-MM-DD.HH:mm:ss
+const std::string currentDateTime() {
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       buf[80];
+    tstruct = *localtime(&now);
+    // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
+    // for more information about date/time format
+    strftime(buf, sizeof(buf), "%Y-%m-%d %X", &tstruct);
+
+    return buf;
+}
+
 TF1* Fit(TH1F* h) {
 	Double_t low = 1400;
 	Double_t high = 3000;
@@ -68,9 +81,8 @@ void DistribAmplCharge(TString fileName) {
 	cLeft->Divide(5, 6);
 	cRight->Divide(5, 6);
 	
-	std::time_t t = std::time(0);  // t is an integer type
 	ofstream of("energy.csv");
-	of << "# LAPD energy calibration constants (creation date: " << t << ", input file: " << fileName.Data() <<  ")" << endl;
+	of << "# LAPD energy calibration constants (creation date: " << currentDateTime() << ", input file: " << fileName.Data() <<  ")" << endl;
 	of << "# Calibration constant defined as the number of ADC counts corresponding to 511 keV" << endl;
         of << "# iChannelAbs240 calibConstant calibConstantError " << endl;
 	
