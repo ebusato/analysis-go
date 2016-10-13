@@ -33,10 +33,27 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 	}
 	t := TreeMult2{file: f, tree: croot.NewTree("tree", "tree", 32)}
 	const bufsiz = 32000
+	/*
 	_, err = t.tree.Branch("data", &t.data, bufsiz, 0)
 	if err != nil {
 		panic(err)
 	}
+	*/
+	
+	_, err = t.tree.Branch2("Run", &t.data.Run, "Run/i", bufsiz)
+	_, err = t.tree.Branch2("Evt", &t.data.Evt, "Evt/i", bufsiz)
+	_, err = t.tree.Branch2("IChanAbs240", &t.data.IChanAbs240, "IChanAbs240[2]/s", bufsiz)
+	_, err = t.tree.Branch2("Ampl", &t.data.Ampl, "Ampl[2]/D", bufsiz)
+	_, err = t.tree.Branch2("Charge", &t.data.Charge, "Charge[2]/D", bufsiz)
+	_, err = t.tree.Branch2("T20", &t.data.T20, "T20[2]/D", bufsiz)
+	_, err = t.tree.Branch2("T30", &t.data.T30, "T30[2]/D", bufsiz)
+	_, err = t.tree.Branch2("T80", &t.data.T80, "T80[2]/D", bufsiz)
+	_, err = t.tree.Branch2("NoLocMaxRisingFront", &t.data.NoLocMaxRisingFront, "NoLocMaxRisingFront[2]/s", bufsiz)
+	_, err = t.tree.Branch2("SampleTimes", &t.data.SampleTimes, "SampleTimes[999]/D", bufsiz)
+	_, err = t.tree.Branch2("Pulse", &t.data.Pulse, "Pulse[2][999]/D", bufsiz)
+	
+	
+	
 	//t.data.Pulse[0] = make([]float64, dpgadetector.Det.NoSamples())
 	//t.data.Pulse[1] = make([]float64, dpgadetector.Det.NoSamples())
 	return &t
