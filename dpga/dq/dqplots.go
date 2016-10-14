@@ -65,7 +65,7 @@ func NewDQPlot() *DQPlot {
 		for j := 0; j < N; j++ {
 			dqp.HCharge[i][j] = *hbook.NewH1D(100, 0, 0.5)
 			dqp.HAmplitude[i][j] = *hbook.NewH1D(200, 0, 4095)
-			dqp.HEnergy[i][j] = *hbook.NewH1D(200, 0, 1200)
+			dqp.HEnergy[i][j] = *hbook.NewH1D(200, 0, 1022)
 		}
 	}
 	return dqp
@@ -322,7 +322,7 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 			case Charge:
 				p.X.Tick.Marker = &hplot.FreqTicks{N: 4, Freq: 1}
 			case Energy:
-				p.X.Tick.Marker = &hplot.FreqTicks{N: 10, Freq: 1}
+				p.X.Tick.Marker = &hplot.FreqTicks{N: 9, Freq: 1}
 			}
 			p.Add(hplot.NewGrid())
 			p.Plot.X.LineStyle.Width = 2
