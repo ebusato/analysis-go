@@ -4,7 +4,7 @@ package applyCorrCalib
 
 import "gitlab.in2p3.fr/avirm/analysis-go/event"
 
-func HV(e *event.Event, doPedestal bool, doTimeDepOffset bool) *event.Event {
+func CorrectEvent(e *event.Event, doPedestal bool, doTimeDepOffset bool, doEnergyCalib bool) *event.Event {
 	if doPedestal == false {
 		if doTimeDepOffset == true {
 			panic("doTimeDepOffset == true && doPedestal == false")
@@ -20,6 +20,14 @@ func HV(e *event.Event, doPedestal bool, doTimeDepOffset bool) *event.Event {
 				cluster.Pulses[j].SubtractPedestal()
 				if doTimeDepOffset {
 					cluster.Pulses[j].SubtractTimeDepOffsets()
+					if doEnergyCalib {
+						//fmt.Println("pointer", i, j, cluster.Pulses[j].Channel)
+						cluster.Pulses[j].Amplitude()
+						if cluster.Pulses[j].Channel != nil {
+							cluster.Pulses[j].E = cluster.Pulses[j].Channel.EnergyCalib.Y(cluster.Pulses[j].Ampl)
+							//fmt.Println("E=", cluster.Pulses[j].Ampl, cluster.Pulses[j].E)
+						}
+					}
 				}
 			}
 		}

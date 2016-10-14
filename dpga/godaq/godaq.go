@@ -68,9 +68,10 @@ var (
 		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
 	hvMonDegrad = flag.Uint("hvmondeg", 100, "HV monitoring frequency degradation factor")
 	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
-	amplDistr   = flag.Bool("ampdistr", false, "If set, amplitude distributions are drawn rather than charge distributions")
+	distr       = flag.String("distr", "charge", "Possible values: charge (default), ampl, energy")
 	ped         = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 	tdo         = flag.String("tdo", "", "Name of the csv file containing time dependent offsets. If not set, time dependent offsets are not applied. Relevant only when ped!=\"\".")
+	en          = flag.String("en", "", "Name of the csv file containing energy calibration constants. If not set, energy calibration is not applied.")
 )
 
 // XY is a struct used to store a couple of values
@@ -578,6 +579,10 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 	if *tdo != "" {
 		dpgadetector.Det.ReadTimeDepOffsetsFile(*tdo)
 	}
+	if *en != "" {
+		fmt.Println("test 00")
+		dpgadetector.Det.ReadEnergyCalibFile(*en)
+	}
 	noEventsForMon := uint64(0)
 	dqplots := dq.NewDQPlot()
 	if *refplots != "" {
@@ -623,13 +628,17 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 						// Corrections
 						doPedestal := false
 						doTimeDepOffset := false
+						doEnergyCalib := false
 						if *ped != "" {
 							doPedestal = true
 						}
 						if *tdo != "" {
 							doTimeDepOffset = true
 						}
-						event = applyCorrCalib.HV(event, doPedestal, doTimeDepOffset)
+						if *en != "" {
+							doEnergyCalib = true
+						}
+						event = applyCorrCalib.CorrectEvent(event, doPedestal, doTimeDepOffset, doEnergyCalib)
 						//////////////////////////////////////////////////////
 						dqplots.FillHistos(event)
 						mult, pulsesWithSignal := event.Multiplicity()
@@ -702,9 +711,16 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							hvsvg := ""
 							if !*monLight {
 								// Make charge (or amplitude) distrib histo plot
-								whichVar := dq.Charge
-								if *amplDistr {
+								var whichVar dq.WhichVar
+								switch *distr {
+								case "charge":
+									whichVar = dq.Charge
+								case "ampl":
 									whichVar = dq.Amplitude
+								case "energy":
+									whichVar = dq.Energy
+								default:
+									panic("String passed to option -distr not recognized (see godaq -h)")
 								}
 								tpchargeL := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Left)
 								tpchargeR := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Right)

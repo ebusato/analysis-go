@@ -100,6 +100,21 @@ func (c *Capacitor) SetPedestalMeanErr(mean float64, err float64) {
 // the cartesian coordinates of one corner of the rectangular parallelepiped.
 type RectParallelepiped [8]utils.CartCoord
 
+// LinearCalib is a struct that allows performing linear calibration (e.g. energy calibration).
+// It describes a linear calibration function having equation:
+//       y = A.x + B
+// where A is the slope and B the y-intercept
+type LinearCalib struct {
+	A float64
+	B float64
+}
+
+// Y returns the y value corresponding to x provided by the user.
+func (l *LinearCalib) Y(x float64) float64 {
+	//fmt.Println("A, B, x, result = ", l.A, l.B, x, l.A*x + l.B)
+	return l.A*x + l.B
+}
+
 // Channel describes a DRS channel.
 // A channel is made of 1024 capacitors.
 type Channel struct {
@@ -116,6 +131,10 @@ type Channel struct {
 	noTimeDepOffsetSamples uint64    // number of samples used to compute the time dependent offsets
 	timeDepOffsetMean      []float64 // slice containing time dependent offset calibration coefficients (to be applied after per-capacitor pedestal correction has been applied)
 	timeDepOffsetMeanErr   []float64 // slice containing time dependent offset calibration coefficient errors
+
+	// Energy calibration constant for this channel
+	// It is the number of ADC count corresponding to the 511 keV peak
+	EnergyCalib LinearCalib
 
 	// The coordinates are those of the center of the front face of the cristal.
 	utils.CartCoord

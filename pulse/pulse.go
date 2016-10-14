@@ -78,6 +78,7 @@ type Pulse struct {
 	Ampl                float64
 	AmplIndex           int
 	Charg               float64 // Charge, removed the final "e" because the name "Charge" is already used by the method
+	E                   float64 // Energy (equal to 0 until energy calibration is performed)
 	Time20              float64 // time at 20% on rising front of the pulse
 	Time30              float64 // time at 30% on rising front of the pulse
 	Time80              float64 // time at 80% on rising front of the pulse

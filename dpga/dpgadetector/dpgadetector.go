@@ -58,13 +58,13 @@ func (h *Hemisphere) GoString() string {
 	}
 }
 
-// Detector describes the 288 channels of the 12 ASM cards used the DPGA acquisition
+// Detector describes the 288 channels of the 12 ASM cards used in the DPGA acquisition.
 // Out of these 288 channels, 240 are associated to the DPGA physical channels.
 // The 48 remaining ones are not associated to any physical object.
 type Detector struct {
 	scintillator string
 	samplingFreq float64 // sampling frequency in ns
-	noSamples    int // number of samples
+	noSamples    int     // number of samples
 	hemispheres  [2]Hemisphere
 }
 
@@ -805,6 +805,49 @@ func (d *Detector) ReadTimeDepOffsetsFile(fileName string) {
 		ch := d.Channel(data.IHemi, data.IASM, data.IDRS, data.IQuartet, data.IChannel)
 		iSample := int(data.ISample)
 		ch.SetTimeDepOffsetMeanErr(iSample, data.Mean, data.MeanErr)
+	}
+	err = rows.Err()
+	if err != nil && err.Error() != "EOF" {
+		log.Fatalf("error: %v\n", err)
+	}
+}
+
+type EnergyCalibFile struct {
+	IChannelAbs240      uint16
+	ADCper511keVMean    float64
+	ADCper511keVMeanErr float64
+}
+
+func (d *Detector) ReadEnergyCalibFile(fileName string) {
+	tbl, err := csvutil.Open(fileName)
+	if err != nil {
+		log.Fatalf("could not open %s: %v\n", fileName, err)
+	}
+	defer tbl.Close()
+	tbl.Reader.Comma = ' '
+	tbl.Reader.Comment = '#'
+
+	rows, err := tbl.ReadRows(0, -1)
+	if err != nil {
+		log.Fatalf("could read rows [0, -1): %v\n", err)
+	}
+	defer rows.Close()
+
+	var data EnergyCalibFile
+
+	for rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			log.Fatalf("error reading row: %v\n", err)
+		}
+		ch := d.ChannelFromIdAbs240(data.IChannelAbs240)
+		switch data.ADCper511keVMean != 0 {
+		case true:
+			ch.EnergyCalib.A = 511 / data.ADCper511keVMean
+		case false:
+			ch.EnergyCalib.A = 0
+		}
+		ch.EnergyCalib.B = 0
 	}
 	err = rows.Err()
 	if err != nil && err.Error() != "EOF" {
