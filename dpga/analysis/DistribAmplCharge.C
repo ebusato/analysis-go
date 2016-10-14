@@ -24,17 +24,21 @@ TF1* Fit(TH1F* h) {
 	for(int i = 0; i < 3; i++) {
 		h->Fit("gaus", "Q", "", low, high);
 		f = h->GetFunction("gaus");
-		Double_t mean = f->GetParameter(1);
-		Double_t sigma = f->GetParameter(2);
-		if(mean == 0) {
-			cout << "ERROR: fitted mean is zero" << endl;
-			return 0;
+		cout << "here1" << endl;
+		if(f) {
+			Double_t mean = f->GetParameter(1);
+			Double_t sigma = f->GetParameter(2);
+			cout << "here2" << endl;
+			if(mean == 0) {
+				cout << "ERROR: fitted mean is zero" << endl;
+				return 0;
+			}
+			if(sigma > 0.20*2000) {
+				sigma = 0.15*2000;
+			}
+			low = mean - 2 * sigma;
+			high = mean + 2 * sigma;
 		}
-		if(sigma > 0.20*2000) {
-			sigma = 0.15*2000;
-		}
-		low = mean - 2 * sigma;
-		high = mean + 2 * sigma;
 	}
 	return f;
 }
@@ -129,17 +133,21 @@ void DistribAmplCharge(TString fileName) {
 			} else {
 				histos[iChanAbs240]->Draw("same");
 			}
-			TF1* fitfunc = Fit(histos[iChanAbs240]);
-			if(fitfunc) {
-				Double_t mean = fitfunc->GetParameter(1);
-				Double_t sigma = fitfunc->GetParameter(2);
-				Double_t meanErr = fitfunc->GetParError(1);
-				cout << iChanAbs240 << "   " << mean << "  " << meanErr << "  " << sigma << endl;
-				if(sigma < 500 && meanErr < 0.20*mean) {
-					of << iChanAbs240 << " " << mean << " " << meanErr << endl;
-				} else {
-					of << iChanAbs240 << " 0 0" << endl;
+			cout << "iChanAbs240: " << iChanAbs240 << endl;
+			TF1* fitfunc = 0;
+			if(histos[iChanAbs240]->GetEntries() > 0) {
+				fitfunc = Fit(histos[iChanAbs240]);
+				if(fitfunc) {
+					Double_t mean = fitfunc->GetParameter(1);
+					Double_t sigma = fitfunc->GetParameter(2);
+					Double_t meanErr = fitfunc->GetParError(1);
+					cout << " ->  " << mean << "  " << meanErr << "  " << sigma << endl;
+					if(sigma < 500 && meanErr < 0.20*mean) {
+						of << iChanAbs240 << " " << mean << " " << meanErr << endl;
+					} 
 				}
+			} else {
+				of << iChanAbs240 << " 0 0" << endl;
 			}
 			leg->AddEntry(histos[iChanAbs240], Form("iChanAbs240=%i", iChanAbs240), "f");
 		}
