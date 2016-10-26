@@ -240,9 +240,7 @@ func (r *Reader) readBlockData(blk *Block) {
 	for i := range blk.Data.Data {
 		data := &blk.Data.Data[i]
 		r.read(&data.ParityChanCtrl)
-		fmt.Printf("ParityChanCtrl = %x\n", data.ParityChanCtrl)
 		r.read(&data.Data)
-		fmt.Printf("Data = %x\n", data.Data)
 	}
 	//r.read(&blk.Data)
 	//for i := range blk.Data {

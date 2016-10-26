@@ -112,43 +112,45 @@ func (b *Block) Print(s string) {
 	fmt.Printf("   -> TimeStamp3 = %x\n", b.TimeStamp3)
 	fmt.Printf("   -> TimeStamp4 = %x\n", b.TimeStamp4)
 	fmt.Printf("   -> NoSamples = %x\n", b.NoSamples)
-	fmt.Printf("   -> HalfDRS = %x\n", b.Data)
-	/*
-		switch s {
-		case "short":
-			// do nothing
-		case "medium":
-			fmt.Printf("  Data %v = %x\n", 0, b.Data[0])
-			fmt.Printf("  Data %v = %x\n", 1, b.Data[1])
-			fmt.Println("\t.\n\t.")
-			fmt.Printf("  Data %v = %x\n", len(b.Data)-1, b.Data[len(b.Data)-1])
-			fmt.Printf("  SRout = %v\n", b.SRout)
-			fmt.Printf("  Counter %v = %v\n", 0, b.Counters[0])
-			fmt.Println("\t.\n\t.")
-			fmt.Printf("  Counter %v = %v\n", len(b.Counters)-1, b.Counters[len(b.Counters)-1])
-		case "long":
-			fmt.Printf("  Data %v = %x\n", 0, b.Data[0])
-			fmt.Printf("  Data %v = %x\n", 1, b.Data[1])
-			fmt.Printf("  Data %v = %x\n", 2, b.Data[2])
-			fmt.Printf("  Data %v = %x\n", 3, b.Data[3])
-			fmt.Println("\t.\n\t.")
-			fmt.Printf("  Data %v = %x\n", len(b.Data)-3, b.Data[len(b.Data)-3])
-			fmt.Printf("  Data %v = %x\n", len(b.Data)-2, b.Data[len(b.Data)-2])
-			fmt.Printf("  Data %v = %x\n", len(b.Data)-1, b.Data[len(b.Data)-1])
-			fmt.Printf("  SRout = %v\n", b.SRout)
-			for i := range b.Counters {
-				fmt.Printf("  Counter %v = %v\n", i, b.Counters[i])
-			}
-		case "full":
-			for i := range b.Data {
-				fmt.Printf("  Data %v = %x\n", i, b.Data[i])
-			}
-			fmt.Printf("  SRout = %v\n", b.SRout)
-			for i := range b.Counters {
-				fmt.Printf("  Counter %v = %v\n", i, b.Counters[i])
-			}
+
+	switch s {
+	case "short":
+	case "medium":
+		for i := range b.Data.Data {
+			data := &b.Data.Data[i]
+			fmt.Printf("   -> ParityChanCtrl = %x\n", data.ParityChanCtrl)
+			fmt.Printf("   -> Data[0] = %x\n", data.Data[0])
+			fmt.Printf("   -> Data[1] = %x\n", data.Data[1])
+			fmt.Printf("   -> Data[2] = %x\n", data.Data[2])
+			fmt.Printf("   -> Data[3] = %x\n", data.Data[3])
+			fmt.Printf("   ->    ...\n")
+			fmt.Printf("   -> Data[1008] = %x\n", data.Data[1008])
+			fmt.Printf("   -> Data[1009] = %x\n", data.Data[1009])
+			fmt.Printf("   -> Data[1010] = %x\n", data.Data[1010])
 		}
-	*/
+		/*
+			case "long":
+				fmt.Printf("  Data %v = %x\n", 0, b.Data[0])
+				fmt.Printf("  Data %v = %x\n", 1, b.Data[1])
+				fmt.Printf("  Data %v = %x\n", 2, b.Data[2])
+				fmt.Printf("  Data %v = %x\n", 3, b.Data[3])
+				fmt.Println("\t.\n\t.")
+				fmt.Printf("  Data %v = %x\n", len(b.Data)-3, b.Data[len(b.Data)-3])
+				fmt.Printf("  Data %v = %x\n", len(b.Data)-2, b.Data[len(b.Data)-2])
+				fmt.Printf("  Data %v = %x\n", len(b.Data)-1, b.Data[len(b.Data)-1])
+				fmt.Printf("  SRout = %v\n", b.SRout)
+				for i := range b.Counters {
+					fmt.Printf("  Counter %v = %v\n", i, b.Counters[i])
+				}
+		*/
+	case "full":
+		for i := range b.Data.Data {
+			data := &b.Data.Data[i]
+			fmt.Printf("   -> ParityChanCtrl = %x\n", data.ParityChanCtrl)
+			fmt.Printf("   -> Datas = %x\n", data.Data)
+		}
+	}
+
 }
 
 type TypeOfFrame byte

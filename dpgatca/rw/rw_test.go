@@ -57,7 +57,7 @@ func TestRW(t *testing.T) {
 				t.Fatalf("event.ID != nevents (event.ID=%v; nevents=%v)\n", event.ID, nevents)
 			}
 		*/
-		frame.Print("v")
+		frame.Print("medium")
 		nframes++
 		//revents = append(revents, *event)
 		//w.Event(event)
