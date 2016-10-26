@@ -3,8 +3,8 @@ package rw
 import "fmt"
 
 const (
-	numCountersFromASM  uint8  = 4
-	numCountersFromRest uint8  = 8
+	numASMFrameCounters uint8  = 4
+	numCountersFromRest uint8  = 4
 	firstWord           uint16 = 0x1230
 	ctrl1               uint8  = 0xfe
 	ctrl2               uint16 = 0xCAFE
@@ -90,29 +90,29 @@ type Block struct {
 	ParityIdCtrl     uint16
 	TriggerMode      uint16
 	Trigger          uint16
-	CountersFromASM  [numCountersFromASM]uint16
+	ASMFrameCounters [numASMFrameCounters]uint16
 	CountersFromRest [numCountersFromRest]uint16
 	TimeStamp1       uint16
 	TimeStamp2       uint16
 	TimeStamp3       uint16
 	TimeStamp4       uint16
 	NoSamples        uint16
-	DataHalfDRS      HalfDRSData
+	Data             HalfDRSData
 }
 
 func (b *Block) Print(s string) {
-	fmt.Printf(" Printing block FrameIdBeg, FrameIdEnd = %v, %v\n", b.FrameIdBeg, b.FrameIdEnd)
+	fmt.Printf(" Printing block FrameIdBeg, FrameIdEnd = %x, %x\n", b.FrameIdBeg, b.FrameIdEnd)
 	fmt.Printf("   -> ParityIdCtrl = %x\n", b.ParityIdCtrl)
 	fmt.Printf("   -> TriggerMode = %x\n", b.TriggerMode)
 	fmt.Printf("   -> Trigger = %x\n", b.Trigger)
-	fmt.Printf("   -> CountersFromASM = %x\n", b.CountersFromASM)
+	fmt.Printf("   -> ASMFrameCounters = %x\n", b.ASMFrameCounters)
 	fmt.Printf("   -> CountersFromRest = %x\n", b.CountersFromRest)
 	fmt.Printf("   -> TimeStamp1 = %x\n", b.TimeStamp1)
 	fmt.Printf("   -> TimeStamp2 = %x\n", b.TimeStamp2)
 	fmt.Printf("   -> TimeStamp3 = %x\n", b.TimeStamp3)
 	fmt.Printf("   -> TimeStamp4 = %x\n", b.TimeStamp4)
 	fmt.Printf("   -> NoSamples = %x\n", b.NoSamples)
-	fmt.Printf("   -> HalfDRS = %x\n", b.DataHalfDRS)
+	fmt.Printf("   -> HalfDRS = %x\n", b.Data)
 	/*
 		switch s {
 		case "short":
