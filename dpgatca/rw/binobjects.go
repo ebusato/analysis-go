@@ -3,13 +3,14 @@ package rw
 import "fmt"
 
 const (
-	numCounters uint8  = 12
-	firstWord   uint16 = 0x1230
-	ctrl1       uint8  = 0xfe
-	ctrl2       uint16 = 0xCAFE
-	ctrl3       uint16 = 0xDECA
-	ctrl4       uint16 = 0x9876
-	lastWord    uint8  = 0xfb
+	numCountersFromASM  uint8  = 4
+	numCountersFromRest uint8  = 8
+	firstWord           uint16 = 0x1230
+	ctrl1               uint8  = 0xfe
+	ctrl2               uint16 = 0xCAFE
+	ctrl3               uint16 = 0xDECA
+	ctrl4               uint16 = 0x9876
+	lastWord            uint8  = 0xfb
 )
 
 /*
@@ -66,24 +67,37 @@ func (h *Header) Print() {
 }
 */
 
+type ChanData struct {
+	ParityChanCtrl uint16
+	Data           []uint16
+}
+
+type HalfDRSData struct {
+	Data [4]ChanData
+}
+
+func (h *HalfDRSData) SetNoSamples(n uint16) {
+	for i := range h.Data {
+		h.Data[i].Data = make([]uint16, n)
+	}
+}
+
 // Block is a single data frame in an ASM stream
 // Each block is associated to one fifo
 type Block struct {
-	FrameIdBeg     uint16
-	FrameIdEnd     uint16
-	ParityIdCtrl   uint16
-	TriggerMode    uint16
-	Trigger        uint16
-	Counters       [numCounters]uint16
-	TimeStamp1     uint16
-	TimeStamp2     uint16
-	TimeStamp3     uint16
-	TimeStamp4     uint16
-	NoSamples      uint16
-	ParityChanCtrl uint16
-	// Below quantities are to be changed (because repeated 4 times successively)
-	Data  []uint16
-	SRout uint32
+	FrameIdBeg       uint16
+	FrameIdEnd       uint16
+	ParityIdCtrl     uint16
+	TriggerMode      uint16
+	Trigger          uint16
+	CountersFromASM  [numCountersFromASM]uint16
+	CountersFromRest [numCountersFromRest]uint16
+	TimeStamp1       uint16
+	TimeStamp2       uint16
+	TimeStamp3       uint16
+	TimeStamp4       uint16
+	NoSamples        uint16
+	DataHalfDRS      HalfDRSData
 }
 
 func (b *Block) Print(s string) {
@@ -91,13 +105,14 @@ func (b *Block) Print(s string) {
 	fmt.Printf("   -> ParityIdCtrl = %x\n", b.ParityIdCtrl)
 	fmt.Printf("   -> TriggerMode = %x\n", b.TriggerMode)
 	fmt.Printf("   -> Trigger = %x\n", b.Trigger)
-	fmt.Printf("   -> Counters = %x\n", b.Counters)
+	fmt.Printf("   -> CountersFromASM = %x\n", b.CountersFromASM)
+	fmt.Printf("   -> CountersFromRest = %x\n", b.CountersFromRest)
 	fmt.Printf("   -> TimeStamp1 = %x\n", b.TimeStamp1)
 	fmt.Printf("   -> TimeStamp2 = %x\n", b.TimeStamp2)
 	fmt.Printf("   -> TimeStamp3 = %x\n", b.TimeStamp3)
 	fmt.Printf("   -> TimeStamp4 = %x\n", b.TimeStamp4)
 	fmt.Printf("   -> NoSamples = %x\n", b.NoSamples)
-	fmt.Printf("   -> ParityChanCtrl = %x\n", b.ParityChanCtrl)
+	fmt.Printf("   -> HalfDRS = %x\n", b.DataHalfDRS)
 	/*
 		switch s {
 		case "short":

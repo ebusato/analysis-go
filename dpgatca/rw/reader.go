@@ -60,9 +60,12 @@ func (r *Reader) Frame() (*Frame, error) {
 		return &Frame{}, r.err
 	}
 	f := &Frame{
+	/*
 		Block: Block{
 			Data: make([]uint16, r.noSamples),
 		},
+	*/
+
 	}
 	r.readFrame(f)
 	return f, r.err
@@ -204,25 +207,35 @@ func (r *Reader) readBlockHeader(blk *Block) {
 	r.readU16(&blk.ParityIdCtrl)
 	r.readU16(&blk.TriggerMode)
 	r.readU16(&blk.Trigger)
-	r.read(&blk.Counters)
-	r.readU16(&blk.TimeStamp1)
-	r.readU16(&blk.TimeStamp2)
-	r.readU16(&blk.TimeStamp3)
-	r.readU16(&blk.TimeStamp4)
+	r.read(&blk.CountersFromASM)
+	r.readU16(&ctrl)
+	if ctrl != ctrl2 && r.err == nil {
+		r.err = fmt.Errorf("asm: missing %x magic\n", ctrl2)
+	}
+	r.readU16(&ctrl)
+	if ctrl != ctrl3 && r.err == nil {
+		r.err = fmt.Errorf("asm: missing %x magic\n", ctrl3)
+	}
+	r.read(&blk.CountersFromRest)
+	/*
+		 * r.readU16(&blk.TimeStamp1)
+		r.readU16(&blk.TimeStamp2)
+		r.readU16(&blk.TimeStamp3)
+		r.readU16(&blk.TimeStamp4)
+	*/
 	r.readU16(&blk.NoSamples)
-	r.readU16(&blk.ParityChanCtrl)
+	blk.DataHalfDRS.SetNoSamples(blk.NoSamples)
+	blk.Print("v")
 }
 
 func (r *Reader) readBlockData(blk *Block) {
 	if r.err != nil {
 		return
 	}
-	r.read(&blk.Data)
+	r.read(&blk.DataHalfDRS)
 	//for i := range blk.Data {
 	//	r.readU32(&blk.Data[i])
 	//}
-	r.readU32(&blk.SRout)
-	r.read(&blk.Counters)
 	//fmt.Printf("rw: srout = %v\n", blk.SRout)
 	//for i := range blk.Counters {
 	//	r.readU32(&blk.Counters[i])
