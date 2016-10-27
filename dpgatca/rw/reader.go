@@ -191,38 +191,23 @@ func (r *Reader) readBlock(blk *Block) {
 	r.readBlockHeader(blk)
 	r.readBlockData(blk)
 	r.readBlockTrailer(blk)
-}
-
-func (r *Reader) readBlockHeader(blk *Block) {
+	r.err = blk.Integrity()
 	if r.err != nil {
 		return
 	}
-	var ctrl uint16
-	r.readU16(&ctrl)
-	if ctrl != firstWord && r.err == nil {
-		r.err = fmt.Errorf("asm: missing %x magic\n", firstWord)
-	}
-	r.readU16(&blk.FrameIdBeg)
-	r.readU16(&blk.FrameIdEnd)
-	r.readU16(&blk.ParityIdCtrl)
+}
+
+func (r *Reader) readBlockHeader(blk *Block) {
+	r.readU16(&blk.FirstBlockWord)
+	r.read(&blk.AMCFrameCounters)
+	r.readU16(&blk.ParityFEIdCtrl)
 	r.readU16(&blk.TriggerMode)
 	r.readU16(&blk.Trigger)
 	r.read(&blk.ASMFrameCounters)
-	r.readU16(&ctrl)
-	if ctrl != ctrl2 && r.err == nil {
-		r.err = fmt.Errorf("asm: missing %x magic\n", ctrl2)
-	}
-	r.readU16(&ctrl)
-	if ctrl != ctrl3 && r.err == nil {
-		r.err = fmt.Errorf("asm: missing %x magic\n", ctrl3)
-	}
-	r.read(&blk.CountersFromRest)
-
-	r.readU16(&blk.TimeStamp1)
-	r.readU16(&blk.TimeStamp2)
-	r.readU16(&blk.TimeStamp3)
-	r.readU16(&blk.TimeStamp4)
-
+	r.readU16(&blk.Cafe)
+	r.readU16(&blk.Deca)
+	r.read(&blk.Counters)
+	r.read(&blk.TimeStamps)
 	r.readU16(&blk.NoSamples)
 	///////////////////////////////////////////////////////////////////////
 	// This is necessary but currently not really understand
@@ -239,10 +224,7 @@ func (r *Reader) readBlockData(blk *Block) {
 	}
 	for i := range blk.Data.Data {
 		data := &blk.Data.Data[i]
-		r.read(&data.ParityChanCtrl)
-		if (data.ParityChanCtrl&0xff != ctrl0xfd) && r.err == nil {
-			r.err = fmt.Errorf("asm: missing %x magic\n", ctrl0xfd)
-		}
+		r.read(&data.ParityChanIdCtrl)
 		r.read(&data.Data)
 	}
 	//r.read(&blk.Data)
@@ -256,12 +238,8 @@ func (r *Reader) readBlockData(blk *Block) {
 }
 
 func (r *Reader) readBlockTrailer(blk *Block) {
-	var ctrl uint16
-	r.readU16(&ctrl)
-	if ctrl != ctrl4 && r.err == nil {
-		r.err = fmt.Errorf("asm: missing %x magic\n", ctrl4)
-	}
-	r.readU16(&ctrl)
+	r.readU16(&blk.CRC)
+	r.readU16(&blk.ParityFEIdCtrl2)
 }
 
 /*

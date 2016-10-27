@@ -3,15 +3,17 @@ package rw
 import "fmt"
 
 const (
+	numAMCFrameCounters uint8  = 2
 	numASMFrameCounters uint8  = 4
-	numCountersFromRest uint8  = 4
-	firstWord           uint16 = 0x1230
-	ctrl1               uint8  = 0xfe
+	numCounters         uint8  = 4
+	numTimeStamps       uint8  = 4
+	ctrlFirstWord       uint16 = 0x1230
+	ctrl0xfe            uint16 = 0xfe
 	ctrl0xfd            uint16 = 0xfd
-	ctrl2               uint16 = 0xCAFE
-	ctrl3               uint16 = 0xDECA
-	ctrl4               uint16 = 0x9876
-	lastWord            uint8  = 0xfb
+	ctrl0xCafe          uint16 = 0xCAFE
+	ctrl0xDeca          uint16 = 0xDECA
+	ctrl0xCRC           uint16 = 0x9876
+	ctrl0xfb            uint16 = 0xfb
 )
 
 /*
@@ -69,8 +71,8 @@ func (h *Header) Print() {
 */
 
 type ChanData struct {
-	ParityChanCtrl uint16
-	Data           []uint16
+	ParityChanIdCtrl uint16
+	Data             []uint16
 }
 
 type HalfDRSData struct {
@@ -86,32 +88,61 @@ func (h *HalfDRSData) SetNoSamples(n uint16) {
 // Block is a single data frame in an ASM stream
 // Each block is associated to one fifo
 type Block struct {
-	FrameIdBeg       uint16
-	FrameIdEnd       uint16
-	ParityIdCtrl     uint16
+	FirstBlockWord   uint16
+	AMCFrameCounters [numAMCFrameCounters]uint16
+	ParityFEIdCtrl   uint16
 	TriggerMode      uint16
 	Trigger          uint16
 	ASMFrameCounters [numASMFrameCounters]uint16
-	CountersFromRest [numCountersFromRest]uint16
-	TimeStamp1       uint16
-	TimeStamp2       uint16
-	TimeStamp3       uint16
-	TimeStamp4       uint16
+	Cafe             uint16
+	Deca             uint16
+	Counters         [numCounters]uint16
+	TimeStamps       [numTimeStamps]uint16
 	NoSamples        uint16
 	Data             HalfDRSData
+	CRC              uint16
+	ParityFEIdCtrl2  uint16
+}
+
+func (b *Block) Integrity() error {
+	if b.FirstBlockWord != ctrlFirstWord {
+		return fmt.Errorf("asm: missing %x magic\n", ctrlFirstWord)
+	}
+	if (b.ParityFEIdCtrl & 0xff) != ctrl0xfe {
+		return fmt.Errorf("asm: missing %x magic\n", ctrl0xfe)
+	}
+	if b.Cafe != ctrl0xCafe {
+		return fmt.Errorf("asm: missing %x magic\n", ctrl0xCafe)
+	}
+	if b.Deca != ctrl0xDeca {
+		return fmt.Errorf("asm: missing %x magic\n", ctrl0xDeca)
+	}
+	for i := range b.Data.Data {
+		if (b.Data.Data[i].ParityChanIdCtrl & 0xff) != ctrl0xfd {
+			return fmt.Errorf("asm: missing %x magic\n", ctrl0xfd)
+		}
+	}
+	if b.CRC != ctrl0xCRC {
+		return fmt.Errorf("asm: missing %x magic\n", ctrl0xCRC)
+	}
+	if (b.ParityFEIdCtrl2 & 0xff) != ctrl0xfb {
+		return fmt.Errorf("asm: missing %x magic\n", ctrl0xfb)
+	}
+	return nil
 }
 
 func (b *Block) Print(s string) {
-	fmt.Printf(" Printing block FrameIdBeg, FrameIdEnd = %x, %x\n", b.FrameIdBeg, b.FrameIdEnd)
-	fmt.Printf("   -> ParityIdCtrl = %x\n", b.ParityIdCtrl)
+	fmt.Printf(" Printing block:\n")
+	fmt.Printf("   -> FirstBlockWord = %x\n", b.FirstBlockWord)
+	fmt.Printf("   -> AMCFrameCounters = %x\n", b.AMCFrameCounters)
+	fmt.Printf("   -> ParityFEIdCtrl = %x\n", b.ParityFEIdCtrl)
 	fmt.Printf("   -> TriggerMode = %x\n", b.TriggerMode)
 	fmt.Printf("   -> Trigger = %x\n", b.Trigger)
 	fmt.Printf("   -> ASMFrameCounters = %x\n", b.ASMFrameCounters)
-	fmt.Printf("   -> CountersFromRest = %x\n", b.CountersFromRest)
-	fmt.Printf("   -> TimeStamp1 = %x\n", b.TimeStamp1)
-	fmt.Printf("   -> TimeStamp2 = %x\n", b.TimeStamp2)
-	fmt.Printf("   -> TimeStamp3 = %x\n", b.TimeStamp3)
-	fmt.Printf("   -> TimeStamp4 = %x\n", b.TimeStamp4)
+	fmt.Printf("   -> Cafe = %x\n", b.Cafe)
+	fmt.Printf("   -> Deca = %x\n", b.Deca)
+	fmt.Printf("   -> Counters = %x\n", b.Counters)
+	fmt.Printf("   -> TimeStamps = %x\n", b.TimeStamps)
 	fmt.Printf("   -> NoSamples = %x\n", b.NoSamples)
 
 	switch s {
@@ -119,7 +150,7 @@ func (b *Block) Print(s string) {
 	case "medium":
 		for i := range b.Data.Data {
 			data := &b.Data.Data[i]
-			fmt.Printf("   -> ParityChanCtrl = %x\n", data.ParityChanCtrl)
+			fmt.Printf("   -> ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
 			fmt.Printf("   -> Data[0] = %x\n", data.Data[0])
 			fmt.Printf("   -> Data[1] = %x\n", data.Data[1])
 			fmt.Printf("   -> Data[2] = %x\n", data.Data[2])
@@ -147,7 +178,7 @@ func (b *Block) Print(s string) {
 	case "full":
 		for i := range b.Data.Data {
 			data := &b.Data.Data[i]
-			fmt.Printf("   -> ParityChanCtrl = %x\n", data.ParityChanCtrl)
+			fmt.Printf("   -> ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
 			fmt.Printf("   -> Datas = %x\n", data.Data)
 		}
 	}
