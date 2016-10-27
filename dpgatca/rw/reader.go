@@ -240,6 +240,9 @@ func (r *Reader) readBlockData(blk *Block) {
 	for i := range blk.Data.Data {
 		data := &blk.Data.Data[i]
 		r.read(&data.ParityChanCtrl)
+		if (data.ParityChanCtrl&0xff != ctrl0xfd) && r.err == nil {
+			r.err = fmt.Errorf("asm: missing %x magic\n", ctrl0xfd)
+		}
 		r.read(&data.Data)
 	}
 	//r.read(&blk.Data)

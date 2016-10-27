@@ -7,6 +7,7 @@ const (
 	numCountersFromRest uint8  = 4
 	firstWord           uint16 = 0x1230
 	ctrl1               uint8  = 0xfe
+	ctrl0xfd            uint16 = 0xfd
 	ctrl2               uint16 = 0xCAFE
 	ctrl3               uint16 = 0xDECA
 	ctrl4               uint16 = 0x9876
