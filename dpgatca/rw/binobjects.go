@@ -71,8 +71,12 @@ func (h *Header) Print() {
 */
 
 type ChanData struct {
+	// Raw quantities
 	ParityChanIdCtrl uint16
 	Data             []uint16
+
+	// Derived quantities
+	Channel uint16
 }
 
 type HalfDRSData struct {
@@ -85,9 +89,10 @@ func (h *HalfDRSData) SetNoSamples(n uint16) {
 	}
 }
 
-// Block is a single data frame in an ASM stream
-// Each block is associated to one fifo
+// Block is a single data frame produced by AMC
+// Each block is associated to one half DRS
 type Block struct {
+	// Raw quantities
 	FirstBlockWord   uint16
 	AMCFrameCounters [numAMCFrameCounters]uint16
 	ParityFEIdCtrl   uint16
@@ -150,7 +155,7 @@ func (b *Block) Print(s string) {
 	case "medium":
 		for i := range b.Data.Data {
 			data := &b.Data.Data[i]
-			fmt.Printf("   -> ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
+			fmt.Printf("   -> ParityChanIdCtrl = %x (channel = %v)\n", data.ParityChanIdCtrl, data.Channel)
 			fmt.Printf("   -> Data[0] = %x\n", data.Data[0])
 			fmt.Printf("   -> Data[1] = %x\n", data.Data[1])
 			fmt.Printf("   -> Data[2] = %x\n", data.Data[2])
