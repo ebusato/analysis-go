@@ -48,32 +48,7 @@ func TestRW(t *testing.T) {
 				t.Fatalf("error writing header: %v\n", err)
 			}
 	*/
-	nframes := 0
-	for {
-		fmt.Printf("reading frame %v\n", nframes)
-		frame, _ := r.Frame()
-		/*
-			if int(event.ID) != nevents {
-				t.Fatalf("event.ID != nevents (event.ID=%v; nevents=%v)\n", event.ID, nevents)
-			}
-		*/
-		frame.Print("medium")
-		nframes++
-		//revents = append(revents, *event)
-		//w.Event(event)
-		/*
-			if r.Err() != io.EOF {
-				if status == false {
-					t.Fatalf("error: status is false\n")
-				}
-			} else {
-				break
-			}
-		*/
-	}
-	if nframes != 50 {
-		t.Fatalf("got %d events. want 50\n", nframes)
-	}
+	r.readFrames()
 }
 
 /*

@@ -73,7 +73,7 @@ func (h *Header) Print() {
 type ChanData struct {
 	// Raw quantities
 	ParityChanIdCtrl uint16
-	Data             []uint16
+	Amplitudes       []uint16
 
 	// Derived quantities
 	Channel uint16
@@ -85,7 +85,7 @@ type HalfDRSData struct {
 
 func (h *HalfDRSData) SetNoSamples(n uint16) {
 	for i := range h.Data {
-		h.Data[i].Data = make([]uint16, n)
+		h.Data[i].Amplitudes = make([]uint16, n)
 	}
 }
 
@@ -113,6 +113,7 @@ type Block struct {
 	FrontEndId      uint16
 	ASMFrameCounter uint64
 	TimeStamp       uint64
+	QuartetAbsIdx60 uint8
 }
 
 func (b *Block) Integrity() error {
@@ -162,14 +163,14 @@ func (b *Block) Print(s string) {
 		for i := range b.Data.Data {
 			data := &b.Data.Data[i]
 			fmt.Printf("   -> ParityChanIdCtrl = %x (channel = %v)\n", data.ParityChanIdCtrl, data.Channel)
-			fmt.Printf("   -> Data[0] = %x\n", data.Data[0])
-			fmt.Printf("   -> Data[1] = %x\n", data.Data[1])
-			fmt.Printf("   -> Data[2] = %x\n", data.Data[2])
-			fmt.Printf("   -> Data[3] = %x\n", data.Data[3])
+			fmt.Printf("   -> Amplitudes[0] = %x\n", data.Amplitudes[0])
+			fmt.Printf("   -> Amplitudes[1] = %x\n", data.Amplitudes[1])
+			fmt.Printf("   -> Amplitudes[2] = %x\n", data.Amplitudes[2])
+			fmt.Printf("   -> Amplitudes[3] = %x\n", data.Amplitudes[3])
 			fmt.Printf("   ->    ...\n")
-			fmt.Printf("   -> Data[1008] = %x\n", data.Data[1008])
-			fmt.Printf("   -> Data[1009] = %x\n", data.Data[1009])
-			fmt.Printf("   -> Data[1010] = %x\n", data.Data[1010])
+			fmt.Printf("   -> Amplitudes[1008] = %x\n", data.Amplitudes[1008])
+			fmt.Printf("   -> Amplitudes[1009] = %x\n", data.Amplitudes[1009])
+			fmt.Printf("   -> Amplitudes[1010] = %x\n", data.Amplitudes[1010])
 		}
 		/*
 			case "long":
@@ -190,7 +191,7 @@ func (b *Block) Print(s string) {
 		for i := range b.Data.Data {
 			data := &b.Data.Data[i]
 			fmt.Printf("   -> ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
-			fmt.Printf("   -> Datas = %x\n", data.Data)
+			fmt.Printf("   -> Amplitudes = %x\n", data.Amplitudes)
 		}
 	}
 

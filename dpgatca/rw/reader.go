@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
 // Reader wraps an io.Reader and reads avirm data files
@@ -13,6 +17,7 @@ type Reader struct {
 	err error
 	//hdr               Header
 	noSamples uint16
+	eventMap  map[uint64]*event.Event
 	//evtIDPrevFrame    uint32
 	//firstFrameOfEvent *Frame
 	//SigThreshold      uint
@@ -39,7 +44,8 @@ func (r *Reader) Header() *Header {
 // NewReader returns a new ASM stream in read mode
 func NewReader(r io.Reader) (*Reader, error) {
 	rr := &Reader{
-		r: r,
+		r:        r,
+		eventMap: make(map[uint64]*event.Event),
 		//evtIDPrevFrame: 0,
 		//SigThreshold:   800,
 	}
@@ -229,20 +235,20 @@ func (r *Reader) readBlockData(blk *Block) {
 	if r.err != nil {
 		return
 	}
+	var QuartetAbsIdx60old uint8
 	for i := range blk.Data.Data {
 		data := &blk.Data.Data[i]
 		r.read(&data.ParityChanIdCtrl)
 		data.Channel = (data.ParityChanIdCtrl & 0x7f00) >> 8
-		r.read(&data.Data)
+		// Compute QuartetIdxAbs60
+		blk.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(blk.FrontEndId, data.Channel)
+		if i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old {
+			//fmt.Println(data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
+			panic("blk.QuartetAbsIdx60 != QuartetAbsIdx60old")
+		}
+		QuartetAbsIdx60old = blk.QuartetAbsIdx60
+		r.read(&data.Amplitudes)
 	}
-	//r.read(&blk.Data)
-	//for i := range blk.Data {
-	//	r.readU32(&blk.Data[i])
-	//}
-	//fmt.Printf("rw: srout = %v\n", blk.SRout)
-	//for i := range blk.Counters {
-	//	r.readU32(&blk.Counters[i])
-	//}
 }
 
 func (r *Reader) readBlockTrailer(blk *Block) {
@@ -253,77 +259,40 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 	}
 }
 
-/*
-func MakePulses(f *Frame, iCluster uint8, sigThreshold uint) (*pulse.Pulse, *pulse.Pulse) {
-	iChannelAbs288_1 := uint16(2 * f.Block.ID)
-	iChannelAbs288_2 := uint16(iChannelAbs288_1 + 1)
-
-	if iChannelAbs288_1 >= 288 || iChannelAbs288_2 >= 288 {
-		panic("reader: iChannelAbs288_1 >= 288 || iChannelAbs288_2 >= 288")
+func (r *Reader) readFrames() {
+	nframes := 0
+	for {
+		fmt.Printf("reading frame %v\n", nframes)
+		frame, _ := r.Frame()
+		frame.Print("medium")
+		nframes++
+		evt, ok := r.eventMap[frame.Block.TimeStamp]
+		switch ok {
+		case false:
+			evt = event.NewEvent(dpgadetector.Det.NoClusters())
+		default:
+			// event already present in map
+		}
+		evt.ID = 0
+		//evt.Clusters[iCluster].
 	}
-
-	detChannel1 := dpgadetector.Det.ChannelFromIdAbs288(iChannelAbs288_1)
-	detChannel2 := dpgadetector.Det.ChannelFromIdAbs288(iChannelAbs288_2)
-
-	var iChannel1 uint8
-	var iChannel2 uint8
-	switch f.typeOfFrame {
-	case FirstFrameOfCluster:
-		iChannel1 = 0
-		iChannel2 = 1
-	case SecondFrameOfCluster:
-		iChannel1 = 2
-		iChannel2 = 3
-	}
-
-	///////////////////////////////////////////////////////////////////////////////////
-	// Sanity check
-	iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx60ToRelIdx(iCluster)
-	detChannel1debug := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel1)
-	detChannel2debug := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel2)
-
-	//fmt.Printf(" %p %p\n", detChannel1debug, detChannel1)
-	//fmt.Printf(" %p %p\n", detChannel2debug, detChannel2)
-
-	if detChannel1debug != detChannel1 {
-		panic("reader: detChannel1debug != detChannel1")
-	}
-	if detChannel2debug != detChannel2 {
-		panic("reader: detChannel2debug != detChannel2")
-	}
-
-	absid1 := detChannel1debug.AbsID288()
-	absid2 := detChannel2debug.AbsID288()
-
-	if iChannelAbs288_1 != absid1 {
-		panic("reader: iChannelAbs1 != absid1")
-	}
-	if iChannelAbs288_2 != absid2 {
-		panic("reader: iChannelAbs2 != absid2")
-	}
-	// Enf of sanity check
-	////////////////////////////////////////////////////////////////////////////////////
-
-	pulse1 := pulse.NewPulse(detChannel1)
-	pulse2 := pulse.NewPulse(detChannel2)
-
-	b := &f.Block
-	pulse1.SRout = uint16(b.SRout)
-	pulse2.SRout = uint16(b.SRout)
-
-	for i := range b.Data {
-		word := b.Data[i]
-
-		ampl2 := float64(word & 0xFFF)
-		ampl1 := float64(word >> 16)
-
-		sample1 := pulse.NewSample(ampl1, uint16(i), float64(i)*dpgadetector.Det.SamplingFreq())
-		sample2 := pulse.NewSample(ampl2, uint16(i), float64(i)*dpgadetector.Det.SamplingFreq())
-
-		pulse1.AddSample(sample1, dpgadetector.Det.Capacitor(iHemi, iASM, iDRS, iQuartet, iChannel1, sample1.CapaIndex(pulse1.SRout)), float64(sigThreshold))
-		pulse2.AddSample(sample2, dpgadetector.Det.Capacitor(iHemi, iASM, iDRS, iQuartet, iChannel2, sample2.CapaIndex(pulse2.SRout)), float64(sigThreshold))
-	}
-
-	return pulse1, pulse2
 }
-*/
+
+func MakePulses(f *Frame, sigThreshold uint) [4]*pulse.Pulse {
+	var pulses [len(f.Block.Data.Data)]*pulse.Pulse
+	for i := range f.Block.Data.Data {
+		chanData := &f.Block.Data.Data[i]
+		channelId023 := chanData.Channel
+		iChannel := uint8(channelId023 % 4)
+		iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx60ToRelIdx(f.Block.QuartetAbsIdx60)
+		detChannel := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel)
+		pul := pulse.NewPulse(detChannel)
+		for j := range chanData.Amplitudes {
+			ampl := float64(chanData.Amplitudes[j])
+			sample := pulse.NewSample(ampl, uint16(i), float64(i)*dpgadetector.Det.SamplingFreq())
+			pul.AddSample(sample, dpgadetector.Det.Capacitor(iHemi, iASM, iDRS, iQuartet, iChannel, 0), float64(sigThreshold))
+		}
+		pulses[i] = pul
+	}
+	return pulses
+}

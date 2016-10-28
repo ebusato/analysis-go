@@ -365,6 +365,21 @@ func FifoID144ToQuartetAbsIdx60(iFifo uint16) uint8 {
 	return uint8(FifoID144ToFifoID120(iFifo) / 2)
 }
 
+// FEIdAndChanIdToQuartetAbsIdx60 return the quartet absolute Id (0->59)
+// from an input front end (ASM) board id and a channel Id (0 -> 23)
+func FEIdAndChanIdToQuartetAbsIdx60(FEId uint16, ChanId uint16) uint8 {
+	var FEIdNew uint16
+	switch FEId {
+	case 0x1e:
+		FEIdNew = 0
+	default:
+		panic("dpgadetector.FEIdAndChanIdToQuartetAbsIdx60: FEId not know")
+	}
+	ChanAbsIdx288 := FEIdNew*24 + ChanId
+	FifoId144 := ChannelAbsIdx288ToFifoID144(ChanAbsIdx288)
+	return FifoID144ToQuartetAbsIdx60(FifoId144)
+}
+
 func RelIdxToAbsIdx240(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {
 	// 	if iDRS == 2 && iQuartet == 1 {
 	// 		panic("dpgadetector: iDRS == 2 && iQuartet == 1")
