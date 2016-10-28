@@ -34,6 +34,15 @@ func (r *Reader) Err() error {
 	return r.err
 }
 
+// EventMapKeys returns a slice of keys stored in the reader's event map
+func (r *Reader) EventMapKeys() []uint64 {
+	var keys []uint64
+	for k := range r.eventMap {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 /*
 // Header returns the ASM-stream header
 func (r *Reader) Header() *Header {
@@ -278,20 +287,52 @@ func MakePulses(f *Frame, sigThreshold uint) [4]*pulse.Pulse {
 	return pulses
 }
 
+func EventsNotUpdatedForLongTime(timestamps []uint64, eventmapkeys []uint64) []uint64 {
+	var eventsToFlush []uint64
+	for _, evttimestamp := range eventmapkeys {
+		noFramesSinceLastUpdate := 0
+		j := len(timestamps) - 1
+		for timestamps[j] != evttimestamp {
+			noFramesSinceLastUpdate++
+			j--
+		}
+		if noFramesSinceLastUpdate > 20 {
+			eventsToFlush = append(eventsToFlush, evttimestamp)
+		}
+	}
+	return eventsToFlush
+}
+
+func EventAlreadyFlushed(timestamp uint64, flushedEvents []uint64) bool {
+	for _, ts := range flushedEvents {
+		if timestamp == ts {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Reader) readFrames() {
 	nframes := 0
+	var timestamps []uint64
+	var allFlushedEvents []uint64
 	for {
 		fmt.Printf("reading frame %v\n", nframes)
 		frame, _ := r.Frame()
 		frame.Print("medium")
+		if EventAlreadyFlushed(frame.Block.TimeStamp, allFlushedEvents) {
+			log.Fatalf("Event with timestamp=%v already flushed\n", frame.Block.TimeStamp)
+		}
+		timestamps = append(timestamps, frame.Block.TimeStamp)
 		nframes++
-		evt, ok := r.eventMap[frame.Block.TimeStamp]
+		_, ok := r.eventMap[frame.Block.TimeStamp]
 		switch ok {
 		case false:
-			evt = event.NewEvent(dpgadetector.Det.NoClusters())
+			r.eventMap[frame.Block.TimeStamp] = event.NewEvent(dpgadetector.Det.NoClusters())
 		default:
 			// event already present in map
 		}
+		evt := r.eventMap[frame.Block.TimeStamp]
 		evt.ID = 0
 		evt.TimeStamp = frame.Block.TimeStamp
 		pulses := MakePulses(frame, r.SigThreshold)
@@ -299,5 +340,14 @@ func (r *Reader) readFrames() {
 		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[1] = *pulses[1]
 		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[2] = *pulses[2]
 		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[3] = *pulses[3]
+		fmt.Println("\nEvent map keys: ", r.EventMapKeys())
+		fmt.Println("\nTimeStamps: ", timestamps)
+		eventsToFlush := EventsNotUpdatedForLongTime(timestamps, r.EventMapKeys())
+		fmt.Println("\nEvents to flush: ", eventsToFlush)
+		allFlushedEvents = append(allFlushedEvents, eventsToFlush...)
+		fmt.Println("\nAll Flushed events: ", allFlushedEvents)
+		for _, ts := range eventsToFlush {
+			delete(r.eventMap, ts)
+		}
 	}
 }
