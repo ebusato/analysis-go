@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sync"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
@@ -312,7 +313,8 @@ func EventAlreadyFlushed(timestamp uint64, flushedEvents []uint64) bool {
 	return false
 }
 
-func (r *Reader) readFrames() {
+func (r *Reader) readFrames(evtChan chan *event.Event, wg *sync.WaitGroup) {
+	defer wg.Done()
 	nframes := 0
 	var timestamps []uint64
 	var allFlushedEvents []uint64
@@ -342,12 +344,26 @@ func (r *Reader) readFrames() {
 		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[3] = *pulses[3]
 		fmt.Println("\nEvent map keys: ", r.EventMapKeys())
 		fmt.Println("\nTimeStamps: ", timestamps)
+
+		// Determine which events to flush
 		eventsToFlush := EventsNotUpdatedForLongTime(timestamps, r.EventMapKeys())
 		fmt.Println("\nEvents to flush: ", eventsToFlush)
 		allFlushedEvents = append(allFlushedEvents, eventsToFlush...)
 		fmt.Println("\nAll Flushed events: ", allFlushedEvents)
+
+		// Flush events to channel
+		for _, ts := range eventsToFlush {
+			evtChan <- r.eventMap[ts]
+		}
+
+		// Remove flushed events from reader's event map
 		for _, ts := range eventsToFlush {
 			delete(r.eventMap, ts)
 		}
 	}
 }
+
+/*
+func (r *Reader) ReadNextEvent() (*event.Event, bool) {
+
+}*/

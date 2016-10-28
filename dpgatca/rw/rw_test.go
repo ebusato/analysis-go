@@ -4,11 +4,18 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
+
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 )
 
 //var rhdr *Header
 //var revents []event.Event
+
+var (
+	evtChan = make(chan *event.Event)
+)
 
 func TestRW(t *testing.T) {
 	fmt.Println("starting TestRW")
@@ -24,6 +31,18 @@ func TestRW(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not open asm file: %v\n", err)
 	}
+
+	const N = 1
+	var wg sync.WaitGroup
+	wg.Add(N)
+
+	go r.readFrames(evtChan, &wg)
+	for {
+		event := <-evtChan
+		fmt.Println("The TS=", event.TimeStamp)
+	}
+
+	wg.Wait()
 
 	/*
 			// Writer
@@ -48,7 +67,6 @@ func TestRW(t *testing.T) {
 				t.Fatalf("error writing header: %v\n", err)
 			}
 	*/
-	r.readFrames()
 }
 
 /*
