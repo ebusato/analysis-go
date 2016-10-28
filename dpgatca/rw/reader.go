@@ -200,14 +200,22 @@ func (r *Reader) readBlock(blk *Block) {
 func (r *Reader) readBlockHeader(blk *Block) {
 	r.readU16(&blk.FirstBlockWord)
 	r.read(&blk.AMCFrameCounters)
+	blk.AMCFrameCounter = (uint32(blk.AMCFrameCounters[0]) << 16) + uint32(blk.AMCFrameCounters[1])
 	r.readU16(&blk.ParityFEIdCtrl)
+	blk.FrontEndId = (blk.ParityFEIdCtrl & 0x7fff) >> 8
 	r.readU16(&blk.TriggerMode)
 	r.readU16(&blk.Trigger)
 	r.read(&blk.ASMFrameCounters)
+	blk.ASMFrameCounter = (uint64(blk.ASMFrameCounters[0]) << 48) + (uint64(blk.ASMFrameCounters[1]) << 32) + (uint64(blk.ASMFrameCounters[2]) << 16) + uint64(blk.ASMFrameCounters[3])
 	r.readU16(&blk.Cafe)
 	r.readU16(&blk.Deca)
 	r.read(&blk.Counters)
 	r.read(&blk.TimeStamps)
+	temp := (uint64(blk.TimeStamps[0]) << 16) | uint64(blk.TimeStamps[1])
+	temp = (temp << 32)
+	temp1 := (uint64(blk.TimeStamps[2]) << 16) | uint64(blk.TimeStamps[3])
+	// 	temp |= temp1
+	blk.TimeStamp = temp | temp1
 	r.readU16(&blk.NoSamples)
 	///////////////////////////////////////////////////////////////////////
 	// This +11 is necessary but currently not really understood
@@ -240,6 +248,9 @@ func (r *Reader) readBlockData(blk *Block) {
 func (r *Reader) readBlockTrailer(blk *Block) {
 	r.readU16(&blk.CRC)
 	r.readU16(&blk.ParityFEIdCtrl2)
+	if (blk.ParityFEIdCtrl2&0x7fff)>>8 != blk.FrontEndId {
+		panic("Front end ids in header and trailer don't match")
+	}
 }
 
 /*

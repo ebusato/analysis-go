@@ -107,6 +107,12 @@ type Block struct {
 	Data             HalfDRSData
 	CRC              uint16
 	ParityFEIdCtrl2  uint16
+
+	// Derived quantities
+	AMCFrameCounter uint32
+	FrontEndId      uint16
+	ASMFrameCounter uint64
+	TimeStamp       uint64
 }
 
 func (b *Block) Integrity() error {
@@ -139,15 +145,15 @@ func (b *Block) Integrity() error {
 func (b *Block) Print(s string) {
 	fmt.Printf(" Printing block:\n")
 	fmt.Printf("   -> FirstBlockWord = %x\n", b.FirstBlockWord)
-	fmt.Printf("   -> AMCFrameCounters = %x\n", b.AMCFrameCounters)
-	fmt.Printf("   -> ParityFEIdCtrl = %x\n", b.ParityFEIdCtrl)
+	fmt.Printf("   -> AMCFrameCounters = %x (AMCFrameCounter = %v)\n", b.AMCFrameCounters, b.AMCFrameCounter)
+	fmt.Printf("   -> ParityFEIdCtrl = %x (FrontEndId = %x)\n", b.ParityFEIdCtrl, b.FrontEndId)
 	fmt.Printf("   -> TriggerMode = %x\n", b.TriggerMode)
 	fmt.Printf("   -> Trigger = %x\n", b.Trigger)
-	fmt.Printf("   -> ASMFrameCounters = %x\n", b.ASMFrameCounters)
+	fmt.Printf("   -> ASMFrameCounters = %x (ASMFrameCounter = %v)\n", b.ASMFrameCounters, b.ASMFrameCounter)
 	fmt.Printf("   -> Cafe = %x\n", b.Cafe)
 	fmt.Printf("   -> Deca = %x\n", b.Deca)
 	fmt.Printf("   -> Counters = %x\n", b.Counters)
-	fmt.Printf("   -> TimeStamps = %x\n", b.TimeStamps)
+	fmt.Printf("   -> TimeStamps = %x (TimeStamp = %v)\n", b.TimeStamps, b.TimeStamp)
 	fmt.Printf("   -> NoSamples = %x\n", b.NoSamples)
 
 	switch s {
