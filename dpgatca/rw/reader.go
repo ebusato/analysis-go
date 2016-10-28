@@ -20,8 +20,8 @@ type Reader struct {
 	eventMap  map[uint64]*event.Event
 	//evtIDPrevFrame    uint32
 	//firstFrameOfEvent *Frame
-	//SigThreshold      uint
-	Debug bool
+	SigThreshold uint
+	Debug        bool
 }
 
 // NoSamples returns the number of samples
@@ -47,7 +47,7 @@ func NewReader(r io.Reader) (*Reader, error) {
 		r:        r,
 		eventMap: make(map[uint64]*event.Event),
 		//evtIDPrevFrame: 0,
-		//SigThreshold:   800,
+		SigThreshold: 800,
 	}
 	//rr.readHeader(&rr.hdr)
 	return rr, rr.err
@@ -259,25 +259,6 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 	}
 }
 
-func (r *Reader) readFrames() {
-	nframes := 0
-	for {
-		fmt.Printf("reading frame %v\n", nframes)
-		frame, _ := r.Frame()
-		frame.Print("medium")
-		nframes++
-		evt, ok := r.eventMap[frame.Block.TimeStamp]
-		switch ok {
-		case false:
-			evt = event.NewEvent(dpgadetector.Det.NoClusters())
-		default:
-			// event already present in map
-		}
-		evt.ID = 0
-		//evt.Clusters[iCluster].
-	}
-}
-
 func MakePulses(f *Frame, sigThreshold uint) [4]*pulse.Pulse {
 	var pulses [len(f.Block.Data.Data)]*pulse.Pulse
 	for i := range f.Block.Data.Data {
@@ -295,4 +276,28 @@ func MakePulses(f *Frame, sigThreshold uint) [4]*pulse.Pulse {
 		pulses[i] = pul
 	}
 	return pulses
+}
+
+func (r *Reader) readFrames() {
+	nframes := 0
+	for {
+		fmt.Printf("reading frame %v\n", nframes)
+		frame, _ := r.Frame()
+		frame.Print("medium")
+		nframes++
+		evt, ok := r.eventMap[frame.Block.TimeStamp]
+		switch ok {
+		case false:
+			evt = event.NewEvent(dpgadetector.Det.NoClusters())
+		default:
+			// event already present in map
+		}
+		evt.ID = 0
+		evt.TimeStamp = frame.Block.TimeStamp
+		pulses := MakePulses(frame, r.SigThreshold)
+		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[0] = *pulses[0]
+		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[1] = *pulses[1]
+		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[2] = *pulses[2]
+		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[3] = *pulses[3]
+	}
 }
