@@ -22,7 +22,7 @@ var (
 func TestRW(t *testing.T) {
 	fmt.Println("starting TestRW")
 
-	inFileName := "../data/MyFile1e.bin"
+	inFileName := "../data/run0011/MyFile1e.bin"
 	outFileName := strings.Replace(inFileName, "MyFile1e", "MyFile1e_out", 1)
 
 	// Reader
@@ -55,10 +55,10 @@ func TestRW(t *testing.T) {
 	wg.Add(N)
 
 	go r.readFrames(evtChan, w, &wg)
-	/*for {
+	for {
 		event := <-evtChan
-		fmt.Println("The TS=", event.TimeStamp)
-	}*/
+		//fmt.Println("The TS=", event.TimeStamp)
+	}
 
 	wg.Wait()
 

@@ -209,6 +209,7 @@ func (r *Reader) readBlock(blk *Block) {
 	r.readBlockTrailer(blk)
 	r.err = blk.Integrity()
 	if r.err != nil {
+		blk.Print("medium")
 		return
 	}
 }
@@ -380,9 +381,9 @@ func (r *Reader) readFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 		//fmt.Println("\nAll Flushed events: ", allFlushedEvents)
 
 		// Flush events to channel
-		// 		for _, ts := range eventsToFlush {
-		// 			evtChan <- r.eventMap[ts]
-		// 		}
+		for _, ts := range eventsToFlush {
+			evtChan <- r.eventMap[ts]
+		}
 
 		// Remove flushed events from reader's event map
 		for _, ts := range eventsToFlush {
