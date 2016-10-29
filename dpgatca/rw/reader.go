@@ -253,8 +253,6 @@ func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
 	data.Channel = (data.ParityChanIdCtrl & 0x7f00) >> 8
 	blk.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(blk.FrontEndId, data.Channel)
 
-	problem := false
-
 	//fmt.Printf("%v, %x, %v, %v, %v\n", noAttempts, data.ParityChanIdCtrl, data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
 	if (data.ParityChanIdCtrl & 0xff) != ctrl0xfd {
 		//panic("(data.ParityChanIdCtrl & 0xff) != ctrl0xfd")
@@ -265,7 +263,7 @@ func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
 		return true
 	}
 	QuartetAbsIdx60old = blk.QuartetAbsIdx60
-	return problem
+	return false
 }
 
 func (r *Reader) readBlockData(blk *Block) {
