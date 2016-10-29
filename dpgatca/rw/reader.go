@@ -241,31 +241,60 @@ func (r *Reader) readBlockHeader(blk *Block) {
 	///////////////////////////////////////////////////////////////////////
 }
 
+var (
+	noAttempts         int
+	QuartetAbsIdx60old uint8
+)
+
+// readParityChanIdCtrl is a temporary fix, until we understand where the additionnal 16 bits words come from
+func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
+	data := &blk.Data.Data[i]
+	r.read(&data.ParityChanIdCtrl)
+	data.Channel = (data.ParityChanIdCtrl & 0x7f00) >> 8
+	blk.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(blk.FrontEndId, data.Channel)
+
+	problem := false
+
+	//fmt.Printf("%v, %x, %v, %v, %v\n", noAttempts, data.ParityChanIdCtrl, data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
+	if (data.ParityChanIdCtrl & 0xff) != ctrl0xfd {
+		//panic("(data.ParityChanIdCtrl & 0xff) != ctrl0xfd")
+		return true
+	}
+	if i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old {
+		//panic("i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old")
+		return true
+	}
+	QuartetAbsIdx60old = blk.QuartetAbsIdx60
+	return problem
+}
+
 func (r *Reader) readBlockData(blk *Block) {
 	if r.err != nil {
 		return
 	}
-	var QuartetAbsIdx60old uint8
 	for i := range blk.Data.Data {
 		data := &blk.Data.Data[i]
-		r.read(&data.ParityChanIdCtrl)
-		data.Channel = (data.ParityChanIdCtrl & 0x7f00) >> 8
-		// Compute QuartetIdxAbs60
-		blk.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(blk.FrontEndId, data.Channel)
-		fmt.Printf("%x, %v, %v, %v\n", data.ParityChanIdCtrl, data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
-		if i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old {
-			panic("blk.QuartetAbsIdx60 != QuartetAbsIdx60old")
+		for r.readParityChanIdCtrl(blk, i) {
+			noAttempts++
+			if noAttempts >= 5 {
+				log.Fatalf("reader.readParityChanIdCtrl: noAttempts >= 3\n")
+			}
 		}
-		QuartetAbsIdx60old = blk.QuartetAbsIdx60
+		noAttempts = 0
 		r.read(&data.Amplitudes)
 	}
 }
 
 func (r *Reader) readBlockTrailer(blk *Block) {
 	r.readU16(&blk.CRC)
+	// Temporary fix, until we understand where these additionnal 16 bits come from
+	if blk.CRC != ctrl0xCRC {
+		r.readU16(&blk.CRC)
+	}
+	// End of temporary fix
 	r.readU16(&blk.ParityFEIdCtrl2)
 	if (blk.ParityFEIdCtrl2&0x7fff)>>8 != blk.FrontEndId {
-		panic("Front end ids in header and trailer don't match")
+		log.Fatalf("Front end ids in header and trailer don't match\n")
 	}
 }
 
@@ -322,7 +351,7 @@ func (r *Reader) readFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 		fmt.Printf("reading frame %v\n", nframes)
 		frame, _ := r.Frame()
 		w.Frame(frame)
-		frame.Print("medium")
+		//frame.Print("medium")
 		if EventAlreadyFlushed(frame.Block.TimeStamp, allFlushedEvents) {
 			log.Fatalf("Event with timestamp=%v already flushed\n", frame.Block.TimeStamp)
 		}
@@ -343,14 +372,14 @@ func (r *Reader) readFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[1] = *pulses[1]
 		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[2] = *pulses[2]
 		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[3] = *pulses[3]
-		fmt.Println("\nEvent map keys: ", r.EventMapKeys())
-		fmt.Println("\nTimeStamps: ", timestamps)
+		//fmt.Println("\nEvent map keys: ", r.EventMapKeys())
+		//fmt.Println("\nTimeStamps: ", timestamps)
 
 		// Determine which events to flush
 		eventsToFlush := EventsNotUpdatedForLongTime(timestamps, r.EventMapKeys())
-		fmt.Println("\nEvents to flush: ", eventsToFlush)
+		//fmt.Println("\nEvents to flush: ", eventsToFlush)
 		allFlushedEvents = append(allFlushedEvents, eventsToFlush...)
-		fmt.Println("\nAll Flushed events: ", allFlushedEvents)
+		//fmt.Println("\nAll Flushed events: ", allFlushedEvents)
 
 		// Flush events to channel
 		// 		for _, ts := range eventsToFlush {
