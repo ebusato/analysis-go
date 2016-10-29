@@ -252,8 +252,8 @@ func (r *Reader) readBlockData(blk *Block) {
 		data.Channel = (data.ParityChanIdCtrl & 0x7f00) >> 8
 		// Compute QuartetIdxAbs60
 		blk.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(blk.FrontEndId, data.Channel)
+		fmt.Printf("%x, %v, %v, %v\n", data.ParityChanIdCtrl, data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
 		if i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old {
-			//fmt.Println(data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
 			panic("blk.QuartetAbsIdx60 != QuartetAbsIdx60old")
 		}
 		QuartetAbsIdx60old = blk.QuartetAbsIdx60
@@ -353,9 +353,9 @@ func (r *Reader) readFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 		fmt.Println("\nAll Flushed events: ", allFlushedEvents)
 
 		// Flush events to channel
-		for _, ts := range eventsToFlush {
-			evtChan <- r.eventMap[ts]
-		}
+		// 		for _, ts := range eventsToFlush {
+		// 			evtChan <- r.eventMap[ts]
+		// 		}
 
 		// Remove flushed events from reader's event map
 		for _, ts := range eventsToFlush {

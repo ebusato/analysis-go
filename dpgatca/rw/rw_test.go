@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 
@@ -21,8 +22,11 @@ var (
 func TestRW(t *testing.T) {
 	fmt.Println("starting TestRW")
 
+	inFileName := "../data/MyFile1e.bin"
+	outFileName := strings.Replace(inFileName, "MyFile1e", "MyFile1e_out", 1)
+
 	// Reader
-	f, err := os.Open("../data/MyFile1e.bin")
+	f, err := os.Open(inFileName)
 	if err != nil {
 		t.Fatalf("could not open data file: %v\n", err)
 	}
@@ -34,7 +38,7 @@ func TestRW(t *testing.T) {
 	}
 
 	// Writer
-	filew, err := os.Create("testdata/testWriter.bin")
+	filew, err := os.Create(outFileName)
 	if err != nil {
 		log.Fatalf("could not create data file: %v\n", err)
 	}
@@ -51,10 +55,10 @@ func TestRW(t *testing.T) {
 	wg.Add(N)
 
 	go r.readFrames(evtChan, w, &wg)
-	for {
+	/*for {
 		event := <-evtChan
 		fmt.Println("The TS=", event.TimeStamp)
-	}
+	}*/
 
 	wg.Wait()
 
