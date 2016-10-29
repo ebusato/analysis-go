@@ -313,7 +313,7 @@ func EventAlreadyFlushed(timestamp uint64, flushedEvents []uint64) bool {
 	return false
 }
 
-func (r *Reader) readFrames(evtChan chan *event.Event, wg *sync.WaitGroup) {
+func (r *Reader) readFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitGroup) {
 	defer wg.Done()
 	nframes := 0
 	var timestamps []uint64
@@ -321,6 +321,7 @@ func (r *Reader) readFrames(evtChan chan *event.Event, wg *sync.WaitGroup) {
 	for {
 		fmt.Printf("reading frame %v\n", nframes)
 		frame, _ := r.Frame()
+		w.Frame(frame)
 		frame.Print("medium")
 		if EventAlreadyFlushed(frame.Block.TimeStamp, allFlushedEvents) {
 			log.Fatalf("Event with timestamp=%v already flushed\n", frame.Block.TimeStamp)

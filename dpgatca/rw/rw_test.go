@@ -3,6 +3,7 @@ package rw
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 	"testing"
@@ -32,11 +33,24 @@ func TestRW(t *testing.T) {
 		t.Fatalf("could not open asm file: %v\n", err)
 	}
 
+	// Writer
+	filew, err := os.Create("testdata/testWriter.bin")
+	if err != nil {
+		log.Fatalf("could not create data file: %v\n", err)
+	}
+	defer filew.Close()
+
+	w := NewWriter(bufio.NewWriter(filew))
+	if err != nil {
+		log.Fatalf("could not open file: %v\n", err)
+	}
+	defer w.Close()
+
 	const N = 1
 	var wg sync.WaitGroup
 	wg.Add(N)
 
-	go r.readFrames(evtChan, &wg)
+	go r.readFrames(evtChan, w, &wg)
 	for {
 		event := <-evtChan
 		fmt.Println("The TS=", event.TimeStamp)
