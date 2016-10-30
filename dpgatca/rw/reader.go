@@ -347,7 +347,7 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 	var timestamps []uint64
 	var allFlushedEvents []uint64
 	for {
-		fmt.Printf("reading frame %v\n", nframes)
+		//fmt.Printf("reading frame %v\n", nframes)
 		frame, _ := r.Frame()
 		w.Frame(frame)
 		//frame.Print("medium")
@@ -364,7 +364,6 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 			// event already present in map
 		}
 		evt := r.eventMap[frame.Block.TimeStamp]
-		evt.ID = 0
 		evt.TimeStamp = frame.Block.TimeStamp
 		pulses := MakePulses(frame, r.SigThreshold)
 		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[0] = *pulses[0]
@@ -382,9 +381,9 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 
 		// Flush events to channel
 		for _, ts := range eventsToFlush {
-			fmt.Println("About to send event with TS =", r.eventMap[ts].TimeStamp)
+			//fmt.Println("About to send event with TS =", r.eventMap[ts].TimeStamp)
 			evtChan <- r.eventMap[ts]
-			fmt.Println("Sent event with TS =", r.eventMap[ts].TimeStamp)
+			//fmt.Println("Sent event with TS =", r.eventMap[ts].TimeStamp)
 		}
 
 		// Remove flushed events from reader's event map
