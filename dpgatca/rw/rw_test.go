@@ -54,10 +54,10 @@ func TestRW(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(N)
 
-	go r.readFrames(evtChan, w, &wg)
+	go r.ReadFrames(evtChan, w, &wg)
 	for {
 		event := <-evtChan
-		//fmt.Println("The TS=", event.TimeStamp)
+		fmt.Println("The TS=", event.TimeStamp)
 	}
 
 	wg.Wait()

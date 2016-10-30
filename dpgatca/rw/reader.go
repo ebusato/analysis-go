@@ -308,7 +308,7 @@ func MakePulses(f *Frame, sigThreshold uint) [4]*pulse.Pulse {
 		pul := pulse.NewPulse(detChannel)
 		for j := range chanData.Amplitudes {
 			ampl := float64(chanData.Amplitudes[j])
-			sample := pulse.NewSample(ampl, uint16(i), float64(i)*dpgadetector.Det.SamplingFreq())
+			sample := pulse.NewSample(ampl, uint16(j), float64(j)*dpgadetector.Det.SamplingFreq())
 			pul.AddSample(sample, dpgadetector.Det.Capacitor(iHemi, iASM, iDRS, iQuartet, iChannel, 0), float64(sigThreshold))
 		}
 		pulses[i] = pul
@@ -341,7 +341,7 @@ func EventAlreadyFlushed(timestamp uint64, flushedEvents []uint64) bool {
 	return false
 }
 
-func (r *Reader) readFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitGroup) {
+func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitGroup) {
 	defer wg.Done()
 	nframes := 0
 	var timestamps []uint64
@@ -382,7 +382,9 @@ func (r *Reader) readFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 
 		// Flush events to channel
 		for _, ts := range eventsToFlush {
+			fmt.Println("About to send event with TS =", r.eventMap[ts].TimeStamp)
 			evtChan <- r.eventMap[ts]
+			fmt.Println("Sent event with TS =", r.eventMap[ts].TimeStamp)
 		}
 
 		// Remove flushed events from reader's event map
