@@ -226,16 +226,13 @@ type Data struct {
 	ChargeCorrelation string   `json:"chargecorrelation"` // charge correlation for events with multiplicity=2
 }
 
-func TCPConn(p *string) *net.TCPConn {
-	laddr, err := net.ResolveTCPAddr("tcp", *ip+":"+*p)
-	if err != nil {
-		log.Fatal(err)
-	}
-	tcp, err := net.DialTCP("tcp", nil, laddr)
+func Conn(p *string) *net.Conn {
+	fmt.Println("addr", *ip+":"+*p)
+	conn, err := net.Dial("tcp", *ip+":"+*p)
 	if err != nil {
 		return nil
 	}
-	return tcp
+	return &conn
 }
 
 func main() {
@@ -253,9 +250,8 @@ func main() {
 	}
 
 	// Reader
-	var tcp *net.TCPConn = nil
-	tcp = TCPConn(port)
-	for i := 0; tcp == nil; i++ {
+	var conn *net.Conn = Conn(port)
+	for i := 0; conn == nil; i++ {
 		newportu, err := strconv.ParseUint(*port, 10, 64)
 		if err != nil {
 			panic(err)
@@ -264,14 +260,14 @@ func main() {
 		newport := strconv.FormatUint(newportu, 10)
 		fmt.Printf("Port %v not responding, trying %v\n", *port, newport)
 		*port = newport
-		tcp = TCPConn(port)
+		conn = Conn(port)
 		if i >= 5 {
 			log.Fatalf("Cannot find port to connect to server")
 		}
 	}
 
 	//for i := 0; i < 4; i++ {
-	r, err := rw.NewReader(bufio.NewReader(tcp))
+	r, err := rw.NewReader(bufio.NewReader(*conn))
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
