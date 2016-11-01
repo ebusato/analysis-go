@@ -74,6 +74,10 @@ func (w *Writer) writeU16(v uint16) {
 	_, w.err = w.w.Write(buf[:])
 }
 
+func (w *Writer) WriteU16(v uint16) {
+	w.writeU16(v)
+}
+
 func (w *Writer) writeU32(v uint32) {
 	if w.err != nil {
 		return

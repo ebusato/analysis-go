@@ -228,7 +228,8 @@ type Data struct {
 
 func Conn(p *string) *net.Conn {
 	fmt.Println("addr", *ip+":"+*p)
-	conn, err := net.Dial("tcp", *ip+":"+*p)
+	// 	conn, err := net.Dial("tcp", *ip+":"+*p)
+	conn, err := net.Dial("udp", *ip+":"+*p)
 	if err != nil {
 		return nil
 	}
@@ -265,6 +266,8 @@ func main() {
 			log.Fatalf("Cannot find port to connect to server")
 		}
 	}
+
+	//(*conn).Write([]byte("Hello from client"))
 
 	//for i := 0; i < 4; i++ {
 	r, err := rw.NewReader(bufio.NewReader(*conn))
@@ -370,6 +373,7 @@ func main() {
 	// 	go stream(terminateStream, r, w, &iEvent, &wg)
 	// 	go command(terminateRun, pauseRun)
 	//go control()
+
 	go r.ReadFrames(evtChan, w, &wg)
 	go stream(currentRunNumber, r, w, &iEvent, evtChan)
 	go command()

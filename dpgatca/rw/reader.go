@@ -120,6 +120,10 @@ func (r *Reader) readU16(v *uint16) {
 	}
 }
 
+func (r *Reader) ReadU16(v *uint16) {
+	r.readU16(v)
+}
+
 func (r *Reader) readU32(v *uint32) {
 	if r.err != nil {
 		return

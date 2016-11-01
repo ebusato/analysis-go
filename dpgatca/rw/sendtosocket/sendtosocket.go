@@ -2,8 +2,9 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
 	"flag"
-	"io"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -34,17 +35,25 @@ func main() {
 	}
 
 	// Writer
-	ln, err := net.Listen("tcp", *ip+":"+*port)
+	/*
+		ln, err := net.Listen("tcp", *ip+":"+*port)
+		if err != nil {
+			log.Fatal(err)
+		}
+		conn, err := ln.Accept()
+
+		w := rw.NewWriter(bufio.NewWriter(conn))
+		if err != nil {
+			log.Fatalf("could not open file: %v\n", err)
+		}
+		defer w.Close()
+	*/
+	addr, err := net.ResolveUDPAddr("udp", *ip+":"+*port) // maybe change to udp4
+	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		log.Fatal(err)
 	}
-	conn, err := ln.Accept()
-
-	w := rw.NewWriter(bufio.NewWriter(conn))
-	if err != nil {
-		log.Fatalf("could not open file: %v\n", err)
-	}
-	defer w.Close()
+	defer conn.Close()
 
 	// Start writing stream to TCP
 	// 	hdr := r.Header()
@@ -55,21 +64,36 @@ func main() {
 	// 		log.Fatalf("error writing header: %v\n", err)
 	// 	}
 
-	nFrames := uint(0)
-	for {
-		frame, err := r.Frame()
+	/*
+		nFrames := uint(0)
+		for {
+			frame, err := r.Frame()
 
-		if err != nil {
-			if err != io.EOF {
-				log.Fatalf("error loading frame: %v\n", err)
+			if err != nil {
+				if err != io.EOF {
+					log.Fatalf("error loading frame: %v\n", err)
+				}
+				break
 			}
-			break
+			err = w.Frame(frame)
+			if err != nil {
+				log.Fatalf("error writing frame: %v\n", err)
+			}
+			nFrames++
 		}
-		err = w.Frame(frame)
-		if err != nil {
-			log.Fatalf("error writing frame: %v\n", err)
-		}
-		nFrames++
+	*/
+
+	nWords := 0
+	var word uint16
+	for {
+		r.ReadU16(&word)
+		var buf [2]byte
+		conn.ReadFromUDP(buf[:])
+		fmt.Printf("buf[:] before put= %x %x\n", word, buf[:])
+		binary.BigEndian.PutUint16(buf[:], word)
+		fmt.Printf("buf[:] = %x %x\n", word, buf[:])
+		conn.WriteToUDP(buf[:], addr)
+		nWords++
 	}
 
 }
