@@ -48,7 +48,7 @@ func main() {
 		}
 		defer w.Close()
 	*/
-	addr, err := net.ResolveUDPAddr("udp", *ip+":"+*port) // maybe change to udp4
+	addr, err := net.ResolveUDPAddr("udp4", *ip+":"+*port) // maybe change to udp4
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		log.Fatal(err)
@@ -58,7 +58,7 @@ func main() {
 	var buf [2]byte
 	fmt.Println("Server: before ReadFromUDP")
 	_, addrClient, _ := conn.ReadFromUDP(buf[:])
-	fmt.Println("UDP client address: ", addr)
+	fmt.Println("UDP client address: ", addrClient)
 	fmt.Printf("buf[:] from client= %x\n", buf[:])
 
 	// Start writing stream to TCP

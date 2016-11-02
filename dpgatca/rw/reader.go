@@ -244,6 +244,8 @@ func (r *Reader) readBlockHeader(blk *Block) {
 	// These additionnal 11 samples should currently be considered junk
 	blk.Data.SetNoSamples(blk.NoSamples + 11)
 	///////////////////////////////////////////////////////////////////////
+
+	blk.Print("short")
 }
 
 var (
@@ -258,13 +260,13 @@ func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
 	data.Channel = (data.ParityChanIdCtrl & 0x7f00) >> 8
 	blk.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(blk.FrontEndId, data.Channel)
 
-	//fmt.Printf("%v, %x, %v, %v, %v\n", noAttempts, data.ParityChanIdCtrl, data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
+	fmt.Printf("%v, %x, %v, %v, %v\n", noAttempts, data.ParityChanIdCtrl, data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
 	if (data.ParityChanIdCtrl & 0xff) != ctrl0xfd {
-		//panic("(data.ParityChanIdCtrl & 0xff) != ctrl0xfd")
+		panic("(data.ParityChanIdCtrl & 0xff) != ctrl0xfd")
 		return true
 	}
 	if i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old {
-		//panic("i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old")
+		panic("i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old")
 		return true
 	}
 	QuartetAbsIdx60old = blk.QuartetAbsIdx60

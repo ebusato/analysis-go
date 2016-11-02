@@ -283,7 +283,7 @@ func main() {
 		}
 	}
 
-	//(*conn).Write([]byte("Hello from client"))
+	(*conn).Write([]byte("Hello from client"))
 
 	//for i := 0; i < 4; i++ {
 	//r, err := rw.NewReader(bufio.NewReader(*conn))
