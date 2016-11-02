@@ -55,6 +55,12 @@ func main() {
 	}
 	defer conn.Close()
 
+	var buf [2]byte
+	fmt.Println("Server: before ReadFromUDP")
+	_, addrClient, _ := conn.ReadFromUDP(buf[:])
+	fmt.Println("UDP client address: ", addr)
+	fmt.Printf("buf[:] from client= %x\n", buf[:])
+
 	// Start writing stream to TCP
 	// 	hdr := r.Header()
 	// 	hdr.Print()
@@ -87,12 +93,9 @@ func main() {
 	var word uint16
 	for {
 		r.ReadU16(&word)
-		var buf [2]byte
-		conn.ReadFromUDP(buf[:])
-		fmt.Printf("buf[:] before put= %x %x\n", word, buf[:])
 		binary.BigEndian.PutUint16(buf[:], word)
 		fmt.Printf("buf[:] = %x %x\n", word, buf[:])
-		conn.WriteToUDP(buf[:], addr)
+		conn.WriteToUDP(buf[:], addrClient)
 		nWords++
 	}
 

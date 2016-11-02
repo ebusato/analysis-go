@@ -226,14 +226,30 @@ type Data struct {
 	ChargeCorrelation string   `json:"chargecorrelation"` // charge correlation for events with multiplicity=2
 }
 
-func Conn(p *string) *net.Conn {
+func Conn(p *string) *net.UDPConn {
 	fmt.Println("addr", *ip+":"+*p)
 	// 	conn, err := net.Dial("tcp", *ip+":"+*p)
-	conn, err := net.Dial("udp", *ip+":"+*p)
+
+	RemoteAddr, err := net.ResolveUDPAddr("udp", *ip+":"+*p)
+	fmt.Println("client RemoteAddr =", RemoteAddr.IP, RemoteAddr.Port, RemoteAddr.Zone)
+	conn, err := net.DialUDP("udp", nil, RemoteAddr)
 	if err != nil {
 		return nil
 	}
-	return &conn
+	return conn
+}
+
+type Reader struct {
+	conn *net.UDPConn
+}
+
+func NewReader(conn *net.UDPConn) *Reader {
+	return &Reader{conn: conn}
+}
+
+func (r *Reader) Read(p []byte) (n int, err error) {
+	n, _, err = r.conn.ReadFromUDP(p)
+	return
 }
 
 func main() {
@@ -251,7 +267,7 @@ func main() {
 	}
 
 	// Reader
-	var conn *net.Conn = Conn(port)
+	var conn *net.UDPConn = Conn(port)
 	for i := 0; conn == nil; i++ {
 		newportu, err := strconv.ParseUint(*port, 10, 64)
 		if err != nil {
@@ -270,7 +286,8 @@ func main() {
 	//(*conn).Write([]byte("Hello from client"))
 
 	//for i := 0; i < 4; i++ {
-	r, err := rw.NewReader(bufio.NewReader(*conn))
+	//r, err := rw.NewReader(bufio.NewReader(*conn))
+	r, err := rw.NewReader(NewReader(conn))
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
