@@ -203,7 +203,6 @@ func (r *Reader) readFrame(f *Frame) {
 				log.Fatalf("invalid last frame id. got=%x. want=%x", f.ID, lastFrame)
 			}
 		*/
-
 	}
 }
 
@@ -219,7 +218,13 @@ func (r *Reader) readBlock(blk *Block) {
 }
 
 func (r *Reader) readBlockHeader(blk *Block) {
+
+	frameBuffer := make([]byte, 8230)
+	r.r.Read(frameBuffer)
+	fmt.Printf("frameBuffer = %x\n", frameBuffer)
+
 	r.readU16(&blk.FirstBlockWord)
+	fmt.Printf("blk.FirstBlockWord = %x\n", blk.FirstBlockWord)
 	r.read(&blk.AMCFrameCounters)
 	blk.AMCFrameCounter = (uint32(blk.AMCFrameCounters[0]) << 16) + uint32(blk.AMCFrameCounters[1])
 	r.readU16(&blk.ParityFEIdCtrl)
@@ -245,7 +250,7 @@ func (r *Reader) readBlockHeader(blk *Block) {
 	blk.Data.SetNoSamples(blk.NoSamples + 11)
 	///////////////////////////////////////////////////////////////////////
 
-	blk.Print("short")
+	//blk.Print("short")
 }
 
 var (
@@ -262,11 +267,11 @@ func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
 
 	fmt.Printf("%v, %x, %v, %v, %v\n", noAttempts, data.ParityChanIdCtrl, data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
 	if (data.ParityChanIdCtrl & 0xff) != ctrl0xfd {
-		panic("(data.ParityChanIdCtrl & 0xff) != ctrl0xfd")
+		//panic("(data.ParityChanIdCtrl & 0xff) != ctrl0xfd")
 		return true
 	}
 	if i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old {
-		panic("i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old")
+		//panic("i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old")
 		return true
 	}
 	QuartetAbsIdx60old = blk.QuartetAbsIdx60
@@ -277,6 +282,7 @@ func (r *Reader) readBlockData(blk *Block) {
 	if r.err != nil {
 		return
 	}
+	//blk.Print("short")
 	for i := range blk.Data.Data {
 		data := &blk.Data.Data[i]
 		for r.readParityChanIdCtrl(blk, i) {
@@ -286,7 +292,11 @@ func (r *Reader) readBlockData(blk *Block) {
 			}
 		}
 		noAttempts = 0
+		fmt.Printf("data.ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
 		r.read(&data.Amplitudes)
+		// 		for j := range data.Amplitudes {
+		// 			fmt.Printf("data.Amplitudes[%v] = %x\n", j, data.Amplitudes[j])
+		// 		}
 	}
 }
 

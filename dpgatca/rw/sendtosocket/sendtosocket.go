@@ -59,7 +59,7 @@ func main() {
 	fmt.Println("Server: before ReadFromUDP")
 	_, addrClient, _ := conn.ReadFromUDP(buf[:])
 	fmt.Println("UDP client address: ", addrClient)
-	fmt.Printf("buf[:] from client= %x\n", buf[:])
+	fmt.Printf("buf[:] from client= %v\n", buf[:])
 
 	// Start writing stream to TCP
 	// 	hdr := r.Header()
@@ -91,12 +91,29 @@ func main() {
 
 	nWords := 0
 	var word uint16
+	/*
+		for {
+			r.ReadU16(&word)
+			binary.BigEndian.PutUint16(buf[:], word)
+			//fmt.Printf("buf[:] = %x %x\n", word, buf[:])
+			conn.WriteToUDP(buf[:], addrClient)
+			//conn.ReadFromUDP(buf[:])
+			//fmt.Println("In loop ReadFromUDP =", buf)
+			time.Sleep(1000 * time.Microsecond)
+			nWords++
+		}
+	*/
+
+	var frameBuffer []byte //:= make([]byte, 8230)
 	for {
-		r.ReadU16(&word)
-		binary.BigEndian.PutUint16(buf[:], word)
-		fmt.Printf("buf[:] = %x %x\n", word, buf[:])
-		conn.WriteToUDP(buf[:], addrClient)
+		for i := 0; i < 4115; i++ {
+			r.ReadU16(&word)
+			var tempBuf [2]byte
+			binary.BigEndian.PutUint16(tempBuf[:], word)
+			frameBuffer = append(frameBuffer, tempBuf[:]...)
+		}
+		fmt.Printf("frameBuffer = %x\n", frameBuffer)
+		conn.WriteToUDP(frameBuffer, addrClient)
 		nWords++
 	}
-
 }
