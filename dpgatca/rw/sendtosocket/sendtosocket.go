@@ -89,7 +89,6 @@ func main() {
 		}
 	*/
 
-	nWords := 0
 	var word uint16
 	/*
 		for {
@@ -104,16 +103,18 @@ func main() {
 		}
 	*/
 
-	var frameBuffer []byte //:= make([]byte, 8230)
 	for {
+		var frameBuffer []byte //:= make([]byte, 8230)
 		for i := 0; i < 4115; i++ {
 			r.ReadU16(&word)
 			var tempBuf [2]byte
 			binary.BigEndian.PutUint16(tempBuf[:], word)
 			frameBuffer = append(frameBuffer, tempBuf[:]...)
 		}
-		fmt.Printf("frameBuffer = %x\n", frameBuffer)
+		fmt.Printf("frameBuffer =")
+		for j := range frameBuffer {
+			fmt.Printf("  %v: %x\n", j, frameBuffer[j])
+		}
 		conn.WriteToUDP(frameBuffer, addrClient)
-		nWords++
 	}
 }
