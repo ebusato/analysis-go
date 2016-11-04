@@ -30,7 +30,8 @@ type Reader struct {
 	//firstFrameOfEvent *Frame
 	SigThreshold uint
 	Debug        bool
-	UDPFrame     UDPFrameType
+	UDPFrame     UDPFrameType // relevant only when reading from UDP
+	FrameBuffer  []byte       // relevant only when reading from UDP
 }
 
 // NoSamples returns the number of samples
@@ -67,6 +68,7 @@ func NewReader(r io.Reader) (*Reader, error) {
 		//evtIDPrevFrame: 0,
 		SigThreshold: 800,
 		UDPFrame:     UDPFrameHalfDRS,
+		FrameBuffer:  make([]byte, 8230),
 	}
 	//rr.readHeader(&rr.hdr)
 	return rr, rr.err
@@ -216,6 +218,12 @@ func (r *Reader) readFrame(f *Frame) {
 }
 
 func (r *Reader) readBlock(blk *Block) {
+	switch r.UDPFrame {
+	case UDPFrameHalfDRS:
+		r.r.Read(r.FrameBuffer)
+	case UDPFrame16bits:
+		// do nothing
+	}
 	r.readBlockHeader(blk)
 	r.readBlockData(blk)
 	r.readBlockTrailer(blk)
@@ -229,35 +237,33 @@ func (r *Reader) readBlock(blk *Block) {
 func (r *Reader) readBlockHeader(blk *Block) {
 	switch r.UDPFrame {
 	case UDPFrameHalfDRS:
-		frameBuffer := make([]byte, 8230)
-		r.r.Read(frameBuffer)
 		/*
 			fmt.Printf("frameBuffer =")
 			for j := range frameBuffer {
 				fmt.Printf("  %v: %x\n", j, frameBuffer[j])
 			}
 		*/
-		blk.FirstBlockWord = binary.BigEndian.Uint16(frameBuffer[0:2])
-		blk.AMCFrameCounters[0] = binary.BigEndian.Uint16(frameBuffer[2:4])
-		blk.AMCFrameCounters[1] = binary.BigEndian.Uint16(frameBuffer[4:6])
-		blk.ParityFEIdCtrl = binary.BigEndian.Uint16(frameBuffer[6:8])
-		blk.TriggerMode = binary.BigEndian.Uint16(frameBuffer[8:10])
-		blk.Trigger = binary.BigEndian.Uint16(frameBuffer[10:12])
-		blk.ASMFrameCounters[0] = binary.BigEndian.Uint16(frameBuffer[12:14])
-		blk.ASMFrameCounters[1] = binary.BigEndian.Uint16(frameBuffer[14:16])
-		blk.ASMFrameCounters[2] = binary.BigEndian.Uint16(frameBuffer[16:18])
-		blk.ASMFrameCounters[3] = binary.BigEndian.Uint16(frameBuffer[18:20])
-		blk.Cafe = binary.BigEndian.Uint16(frameBuffer[20:22])
-		blk.Deca = binary.BigEndian.Uint16(frameBuffer[22:24])
-		blk.Counters[0] = binary.BigEndian.Uint16(frameBuffer[24:26])
-		blk.Counters[1] = binary.BigEndian.Uint16(frameBuffer[26:28])
-		blk.Counters[2] = binary.BigEndian.Uint16(frameBuffer[28:30])
-		blk.Counters[3] = binary.BigEndian.Uint16(frameBuffer[30:32])
-		blk.TimeStamps[0] = binary.BigEndian.Uint16(frameBuffer[32:34])
-		blk.TimeStamps[1] = binary.BigEndian.Uint16(frameBuffer[34:36])
-		blk.TimeStamps[2] = binary.BigEndian.Uint16(frameBuffer[36:38])
-		blk.TimeStamps[3] = binary.BigEndian.Uint16(frameBuffer[38:40])
-		blk.NoSamples = binary.BigEndian.Uint16(frameBuffer[40:42])
+		blk.FirstBlockWord = binary.BigEndian.Uint16(r.FrameBuffer[0:2])
+		blk.AMCFrameCounters[0] = binary.BigEndian.Uint16(r.FrameBuffer[2:4])
+		blk.AMCFrameCounters[1] = binary.BigEndian.Uint16(r.FrameBuffer[4:6])
+		blk.ParityFEIdCtrl = binary.BigEndian.Uint16(r.FrameBuffer[6:8])
+		blk.TriggerMode = binary.BigEndian.Uint16(r.FrameBuffer[8:10])
+		blk.Trigger = binary.BigEndian.Uint16(r.FrameBuffer[10:12])
+		blk.ASMFrameCounters[0] = binary.BigEndian.Uint16(r.FrameBuffer[12:14])
+		blk.ASMFrameCounters[1] = binary.BigEndian.Uint16(r.FrameBuffer[14:16])
+		blk.ASMFrameCounters[2] = binary.BigEndian.Uint16(r.FrameBuffer[16:18])
+		blk.ASMFrameCounters[3] = binary.BigEndian.Uint16(r.FrameBuffer[18:20])
+		blk.Cafe = binary.BigEndian.Uint16(r.FrameBuffer[20:22])
+		blk.Deca = binary.BigEndian.Uint16(r.FrameBuffer[22:24])
+		blk.Counters[0] = binary.BigEndian.Uint16(r.FrameBuffer[24:26])
+		blk.Counters[1] = binary.BigEndian.Uint16(r.FrameBuffer[26:28])
+		blk.Counters[2] = binary.BigEndian.Uint16(r.FrameBuffer[28:30])
+		blk.Counters[3] = binary.BigEndian.Uint16(r.FrameBuffer[30:32])
+		blk.TimeStamps[0] = binary.BigEndian.Uint16(r.FrameBuffer[32:34])
+		blk.TimeStamps[1] = binary.BigEndian.Uint16(r.FrameBuffer[34:36])
+		blk.TimeStamps[2] = binary.BigEndian.Uint16(r.FrameBuffer[36:38])
+		blk.TimeStamps[3] = binary.BigEndian.Uint16(r.FrameBuffer[38:40])
+		blk.NoSamples = binary.BigEndian.Uint16(r.FrameBuffer[40:42])
 	case UDPFrame16bits:
 		r.readU16(&blk.FirstBlockWord)
 		r.read(&blk.AMCFrameCounters)
@@ -297,7 +303,13 @@ var (
 // readParityChanIdCtrl is a temporary fix, until we understand where the additionnal 16 bits words come from
 func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
 	data := &blk.Data.Data[i]
+	// 	switch r.UDPFrame {
+	// 	case UDPFrame16bits:
 	r.read(&data.ParityChanIdCtrl)
+	// 	case UDPFrameHalfDRS:
+	//
+	// 	}
+
 	data.Channel = (data.ParityChanIdCtrl & 0x7f00) >> 8
 	blk.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(blk.FrontEndId, data.Channel)
 
