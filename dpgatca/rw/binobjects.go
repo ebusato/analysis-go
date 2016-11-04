@@ -1,6 +1,9 @@
 package rw
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 const (
 	numAMCFrameCounters uint8  = 2
@@ -139,6 +142,9 @@ func (b *Block) Integrity() error {
 	}
 	if (b.ParityFEIdCtrl2 & 0xff) != ctrl0xfb {
 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xfb)
+	}
+	if (b.ParityFEIdCtrl2&0x7fff)>>8 != b.FrontEndId {
+		log.Fatalf("Front end ids in header and trailer don't match\n")
 	}
 	return nil
 }

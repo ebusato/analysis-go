@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rw"
 )
@@ -103,7 +104,9 @@ func main() {
 		}
 	*/
 
+	nFrames := 0
 	for {
+		fmt.Printf("frame %v\n", nFrames)
 		var frameBuffer []byte //:= make([]byte, 8230)
 		for i := 0; i < 4115; i++ {
 			r.ReadU16(&word)
@@ -111,10 +114,12 @@ func main() {
 			binary.BigEndian.PutUint16(tempBuf[:], word)
 			frameBuffer = append(frameBuffer, tempBuf[:]...)
 		}
-		fmt.Printf("frameBuffer =")
-		for j := range frameBuffer {
-			fmt.Printf("  %v: %x\n", j, frameBuffer[j])
-		}
+		// 		fmt.Printf("frameBuffer =")
+		// 		for j := range frameBuffer {
+		// 			fmt.Printf("  %v: %x\n", j, frameBuffer[j])
+		// 		}
 		conn.WriteToUDP(frameBuffer, addrClient)
+		nFrames++
+		time.Sleep(1000 * time.Microsecond)
 	}
 }
