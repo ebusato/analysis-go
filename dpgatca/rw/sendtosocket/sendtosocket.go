@@ -120,6 +120,6 @@ func main() {
 		// 		}
 		conn.WriteToUDP(frameBuffer, addrClient)
 		nFrames++
-		time.Sleep(1000 * time.Microsecond)
+		time.Sleep(100000 * time.Microsecond)
 	}
 }
