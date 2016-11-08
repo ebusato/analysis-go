@@ -427,7 +427,7 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 	var timestamps []uint64
 	var allFlushedEvents []uint64
 	for {
-		//fmt.Printf("reading frame %v\n", nframes)
+		fmt.Printf("reading frame %v\n", nframes)
 		frame, _ := r.Frame()
 		//frame.Print("medium")
 		//w.Frame(frame)

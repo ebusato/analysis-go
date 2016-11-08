@@ -221,3 +221,27 @@ func (f *Frame) Print(s string) {
 	fmt.Printf("Printing frame ID = %v\n", f.ID)
 	f.Block.Print(s)
 }
+
+func (f *Frame) Buffer() []uint16 {
+	var buffer []uint16
+	buffer = append(buffer, f.Block.FirstBlockWord)
+	buffer = append(buffer, f.Block.AMCFrameCounters[:]...)
+	buffer = append(buffer, f.Block.ParityFEIdCtrl)
+	buffer = append(buffer, f.Block.TriggerMode)
+	buffer = append(buffer, f.Block.Trigger)
+	buffer = append(buffer, f.Block.ASMFrameCounters[:]...)
+	buffer = append(buffer, f.Block.Cafe)
+	buffer = append(buffer, f.Block.Deca)
+	buffer = append(buffer, f.Block.Counters[:]...)
+	buffer = append(buffer, f.Block.TimeStamps[:]...)
+	buffer = append(buffer, f.Block.NoSamples)
+	for i := range f.Block.Data.Data {
+		data := &f.Block.Data.Data[i]
+		buffer = append(buffer, data.ParityChanIdCtrl)
+		buffer = append(buffer, data.Amplitudes...)
+	}
+	buffer = append(buffer, f.Block.CRC)
+	buffer = append(buffer, f.Block.ParityFEIdCtrl2)
+
+	return buffer
+}

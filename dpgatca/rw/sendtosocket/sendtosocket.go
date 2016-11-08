@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/binary"
 	"flag"
 	"fmt"
 	"io"
@@ -86,14 +85,28 @@ func main() {
 		var word uint16
 		nFrames := 0
 		for {
-			fmt.Printf("frame %v\n", nFrames)
-			var frameBuffer []byte //:= make([]byte, 8230)
-			for i := 0; i < 4115; i++ {
-				r.ReadU16(&word)
-				var tempBuf [2]byte
-				binary.BigEndian.PutUint16(tempBuf[:], word)
-				frameBuffer = append(frameBuffer, tempBuf[:]...)
+			if nFrames%1500 == 0 {
+				fmt.Printf("frame %v\n", nFrames)
 			}
+
+			frame, err := r.Frame()
+			if err != nil {
+				if err != io.EOF {
+					log.Fatalf("error loading frame: %v\n", err)
+				}
+				break
+			}
+
+			var frameBuffer []uint16 //:= make([]byte, 8230)
+			frameBuffer = frame.Buffer()
+			/*
+				for i := 0; i < 4115; i++ {
+					r.ReadU16(&word)
+					var tempBuf [2]byte
+					binary.BigEndian.PutUint16(tempBuf[:], word)
+					frameBuffer = append(frameBuffer, tempBuf[:]...)
+				}
+			*/
 			// 			fmt.Printf("frameBuffer =")
 			// 			for j := 0; j < len(frameBuffer)/2; j += 1 {
 			// 				fmt.Printf("  %v: %x%x\n", j, frameBuffer[2*j], frameBuffer[2*j+1])
