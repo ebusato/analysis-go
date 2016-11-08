@@ -429,9 +429,9 @@ func main() {
 	iEvent := uint(0)
 
 	go r.ReadFrames(evtChan, w, &wg)
-	//go stream(currentRunNumber, r, w, &iEvent, evtChan)
-	//go command()
-	//go webserver()
+	go stream(currentRunNumber, r, w, &iEvent, evtChan)
+	go command()
+	go webserver()
 
 	wg.Wait()
 

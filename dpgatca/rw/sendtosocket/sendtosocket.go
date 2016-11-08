@@ -52,7 +52,9 @@ func main() {
 		defer w.Close()
 		nFrames := uint(0)
 		for {
-			fmt.Printf("frame %v\n", nFrames)
+			if nFrames%1500 == 0 {
+				fmt.Printf("frame %v\n", nFrames)
+			}
 			frame, err := r.Frame()
 			if err != nil {
 				if err != io.EOF {

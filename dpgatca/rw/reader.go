@@ -313,7 +313,7 @@ func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
 	data.Channel = (data.ParityChanIdCtrl & 0x7f00) >> 8
 	blk.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(blk.FrontEndId, data.Channel)
 
-	fmt.Printf("%v, %v, %x, %v, %v, %v\n", noAttempts, i, data.ParityChanIdCtrl, data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
+	//fmt.Printf("%v, %v, %x, %v, %v, %v\n", noAttempts, i, data.ParityChanIdCtrl, data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
 	if (data.ParityChanIdCtrl & 0xff) != ctrl0xfd {
 		//panic("(data.ParityChanIdCtrl & 0xff) != ctrl0xfd")
 		return true
@@ -339,8 +339,8 @@ func (r *Reader) readBlockData(blk *Block) {
 		data := &blk.Data.Data[i]
 		for r.readParityChanIdCtrl(blk, i) {
 			noAttempts++
-			if noAttempts >= 5 {
-				log.Fatalf("reader.readParityChanIdCtrl: noAttempts >= 5\n")
+			if noAttempts >= 2 {
+				log.Fatalf("reader.readParityChanIdCtrl: noAttempts >= 2\n")
 			}
 		}
 		noAttempts = 0
@@ -365,9 +365,9 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 		r.readU16(&blk.CRC)
 		// Temporary fix, until we understand where these additionnal 16 bits come from
 		if blk.CRC != ctrl0xCRC {
-			fmt.Printf("CRC = %x (should be %x)\n", blk.CRC, ctrl0xCRC)
+			//fmt.Printf("CRC = %x (should be %x)\n", blk.CRC, ctrl0xCRC)
 			r.readU16(&blk.CRC)
-			fmt.Printf("new CRC = %x\n", blk.CRC)
+			//fmt.Printf("new CRC = %x\n", blk.CRC)
 		}
 		// End of temporary fix
 		r.readU16(&blk.ParityFEIdCtrl2)
@@ -427,7 +427,7 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 	var timestamps []uint64
 	var allFlushedEvents []uint64
 	for {
-		fmt.Printf("reading frame %v\n", nframes)
+		//fmt.Printf("reading frame %v\n", nframes)
 		frame, _ := r.Frame()
 		//frame.Print("medium")
 		//w.Frame(frame)
@@ -461,13 +461,12 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 		//fmt.Println("\nAll Flushed events: ", allFlushedEvents)
 
 		// Flush events to channel
-		/*
-			for _, ts := range eventsToFlush {
-				//fmt.Println("About to send event with TS =", r.eventMap[ts].TimeStamp)
-				evtChan <- r.eventMap[ts]
-				//fmt.Println("Sent event with TS =", r.eventMap[ts].TimeStamp)
-			}
-		*/
+
+		for _, ts := range eventsToFlush {
+			//fmt.Println("About to send event with TS =", r.eventMap[ts].TimeStamp)
+			evtChan <- r.eventMap[ts]
+			//fmt.Println("Sent event with TS =", r.eventMap[ts].TimeStamp)
+		}
 
 		// Remove flushed events from reader's event map
 		for _, ts := range eventsToFlush {
