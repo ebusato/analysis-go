@@ -43,7 +43,6 @@ var (
 	datac         = make(chan Data, datacsize)
 	evtChan       = make(chan *event.Event)
 
-	//terminateStream = make(chan bool)
 	terminateRun = make(chan bool)
 	pauseRun     = make(chan bool)
 	resumeRun    = make(chan bool)
@@ -73,6 +72,7 @@ var (
 	ped         = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 	tdo         = flag.String("tdo", "", "Name of the csv file containing time dependent offsets. If not set, time dependent offsets are not applied. Relevant only when ped!=\"\".")
 	en          = flag.String("en", "", "Name of the csv file containing energy calibration constants. If not set, energy calibration is not applied.")
+	con         = flag.String("con", "udp", "Connection type (possible values: udp, tcp)")
 )
 
 // XY is a struct used to store a couple of values
@@ -226,7 +226,19 @@ type Data struct {
 	ChargeCorrelation string   `json:"chargecorrelation"` // charge correlation for events with multiplicity=2
 }
 
-func Conn(p *string) *net.UDPConn {
+func TCPConn(p *string) *net.TCPConn {
+	laddr, err := net.ResolveTCPAddr("tcp", *ip+":"+*p)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tcp, err := net.DialTCP("tcp", nil, laddr)
+	if err != nil {
+		return nil
+	}
+	return tcp
+}
+
+func UDPConn(p *string) *net.UDPConn {
 	fmt.Println("addr", *ip+":"+*p)
 	// 	conn, err := net.Dial("tcp", *ip+":"+*p)
 
@@ -267,27 +279,57 @@ func main() {
 	}
 
 	// Reader
-	var conn *net.UDPConn = Conn(port)
-	for i := 0; conn == nil; i++ {
-		newportu, err := strconv.ParseUint(*port, 10, 64)
-		if err != nil {
-			panic(err)
+
+	// 	var conn net.Conn
+	// 	conn := UDPConn(port)
+	// 	conn := TCPConn(port)
+
+	var r *rw.Reader
+	var err error
+	switch *con {
+	case "udp":
+		conn := UDPConn(port)
+		for i := 0; conn == nil; i++ {
+			newportu, err := strconv.ParseUint(*port, 10, 64)
+			if err != nil {
+				panic(err)
+			}
+			newportu += 1
+			newport := strconv.FormatUint(newportu, 10)
+			fmt.Printf("Port %v not responding, trying %v\n", *port, newport)
+			*port = newport
+			conn = UDPConn(port)
+			if i >= 5 {
+				log.Fatalf("Cannot find port to connect to server")
+			}
 		}
-		newportu += 1
-		newport := strconv.FormatUint(newportu, 10)
-		fmt.Printf("Port %v not responding, trying %v\n", *port, newport)
-		*port = newport
-		conn = Conn(port)
-		if i >= 5 {
-			log.Fatalf("Cannot find port to connect to server")
+		(*conn).Write([]byte("Hello from client"))
+		r, err = rw.NewReader(bufio.NewReader(NewReader(conn)))
+	case "tcp":
+		conn := TCPConn(port)
+		for i := 0; conn == nil; i++ {
+			newportu, err := strconv.ParseUint(*port, 10, 64)
+			if err != nil {
+				panic(err)
+			}
+			newportu += 1
+			newport := strconv.FormatUint(newportu, 10)
+			fmt.Printf("Port %v not responding, trying %v\n", *port, newport)
+			*port = newport
+			conn = TCPConn(port)
+			if i >= 5 {
+				log.Fatalf("Cannot find port to connect to server")
+			}
 		}
+		r, err = rw.NewReader(bufio.NewReader(conn))
+		r.FrameT = rw.UDPorTCP16bits
+	default:
+		log.Fatalf("Connection type not known")
 	}
 
-	(*conn).Write([]byte("Hello from client"))
-
-	//for i := 0; i < 4; i++ {
-	//r, err := rw.NewReader(bufio.NewReader(*conn))
-	r, err := rw.NewReader(NewReader(conn))
+	//r, err := rw.NewReader(bufio.NewReader(*conn)) // tcp
+	//r, err := rw.NewReader(bufio.NewReader(NewReader(conn))) // udp
+	//r, err := rw.NewReader(NewReader(conn)) // udp
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
@@ -385,11 +427,6 @@ func main() {
 	}
 
 	iEvent := uint(0)
-
-	// 	go control(terminateStream, terminateRun)
-	// 	go stream(terminateStream, r, w, &iEvent, &wg)
-	// 	go command(terminateRun, pauseRun)
-	//go control()
 
 	go r.ReadFrames(evtChan, w, &wg)
 	//go stream(currentRunNumber, r, w, &iEvent, evtChan)
@@ -556,7 +593,6 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 	return data
 }
 
-// func stream(terminateStream chan bool, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *event.Event) {
 	if *ped != "" {
 		dpgadetector.Det.ReadPedestalsFile(*ped)
@@ -586,7 +622,6 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 
 	for {
 		select {
-		// 		case <-terminateStream:
 		case <-terminateRun:
 			*noEvents = *iEvent + 1
 			fmt.Printf("terminating stream for total number of events = %v.\n", *noEvents)

@@ -12,11 +12,11 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
-type UDPFrameType byte
+type FrameType byte
 
 const (
-	UDPFrame16bits UDPFrameType = iota
-	UDPFrameHalfDRS
+	UDPorTCP16bits FrameType = iota
+	UDPHalfDRS
 )
 
 // Reader wraps an io.Reader and reads avirm data files
@@ -30,8 +30,8 @@ type Reader struct {
 	//firstFrameOfEvent *Frame
 	SigThreshold uint
 	Debug        bool
-	UDPFrame     UDPFrameType // relevant only when reading from UDP
-	FrameBuffer  []byte       // relevant only when reading from UDP
+	FrameT       FrameType
+	FrameBuffer  []byte // relevant only when reading from UDP with packet = half DRS
 }
 
 // NoSamples returns the number of samples
@@ -67,7 +67,7 @@ func NewReader(r io.Reader) (*Reader, error) {
 		eventMap: make(map[uint64]*event.Event),
 		//evtIDPrevFrame: 0,
 		SigThreshold: 800,
-		UDPFrame:     UDPFrameHalfDRS,
+		FrameT:       UDPHalfDRS,
 		FrameBuffer:  make([]byte, 8230),
 	}
 	//rr.readHeader(&rr.hdr)
@@ -218,26 +218,27 @@ func (r *Reader) readFrame(f *Frame) {
 }
 
 func (r *Reader) readBlock(blk *Block) {
-	switch r.UDPFrame {
-	case UDPFrameHalfDRS:
+	switch r.FrameT {
+	case UDPHalfDRS:
 		r.r.Read(r.FrameBuffer)
-	case UDPFrame16bits:
+	case UDPorTCP16bits:
 		// do nothing
 	}
 	r.readBlockHeader(blk)
 	r.readBlockData(blk)
 	r.readBlockTrailer(blk)
-	//blk.Print("short")
+	//blk.Print("medium")
 	r.err = blk.Integrity()
 	if r.err != nil {
+		fmt.Println("Integrity check failed")
 		blk.Print("medium")
 		return
 	}
 }
 
 func (r *Reader) readBlockHeader(blk *Block) {
-	switch r.UDPFrame {
-	case UDPFrameHalfDRS:
+	switch r.FrameT {
+	case UDPHalfDRS:
 		/*
 			fmt.Printf("frameBuffer =")
 			for j := range frameBuffer {
@@ -265,7 +266,7 @@ func (r *Reader) readBlockHeader(blk *Block) {
 		blk.TimeStamps[2] = binary.BigEndian.Uint16(r.FrameBuffer[36:38])
 		blk.TimeStamps[3] = binary.BigEndian.Uint16(r.FrameBuffer[38:40])
 		blk.NoSamples = binary.BigEndian.Uint16(r.FrameBuffer[40:42])
-	case UDPFrame16bits:
+	case UDPorTCP16bits:
 		r.readU16(&blk.FirstBlockWord)
 		r.read(&blk.AMCFrameCounters)
 		r.readU16(&blk.ParityFEIdCtrl)
@@ -302,23 +303,27 @@ var (
 // readParityChanIdCtrl is a temporary fix, until we understand where the additionnal 16 bits words come from
 func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
 	data := &blk.Data.Data[i]
-	switch r.UDPFrame {
-	case UDPFrame16bits:
-		r.read(&data.ParityChanIdCtrl)
-	case UDPFrameHalfDRS:
-		data.ParityChanIdCtrl = binary.BigEndian.Uint16(r.FrameBuffer[42:44])
+	switch r.FrameT {
+	case UDPHalfDRS:
+		data.ParityChanIdCtrl = binary.BigEndian.Uint16(r.FrameBuffer[42+i*2*1023 : 44+i*2*1023])
+	case UDPorTCP16bits:
+		r.readU16(&data.ParityChanIdCtrl)
 	}
 
 	data.Channel = (data.ParityChanIdCtrl & 0x7f00) >> 8
 	blk.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(blk.FrontEndId, data.Channel)
 
-	//fmt.Printf("%v, %x, %v, %v, %v\n", noAttempts, data.ParityChanIdCtrl, data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
+	fmt.Printf("%v, %v, %x, %v, %v, %v\n", noAttempts, i, data.ParityChanIdCtrl, data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
 	if (data.ParityChanIdCtrl & 0xff) != ctrl0xfd {
 		//panic("(data.ParityChanIdCtrl & 0xff) != ctrl0xfd")
 		return true
 	}
 	if i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old {
 		//panic("i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old")
+		return true
+	}
+	if data.Channel != blk.Data.Data[0].Channel+uint16(i) {
+		//panic("reader.readParityChanIdCtrl: data.Channel != blk.Data.Data[0].Channel+uint16(i)")
 		return true
 	}
 	QuartetAbsIdx60old = blk.QuartetAbsIdx60
@@ -335,17 +340,17 @@ func (r *Reader) readBlockData(blk *Block) {
 		for r.readParityChanIdCtrl(blk, i) {
 			noAttempts++
 			if noAttempts >= 5 {
-				log.Fatalf("reader.readParityChanIdCtrl: noAttempts >= 3\n")
+				log.Fatalf("reader.readParityChanIdCtrl: noAttempts >= 5\n")
 			}
 		}
 		noAttempts = 0
 		//fmt.Printf("data.ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
-		switch r.UDPFrame {
-		case UDPFrame16bits:
+		switch r.FrameT {
+		case UDPorTCP16bits:
 			r.read(&data.Amplitudes)
-		case UDPFrameHalfDRS:
-			for i := range data.Amplitudes {
-				data.Amplitudes[i] = binary.BigEndian.Uint16(r.FrameBuffer[44+2*i : 46+2*i])
+		case UDPHalfDRS:
+			for j := range data.Amplitudes {
+				data.Amplitudes[j] = binary.BigEndian.Uint16(r.FrameBuffer[44+2*j+i*2*1023 : 46+2*j+i*2*1023])
 			}
 		}
 		// 		for j := range data.Amplitudes {
@@ -355,16 +360,18 @@ func (r *Reader) readBlockData(blk *Block) {
 }
 
 func (r *Reader) readBlockTrailer(blk *Block) {
-	switch r.UDPFrame {
-	case UDPFrame16bits:
+	switch r.FrameT {
+	case UDPorTCP16bits:
 		r.readU16(&blk.CRC)
 		// Temporary fix, until we understand where these additionnal 16 bits come from
 		if blk.CRC != ctrl0xCRC {
+			fmt.Printf("CRC = %x (should be %x)\n", blk.CRC, ctrl0xCRC)
 			r.readU16(&blk.CRC)
+			fmt.Printf("new CRC = %x\n", blk.CRC)
 		}
 		// End of temporary fix
 		r.readU16(&blk.ParityFEIdCtrl2)
-	case UDPFrameHalfDRS:
+	case UDPHalfDRS:
 		blk.CRC = binary.BigEndian.Uint16(r.FrameBuffer[len(r.FrameBuffer)-4 : len(r.FrameBuffer)-2])
 		blk.ParityFEIdCtrl2 = binary.BigEndian.Uint16(r.FrameBuffer[len(r.FrameBuffer)-2 : len(r.FrameBuffer)])
 	}
@@ -422,7 +429,8 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 	for {
 		fmt.Printf("reading frame %v\n", nframes)
 		frame, _ := r.Frame()
-		w.Frame(frame)
+		//frame.Print("medium")
+		//w.Frame(frame)
 		//frame.Print("medium")
 		if EventAlreadyFlushed(frame.Block.TimeStamp, allFlushedEvents) {
 			log.Fatalf("Event with timestamp=%v already flushed\n", frame.Block.TimeStamp)
@@ -467,8 +475,3 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 		}
 	}
 }
-
-/*
-func (r *Reader) ReadNextEvent() (*event.Event, bool) {
-
-}*/

@@ -22,7 +22,7 @@ var (
 func TestRW(t *testing.T) {
 	fmt.Println("starting TestRW")
 
-	inFileName := "../data/run0011/MyFile1e.bin"
+	inFileName := "../data/run0007/MyFile1e.bin"
 	outFileName := strings.Replace(inFileName, "MyFile1e", "MyFile1e_out", 1)
 
 	// Reader
@@ -36,7 +36,7 @@ func TestRW(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not open asm file: %v\n", err)
 	}
-
+	r.FrameT = UDPorTCP16bits
 	// Writer
 	filew, err := os.Create(outFileName)
 	if err != nil {
