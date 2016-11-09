@@ -75,9 +75,9 @@ func NewReader(r io.Reader) (*Reader, error) {
 }
 
 // Read implements io.Reader
-func (r *Reader) Read(data []byte) (int, error) {
-	return r.r.Read(data)
-}
+// func (r *Reader) Read(data []byte) (int, error) {
+// 	return r.r.Read(data)
+// }
 
 func (r *Reader) read(v interface{}) {
 	if r.err != nil {
@@ -95,6 +95,10 @@ func (r *Reader) read(v interface{}) {
 		}
 		//fmt.Printf("word = %x\n", *(v.(*uint32)))
 	}
+}
+
+func (r *Reader) Read(v interface{}) {
+	r.read(v)
 }
 
 func (r *Reader) readU16(v *uint16) {
@@ -448,9 +452,9 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 	var timestamps []uint64
 	var allFlushedEvents []uint64
 	for {
-		//fmt.Printf("reading frame %v\n", nframes)
+		fmt.Printf("reading frame %v\n", nframes)
 		frame, _ := r.Frame()
-		if frame.Block.UDPPayloadSize < 8230 {
+		if r.FrameT == UDPHalfDRS && frame.Block.UDPPayloadSize < 8230 {
 			fmt.Println("frame.Block.UDPPayloadSize =", frame.Block.UDPPayloadSize)
 		}
 		//frame.Print("medium")
