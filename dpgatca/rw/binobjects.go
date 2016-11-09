@@ -92,6 +92,12 @@ func (h *HalfDRSData) SetNoSamples(n uint16) {
 	}
 }
 
+type ErrorCode int
+
+const (
+	ErrorCode1 ErrorCode = iota + 1 // value of error code if block has 4 extra 16 bits words after each sample block
+)
+
 // Block is a single data frame produced by AMC
 // Each block is associated to one half DRS
 type Block struct {
@@ -117,6 +123,9 @@ type Block struct {
 	ASMFrameCounter uint64
 	TimeStamp       uint64
 	QuartetAbsIdx60 uint8
+
+	// Error handling
+	Err ErrorCode
 }
 
 func (b *Block) Integrity() error {
@@ -203,18 +212,10 @@ func (b *Block) Print(s string) {
 
 }
 
-type TypeOfFrame byte
-
-const (
-	FirstFrameOfCluster TypeOfFrame = iota
-	SecondFrameOfCluster
-)
-
 // Frame is a single frame in an ASM stream
 type Frame struct {
-	ID          uint32 // id of the frame in the ASM stream
-	Block       Block  // data payload for this frame
-	typeOfFrame TypeOfFrame
+	ID    uint32 // id of the frame in the ASM stream
+	Block Block  // data payload for this frame
 }
 
 func (f *Frame) Print(s string) {
@@ -222,26 +223,39 @@ func (f *Frame) Print(s string) {
 	f.Block.Print(s)
 }
 
-func (f *Frame) Buffer() []uint16 {
-	var buffer []uint16
-	buffer = append(buffer, f.Block.FirstBlockWord)
-	buffer = append(buffer, f.Block.AMCFrameCounters[:]...)
-	buffer = append(buffer, f.Block.ParityFEIdCtrl)
-	buffer = append(buffer, f.Block.TriggerMode)
-	buffer = append(buffer, f.Block.Trigger)
-	buffer = append(buffer, f.Block.ASMFrameCounters[:]...)
-	buffer = append(buffer, f.Block.Cafe)
-	buffer = append(buffer, f.Block.Deca)
-	buffer = append(buffer, f.Block.Counters[:]...)
-	buffer = append(buffer, f.Block.TimeStamps[:]...)
-	buffer = append(buffer, f.Block.NoSamples)
+/*
+func (f *Frame) Buffer() []byte {
+	var buffer16 []uint16
+	buffer16 = append(buffer16, f.Block.FirstBlockWord)
+	buffer16 = append(buffer16, f.Block.AMCFrameCounters[:]...)
+	buffer16 = append(buffer16, f.Block.ParityFEIdCtrl)
+	buffer16 = append(buffer16, f.Block.TriggerMode)
+	buffer16 = append(buffer16, f.Block.Trigger)
+	buffer16 = append(buffer16, f.Block.ASMFrameCounters[:]...)
+	buffer16 = append(buffer16, f.Block.Cafe)
+	buffer16 = append(buffer16, f.Block.Deca)
+	buffer16 = append(buffer16, f.Block.Counters[:]...)
+	buffer16 = append(buffer16, f.Block.TimeStamps[:]...)
+	buffer16 = append(buffer16, f.Block.NoSamples)
 	for i := range f.Block.Data.Data {
 		data := &f.Block.Data.Data[i]
-		buffer = append(buffer, data.ParityChanIdCtrl)
-		buffer = append(buffer, data.Amplitudes...)
+		buffer16 = append(buffer16, data.ParityChanIdCtrl)
+		buffer16 = append(buffer16, data.Amplitudes...)
+		if f.Block.Err == ErrorCode1 {
+			fmt.Println("ErrorCode1, add extra word")
+			buffer16 = append(buffer16, uint16(0))
+		}
 	}
-	buffer = append(buffer, f.Block.CRC)
-	buffer = append(buffer, f.Block.ParityFEIdCtrl2)
+	buffer16 = append(buffer16, f.Block.CRC)
+	buffer16 = append(buffer16, f.Block.ParityFEIdCtrl2)
 
-	return buffer
+	var buffer8 []byte
+	for i := range buffer16 {
+		buffer8 = append(buffer8, uint8(buffer16[i]>>8))
+		buffer8 = append(buffer8, uint8(buffer16[i]&0xFFFF))
+		//fmt.Printf("buffer8 = %x %x\n", buffer8[len(buffer8)-2], buffer8[len(buffer8)-1])
+	}
+
+	return buffer8
 }
+*/

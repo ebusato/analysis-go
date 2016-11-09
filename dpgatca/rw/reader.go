@@ -68,7 +68,7 @@ func NewReader(r io.Reader) (*Reader, error) {
 		//evtIDPrevFrame: 0,
 		SigThreshold: 800,
 		FrameT:       UDPHalfDRS,
-		FrameBuffer:  make([]byte, 8230),
+		FrameBuffer:  make([]byte, 8238),
 	}
 	//rr.readHeader(&rr.hdr)
 	return rr, rr.err
@@ -224,10 +224,13 @@ func (r *Reader) readBlock(blk *Block) {
 	case UDPorTCP16bits:
 		// do nothing
 	}
+	// 	for i := range r.FrameBuffer {
+	// 		fmt.Printf(" r.FrameBuffer[%v] = %x \n", i, r.FrameBuffer[i])
+	// 	}
 	r.readBlockHeader(blk)
+	//blk.Print("medium")
 	r.readBlockData(blk)
 	r.readBlockTrailer(blk)
-	//blk.Print("medium")
 	r.err = blk.Integrity()
 	if r.err != nil {
 		fmt.Println("Integrity check failed")
@@ -305,25 +308,24 @@ func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
 	data := &blk.Data.Data[i]
 	switch r.FrameT {
 	case UDPHalfDRS:
-		data.ParityChanIdCtrl = binary.BigEndian.Uint16(r.FrameBuffer[42+i*2*1023 : 44+i*2*1023])
+		data.ParityChanIdCtrl = binary.BigEndian.Uint16(r.FrameBuffer[42+i*2*1023+2*noAttempts : 44+i*2*1023+2*noAttempts])
 	case UDPorTCP16bits:
 		r.readU16(&data.ParityChanIdCtrl)
 	}
-
-	data.Channel = (data.ParityChanIdCtrl & 0x7f00) >> 8
-	blk.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(blk.FrontEndId, data.Channel)
-
-	//fmt.Printf("%v, %v, %x, %v, %v, %v\n", noAttempts, i, data.ParityChanIdCtrl, data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
+	fmt.Printf("%v, %x (noAttempts=%v)\n", i, data.ParityChanIdCtrl, noAttempts)
 	if (data.ParityChanIdCtrl & 0xff) != ctrl0xfd {
 		//panic("(data.ParityChanIdCtrl & 0xff) != ctrl0xfd")
 		return true
 	}
-	if i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old {
-		//panic("i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old")
-		return true
-	}
+	data.Channel = (data.ParityChanIdCtrl & 0x7f00) >> 8
 	if data.Channel != blk.Data.Data[0].Channel+uint16(i) {
 		//panic("reader.readParityChanIdCtrl: data.Channel != blk.Data.Data[0].Channel+uint16(i)")
+		return true
+	}
+	blk.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(blk.FrontEndId, data.Channel)
+	fmt.Printf("   -> %v, %v, %v\n", data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
+	if i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old {
+		//panic("i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old")
 		return true
 	}
 	QuartetAbsIdx60old = blk.QuartetAbsIdx60
@@ -339,9 +341,12 @@ func (r *Reader) readBlockData(blk *Block) {
 		data := &blk.Data.Data[i]
 		for r.readParityChanIdCtrl(blk, i) {
 			noAttempts++
-			if noAttempts >= 2 {
-				log.Fatalf("reader.readParityChanIdCtrl: noAttempts >= 2\n")
+			if noAttempts >= 4 {
+				log.Fatalf("reader.readParityChanIdCtrl: noAttempts >= 4\n")
 			}
+		}
+		if noAttempts == 1 {
+			blk.Err = ErrorCode1
 		}
 		noAttempts = 0
 		//fmt.Printf("data.ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
@@ -372,8 +377,13 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 		// End of temporary fix
 		r.readU16(&blk.ParityFEIdCtrl2)
 	case UDPHalfDRS:
-		blk.CRC = binary.BigEndian.Uint16(r.FrameBuffer[len(r.FrameBuffer)-4 : len(r.FrameBuffer)-2])
-		blk.ParityFEIdCtrl2 = binary.BigEndian.Uint16(r.FrameBuffer[len(r.FrameBuffer)-2 : len(r.FrameBuffer)])
+		if blk.Err == ErrorCode1 {
+			blk.CRC = binary.BigEndian.Uint16(r.FrameBuffer[len(r.FrameBuffer)-4 : len(r.FrameBuffer)-2])
+			blk.ParityFEIdCtrl2 = binary.BigEndian.Uint16(r.FrameBuffer[len(r.FrameBuffer)-2 : len(r.FrameBuffer)])
+		} else {
+			blk.CRC = binary.BigEndian.Uint16(r.FrameBuffer[len(r.FrameBuffer)-12 : len(r.FrameBuffer)-10])
+			blk.ParityFEIdCtrl2 = binary.BigEndian.Uint16(r.FrameBuffer[len(r.FrameBuffer)-10 : len(r.FrameBuffer)-8])
+		}
 	}
 }
 
@@ -461,7 +471,6 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 		//fmt.Println("\nAll Flushed events: ", allFlushedEvents)
 
 		// Flush events to channel
-
 		for _, ts := range eventsToFlush {
 			//fmt.Println("About to send event with TS =", r.eventMap[ts].TimeStamp)
 			evtChan <- r.eventMap[ts]

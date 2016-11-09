@@ -3,6 +3,7 @@ package rw
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
 	"io"
 )
 
@@ -159,6 +160,10 @@ func (w *Writer) writeBlockData(blk *Block) {
 		data := &blk.Data.Data[i]
 		w.writeU16(data.ParityChanIdCtrl)
 		w.write(data.Amplitudes)
+		if blk.Err == ErrorCode1 {
+			fmt.Println("ErrorCode1, add extra word")
+			w.writeU16(uint16(0))
+		}
 	}
 }
 

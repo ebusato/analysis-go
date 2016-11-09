@@ -627,7 +627,6 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 			fmt.Printf("terminating stream for total number of events = %v.\n", *noEvents)
 		case <-pauseRun:
 			<-resumeRun
-		//default:
 		case event := <-evtChan:
 			switch *iEvent < *noEvents {
 			case true:

@@ -12,6 +12,8 @@ type Event struct {
 	ID          uint
 	TimeStamp   uint64
 	IsCorrupted bool
+	NoFrames    int   // number of frames making this event
+	FrameSize   []int // number of octets for each frame making this event (FrameSize has NoFrames components)
 }
 
 func NewEvent(noClusters uint8) *Event {

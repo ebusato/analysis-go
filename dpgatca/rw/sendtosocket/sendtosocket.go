@@ -26,12 +26,14 @@ func main() {
 	flag.Parse()
 
 	// Reader
-	filew, err := os.Open(*fileName)
+	file, err := os.Open(*fileName)
 	if err != nil {
 		log.Fatalf("could not create data file: %v\n", err)
 	}
-	defer filew.Close()
-	r, err := rw.NewReader(bufio.NewReader(filew))
+	defer file.Close()
+	//bufior := bufio.NewReader(file)
+	//r, err := rw.NewReader(bufior)
+	r, err := rw.NewReader(file)
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
@@ -51,7 +53,7 @@ func main() {
 		defer w.Close()
 		nFrames := uint(0)
 		for {
-			if nFrames%1500 == 0 {
+			if nFrames%1 == 0 {
 				fmt.Printf("frame %v\n", nFrames)
 			}
 			frame, err := r.Frame()
@@ -82,31 +84,40 @@ func main() {
 		fmt.Println("UDP client address: ", addrClient)
 		fmt.Printf("buf[:] from client= %v\n", buf[:])
 
-		var word uint16
 		nFrames := 0
 		for {
-			if nFrames%1500 == 0 {
+			if nFrames%1 == 0 {
 				fmt.Printf("frame %v\n", nFrames)
 			}
 
-			frame, err := r.Frame()
-			if err != nil {
-				if err != io.EOF {
-					log.Fatalf("error loading frame: %v\n", err)
+			/*
+				frame, err := r.Frame()
+				if err != nil {
+					if err != io.EOF {
+						log.Fatalf("error loading frame: %v\n", err)
+					}
+					break
 				}
-				break
+				var frameBuffer []byte //:= make([]byte, 8230)
+				frameBuffer = frame.Buffer()
+			*/
+			var frameBuffer []byte //:= make([]byte, 8230)
+			var word uint16
+			var noWords int
+			for {
+				r.ReadU16(&word)
+				if (word == 0x1230 && noWords == 0) || (word != 0x1230) {
+					frameBuffer = append(frameBuffer, byte(word>>8))
+					frameBuffer = append(frameBuffer, byte(word&0xFFFF))
+					noWords++
+				} else {
+					// 					bufior.Reset(file)
+					file.Seek(-2, 1)
+					break
+				}
 			}
 
-			var frameBuffer []uint16 //:= make([]byte, 8230)
-			frameBuffer = frame.Buffer()
-			/*
-				for i := 0; i < 4115; i++ {
-					r.ReadU16(&word)
-					var tempBuf [2]byte
-					binary.BigEndian.PutUint16(tempBuf[:], word)
-					frameBuffer = append(frameBuffer, tempBuf[:]...)
-				}
-			*/
+			fmt.Println("len(frameBuffer) =", len(frameBuffer))
 			// 			fmt.Printf("frameBuffer =")
 			// 			for j := 0; j < len(frameBuffer)/2; j += 1 {
 			// 				fmt.Printf("  %v: %x%x\n", j, frameBuffer[2*j], frameBuffer[2*j+1])
