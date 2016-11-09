@@ -115,7 +115,7 @@ func main() {
 			r.Read(&frameBufferTemp)
 			frameBuffer := frameBufferTemp[:]
 			//fmt.Printf("%x\n", frameBuffer[8229])
-			if frameBuffer[8229]&0xff != 0xfb {
+			if (frameBuffer[8226] != 0x98) || (frameBuffer[8227] != 0x76) || (frameBuffer[8229]&0xff != 0xfb) {
 				//fmt.Println("fixing frame")
 				for j := 0; j < 4; j++ {
 					var word uint16
@@ -125,7 +125,7 @@ func main() {
 				}
 			}
 
-			conn.WriteToUDP(frameBuffer[:], addrClient)
+			conn.WriteToUDP(frameBuffer, addrClient)
 			nFrames++
 			//time.Sleep(1000 * time.Microsecond)
 		}
