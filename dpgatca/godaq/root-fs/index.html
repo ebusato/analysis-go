@@ -33,6 +33,10 @@
 		
 		var monbufsizeplot = new plot("Monitoring buffer size", [], 'blue')
 		
+		var noframesplot = new plot("No frames", [], 'green')
+		
+		var udppayloadsizesplot = new plot("UDP payload (octets)", [], 'green')
+		
 		var freqhplot = ""
 		var chargelhplot = ""
 		var chargerhplot = ""
@@ -89,6 +93,12 @@
 			var bufsize = $.plot("#my-monbufsize-plot", [monbufsizeplot], opts);
 			bufsize.setupGrid(); // needed as x-axis changes
 			bufsize.draw();
+			var noframes = $.plot("#my-noframes-plot", [noframesplot], opts);
+			noframes.setupGrid(); // needed as x-axis changes
+			noframes.draw();
+			var udppayloadsizes = $.plot("#my-udppayloadsizes-plot", [udppayloadsizesplot], opts);
+			udppayloadsizes.setupGrid(); // needed as x-axis changes
+			udppayloadsizes.draw();
 			var multopts = $.extend(true, {}, opts); // deep copy of options
 			multopts.xaxis = {ticks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
 			var mult = $.plot("#my-mult-plot", [multplot], multopts);
@@ -164,6 +174,10 @@
 					//freqplot.data.push([data.time, data.freq])
 					freqplot.data.push([data.evt, data.freq])
 					monbufsizeplot.data.push([data.evt, data.monbufsize])
+					noframesplot.data.push([data.evt, data.udppayloadsizes.length])
+					for (var iframe = 0; iframe < data.udppayloadsizes.length; iframe += 1) {
+						udppayloadsizesplot.data.push([data.evt + iframe/data.udppayloadsizes.length, data.udppayloadsizes[iframe]])
+					}
 				}
 				for (var i = 0; i < 8; i += 1) {
 					multplot.data.push([data.mult[i].X, data.mult[i].Y])
@@ -246,6 +260,12 @@
 			</td>
 			<td>
 				<div id="my-monbufsize-plot" class="my-plot-stylefreq"></div>
+			</td>
+			<td>
+				<div id="my-noframes-plot" class="my-plot-stylefreq"></div>
+			</td>
+			<td>
+				<div id="my-udppayloadsizes-plot" class="my-plot-stylefreq"></div>
 			</td>
 			</tr>
 			</table>

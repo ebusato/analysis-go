@@ -126,9 +126,12 @@ type Block struct {
 
 	// Error handling
 	Err ErrorCode
+
+	// UDP Payload size in octects
+	UDPPayloadSize int
 }
 
-func (b *Block) Integrity() error {
+func (b *Block) IntegrityHeader() error {
 	if b.FirstBlockWord != ctrlFirstWord {
 		return fmt.Errorf("asm: missing %x magic\n", ctrlFirstWord)
 	}
@@ -141,11 +144,19 @@ func (b *Block) Integrity() error {
 	if b.Deca != ctrl0xDeca {
 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xDeca)
 	}
+	return nil
+}
+
+func (b *Block) IntegrityData() error {
 	for i := range b.Data.Data {
 		if (b.Data.Data[i].ParityChanIdCtrl & 0xff) != ctrl0xfd {
 			return fmt.Errorf("asm: missing %x magic\n", ctrl0xfd)
 		}
 	}
+	return nil
+}
+
+func (b *Block) IntegrityTrailer() error {
 	if b.CRC != ctrl0xCRC {
 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xCRC)
 	}
@@ -159,7 +170,7 @@ func (b *Block) Integrity() error {
 }
 
 func (b *Block) Print(s string) {
-	fmt.Printf(" Printing block:\n")
+	fmt.Printf(" Printing block (UDP payload size=%v):\n", b.UDPPayloadSize)
 	fmt.Printf("   -> FirstBlockWord = %x\n", b.FirstBlockWord)
 	fmt.Printf("   -> AMCFrameCounters = %x (AMCFrameCounter = %v)\n", b.AMCFrameCounters, b.AMCFrameCounter)
 	fmt.Printf("   -> ParityFEIdCtrl = %x (FrontEndId = %x)\n", b.ParityFEIdCtrl, b.FrontEndId)
@@ -222,40 +233,3 @@ func (f *Frame) Print(s string) {
 	fmt.Printf("Printing frame ID = %v\n", f.ID)
 	f.Block.Print(s)
 }
-
-/*
-func (f *Frame) Buffer() []byte {
-	var buffer16 []uint16
-	buffer16 = append(buffer16, f.Block.FirstBlockWord)
-	buffer16 = append(buffer16, f.Block.AMCFrameCounters[:]...)
-	buffer16 = append(buffer16, f.Block.ParityFEIdCtrl)
-	buffer16 = append(buffer16, f.Block.TriggerMode)
-	buffer16 = append(buffer16, f.Block.Trigger)
-	buffer16 = append(buffer16, f.Block.ASMFrameCounters[:]...)
-	buffer16 = append(buffer16, f.Block.Cafe)
-	buffer16 = append(buffer16, f.Block.Deca)
-	buffer16 = append(buffer16, f.Block.Counters[:]...)
-	buffer16 = append(buffer16, f.Block.TimeStamps[:]...)
-	buffer16 = append(buffer16, f.Block.NoSamples)
-	for i := range f.Block.Data.Data {
-		data := &f.Block.Data.Data[i]
-		buffer16 = append(buffer16, data.ParityChanIdCtrl)
-		buffer16 = append(buffer16, data.Amplitudes...)
-		if f.Block.Err == ErrorCode1 {
-			fmt.Println("ErrorCode1, add extra word")
-			buffer16 = append(buffer16, uint16(0))
-		}
-	}
-	buffer16 = append(buffer16, f.Block.CRC)
-	buffer16 = append(buffer16, f.Block.ParityFEIdCtrl2)
-
-	var buffer8 []byte
-	for i := range buffer16 {
-		buffer8 = append(buffer8, uint8(buffer16[i]>>8))
-		buffer8 = append(buffer8, uint8(buffer16[i]&0xFFFF))
-		//fmt.Printf("buffer8 = %x %x\n", buffer8[len(buffer8)-2], buffer8[len(buffer8)-1])
-	}
-
-	return buffer8
-}
-*/

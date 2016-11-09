@@ -79,25 +79,6 @@ func (r *Reader) Read(data []byte) (int, error) {
 	return r.r.Read(data)
 }
 
-// Frame reads a single frame from the underlying io.Reader.
-//
-// Frame returns io.EOF when there are no more frame to read.
-func (r *Reader) Frame() (*Frame, error) {
-	if r.err != nil {
-		return &Frame{}, r.err
-	}
-	f := &Frame{
-	/*
-		Block: Block{
-			Data: make([]uint16, r.noSamples),
-		},
-	*/
-
-	}
-	r.readFrame(f)
-	return f, r.err
-}
-
 func (r *Reader) read(v interface{}) {
 	if r.err != nil {
 		return
@@ -189,6 +170,24 @@ func (r *Reader) readHeader(hdr *Header) {
 }
 */
 
+// Frame reads a single frame from the underlying io.Reader.
+// Frame returns io.EOF when there are no more frame to read.
+func (r *Reader) Frame() (*Frame, error) {
+	if r.err != nil {
+		return &Frame{}, r.err
+	}
+	f := &Frame{
+	/*
+		Block: Block{
+			Data: make([]uint16, r.noSamples),
+		},
+	*/
+
+	}
+	r.readFrame(f)
+	return f, r.err
+}
+
 func (r *Reader) ReadFrame(f *Frame) {
 	r.readFrame(f)
 }
@@ -220,7 +219,14 @@ func (r *Reader) readFrame(f *Frame) {
 func (r *Reader) readBlock(blk *Block) {
 	switch r.FrameT {
 	case UDPHalfDRS:
-		r.r.Read(r.FrameBuffer)
+		for i := range r.FrameBuffer {
+			r.FrameBuffer[i] = 0
+		}
+		n, err := r.r.Read(r.FrameBuffer)
+		blk.UDPPayloadSize = n
+		if r.err != nil {
+			panic(err)
+		}
 	case UDPorTCP16bits:
 		// do nothing
 	}
@@ -228,12 +234,23 @@ func (r *Reader) readBlock(blk *Block) {
 	// 		fmt.Printf(" r.FrameBuffer[%v] = %x \n", i, r.FrameBuffer[i])
 	// 	}
 	r.readBlockHeader(blk)
-	//blk.Print("medium")
-	r.readBlockData(blk)
-	r.readBlockTrailer(blk)
-	r.err = blk.Integrity()
+	r.err = blk.IntegrityHeader()
 	if r.err != nil {
-		fmt.Println("Integrity check failed")
+		fmt.Println("IntegrityHeader check failed")
+		blk.Print("short")
+		return
+	}
+	r.readBlockData(blk)
+	r.err = blk.IntegrityData()
+	if r.err != nil {
+		fmt.Println("IntegrityData check failed")
+		blk.Print("short")
+		return
+	}
+	r.readBlockTrailer(blk)
+	r.err = blk.IntegrityTrailer()
+	if r.err != nil {
+		fmt.Println("IntegrityTrailer check failed")
 		blk.Print("medium")
 		return
 	}
@@ -242,12 +259,6 @@ func (r *Reader) readBlock(blk *Block) {
 func (r *Reader) readBlockHeader(blk *Block) {
 	switch r.FrameT {
 	case UDPHalfDRS:
-		/*
-			fmt.Printf("frameBuffer =")
-			for j := range frameBuffer {
-				fmt.Printf("  %v: %x\n", j, frameBuffer[j])
-			}
-		*/
 		blk.FirstBlockWord = binary.BigEndian.Uint16(r.FrameBuffer[0:2])
 		blk.AMCFrameCounters[0] = binary.BigEndian.Uint16(r.FrameBuffer[2:4])
 		blk.AMCFrameCounters[1] = binary.BigEndian.Uint16(r.FrameBuffer[4:6])
@@ -312,7 +323,7 @@ func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
 	case UDPorTCP16bits:
 		r.readU16(&data.ParityChanIdCtrl)
 	}
-	fmt.Printf("%v, %x (noAttempts=%v)\n", i, data.ParityChanIdCtrl, noAttempts)
+	//fmt.Printf("%v, %x (noAttempts=%v)\n", i, data.ParityChanIdCtrl, noAttempts)
 	if (data.ParityChanIdCtrl & 0xff) != ctrl0xfd {
 		//panic("(data.ParityChanIdCtrl & 0xff) != ctrl0xfd")
 		return true
@@ -323,7 +334,7 @@ func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
 		return true
 	}
 	blk.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(blk.FrontEndId, data.Channel)
-	fmt.Printf("   -> %v, %v, %v\n", data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
+	//fmt.Printf("   -> %v, %v, %v\n", data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
 	if i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old {
 		//panic("i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old")
 		return true
@@ -437,10 +448,15 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 	var timestamps []uint64
 	var allFlushedEvents []uint64
 	for {
-		fmt.Printf("reading frame %v\n", nframes)
+		//fmt.Printf("reading frame %v\n", nframes)
 		frame, _ := r.Frame()
+		if frame.Block.UDPPayloadSize < 8230 {
+			fmt.Println("frame.Block.UDPPayloadSize =", frame.Block.UDPPayloadSize)
+		}
 		//frame.Print("medium")
-		//w.Frame(frame)
+		for i := 0; i < frame.Block.UDPPayloadSize; i++ {
+			w.writeByte(r.FrameBuffer[i])
+		}
 		//frame.Print("medium")
 		if EventAlreadyFlushed(frame.Block.TimeStamp, allFlushedEvents) {
 			log.Fatalf("Event with timestamp=%v already flushed\n", frame.Block.TimeStamp)
@@ -461,6 +477,7 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[1] = *pulses[1]
 		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[2] = *pulses[2]
 		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[3] = *pulses[3]
+		evt.UDPPayloadSizes = append(evt.UDPPayloadSizes, frame.Block.UDPPayloadSize)
 		//fmt.Println("\nEvent map keys: ", r.EventMapKeys())
 		//fmt.Println("\nTimeStamps: ", timestamps)
 

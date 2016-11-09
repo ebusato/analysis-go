@@ -8,7 +8,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"time"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rw"
 )
@@ -86,7 +85,7 @@ func main() {
 
 		nFrames := 0
 		for {
-			if nFrames%1 == 0 {
+			if nFrames%100 == 0 {
 				fmt.Printf("frame %v\n", nFrames)
 			}
 
@@ -117,14 +116,16 @@ func main() {
 				}
 			}
 
-			fmt.Println("len(frameBuffer) =", len(frameBuffer))
-			// 			fmt.Printf("frameBuffer =")
-			// 			for j := 0; j < len(frameBuffer)/2; j += 1 {
-			// 				fmt.Printf("  %v: %x%x\n", j, frameBuffer[2*j], frameBuffer[2*j+1])
-			// 			}
+			if len(frameBuffer) < 8230 {
+				fmt.Println("len(frameBuffer) =", len(frameBuffer))
+				fmt.Printf("frameBuffer =")
+				for j := 0; j < len(frameBuffer)/2; j += 1 {
+					fmt.Printf("  %v: %x%x\n", j, frameBuffer[2*j], frameBuffer[2*j+1])
+				}
+			}
 			conn.WriteToUDP(frameBuffer, addrClient)
 			nFrames++
-			time.Sleep(100000 * time.Microsecond)
+			//time.Sleep(1000 * time.Microsecond)
 		}
 	}
 }

@@ -214,6 +214,7 @@ type Data struct {
 	Time              float64  `json:"time"`              // time at which monitoring data are taken (64 bits)
 	MonBufSize        int      `json:"monbufsize"`        // monitoring channel buffer size
 	Freq              float64  `json:"freq"`              // number of events processed per second (64 bits)
+	UDPPayloadSizes   []int    `json:"udppayloadsizes"`   // UDP frame payload sizes in octets for all frames making this event
 	Qs                Quartets `json:"quartets"`          // (30689280 bits)
 	Mult              H1D      `json:"mult"`              // multiplicity of pulses (1024 bits)
 	FreqH             string   `json:"freqh"`             // frequency histogram
@@ -633,10 +634,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 				if *iEvent%*evtFreq == 0 {
 					fmt.Printf("event %v\n", *iEvent)
 				}
-				//event, status := r.ReadNextEvent()
-				// 				if status == false {
-				// 					panic("error: status is false\n")
-				// 				}
+				//event.Print(false, false)
 				switch event.IsCorrupted {
 				case false:
 					event.ID = *iEvent
@@ -827,6 +825,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 								Time:              time,
 								MonBufSize:        len(datac),
 								Freq:              freq,
+								UDPPayloadSizes:   event.UDPPayloadSizes,
 								Qs:                qs,
 								Mult:              NewH1D(dqplots.HMultiplicity),
 								FreqH:             freqhsvg,

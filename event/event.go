@@ -8,12 +8,11 @@ import (
 )
 
 type Event struct {
-	Clusters    []pulse.Cluster
-	ID          uint
-	TimeStamp   uint64
-	IsCorrupted bool
-	NoFrames    int   // number of frames making this event
-	FrameSize   []int // number of octets for each frame making this event (FrameSize has NoFrames components)
+	Clusters        []pulse.Cluster
+	ID              uint
+	TimeStamp       uint64
+	IsCorrupted     bool
+	UDPPayloadSizes []int // number of octets for each frame making this event (FrameSize has NoFrames components)
 }
 
 func NewEvent(noClusters uint8) *Event {
@@ -69,6 +68,9 @@ func (e *Event) NoClusters() int {
 func (e *Event) Print(printClusters bool, printClusterDetails bool) {
 	fmt.Println("\n-> Printing event", e.ID)
 	fmt.Println("    o number of clusters =", len(e.Clusters))
+	fmt.Println("    o ID =", e.ID)
+	fmt.Println("    o TimeStamp =", e.TimeStamp)
+	fmt.Println("    o UDPPayloadSizes =", e.UDPPayloadSizes)
 	if printClusters {
 		for i := range e.Clusters {
 			cluster := e.Clusters[i]

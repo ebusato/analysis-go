@@ -66,6 +66,15 @@ func (w *Writer) write(v interface{}) {
 	w.err = binary.Write(w.w, binary.BigEndian, v)
 }
 
+func (w *Writer) writeByte(v byte) {
+	if w.err != nil {
+		return
+	}
+	var buf []byte
+	buf = append(buf, v)
+	_, w.err = w.w.Write(buf[:])
+}
+
 func (w *Writer) writeU16(v uint16) {
 	if w.err != nil {
 		return
