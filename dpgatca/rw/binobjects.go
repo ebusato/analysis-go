@@ -198,7 +198,7 @@ func (f *Frame) Buffer() []byte {
 		buffer = append(buffer, data.ParityChanIdCtrl)
 		buffer = append(buffer, data.Amplitudes...)
 		if f.Block.Err == ErrorCode1 {
-			fmt.Println("ErrorCode1, add extra word")
+			//fmt.Println("ErrorCode1, add extra word")
 			buffer = append(buffer, uint16(0))
 		}
 	}

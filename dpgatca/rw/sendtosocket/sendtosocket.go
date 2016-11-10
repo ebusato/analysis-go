@@ -59,7 +59,7 @@ func main() {
 				}
 				break
 			}
-			//frame.Print("medium")
+
 			err = w.Frame(frame)
 			if err != nil {
 				log.Fatalf("error writing frame: %v\n", err)
@@ -67,7 +67,7 @@ func main() {
 			nFrames++
 		}
 	case "udp":
-		addr, err := net.ResolveUDPAddr("udp4", *ip+":"+*port) // maybe change to udp4
+		addr, err := net.ResolveUDPAddr("udp", *ip+":"+*port) // maybe change to udp4
 		conn, err := net.ListenUDP("udp", addr)
 		if err != nil {
 			log.Fatal(err)
@@ -80,12 +80,29 @@ func main() {
 		fmt.Println("UDP client address: ", addrClient)
 		fmt.Printf("buf[:] from client= %v\n", buf[:])
 
+		AMCFrameCounterPrev := uint32(0)
+		ASMFrameCounterPrev := uint64(0)
+
 		nFrames := 0
 		for {
-			if nFrames%1 == 0 {
+			if nFrames%1000 == 0 {
 				fmt.Printf("frame %v\n", nFrames)
 			}
 			frame, err := r.Frame()
+			if nFrames > 0 {
+				if frame.Block.AMCFrameCounter != AMCFrameCounterPrev+1 {
+					fmt.Printf("frame.Block.AMCFrameCounter != AMCFrameCounterPrev + 1\n")
+				}
+				if frame.Block.ASMFrameCounter != ASMFrameCounterPrev+1 {
+					fmt.Printf("frame.Block.ASMFrameCounter != ASMFrameCounterPrev + 1\n")
+				}
+			}
+			AMCFrameCounterPrev = frame.Block.AMCFrameCounter
+			ASMFrameCounterPrev = frame.Block.ASMFrameCounter
+			nFrames++
+			// 			fmt.Println("AMCFrameCounter =", frame.Block.AMCFrameCounter)
+			// 			fmt.Println("ASMFrameCounter =", frame.Block.ASMFrameCounter)
+
 			if err != nil {
 				if err != io.EOF {
 					log.Fatalf("error loading frame: %v\n", err)
@@ -93,10 +110,12 @@ func main() {
 				break
 			}
 
+			// These two lines are slower than the TCP equivalent
+			//    -> try to understand why
 			udpBuf := frame.Buffer()
 			conn.WriteToUDP(udpBuf, addrClient)
-			nFrames++
-			//time.Sleep(1000 * time.Microsecond)
+
+			//time.Sleep(100000 * time.Microsecond)
 		}
 	}
 }

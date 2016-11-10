@@ -145,6 +145,31 @@ func (p *Pulse) Copy() *Pulse {
 	return newpulse
 }
 
+// PutSample puts a sample in p's Sample slice (it assumes that slice has already been allocated in memory)
+func (p *Pulse) PutSample(i int, s *Sample, capa *detector.Capacitor, thres float64) {
+	if s.Capacitor != nil {
+		log.Fatal("capacitor is not nil")
+	}
+	s.Capacitor = capa
+	p.Samples[i] = *s
+	if s.Amplitude >= thres {
+		p.HasSignal = true
+		if s.Amplitude == 4095 {
+			p.HasSatSignal = true
+		}
+	}
+	noSamples := i + 1
+	if noSamples == 2 {
+		p.TimeStep = s.Time - p.Samples[noSamples-2].Time
+	}
+	if noSamples >= 3 {
+		tStep := s.Time - p.Samples[noSamples-2].Time
+		if math.Abs(tStep-p.TimeStep)/p.TimeStep > 0.0001 {
+			log.Fatalf("time step varies: tStep = %v, p.TimeStep = %v", tStep, p.TimeStep)
+		}
+	}
+}
+
 // AddSample adds a sample to the pulse
 func (p *Pulse) AddSample(s *Sample, capa *detector.Capacitor, thres float64) {
 	if s.Capacitor != nil {

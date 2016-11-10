@@ -589,3 +589,29 @@ func (d *DQPlot) WriteGob(fileName string) error {
 
 	return err
 }
+
+/*
+	// Make ChargeCorrelation plot
+	pChargeCorrelation, err := hplot.New()
+	if err != nil {
+		panic(err)
+	}
+	pChargeCorrelation.X.Label.Text = "Charge 0"
+	pChargeCorrelation.Y.Label.Text = "Charge 1"
+	pChargeCorrelation.X.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
+	pChargeCorrelation.Y.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
+	pChargeCorrelation.X.Min = dqplots.ChargeCorrelation.LowX
+	pChargeCorrelation.Y.Min = dqplots.ChargeCorrelation.LowY
+	pChargeCorrelation.X.Max = dqplots.ChargeCorrelation.HighX
+	pChargeCorrelation.Y.Max = dqplots.ChargeCorrelation.HighY
+	hpChargeCorrelation := plotter.NewHeatMap(dqplots.ChargeCorrelation, palette.Heat(200, 1))
+	if err != nil {
+		panic(err)
+	}
+	pChargeCorrelation.Add(hpChargeCorrelation)
+	pChargeCorrelation.Add(hplot.NewGrid())
+	ChargeCorrelationsvg := ""
+	if false { //*iEvent > 0 {
+		ChargeCorrelationsvg = utils.RenderSVG(pChargeCorrelation, 13, 13)
+	}
+*/

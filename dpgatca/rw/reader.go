@@ -131,10 +131,6 @@ func (r *Reader) Frame() (*Frame, error) {
 	return f, r.err
 }
 
-// func (r *Reader) ReadFrame(f *Frame) {
-// 	r.readFrame(f)
-// }
-
 func (r *Reader) readFrame(f *Frame) {
 	if r.Debug {
 		fmt.Printf("rw: start reading frame\n")
@@ -161,6 +157,7 @@ func (r *Reader) readBlock(blk *Block) {
 		// 		fmt.Printf(" r.UDPHalfDRSBuffer[%v] = %x \n", i, r.UDPHalfDRSBuffer[i])
 		// 	}
 	}
+
 	r.readBlockHeader(blk)
 	r.err = blk.IntegrityHeader()
 	if r.err != nil {
@@ -340,6 +337,7 @@ func MakePulses(f *Frame, sigThreshold uint) [4]*pulse.Pulse {
 			sample := pulse.NewSample(ampl, uint16(j), float64(j)*dpgadetector.Det.SamplingFreq())
 			pul.AddSample(sample, dpgadetector.Det.Capacitor(iHemi, iASM, iDRS, iQuartet, iChannel, 0), float64(sigThreshold))
 		}
+
 		pulses[i] = pul
 	}
 	return pulses
@@ -375,22 +373,44 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 	nframes := 0
 	var timestamps []uint64
 	var allFlushedEvents []uint64
+	AMCFrameCounterPrev := uint32(0)
+	ASMFrameCounterPrev := uint64(0)
 	for {
-		fmt.Printf("reading frame %v\n", nframes)
+		if nframes%1000 == 0 {
+			fmt.Printf("reading frame %v\n", nframes)
+		}
 		frame, _ := r.Frame()
+		// Integrity check
+
+		// 		fmt.Println("AMCFrameCounter =", frame.Block.AMCFrameCounter)
+		// 		fmt.Println("ASMFrameCounter =", frame.Block.ASMFrameCounter)
+		if nframes > 0 {
+			if frame.Block.AMCFrameCounter != AMCFrameCounterPrev+1 {
+				fmt.Printf("frame.Block.AMCFrameCounter != AMCFrameCounterPrev + 1\n")
+			}
+			if frame.Block.ASMFrameCounter != ASMFrameCounterPrev+1 {
+				fmt.Printf("frame.Block.ASMFrameCounter != ASMFrameCounterPrev + 1\n")
+			}
+		}
+		AMCFrameCounterPrev = frame.Block.AMCFrameCounter
+		ASMFrameCounterPrev = frame.Block.ASMFrameCounter
+		nframes++
+
 		if r.ReadMode == UDPHalfDRS && frame.Block.UDPPayloadSize < 8230 {
-			fmt.Println("frame.Block.UDPPayloadSize =", frame.Block.UDPPayloadSize)
+			log.Printf("frame.Block.UDPPayloadSize = %v\n", frame.Block.UDPPayloadSize)
 		}
 		//frame.Print("medium")
-		for i := 0; i < frame.Block.UDPPayloadSize; i++ {
-			w.writeByte(r.UDPHalfDRSBuffer[i])
-		}
+
+		// 		for i := 0; i < frame.Block.UDPPayloadSize; i++ {
+		// 			w.writeByte(r.UDPHalfDRSBuffer[i])
+		// 		}
+
 		//frame.Print("medium")
 		if EventAlreadyFlushed(frame.Block.TimeStamp, allFlushedEvents) {
 			log.Fatalf("Event with timestamp=%v already flushed\n", frame.Block.TimeStamp)
 		}
 		timestamps = append(timestamps, frame.Block.TimeStamp)
-		nframes++
+
 		_, ok := r.eventMap[frame.Block.TimeStamp]
 		switch ok {
 		case false:
@@ -398,33 +418,35 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 		default:
 			// event already present in map
 		}
+
 		evt := r.eventMap[frame.Block.TimeStamp]
 		evt.TimeStamp = frame.Block.TimeStamp
-		pulses := MakePulses(frame, r.SigThreshold)
-		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[0] = *pulses[0]
-		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[1] = *pulses[1]
-		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[2] = *pulses[2]
-		evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[3] = *pulses[3]
-		evt.UDPPayloadSizes = append(evt.UDPPayloadSizes, frame.Block.UDPPayloadSize)
-		//fmt.Println("\nEvent map keys: ", r.EventMapKeys())
-		//fmt.Println("\nTimeStamps: ", timestamps)
+		MakePulses(frame, r.SigThreshold)
+		//pulses := MakePulses(frame, r.SigThreshold)
+		/*
+			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[0] = *pulses[0]
+			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[1] = *pulses[1]
+			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[2] = *pulses[2]
+			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[3] = *pulses[3]
+			evt.UDPPayloadSizes = append(evt.UDPPayloadSizes, frame.Block.UDPPayloadSize)
+			//fmt.Println("\nEvent map keys: ", r.EventMapKeys())
+			//fmt.Println("\nTimeStamps: ", timestamps)
 
-		// Determine which events to flush
-		eventsToFlush := EventsNotUpdatedForLongTime(timestamps, r.EventMapKeys())
-		//fmt.Println("\nEvents to flush: ", eventsToFlush)
-		allFlushedEvents = append(allFlushedEvents, eventsToFlush...)
-		//fmt.Println("\nAll Flushed events: ", allFlushedEvents)
+			// Determine which events to flush
+			eventsToFlush := EventsNotUpdatedForLongTime(timestamps, r.EventMapKeys())
+			//fmt.Println("\nEvents to flush: ", eventsToFlush)
+			allFlushedEvents = append(allFlushedEvents, eventsToFlush...)
+			//fmt.Println("\nAll Flushed events: ", allFlushedEvents)
 
-		// Flush events to channel
-		for _, ts := range eventsToFlush {
-			//fmt.Println("About to send event with TS =", r.eventMap[ts].TimeStamp)
-			evtChan <- r.eventMap[ts]
-			//fmt.Println("Sent event with TS =", r.eventMap[ts].TimeStamp)
-		}
+			// Flush events to channel
+			for _, ts := range eventsToFlush {
+				evtChan <- r.eventMap[ts]
+			}
 
-		// Remove flushed events from reader's event map
-		for _, ts := range eventsToFlush {
-			delete(r.eventMap, ts)
-		}
+			// Remove flushed events from reader's event map
+			for _, ts := range eventsToFlush {
+				delete(r.eventMap, ts)
+			}
+		*/
 	}
 }

@@ -28,15 +28,13 @@
 		
 		var freqplot = new plot("frequency (Hz)", [], 'orange')
 		
-		var multplot = new plot("Pulse multiplicity", [], 'orange')
-		multplot.bars = { show: true }
-		
 		var monbufsizeplot = new plot("Monitoring buffer size", [], 'blue')
 		
 		var noframesplot = new plot("No frames", [], 'green')
 		
 		var udppayloadsizesplot = new plot("UDP payload (octets)", [], 'green')
 		
+		var multplot = ""
 		var freqhplot = ""
 		var chargelhplot = ""
 		var chargerhplot = ""
@@ -74,7 +72,6 @@
 		}
 		
 		function clearplots() {
-			multplot.data = []
 			for (var iq = 0; iq < Nquartets; iq += 1) {
 				for (var ip = 0; ip < Nplots; ip += 1) {
 					quartetplots[iq][ip].data = []
@@ -99,11 +96,8 @@
 			var udppayloadsizes = $.plot("#my-udppayloadsizes-plot", [udppayloadsizesplot], opts);
 			udppayloadsizes.setupGrid(); // needed as x-axis changes
 			udppayloadsizes.draw();
-			var multopts = $.extend(true, {}, opts); // deep copy of options
-			multopts.xaxis = {ticks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
-			var mult = $.plot("#my-mult-plot", [multplot], multopts);
-			mult.setupGrid(); 
-			mult.draw();
+			var p0 = document.getElementById("my-mult-plot");
+			p0.innerHTML = multplot;
 			var p1 = document.getElementById("my-freqh-plot");
 			p1.innerHTML = freqhplot;
 			var p2 = document.getElementById("my-chargelh-plot");
@@ -116,8 +110,6 @@
 			p5.innerHTML = minrec1Ddistr;
 			var p6 = document.getElementById("my-deltat30-plot");
 			p6.innerHTML = deltat30plot;
-			var p7 = document.getElementById("my-chargeCorrelation-plot");
-			p7.innerHTML = chargeCorrelationplot;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					optsR = new options('#FFFF00') // yellow
@@ -179,16 +171,13 @@
 						udppayloadsizesplot.data.push([data.evt + iframe/data.udppayloadsizes.length, data.udppayloadsizes[iframe]])
 					}
 				}
-				for (var i = 0; i < 8; i += 1) {
-					multplot.data.push([data.mult[i].X, data.mult[i].Y])
-				}
+				multplot = data.mult
 				freqhplot = data.freqh;
 				chargelhplot = data.chargel;
 				chargerhplot = data.charger;
 				hvplot = data.hv;
 				minrec1Ddistr = data.minrec1Ddistrs
 				deltat30plot = data.deltat30
-				chargeCorrelationplot = data.chargecorrelation
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < data.quartets[iq][ip].length; is += 1) {
@@ -277,10 +266,9 @@
 		</td-->		
 		<td width="600">
 			<div id="my-mult-plot" class="my-plot-stylefreq"></div>
-			<div id="my-deltat30-plot" class="my-plot-stylefreq"></div>
 		</td>
-		<td valign="top">
-			<div id="my-chargeCorrelation-plot" class="my-plot-stylefreq"></div>
+		<td width="600">
+			<div id="my-deltat30-plot" class="my-plot-stylefreq"></div>
 		</td>
 		</tr>
 		<tr>
