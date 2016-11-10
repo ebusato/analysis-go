@@ -34,10 +34,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}
-
+	r.ReadMode = rw.Default
 	switch *con {
 	case "tcp":
-		r.FrameT = rw.UDPorTCP16bits
 		ln, err := net.Listen("tcp", *ip+":"+*port)
 		if err != nil {
 			log.Fatal(err)
@@ -48,7 +47,7 @@ func main() {
 			log.Fatalf("could not open file: %v\n", err)
 		}
 		defer w.Close()
-		nFrames := uint(0)
+		nFrames := 0
 		for {
 			if nFrames%1 == 0 {
 				fmt.Printf("frame %v\n", nFrames)
@@ -86,46 +85,16 @@ func main() {
 			if nFrames%1 == 0 {
 				fmt.Printf("frame %v\n", nFrames)
 			}
-			/*
-				var frameBuffer []byte //:= make([]byte, 8230)
-				var word uint16
-				var noWords int
-
-				for {
-					r.ReadU16(&word)
-					if (word == 0x1230 && noWords == 0) || (word != 0x1230) {
-						frameBuffer = append(frameBuffer, byte(word>>8))
-						frameBuffer = append(frameBuffer, byte(word&0xFFFF))
-						noWords++
-					} else {
-						file.Seek(-2, 1)
-						break
-					}
+			frame, err := r.Frame()
+			if err != nil {
+				if err != io.EOF {
+					log.Fatalf("error loading frame: %v\n", err)
 				}
-
-				if len(frameBuffer) < 8230 {
-					fmt.Println("len(frameBuffer) =", len(frameBuffer))
-					fmt.Printf("frameBuffer =")
-					for j := 0; j < len(frameBuffer)/2; j += 1 {
-						fmt.Printf("  %v: %x%x\n", j, frameBuffer[2*j], frameBuffer[2*j+1])
-					}
-				}*/
-
-			var frameBufferTemp [8230]byte
-			r.Read(&frameBufferTemp)
-			frameBuffer := frameBufferTemp[:]
-			//fmt.Printf("%x\n", frameBuffer[8229])
-			if (frameBuffer[8226] != 0x98) || (frameBuffer[8227] != 0x76) || (frameBuffer[8229]&0xff != 0xfb) {
-				//fmt.Println("fixing frame")
-				for j := 0; j < 4; j++ {
-					var word uint16
-					r.ReadU16(&word)
-					frameBuffer = append(frameBuffer, byte(word>>8))
-					frameBuffer = append(frameBuffer, byte(word&0xFFFF))
-				}
+				break
 			}
 
-			conn.WriteToUDP(frameBuffer, addrClient)
+			udpBuf := frame.Buffer()
+			conn.WriteToUDP(udpBuf, addrClient)
 			nFrames++
 			//time.Sleep(1000 * time.Microsecond)
 		}

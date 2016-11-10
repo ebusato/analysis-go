@@ -12,10 +12,10 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
-type FrameType byte
+type ReadMode byte
 
 const (
-	UDPorTCP16bits FrameType = iota
+	Default ReadMode = iota
 	UDPHalfDRS
 )
 
@@ -28,10 +28,10 @@ type Reader struct {
 	eventMap  map[uint64]*event.Event
 	//evtIDPrevFrame    uint32
 	//firstFrameOfEvent *Frame
-	SigThreshold uint
-	Debug        bool
-	FrameT       FrameType
-	FrameBuffer  []byte // relevant only when reading from UDP with packet = half DRS
+	SigThreshold     uint
+	Debug            bool
+	ReadMode         ReadMode
+	UDPHalfDRSBuffer []byte // relevant only when reading from UDP with packet = half DRS
 }
 
 // NoSamples returns the number of samples
@@ -53,22 +53,15 @@ func (r *Reader) EventMapKeys() []uint64 {
 	return keys
 }
 
-/*
-// Header returns the ASM-stream header
-func (r *Reader) Header() *Header {
-	return &r.hdr
-}
-*/
-
 // NewReader returns a new ASM stream in read mode
 func NewReader(r io.Reader) (*Reader, error) {
 	rr := &Reader{
 		r:        r,
 		eventMap: make(map[uint64]*event.Event),
 		//evtIDPrevFrame: 0,
-		SigThreshold: 800,
-		FrameT:       UDPHalfDRS,
-		FrameBuffer:  make([]byte, 8238),
+		SigThreshold:     800,
+		ReadMode:         Default,
+		UDPHalfDRSBuffer: make([]byte, 8238),
 	}
 	//rr.readHeader(&rr.hdr)
 	return rr, rr.err
@@ -120,60 +113,6 @@ func (r *Reader) ReadU16(v *uint16) {
 	r.readU16(v)
 }
 
-func (r *Reader) readU32(v *uint32) {
-	if r.err != nil {
-		return
-	}
-	var buf [4]byte
-	_, r.err = r.r.Read(buf[:])
-	if r.err != nil {
-		return
-	}
-	*v = binary.BigEndian.Uint32(buf[:])
-	if r.Debug {
-		fmt.Printf("word = %x\n", *v)
-	}
-}
-
-/*
-func (r *Reader) readHeader(hdr *Header) {
-	switch {
-	case r.hdr.HdrType == HeaderCAL:
-		r.readU32(&hdr.History)
-		r.readU32(&hdr.RunNumber)
-		r.readU32(&hdr.FreeField)
-		r.readU32(&hdr.TimeStart)
-		r.readU32(&hdr.TimeStop)
-		r.readU32(&hdr.NoEvents)
-		r.readU32(&hdr.NoASMCards)
-		r.readU32(&hdr.NoSamples)
-		r.readU32(&hdr.DataToRead)
-		r.readU32(&hdr.TriggerEq)
-		r.readU32(&hdr.TriggerDelay)
-		r.readU32(&hdr.ChanUsedForTrig)
-		r.readU32(&hdr.Threshold)
-		r.readU32(&hdr.LowHighThres)
-		r.readU32(&hdr.TrigSigShapingHighThres)
-		r.readU32(&hdr.TrigSigShapingLowThres)
-		// When setting the number of samples to 1000 it's actually 999
-		// hence the -1 subtraction
-		r.noSamples = uint16(hdr.NoSamples) - 1
-	case r.hdr.HdrType == HeaderOld:
-		r.readU32(&hdr.Size)
-		r.readU32(&hdr.NumFrame)
-		// In the case of old header, the number of samples
-		// is retrieved from the header.Size field
-		// When header.Size = 1007, the number of samples is 999
-		// hence the -8 subtraction
-		r.noSamples = uint16(hdr.Size) - 8
-		//fmt.Printf("rw: reading header %v %v\n", hdr.Size, hdr.NumFrame)
-	default:
-		panic("error ! header type not known")
-	}
-	dpgadetector.Det.SetNoSamples(int(r.noSamples))
-}
-*/
-
 // Frame reads a single frame from the underlying io.Reader.
 // Frame returns io.EOF when there are no more frame to read.
 func (r *Reader) Frame() (*Frame, error) {
@@ -192,51 +131,36 @@ func (r *Reader) Frame() (*Frame, error) {
 	return f, r.err
 }
 
-func (r *Reader) ReadFrame(f *Frame) {
-	r.readFrame(f)
-}
+// func (r *Reader) ReadFrame(f *Frame) {
+// 	r.readFrame(f)
+// }
 
 func (r *Reader) readFrame(f *Frame) {
 	if r.Debug {
 		fmt.Printf("rw: start reading frame\n")
 	}
-	//fmt.Printf("rw: frame id = %v\n", f.ID)
-	/*
-		if f.ID == lastFrame {
-			r.err = io.EOF
-			return
-		}
-	*/
 	r.readBlock(&f.Block)
 	if r.err != nil {
 		if r.err != io.EOF {
 			log.Fatalf("error loading frame: %v\n", r.err)
 		}
-		/*
-			if f.ID != lastFrame {
-				log.Fatalf("invalid last frame id. got=%x. want=%x", f.ID, lastFrame)
-			}
-		*/
 	}
 }
 
 func (r *Reader) readBlock(blk *Block) {
-	switch r.FrameT {
-	case UDPHalfDRS:
-		for i := range r.FrameBuffer {
-			r.FrameBuffer[i] = 0
+	if r.ReadMode == UDPHalfDRS {
+		for i := range r.UDPHalfDRSBuffer {
+			r.UDPHalfDRSBuffer[i] = 0
 		}
-		n, err := r.r.Read(r.FrameBuffer)
+		n, err := r.r.Read(r.UDPHalfDRSBuffer)
 		blk.UDPPayloadSize = n
 		if r.err != nil {
 			panic(err)
 		}
-	case UDPorTCP16bits:
-		// do nothing
+		// 	for i := range r.UDPHalfDRSBuffer {
+		// 		fmt.Printf(" r.UDPHalfDRSBuffer[%v] = %x \n", i, r.UDPHalfDRSBuffer[i])
+		// 	}
 	}
-	// 	for i := range r.FrameBuffer {
-	// 		fmt.Printf(" r.FrameBuffer[%v] = %x \n", i, r.FrameBuffer[i])
-	// 	}
 	r.readBlockHeader(blk)
 	r.err = blk.IntegrityHeader()
 	if r.err != nil {
@@ -261,30 +185,30 @@ func (r *Reader) readBlock(blk *Block) {
 }
 
 func (r *Reader) readBlockHeader(blk *Block) {
-	switch r.FrameT {
+	switch r.ReadMode {
 	case UDPHalfDRS:
-		blk.FirstBlockWord = binary.BigEndian.Uint16(r.FrameBuffer[0:2])
-		blk.AMCFrameCounters[0] = binary.BigEndian.Uint16(r.FrameBuffer[2:4])
-		blk.AMCFrameCounters[1] = binary.BigEndian.Uint16(r.FrameBuffer[4:6])
-		blk.ParityFEIdCtrl = binary.BigEndian.Uint16(r.FrameBuffer[6:8])
-		blk.TriggerMode = binary.BigEndian.Uint16(r.FrameBuffer[8:10])
-		blk.Trigger = binary.BigEndian.Uint16(r.FrameBuffer[10:12])
-		blk.ASMFrameCounters[0] = binary.BigEndian.Uint16(r.FrameBuffer[12:14])
-		blk.ASMFrameCounters[1] = binary.BigEndian.Uint16(r.FrameBuffer[14:16])
-		blk.ASMFrameCounters[2] = binary.BigEndian.Uint16(r.FrameBuffer[16:18])
-		blk.ASMFrameCounters[3] = binary.BigEndian.Uint16(r.FrameBuffer[18:20])
-		blk.Cafe = binary.BigEndian.Uint16(r.FrameBuffer[20:22])
-		blk.Deca = binary.BigEndian.Uint16(r.FrameBuffer[22:24])
-		blk.Counters[0] = binary.BigEndian.Uint16(r.FrameBuffer[24:26])
-		blk.Counters[1] = binary.BigEndian.Uint16(r.FrameBuffer[26:28])
-		blk.Counters[2] = binary.BigEndian.Uint16(r.FrameBuffer[28:30])
-		blk.Counters[3] = binary.BigEndian.Uint16(r.FrameBuffer[30:32])
-		blk.TimeStamps[0] = binary.BigEndian.Uint16(r.FrameBuffer[32:34])
-		blk.TimeStamps[1] = binary.BigEndian.Uint16(r.FrameBuffer[34:36])
-		blk.TimeStamps[2] = binary.BigEndian.Uint16(r.FrameBuffer[36:38])
-		blk.TimeStamps[3] = binary.BigEndian.Uint16(r.FrameBuffer[38:40])
-		blk.NoSamples = binary.BigEndian.Uint16(r.FrameBuffer[40:42])
-	case UDPorTCP16bits:
+		blk.FirstBlockWord = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[0:2])
+		blk.AMCFrameCounters[0] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[2:4])
+		blk.AMCFrameCounters[1] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[4:6])
+		blk.ParityFEIdCtrl = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[6:8])
+		blk.TriggerMode = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[8:10])
+		blk.Trigger = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[10:12])
+		blk.ASMFrameCounters[0] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[12:14])
+		blk.ASMFrameCounters[1] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[14:16])
+		blk.ASMFrameCounters[2] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[16:18])
+		blk.ASMFrameCounters[3] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[18:20])
+		blk.Cafe = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[20:22])
+		blk.Deca = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[22:24])
+		blk.Counters[0] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[24:26])
+		blk.Counters[1] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[26:28])
+		blk.Counters[2] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[28:30])
+		blk.Counters[3] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[30:32])
+		blk.TimeStamps[0] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[32:34])
+		blk.TimeStamps[1] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[34:36])
+		blk.TimeStamps[2] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[36:38])
+		blk.TimeStamps[3] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[38:40])
+		blk.NoSamples = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[40:42])
+	case Default:
 		r.readU16(&blk.FirstBlockWord)
 		r.read(&blk.AMCFrameCounters)
 		r.readU16(&blk.ParityFEIdCtrl)
@@ -321,10 +245,10 @@ var (
 // readParityChanIdCtrl is a temporary fix, until we understand where the additionnal 16 bits words come from
 func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
 	data := &blk.Data.Data[i]
-	switch r.FrameT {
+	switch r.ReadMode {
 	case UDPHalfDRS:
-		data.ParityChanIdCtrl = binary.BigEndian.Uint16(r.FrameBuffer[42+i*2*1023+2*noAttempts : 44+i*2*1023+2*noAttempts])
-	case UDPorTCP16bits:
+		data.ParityChanIdCtrl = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[42+i*2*1023+2*noAttempts : 44+i*2*1023+2*noAttempts])
+	case Default:
 		r.readU16(&data.ParityChanIdCtrl)
 	}
 	//fmt.Printf("%v, %x (noAttempts=%v)\n", i, data.ParityChanIdCtrl, noAttempts)
@@ -365,13 +289,13 @@ func (r *Reader) readBlockData(blk *Block) {
 		}
 		noAttempts = 0
 		//fmt.Printf("data.ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
-		switch r.FrameT {
-		case UDPorTCP16bits:
-			r.read(&data.Amplitudes)
+		switch r.ReadMode {
 		case UDPHalfDRS:
 			for j := range data.Amplitudes {
-				data.Amplitudes[j] = binary.BigEndian.Uint16(r.FrameBuffer[44+2*j+i*2*1023 : 46+2*j+i*2*1023])
+				data.Amplitudes[j] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[44+2*j+i*2*1023 : 46+2*j+i*2*1023])
 			}
+		case Default:
+			r.read(&data.Amplitudes)
 		}
 		// 		for j := range data.Amplitudes {
 		// 			fmt.Printf("data.Amplitudes[%v] = %x\n", j, data.Amplitudes[j])
@@ -380,8 +304,16 @@ func (r *Reader) readBlockData(blk *Block) {
 }
 
 func (r *Reader) readBlockTrailer(blk *Block) {
-	switch r.FrameT {
-	case UDPorTCP16bits:
+	switch r.ReadMode {
+	case UDPHalfDRS:
+		if blk.Err == ErrorCode1 {
+			blk.CRC = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[len(r.UDPHalfDRSBuffer)-4 : len(r.UDPHalfDRSBuffer)-2])
+			blk.ParityFEIdCtrl2 = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[len(r.UDPHalfDRSBuffer)-2 : len(r.UDPHalfDRSBuffer)])
+		} else {
+			blk.CRC = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[len(r.UDPHalfDRSBuffer)-12 : len(r.UDPHalfDRSBuffer)-10])
+			blk.ParityFEIdCtrl2 = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[len(r.UDPHalfDRSBuffer)-10 : len(r.UDPHalfDRSBuffer)-8])
+		}
+	case Default:
 		r.readU16(&blk.CRC)
 		// Temporary fix, until we understand where these additionnal 16 bits come from
 		if blk.CRC != ctrl0xCRC {
@@ -391,14 +323,6 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 		}
 		// End of temporary fix
 		r.readU16(&blk.ParityFEIdCtrl2)
-	case UDPHalfDRS:
-		if blk.Err == ErrorCode1 {
-			blk.CRC = binary.BigEndian.Uint16(r.FrameBuffer[len(r.FrameBuffer)-4 : len(r.FrameBuffer)-2])
-			blk.ParityFEIdCtrl2 = binary.BigEndian.Uint16(r.FrameBuffer[len(r.FrameBuffer)-2 : len(r.FrameBuffer)])
-		} else {
-			blk.CRC = binary.BigEndian.Uint16(r.FrameBuffer[len(r.FrameBuffer)-12 : len(r.FrameBuffer)-10])
-			blk.ParityFEIdCtrl2 = binary.BigEndian.Uint16(r.FrameBuffer[len(r.FrameBuffer)-10 : len(r.FrameBuffer)-8])
-		}
 	}
 }
 
@@ -454,12 +378,12 @@ func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitG
 	for {
 		fmt.Printf("reading frame %v\n", nframes)
 		frame, _ := r.Frame()
-		if r.FrameT == UDPHalfDRS && frame.Block.UDPPayloadSize < 8230 {
+		if r.ReadMode == UDPHalfDRS && frame.Block.UDPPayloadSize < 8230 {
 			fmt.Println("frame.Block.UDPPayloadSize =", frame.Block.UDPPayloadSize)
 		}
 		//frame.Print("medium")
 		for i := 0; i < frame.Block.UDPPayloadSize; i++ {
-			w.writeByte(r.FrameBuffer[i])
+			w.writeByte(r.UDPHalfDRSBuffer[i])
 		}
 		//frame.Print("medium")
 		if EventAlreadyFlushed(frame.Block.TimeStamp, allFlushedEvents) {

@@ -39,16 +39,6 @@ func (w *Writer) Close() error {
 	return nil
 }
 
-// Header writes the Header to the ASM stream.
-// func (w *Writer) Header(hdr *Header, clientTime bool) error {
-// 	if w.err != nil {
-// 		return w.err
-// 	}
-// 	w.hdr = hdr
-// 	w.writeHeader(w.hdr, clientTime)
-// 	return w.err
-// }
-
 // Frame writes a Frame to the ASM stream.
 func (w *Writer) Frame(f *Frame) error {
 	if w.err != nil {
@@ -86,48 +76,6 @@ func (w *Writer) writeU16(v uint16) {
 func (w *Writer) WriteU16(v uint16) {
 	w.writeU16(v)
 }
-
-func (w *Writer) writeU32(v uint32) {
-	if w.err != nil {
-		return
-	}
-	var buf [4]byte
-	binary.BigEndian.PutUint32(buf[:], v)
-	_, w.err = w.w.Write(buf[:])
-}
-
-/*
-func (w *Writer) writeHeader(hdr *Header, clientTime bool) {
-	switch {
-	case hdr.HdrType == HeaderCAL:
-		w.writeU32(hdr.History)
-		w.writeU32(hdr.RunNumber)
-		w.writeU32(hdr.FreeField)
-		if clientTime {
-			// Hack: set time from client clock rather than from server's
-			// since the later is not correct.
-			hdr.TimeStart = uint32(time.Now().Unix())
-		}
-		w.writeU32(hdr.TimeStart)
-		w.writeU32(hdr.TimeStop)
-		w.writeU32(hdr.NoEvents)
-		w.writeU32(hdr.NoASMCards)
-		w.writeU32(hdr.NoSamples)
-		w.writeU32(hdr.DataToRead)
-		w.writeU32(hdr.TriggerEq)
-		w.writeU32(hdr.TriggerDelay)
-		w.writeU32(hdr.ChanUsedForTrig)
-		w.writeU32(hdr.Threshold)
-		w.writeU32(hdr.LowHighThres)
-		w.writeU32(hdr.TrigSigShapingHighThres)
-		w.writeU32(hdr.TrigSigShapingLowThres)
-	case hdr.HdrType == HeaderOld:
-		w.writeU32(hdr.Size)
-		w.writeU32(hdr.NumFrame)
-	default:
-		panic("error ! header type not known")
-	}
-}*/
 
 func (w *Writer) writeFrame(f *Frame) {
 	if w.err != nil {

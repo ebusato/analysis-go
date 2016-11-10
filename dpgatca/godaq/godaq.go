@@ -306,6 +306,7 @@ func main() {
 		}
 		(*conn).Write([]byte("Hello from client"))
 		r, err = rw.NewReader(bufio.NewReader(NewReader(conn)))
+		r.ReadMode = rw.UDPHalfDRS
 	case "tcp":
 		conn := TCPConn(port)
 		for i := 0; conn == nil; i++ {
@@ -323,7 +324,7 @@ func main() {
 			}
 		}
 		r, err = rw.NewReader(bufio.NewReader(conn))
-		r.FrameT = rw.UDPorTCP16bits
+		r.ReadMode = rw.Default
 	default:
 		log.Fatalf("Connection type not known")
 	}
