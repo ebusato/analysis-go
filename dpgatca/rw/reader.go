@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"sync"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
-	"gitlab.in2p3.fr/avirm/analysis-go/event"
-	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
 type ReadMode byte
@@ -25,7 +22,6 @@ type Reader struct {
 	err error
 	//hdr               Header
 	noSamples uint16
-	eventMap  map[uint64]*event.Event
 	//evtIDPrevFrame    uint32
 	//firstFrameOfEvent *Frame
 	SigThreshold     uint
@@ -44,20 +40,10 @@ func (r *Reader) Err() error {
 	return r.err
 }
 
-// EventMapKeys returns a slice of keys stored in the reader's event map
-func (r *Reader) EventMapKeys() []uint64 {
-	var keys []uint64
-	for k := range r.eventMap {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
 // NewReader returns a new ASM stream in read mode
 func NewReader(r io.Reader) (*Reader, error) {
 	rr := &Reader{
-		r:        r,
-		eventMap: make(map[uint64]*event.Event),
+		r: r,
 		//evtIDPrevFrame: 0,
 		SigThreshold:     800,
 		ReadMode:         Default,
@@ -320,133 +306,5 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 		}
 		// End of temporary fix
 		r.readU16(&blk.ParityFEIdCtrl2)
-	}
-}
-
-func MakePulses(f *Frame, sigThreshold uint) [4]*pulse.Pulse {
-	var pulses [len(f.Block.Data.Data)]*pulse.Pulse
-	for i := range f.Block.Data.Data {
-		chanData := &f.Block.Data.Data[i]
-		channelId023 := chanData.Channel
-		iChannel := uint8(channelId023 % 4)
-		iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx60ToRelIdx(f.Block.QuartetAbsIdx60)
-		detChannel := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel)
-		pul := pulse.NewPulse(detChannel)
-		for j := range chanData.Amplitudes {
-			ampl := float64(chanData.Amplitudes[j])
-			sample := pulse.NewSample(ampl, uint16(j), float64(j)*dpgadetector.Det.SamplingFreq())
-			pul.AddSample(sample, dpgadetector.Det.Capacitor(iHemi, iASM, iDRS, iQuartet, iChannel, 0), float64(sigThreshold))
-		}
-
-		pulses[i] = pul
-	}
-	return pulses
-}
-
-func EventsNotUpdatedForLongTime(timestamps []uint64, eventmapkeys []uint64) []uint64 {
-	var eventsToFlush []uint64
-	for _, evttimestamp := range eventmapkeys {
-		noFramesSinceLastUpdate := 0
-		j := len(timestamps) - 1
-		for timestamps[j] != evttimestamp {
-			noFramesSinceLastUpdate++
-			j--
-		}
-		if noFramesSinceLastUpdate > 20 {
-			eventsToFlush = append(eventsToFlush, evttimestamp)
-		}
-	}
-	return eventsToFlush
-}
-
-func EventAlreadyFlushed(timestamp uint64, flushedEvents []uint64) bool {
-	for _, ts := range flushedEvents {
-		if timestamp == ts {
-			return true
-		}
-	}
-	return false
-}
-
-func (r *Reader) ReadFrames(evtChan chan *event.Event, w *Writer, wg *sync.WaitGroup) {
-	defer wg.Done()
-	nframes := 0
-	var timestamps []uint64
-	var allFlushedEvents []uint64
-	AMCFrameCounterPrev := uint32(0)
-	ASMFrameCounterPrev := uint64(0)
-	for {
-		if nframes%1000 == 0 {
-			fmt.Printf("reading frame %v\n", nframes)
-		}
-		frame, _ := r.Frame()
-		// Integrity check
-
-		// 		fmt.Println("AMCFrameCounter =", frame.Block.AMCFrameCounter)
-		// 		fmt.Println("ASMFrameCounter =", frame.Block.ASMFrameCounter)
-		if nframes > 0 {
-			if frame.Block.AMCFrameCounter != AMCFrameCounterPrev+1 {
-				fmt.Printf("frame.Block.AMCFrameCounter != AMCFrameCounterPrev + 1\n")
-			}
-			if frame.Block.ASMFrameCounter != ASMFrameCounterPrev+1 {
-				fmt.Printf("frame.Block.ASMFrameCounter != ASMFrameCounterPrev + 1\n")
-			}
-		}
-		AMCFrameCounterPrev = frame.Block.AMCFrameCounter
-		ASMFrameCounterPrev = frame.Block.ASMFrameCounter
-		nframes++
-
-		if r.ReadMode == UDPHalfDRS && frame.Block.UDPPayloadSize < 8230 {
-			log.Printf("frame.Block.UDPPayloadSize = %v\n", frame.Block.UDPPayloadSize)
-		}
-		//frame.Print("medium")
-
-		// 		for i := 0; i < frame.Block.UDPPayloadSize; i++ {
-		// 			w.writeByte(r.UDPHalfDRSBuffer[i])
-		// 		}
-
-		//frame.Print("medium")
-		if EventAlreadyFlushed(frame.Block.TimeStamp, allFlushedEvents) {
-			log.Fatalf("Event with timestamp=%v already flushed\n", frame.Block.TimeStamp)
-		}
-		timestamps = append(timestamps, frame.Block.TimeStamp)
-
-		_, ok := r.eventMap[frame.Block.TimeStamp]
-		switch ok {
-		case false:
-			r.eventMap[frame.Block.TimeStamp] = event.NewEvent(dpgadetector.Det.NoClusters())
-		default:
-			// event already present in map
-		}
-
-		evt := r.eventMap[frame.Block.TimeStamp]
-		evt.TimeStamp = frame.Block.TimeStamp
-		MakePulses(frame, r.SigThreshold)
-		//pulses := MakePulses(frame, r.SigThreshold)
-		/*
-			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[0] = *pulses[0]
-			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[1] = *pulses[1]
-			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[2] = *pulses[2]
-			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[3] = *pulses[3]
-			evt.UDPPayloadSizes = append(evt.UDPPayloadSizes, frame.Block.UDPPayloadSize)
-			//fmt.Println("\nEvent map keys: ", r.EventMapKeys())
-			//fmt.Println("\nTimeStamps: ", timestamps)
-
-			// Determine which events to flush
-			eventsToFlush := EventsNotUpdatedForLongTime(timestamps, r.EventMapKeys())
-			//fmt.Println("\nEvents to flush: ", eventsToFlush)
-			allFlushedEvents = append(allFlushedEvents, eventsToFlush...)
-			//fmt.Println("\nAll Flushed events: ", allFlushedEvents)
-
-			// Flush events to channel
-			for _, ts := range eventsToFlush {
-				evtChan <- r.eventMap[ts]
-			}
-
-			// Remove flushed events from reader's event map
-			for _, ts := range eventsToFlush {
-				delete(r.eventMap, ts)
-			}
-		*/
 	}
 }

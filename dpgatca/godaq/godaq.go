@@ -1,3 +1,8 @@
+// Remains to be done:
+//   - manage runs.csv and runs_test.csv
+//   - add header to binary files and code that fills it properly on godaq side
+//   - put same stuff on monitoring as there was in the VME version (multiplicity, minimal reconstruction, hv, ...)
+
 package main
 
 import (
@@ -38,28 +43,33 @@ import (
 var (
 	datacsize int = 10
 	datac         = make(chan Data, datacsize)
-	evtChan       = make(chan *event.Event)
+
+	frameSliceChan            = make(chan []*rw.Frame, 10)
+	evtChan                   = make(chan *event.Event)
+	timeStamps       []uint64 // set of all processed timestamps
+	recoedTimeStamps []uint64 // set of all reconstructed timestamps
 
 	terminateRun = make(chan bool)
 	pauseRun     = make(chan bool)
 	resumeRun    = make(chan bool)
 	pauseMonBool bool
-	cpuprof      = flag.String("cpuprof", "", "Name of file for CPU profiling")
-	noEvents     = flag.Uint("n", 100000, "Number of events")
-	outfileName  = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
-	ip           = flag.String("ip", "192.168.100.11", "IP address")
-	port         = flag.String("p", "1024", "Port number")
-	monFreq      = flag.Uint("mf", 100, "Monitoring frequency")
-	monLight     = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
-	evtFreq      = flag.Uint("ef", 100, "Event printing frequency")
-	st           = flag.Bool("st", false, "If set, server start time is used rather than client's one")
-	debug        = flag.Bool("d", false, "If set, debugging informations are printed")
-	webad        = flag.String("webad", ":5555", "server address:port")
-	nobro        = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
-	sleep        = flag.Bool("s", false, "If set, sleep a bit between events")
-	sigthres     = flag.Uint("sigthres", 800, "Value above which a pulse is considered to have signal")
-	notree       = flag.Bool("notree", false, "If set, no root tree is produced")
-	test         = flag.Bool("test", false,
+
+	cpuprof     = flag.String("cpuprof", "", "Name of file for CPU profiling")
+	noEvents    = flag.Uint("n", 100000, "Number of events")
+	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
+	ip          = flag.String("ip", "192.168.100.11", "IP address")
+	port        = flag.String("p", "1024", "Port number")
+	monFreq     = flag.Uint("mf", 100, "Monitoring frequency")
+	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
+	evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
+	st          = flag.Bool("st", false, "If set, server start time is used rather than client's one")
+	debug       = flag.Bool("d", false, "If set, debugging informations are printed")
+	webad       = flag.String("webad", ":5555", "server address:port")
+	nobro       = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
+	sleep       = flag.Bool("s", false, "If set, sleep a bit between events")
+	sigthres    = flag.Uint("sigthres", 800, "Value above which a pulse is considered to have signal")
+	notree      = flag.Bool("notree", false, "If set, no root tree is produced")
+	test        = flag.Bool("test", false,
 		"If set, update runs_test.csv rather than the \"official\" runs.csv file and name by default the output binary file using the following scheme: runXXX_test.bin")
 	refplots = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
 		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
@@ -430,9 +440,10 @@ func main() {
 
 	iEvent := uint(0)
 
-	go r.ReadFrames(evtChan, w, &wg)
-	//go stream(currentRunNumber, r, w, &iEvent, evtChan)
-	//go webserver()
+	go readFrames(r, w, &wg)
+	go reconstructEvent(r)
+	go stream(currentRunNumber, r, w, &iEvent, evtChan)
+	go webserver()
 	go command()
 
 	wg.Wait()
@@ -495,42 +506,6 @@ func getPreviousRunNumber(fileName string) uint32 {
 	return data.RunNumber
 }
 
-/*
-func updateRunsCSV(csvFileName string, runNumber uint32, timeStop uint32, noEvents uint32, outfileName string, hdr *rw.Header) {
-	// Determine working directory
-	pwd, err := os.Getwd()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	// Open csv file in append mode
-	tbl, err := csvutil.Append(csvFileName)
-	if err != nil {
-		log.Fatalf("could not create dpgageom.csv: %v\n", err)
-	}
-	defer tbl.Close()
-	tbl.Writer.Comma = ' '
-
-	data := RunsCSV{
-		RunNumber:   runNumber,
-		NoEvents:    noEvents,
-		Threshold:   hdr.Threshold,
-		OutFileName: outfileName,
-		ExecDir:     pwd,
-		StartTime:   time.Unix(int64(hdr.TimeStart), 0).Format(time.UnixDate),
-		StopTime:    time.Unix(int64(timeStop), 0).Format(time.UnixDate),
-		Comment:     *comment,
-	}
-	err = tbl.WriteRow(data)
-	if err != nil {
-		log.Fatalf("error writing row: %v\n", err)
-	}
-
-	// implement git commit
-}
-*/
-
 func webserver() {
 	if !*nobro {
 		webbrowser.Open("http://" + *webad)
@@ -543,6 +518,28 @@ func webserver() {
 	err := http.ListenAndServe(*webad, nil)
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func dataHandler(ws *websocket.Conn) {
+	fmt.Println("Starting dataHandler")
+	for data := range datac {
+		/////////////////////////////////////////////////
+		// uncomment to have an estimation of the total
+		// amount of data that passes through the websocket
+
+		sb, err := json.Marshal(data)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
+
+		/////////////////////////////////////////////////
+		err = websocket.JSON.Send(ws, data)
+		if err != nil {
+			log.Printf("error sending data: %v\n", err)
+			return
+		}
 	}
 }
 
@@ -611,14 +608,11 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 	if *refplots != "" {
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
 	}
-	hvexec := NewHVexec(os.Getenv("HOME")+"/Acquisition/hv/ht-caen", os.Getenv("HOME")+"/Acquisition/hv/Coeff")
 	outrootfileName := strings.Replace(*outfileName, ".bin", ".root", 1)
 	var treeMult2 *trees.TreeMult2
 	if !*notree {
 		treeMult2 = trees.NewTreeMult2(outrootfileName)
 	}
-	var minrec []XYZ
-	minrec1Dsvg := ""
 	start := time.Now()
 	startabs := start
 
@@ -662,54 +656,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 						event = applyCorrCalib.CorrectEvent(event, doPedestal, doTimeDepOffset, doEnergyCalib)
 						//////////////////////////////////////////////////////
 						dqplots.FillHistos(event)
-						//mult, pulsesWithSignal := event.Multiplicity()
-						/*
-							if mult == 2 {
-								//dqplots.FillHistos(event)
-								if len(pulsesWithSignal) != 2 {
-									panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
-								}
-								ch0 := pulsesWithSignal[0].Channel
-								ch1 := pulsesWithSignal[1].Channel
-								doMinRec := true
-								if r.Header().TriggerEq == 3 {
-									// In case TriggerEq = 3 (pulser), one has to check that the two pulses are
-									// on different hemispheres, otherwise the minimal reconstruction is not well
-									// defined
-									hemi0, ok := ch0.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
-									if !ok {
-										panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
-									}
-									hemi1, ok := ch1.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
-									if !ok {
-										panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
-									}
-									if hemi0.Which() == hemi1.Which() {
-										doMinRec = false
-									}
-								}
-								if doMinRec {
-									xbeam, ybeam := 0., 0.
-									x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
-									minrec = append(minrec, XYZ{X: x, Y: y, Z: z})
-									dqplots.HMinRecX.Fill(x, 1)
-									dqplots.HMinRecY.Fill(y, 1)
-									dqplots.HMinRecZ.Fill(z, 1)
 
-									if doPedestal {
-										_, T30_0, _, _ := pulsesWithSignal[0].CalcRisingFront(true)
-										_, T30_1, _, _ := pulsesWithSignal[1].CalcRisingFront(true)
-										if T30_0 != 0 && T30_1 != 0 {
-											dqplots.DeltaT30.Fill(T30_0-T30_1, 1)
-										}
-										if treeMult2 != nil {
-											treeMult2.Fill(run, uint32(event.ID), pulsesWithSignal[0], pulsesWithSignal[1])
-										}
-									}
-									dqplots.ChargeCorrelation.Fill(pulsesWithSignal[0].Charg/1e6, pulsesWithSignal[1].Charg/1e6)
-								}
-							}
-						*/
 						if *iEvent%*monFreq == 0 {
 							// Webserver data
 
@@ -731,7 +678,6 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 
 							chargeLsvg := ""
 							chargeRsvg := ""
-							hvsvg := ""
 							if !*monLight {
 								// Make charge (or amplitude) distrib histo plot
 								var whichVar dq.WhichVar
@@ -749,22 +695,6 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 								tpchargeR := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Right)
 								chargeLsvg = utils.RenderSVG(tpchargeL, 45, 30)
 								chargeRsvg = utils.RenderSVG(tpchargeR, 45, 30)
-
-								// Read HV
-								hvvals := &HVvalues{}
-								if hvexec != nil && *iEvent%(*monFreq**hvMonDegrad) == 0 {
-									hvvals = NewHVvalues(hvexec)
-									for iHVCard := 0; iHVCard < 4; iHVCard++ {
-										for iHVChannel := 0; iHVChannel < 16; iHVChannel++ {
-											dqplots.AddHVPoint(iHVCard, iHVChannel, float64(event.ID), hvvals[iHVCard][iHVChannel].HV)
-										}
-									}
-								}
-								hvTiled := dqplots.MakeHVTiledPlot()
-								hvsvg = utils.RenderSVG(hvTiled, 45, 30)
-
-								tpMinRec1D := dqplots.MakeMinRec1DTiledPlot()
-								minrec1Dsvg = utils.RenderSVG(tpMinRec1D, 30, 13)
 							}
 
 							stop := time.Now()
@@ -823,13 +753,9 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 								FreqH:           freqhsvg,
 								ChargeL:         chargeLsvg,
 								ChargeR:         chargeRsvg,
-								HVvals:          hvsvg,
-								MinRec:          minrec,
-								MinRec1DDistrs:  minrec1Dsvg,
 								DeltaT30:        DeltaT30svg,
 							}
 							noEventsForMon = 0
-							minrec = nil
 						}
 					}
 					// End of monitoring
@@ -855,24 +781,135 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 	} // event loop
 }
 
-func dataHandler(ws *websocket.Conn) {
-	fmt.Println("Starting dataHandler")
-	for data := range datac {
-		/////////////////////////////////////////////////
-		// uncomment to have an estimation of the total
-		// amount of data that passes through the websocket
-
-		sb, err := json.Marshal(data)
-		if err != nil {
-			panic(err)
+func makePulses(f *rw.Frame, sigThreshold uint) [4]*pulse.Pulse {
+	var pulses [len(f.Block.Data.Data)]*pulse.Pulse
+	for i := range f.Block.Data.Data {
+		chanData := &f.Block.Data.Data[i]
+		channelId023 := chanData.Channel
+		iChannel := uint8(channelId023 % 4)
+		iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx60ToRelIdx(f.Block.QuartetAbsIdx60)
+		detChannel := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel)
+		pul := pulse.NewPulse(detChannel)
+		for j := range chanData.Amplitudes {
+			ampl := float64(chanData.Amplitudes[j])
+			sample := pulse.NewSample(ampl, uint16(j), float64(j)*dpgadetector.Det.SamplingFreq())
+			pul.AddSample(sample, dpgadetector.Det.Capacitor(iHemi, iASM, iDRS, iQuartet, iChannel, 0), float64(sigThreshold))
 		}
-		fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
 
-		/////////////////////////////////////////////////
-		err = websocket.JSON.Send(ws, data)
-		if err != nil {
-			log.Printf("error sending data: %v\n", err)
-			return
+		pulses[i] = pul
+	}
+	return pulses
+}
+
+func timeStampsToSendToReco(framesMap map[uint64][]*rw.Frame) []uint64 {
+	var tsForReco []uint64
+	for ts, _ := range framesMap {
+		n := 0
+		for j := len(timeStamps) - 1; timeStamps[j] != ts; j-- {
+			n++
 		}
+		if n > 20 {
+			tsForReco = append(tsForReco, ts)
+		}
+	}
+	return tsForReco
+}
+
+func timeStampAlreadySentToReco(timestamp uint64) bool {
+	for i := len(recoedTimeStamps) - 1; i >= 0; i-- {
+		if timestamp == recoedTimeStamps[i] {
+			return true
+		}
+	}
+	return false
+}
+
+func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
+	defer wg.Done()
+	nframes := 0
+	AMCFrameCounterPrev := uint32(0)
+	ASMFrameCounterPrev := uint64(0)
+	framesMap := make(map[uint64][]*rw.Frame)
+	for {
+		if nframes%1000 == 0 {
+			fmt.Printf("reading frame %v\n", nframes)
+		}
+		frame, _ := r.Frame()
+		timeStamps = append(timeStamps, frame.Block.TimeStamp)
+		framesMap[frame.Block.TimeStamp] = append(framesMap[frame.Block.TimeStamp], frame)
+
+		/////////////////////////////////////////////////////////////////////////////////////
+		// Sanity checks
+		// 		fmt.Println("AMCFrameCounter =", frame.Block.AMCFrameCounter)
+		// 		fmt.Println("ASMFrameCounter =", frame.Block.ASMFrameCounter)
+		if nframes > 0 {
+			if frame.Block.AMCFrameCounter != AMCFrameCounterPrev+1 {
+				fmt.Printf("frame.Block.AMCFrameCounter != AMCFrameCounterPrev + 1\n")
+			}
+			if frame.Block.ASMFrameCounter != ASMFrameCounterPrev+1 {
+				fmt.Printf("frame.Block.ASMFrameCounter != ASMFrameCounterPrev + 1\n")
+			}
+		}
+		AMCFrameCounterPrev = frame.Block.AMCFrameCounter
+		ASMFrameCounterPrev = frame.Block.ASMFrameCounter
+		if r.ReadMode == rw.UDPHalfDRS && frame.Block.UDPPayloadSize < 8230 {
+			log.Printf("frame.Block.UDPPayloadSize = %v\n", frame.Block.UDPPayloadSize)
+		}
+		/////////////////////////////////////////////////////////////////////////////////////
+
+		/////////////////////////////////////////////////////////////////////////////////////
+		// Write to disk
+		// 		for i := 0; i < frame.Block.UDPPayloadSize; i++ {
+		// 			w.writeByte(r.UDPHalfDRSBuffer[i])
+		// 		}
+		/////////////////////////////////////////////////////////////////////////////////////
+
+		/////////////////////////////////////////////////////////////////////////////////////
+		// The following check is possibly time consuming, consider removing it
+		if timeStampAlreadySentToReco(frame.Block.TimeStamp) {
+			log.Fatalf("Timestamp %v already sent to reconstruction\n", frame.Block.TimeStamp)
+		}
+		/////////////////////////////////////////////////////////////////////////////////////
+
+		tsForReco := timeStampsToSendToReco(framesMap)
+
+		//fmt.Println("Number of ts for reco =", len(tsForReco))
+
+		for _, ts := range tsForReco {
+			// 			if len(framesMap[ts]) < 2 {
+			// 				fmt.Println("len(framesMap[ts] < 2)")
+			// 			}
+			if nframes%5000 == 0 {
+				fmt.Println("toto")
+				frameSliceChan <- framesMap[ts]
+			}
+			delete(framesMap, ts)
+		}
+
+		recoedTimeStamps = append(recoedTimeStamps, tsForReco...)
+		nframes++
+	}
+}
+
+func reconstructEvent(r *rw.Reader) {
+	for {
+		frameSlice := <-frameSliceChan
+		firstFrame := true
+		evt := event.NewEvent(dpgadetector.Det.NoClusters())
+		// build event from slice of frames
+		for _, frame := range frameSlice {
+			if !firstFrame && frame.Block.TimeStamp != evt.TimeStamp {
+				log.Fatalf("Time stamps are not all equal to the same value. This should never happen !\n")
+			}
+			evt.TimeStamp = frame.Block.TimeStamp
+			pulses := makePulses(frame, r.SigThreshold)
+			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[0] = *pulses[0]
+			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[1] = *pulses[1]
+			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[2] = *pulses[2]
+			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[3] = *pulses[3]
+			evt.UDPPayloadSizes = append(evt.UDPPayloadSizes, frame.Block.UDPPayloadSize)
+			firstFrame = false
+		}
+		evtChan <- evt
 	}
 }
