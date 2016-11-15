@@ -68,6 +68,7 @@ var (
 	monFreq     = flag.Uint("mf", 100, "Monitoring frequency")
 	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
 	frameFreq   = flag.Uint("ff", 1000, "Frame printing frequency")
+	evtFreq     = flag.Uint("ef", 1000, "Event printing frequency")
 	st          = flag.Bool("st", false, "If set, server start time is used rather than client's one")
 	debug       = flag.Bool("d", false, "If set, debugging informations are printed")
 	webad       = flag.String("webad", ":5555", "server address:port")
@@ -586,13 +587,8 @@ func monitor(run uint32, r *rw.Reader, w *rw.Writer) {
 	for {
 		event := <-evtChan
 
-		//event.Print(false, false)
 		switch event.IsCorrupted {
 		case false:
-			//event.Print(true, false)
-			//w.Event(event)
-			////////////////////////////////////////////////////////////////////////////////////////////
-			// Monitoring
 			//////////////////////////////////////////////////////
 			// Corrections
 			doPedestal := false
@@ -761,6 +757,9 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 		if nframes%*frameFreq == 0 {
 			fmt.Printf("reading frame %v\n", nframes)
 		}
+		if noEvents%*evtFreq == 0 {
+			fmt.Printf("reading event %v\n", noEvents)
+		}
 		frame, _ := r.Frame()
 		timeStamps = append(timeStamps, frame.Block.TimeStamp)
 		framesMap[frame.Block.TimeStamp] = append(framesMap[frame.Block.TimeStamp], frame)
@@ -811,8 +810,7 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 				if len(framesMap[tsToMonitor]) < 2 {
 					fmt.Printf("len(framesMap[tsToMonitor] < 2)\n")
 				}
-				if nframes%*monFreq == 0 {
-					fmt.Println("toto")
+				if noEvents%*monFreq == 0 {
 					frameSliceChan <- struct {
 						uint
 						frameSliceType
