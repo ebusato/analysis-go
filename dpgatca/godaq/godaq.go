@@ -1,8 +1,9 @@
 // Remains to be done:
 //   - manage runs.csv and runs_test.csv
-//   - add header to binary files and code that fills it properly on godaq side
+//   - add header to binary files and code that fills and updates it properly on godaq side
 //   - put same stuff on monitoring as there was in the VME version (multiplicity, minimal reconstruction, hv, ...)
 //   - reintroduce in a proper way user commands to pause/resume/stop run and monitoring
+//   - add creation of root tree, as in dpga/godaq
 
 package main
 
@@ -34,38 +35,43 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dq"
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/trees"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
+type frameSliceType []*rw.Frame
+
 var (
+	noEvents uint
+
 	datacsize int = 10
 	datac         = make(chan Data, datacsize)
 
-	frameSliceChan           = make(chan []*rw.Frame, 10)
+	frameSliceChan = make(chan struct {
+		uint
+		frameSliceType
+	}, 10)
 	evtChan                  = make(chan *event.Event)
 	timeStamps      []uint64 // set of all processed timestamps
 	allClosedEvents []uint64 // set of timestamps of all closed events
 
-	noEventsForMon uint64
+	noEventsForMon uint
 	start          time.Time
 
 	cpuprof     = flag.String("cpuprof", "", "Name of file for CPU profiling")
-	noEvents    = flag.Uint("n", 100000, "Number of events")
+	noEventsTot = flag.Uint("n", 100000, "Number of events")
 	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
 	ip          = flag.String("ip", "192.168.100.11", "IP address")
 	port        = flag.String("p", "1024", "Port number")
 	monFreq     = flag.Uint("mf", 100, "Monitoring frequency")
 	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
-	evtFreq     = flag.Uint("ef", 100, "Event printing frequency")
+	frameFreq   = flag.Uint("ff", 1000, "Frame printing frequency")
 	st          = flag.Bool("st", false, "If set, server start time is used rather than client's one")
 	debug       = flag.Bool("d", false, "If set, debugging informations are printed")
 	webad       = flag.String("webad", ":5555", "server address:port")
 	nobro       = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
-	sleep       = flag.Bool("s", false, "If set, sleep a bit between events")
 	sigthres    = flag.Uint("sigthres", 800, "Value above which a pulse is considered to have signal")
 	notree      = flag.Bool("notree", false, "If set, no root tree is produced")
 	test        = flag.Bool("test", false,
@@ -433,28 +439,15 @@ func main() {
 		r.Debug = true
 	}
 
-	iEvent := uint(0)
-
 	start = time.Now()
 
 	go readFrames(r, w, &wg)
 	go reconstructEvent(r)
-	go stream(currentRunNumber, r, w, &iEvent, evtChan)
+	go monitor(currentRunNumber, r, w)
 	go webserver()
 	go command()
 
 	wg.Wait()
-
-	// Update header
-	//bufiow.Flush()
-	timeStop := uint32(time.Now().Unix())
-	noEvents := uint32(iEvent)
-	updateHeader(filew, 16, timeStop)
-	updateHeader(filew, 20, noEvents)
-
-	// Dump run info in csv. Only relevant when ran on DAQ PC, where the csv file is present.
-	//updateRunsCSV(runCSVFileName, currentRunNumber, timeStop, noEvents, *outfileName, hdr)
-	//updateHeader(filew, 4, currentRunNumber)
 }
 
 func updateHeader(f *os.File, offset int64, val uint32) {
@@ -574,7 +567,7 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 	return data
 }
 
-func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *event.Event) {
+func monitor(run uint32, r *rw.Reader, w *rw.Writer) {
 	if *ped != "" {
 		dpgadetector.Det.ReadPedestalsFile(*ped)
 	}
@@ -589,159 +582,128 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 	if *refplots != "" {
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
 	}
-	outrootfileName := strings.Replace(*outfileName, ".bin", ".root", 1)
-	var treeMult2 *trees.TreeMult2
-	if !*notree {
-		treeMult2 = trees.NewTreeMult2(outrootfileName)
-	}
 
 	for {
 		event := <-evtChan
-		switch *iEvent < *noEvents {
-		case true:
-			if *iEvent%*evtFreq == 0 {
-				fmt.Printf("event %v\n", *iEvent)
-			}
-			//event.Print(false, false)
-			switch event.IsCorrupted {
-			case false:
-				event.ID = *iEvent
-				//event.Print(true, false)
-				//w.Event(event)
-				////////////////////////////////////////////////////////////////////////////////////////////
-				// Monitoring
-				//////////////////////////////////////////////////////
-				// Corrections
-				doPedestal := false
-				doTimeDepOffset := false
-				doEnergyCalib := false
-				if *ped != "" {
-					doPedestal = true
-				}
-				if *tdo != "" {
-					doTimeDepOffset = true
-				}
-				if *en != "" {
-					doEnergyCalib = true
-				}
-				event = applyCorrCalib.CorrectEvent(event, doPedestal, doTimeDepOffset, doEnergyCalib)
-				//////////////////////////////////////////////////////
-				dqplots.FillHistos(event)
 
-				if *iEvent%*monFreq == 0 {
-					var qs Quartets
-					sampFreq := 5
-					if *monLight {
-						sampFreq = 20
-					}
-					for iq := 0; iq < len(qs); iq++ {
-						qs[iq][0] = GetMonData(sampFreq, event.Clusters[iq].Pulses[0])
-						qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])
-						qs[iq][2] = GetMonData(sampFreq, event.Clusters[iq].Pulses[2])
-						qs[iq][3] = GetMonData(sampFreq, event.Clusters[iq].Pulses[3])
-					}
-
-					// Make frequency histo plot
-					tpfreq := dqplots.MakeFreqTiledPlot()
-					freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
-
-					chargeLsvg := ""
-					chargeRsvg := ""
-					if !*monLight {
-						// Make charge (or amplitude) distrib histo plot
-						var whichVar dq.WhichVar
-						switch *distr {
-						case "charge":
-							whichVar = dq.Charge
-						case "ampl":
-							whichVar = dq.Amplitude
-						case "energy":
-							whichVar = dq.Energy
-						default:
-							panic("String passed to option -distr not recognized (see godaq -h)")
-						}
-						tpchargeL := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Left)
-						tpchargeR := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Right)
-						chargeLsvg = utils.RenderSVG(tpchargeL, 45, 30)
-						chargeRsvg = utils.RenderSVG(tpchargeR, 45, 30)
-					}
-
-					stop := time.Now()
-					duration := stop.Sub(start).Seconds()
-					start = stop
-					freq := float64(noEventsForMon) / duration
-					if *iEvent == 0 {
-						freq = 0
-					}
-
-					// Make DeltaT30 plot
-					pDeltaT30, err := hplot.New()
-					if err != nil {
-						panic(err)
-					}
-					pDeltaT30.X.Label.Text = "Delta T30 (ns)"
-					pDeltaT30.Y.Label.Text = "No entries"
-					pDeltaT30.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
-					hpDeltaT30, err := hplot.NewH1D(dqplots.DeltaT30)
-					if err != nil {
-						panic(err)
-					}
-					pDeltaT30.Add(hpDeltaT30)
-					pDeltaT30.Add(hplot.NewGrid())
-					DeltaT30svg := utils.RenderSVG(pDeltaT30, 15, 7)
-
-					// Make multiplicity plot
-					pMult, err := hplot.New()
-					if err != nil {
-						panic(err)
-					}
-					pMult.X.Label.Text = "Pulse multiplicity"
-					pMult.Y.Label.Text = "No entries"
-					pMult.X.Tick.Marker = &hplot.FreqTicks{N: 17, Freq: 1}
-					hMult, err := hplot.NewH1D(dqplots.HMultiplicity)
-					if err != nil {
-						panic(err)
-					}
-					pMult.Add(hMult)
-					pMult.Add(hplot.NewGrid())
-					Multsvg := utils.RenderSVG(pMult, 15, 7)
-
-					// send to channel
-					if float64(len(datac)) >= 0.6*float64(datacsize) {
-						fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
-					}
-					datac <- Data{
-						EvtID:           event.ID,
-						MonBufSize:      len(datac),
-						Freq:            freq,
-						UDPPayloadSizes: event.UDPPayloadSizes,
-						Qs:              qs,
-						Mult:            Multsvg,
-						FreqH:           freqhsvg,
-						ChargeL:         chargeLsvg,
-						ChargeR:         chargeRsvg,
-						DeltaT30:        DeltaT30svg,
-					}
-					noEventsForMon = 0
-				}
-				// End of monitoring
-				////////////////////////////////////////////////////////////////////////////////////////////
-				*iEvent++
-				//noEventsForMon++
-				if *sleep {
-					fmt.Println("Warning: sleeping for 1 second")
-					time.Sleep(1 * time.Second)
-				}
-			case true:
-				fmt.Println("warning, event is corrupted and therefore not written to output file.")
-				log.Fatalf(" -> quitting")
-			}
+		//event.Print(false, false)
+		switch event.IsCorrupted {
 		case false:
-			fmt.Println("reached specified number of events, stopping.")
-			if treeMult2 != nil {
-				treeMult2.Close()
+			//event.Print(true, false)
+			//w.Event(event)
+			////////////////////////////////////////////////////////////////////////////////////////////
+			// Monitoring
+			//////////////////////////////////////////////////////
+			// Corrections
+			doPedestal := false
+			doTimeDepOffset := false
+			doEnergyCalib := false
+			if *ped != "" {
+				doPedestal = true
 			}
-			return
+			if *tdo != "" {
+				doTimeDepOffset = true
+			}
+			if *en != "" {
+				doEnergyCalib = true
+			}
+			event = applyCorrCalib.CorrectEvent(event, doPedestal, doTimeDepOffset, doEnergyCalib)
+			//////////////////////////////////////////////////////
+			dqplots.FillHistos(event)
+
+			var qs Quartets
+			sampFreq := 5
+			if *monLight {
+				sampFreq = 20
+			}
+			for iq := 0; iq < len(qs); iq++ {
+				qs[iq][0] = GetMonData(sampFreq, event.Clusters[iq].Pulses[0])
+				qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])
+				qs[iq][2] = GetMonData(sampFreq, event.Clusters[iq].Pulses[2])
+				qs[iq][3] = GetMonData(sampFreq, event.Clusters[iq].Pulses[3])
+			}
+
+			// Make frequency histo plot
+			tpfreq := dqplots.MakeFreqTiledPlot()
+			freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
+
+			chargeLsvg := ""
+			chargeRsvg := ""
+			if !*monLight {
+				// Make charge (or amplitude) distrib histo plot
+				var whichVar dq.WhichVar
+				switch *distr {
+				case "charge":
+					whichVar = dq.Charge
+				case "ampl":
+					whichVar = dq.Amplitude
+				case "energy":
+					whichVar = dq.Energy
+				default:
+					panic("String passed to option -distr not recognized (see godaq -h)")
+				}
+				tpchargeL := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Left)
+				tpchargeR := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Right)
+				chargeLsvg = utils.RenderSVG(tpchargeL, 45, 30)
+				chargeRsvg = utils.RenderSVG(tpchargeR, 45, 30)
+			}
+
+			stop := time.Now()
+			duration := stop.Sub(start).Seconds()
+			start = stop
+			freq := float64(noEventsForMon) / duration
+
+			// Make DeltaT30 plot
+			pDeltaT30, err := hplot.New()
+			if err != nil {
+				panic(err)
+			}
+			pDeltaT30.X.Label.Text = "Delta T30 (ns)"
+			pDeltaT30.Y.Label.Text = "No entries"
+			pDeltaT30.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
+			hpDeltaT30, err := hplot.NewH1D(dqplots.DeltaT30)
+			if err != nil {
+				panic(err)
+			}
+			pDeltaT30.Add(hpDeltaT30)
+			pDeltaT30.Add(hplot.NewGrid())
+			DeltaT30svg := utils.RenderSVG(pDeltaT30, 15, 7)
+
+			// Make multiplicity plot
+			pMult, err := hplot.New()
+			if err != nil {
+				panic(err)
+			}
+			pMult.X.Label.Text = "Pulse multiplicity"
+			pMult.Y.Label.Text = "No entries"
+			pMult.X.Tick.Marker = &hplot.FreqTicks{N: 17, Freq: 1}
+			hMult, err := hplot.NewH1D(dqplots.HMultiplicity)
+			if err != nil {
+				panic(err)
+			}
+			pMult.Add(hMult)
+			pMult.Add(hplot.NewGrid())
+			Multsvg := utils.RenderSVG(pMult, 15, 7)
+
+			// send to channel
+			if float64(len(datac)) >= 0.6*float64(datacsize) {
+				fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
+			}
+			datac <- Data{
+				EvtID:           event.ID,
+				MonBufSize:      len(datac),
+				Freq:            freq,
+				UDPPayloadSizes: event.UDPPayloadSizes,
+				Qs:              qs,
+				Mult:            Multsvg,
+				FreqH:           freqhsvg,
+				ChargeL:         chargeLsvg,
+				ChargeR:         chargeRsvg,
+				DeltaT30:        DeltaT30svg,
+			}
+		case true:
+			fmt.Println("warning, event is corrupted and therefore not written to output file.")
+			log.Fatalf(" -> quitting")
 		}
 	} // event loop
 }
@@ -791,12 +753,12 @@ func eventAlreadyClosed(timestamp uint64) bool {
 
 func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 	defer wg.Done()
-	nframes := 0
+	nframes := uint(0)
 	AMCFrameCounterPrev := uint32(0)
 	ASMFrameCounterPrev := uint64(0)
 	framesMap := make(map[uint64][]*rw.Frame)
 	for {
-		if nframes%1000 == 0 {
+		if nframes%*frameFreq == 0 {
 			fmt.Printf("reading frame %v\n", nframes)
 		}
 		frame, _ := r.Frame()
@@ -837,19 +799,36 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 		/////////////////////////////////////////////////////////////////////////////////////
 
 		closedEvts := closedEvents(framesMap)
+		noClosedEvts := len(closedEvts)
 
-		//fmt.Println("Number of ts for reco =", len(closedEvts))
+		if noClosedEvts >= 1 {
+			switch noEvents < *noEventsTot {
+			case true:
+				if noClosedEvts >= 2 {
+					log.Fatalf("len(closedEvts) > 1\n")
+				}
+				tsToMonitor := closedEvts[noClosedEvts-1]
+				if len(framesMap[tsToMonitor]) < 2 {
+					fmt.Printf("len(framesMap[tsToMonitor] < 2)\n")
+				}
+				if nframes%*monFreq == 0 {
+					fmt.Println("toto")
+					frameSliceChan <- struct {
+						uint
+						frameSliceType
+					}{noEvents, framesMap[tsToMonitor]}
+					noEventsForMon = 0
+				}
+				noEvents += uint(noClosedEvts)
+				noEventsForMon += uint(noClosedEvts)
+			case false:
+				fmt.Println("reached specified number of events, stopping.")
+				return
+			}
+		}
 
 		for _, ts := range closedEvts {
-			// 			if len(framesMap[ts]) < 2 {
-			// 				fmt.Println("len(framesMap[ts] < 2)")
-			// 			}
-			if nframes%50 == 0 {
-				fmt.Println("toto")
-				frameSliceChan <- framesMap[ts]
-			}
 			delete(framesMap, ts)
-			noEventsForMon++
 		}
 
 		allClosedEvents = append(allClosedEvents, closedEvts...)
@@ -862,8 +841,9 @@ func reconstructEvent(r *rw.Reader) {
 		frameSlice := <-frameSliceChan
 		firstFrame := true
 		evt := event.NewEvent(dpgadetector.Det.NoClusters())
+		evt.ID = frameSlice.uint
 		// build event from slice of frames
-		for _, frame := range frameSlice {
+		for _, frame := range frameSlice.frameSliceType {
 			if !firstFrame && frame.Block.TimeStamp != evt.TimeStamp {
 				log.Fatalf("Time stamps are not all equal to the same value. This should never happen !\n")
 			}
