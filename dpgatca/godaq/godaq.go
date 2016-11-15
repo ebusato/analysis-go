@@ -78,7 +78,7 @@ var (
 	notree      = flag.Bool("notree", false, "If set, no root tree is produced")
 	test        = flag.Bool("test", false,
 		"If set, update runs_test.csv rather than the \"official\" runs.csv file and name by default the output binary file using the following scheme: runXXX_test.bin")
-	refplots = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
+	refplots = flag.String("ref", "",
 		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
 	hvMonDegrad = flag.Uint("hvmondeg", 100, "HV monitoring frequency degradation factor")
 	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
@@ -86,7 +86,8 @@ var (
 	ped         = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 	tdo         = flag.String("tdo", "", "Name of the csv file containing time dependent offsets. If not set, time dependent offsets are not applied. Relevant only when ped!=\"\".")
 	en          = flag.String("en", "", "Name of the csv file containing energy calibration constants. If not set, energy calibration is not applied.")
-	con         = flag.String("con", "udp", "Connection type (possible values: udp, tcp)")
+	con         = flag.String("con", "udp", "Connection type. Possible values: udp, tcp, none. If none, infileName is read")
+	infileName  = flag.String("i", "", "Name of the input file.")
 )
 
 // XY is a struct used to store a couple of values
@@ -337,6 +338,17 @@ func main() {
 			}
 		}
 		r, err = rw.NewReader(bufio.NewReader(conn))
+		r.ReadMode = rw.Default
+	case "none":
+		file, err := os.Open(*infileName)
+		if err != nil {
+			log.Fatalf("could not create data file: %v\n", err)
+		}
+		defer file.Close()
+		r, err = rw.NewReader(file)
+		if err != nil {
+			log.Fatalf("could not open stream: %v\n", err)
+		}
 		r.ReadMode = rw.Default
 	default:
 		log.Fatalf("Connection type not known")
@@ -811,7 +823,6 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 					stop := time.Now()
 					duration := stop.Sub(start).Seconds()
 					start = stop
-					fmt.Println("noEventsForMon, duration =", noEventsForMon, duration)
 					freq := float64(noEventsForMon) / duration
 					frameSliceChan <- struct {
 						uint
