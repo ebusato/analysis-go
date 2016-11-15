@@ -160,7 +160,6 @@
 				var data = JSON.parse(event.data);
 				console.log("data: "+JSON.stringify(data));
 				if (data.freq != 0) {
-					//freqplot.data.push([data.time, data.freq])
 					freqplot.data.push([data.evt, data.freq])
 					monbufsizeplot.data.push([data.evt, data.monbufsize])
 					noframesplot.data.push([data.evt, data.udppayloadsizes.length])

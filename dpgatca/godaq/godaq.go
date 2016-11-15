@@ -220,7 +220,6 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 // Data is the struct that is sent via the websocket to the web client.
 type Data struct {
 	EvtID           uint     `json:"evt"`             // event id (64 bits a priori)
-	Time            float64  `json:"time"`            // time at which monitoring data are taken (64 bits)
 	MonBufSize      int      `json:"monbufsize"`      // monitoring channel buffer size
 	Freq            float64  `json:"freq"`            // number of events processed per second (64 bits)
 	UDPPayloadSizes []int    `json:"udppayloadsizes"` // UDP frame payload sizes in octets for all frames making events
@@ -229,9 +228,6 @@ type Data struct {
 	FreqH           string   `json:"freqh"`           // frequency histogram
 	ChargeL         string   `json:"chargel"`         // charge histograms for left hemisphere
 	ChargeR         string   `json:"charger"`         // charge histograms for right hemisphere
-	HVvals          string   `json:"hv"`              // hv values
-	MinRec          []XYZ    `json:"minrec"`          // outcome of the minimal reconstruction algorithm
-	MinRec1DDistrs  string   `json:"minrec1Ddistrs"`  // minimal reconstruction X, Y, Z distributions
 	DeltaT30        string   `json:"deltat30"`        // distribution of the difference of T30
 }
 
@@ -614,7 +610,6 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 		treeMult2 = trees.NewTreeMult2(outrootfileName)
 	}
 	start := time.Now()
-	startabs := start
 
 	for {
 		select {
@@ -698,7 +693,6 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 							stop := time.Now()
 							duration := stop.Sub(start).Seconds()
 							start = stop
-							time := stop.Sub(startabs).Seconds()
 							freq := float64(noEventsForMon) / duration
 							if *iEvent == 0 {
 								freq = 0
@@ -742,7 +736,6 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 							}
 							datac <- Data{
 								EvtID:           event.ID,
-								Time:            time,
 								MonBufSize:      len(datac),
 								Freq:            freq,
 								UDPPayloadSizes: event.UDPPayloadSizes,
