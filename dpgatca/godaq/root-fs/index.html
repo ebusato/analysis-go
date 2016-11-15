@@ -39,7 +39,6 @@
 		var chargelhplot = ""
 		var chargerhplot = ""
 		var hvplot = ""
-		var minrec1Ddistr = ""
 		var deltat30plot = ""
 		var chargeCorrelationplot = ""
 		
@@ -106,8 +105,6 @@
 			p3.innerHTML = chargerhplot;
 			var p4 = document.getElementById("my-hv-plot");
 			p4.innerHTML = hvplot;
-			var p5 = document.getElementById("my-minrec1Ddistr-plot");
-			p5.innerHTML = minrec1Ddistr;
 			var p6 = document.getElementById("my-deltat30-plot");
 			p6.innerHTML = deltat30plot;
 			for (var i = 0; i < Nquartets; i++) {
@@ -176,7 +173,6 @@
 				chargelhplot = data.chargel;
 				chargerhplot = data.charger;
 				hvplot = data.hv;
-				minrec1Ddistr = data.minrec1Ddistrs
 				deltat30plot = data.deltat30
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
@@ -187,15 +183,6 @@
 				}
 				update();
 				clearplots();
-
-				//for (var iminrec = 0; iminrec < data.minrec.length; iminrec += 1) {
-					//dataMinReco3d.add({x:data.minrec[iminrec].X,y:data.minrec[iminrec].Y,z:data.minrec[iminrec].Z});
-				//}
-				if ( data.minrec.length >= 1) {
-					dataMinReco3D.add({x:data.minrec[0].X,y:data.minrec[0].Y,z:data.minrec[0].Z});
-				}
-				var containerMinReco3D = document.getElementById('graph3DMinReco');
-				graphMinReco3D = new vis.Graph3d(containerMinReco3D, dataMinReco3D, optionsMinReco3D);
 			};
 		};
 		
@@ -270,12 +257,6 @@
 		<td width="600">
 			<div id="my-deltat30-plot" class="my-plot-stylefreq"></div>
 		</td>
-		</tr>
-		<tr>
-		<td width="600">
-		<br><br><br><br>
-			<div id="my-minrec1Ddistr-plot" class="my-plot-stylefreq"></div>
-		</td>	
 		</tr>
 		</table>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br>

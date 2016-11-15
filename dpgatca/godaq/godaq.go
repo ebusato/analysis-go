@@ -44,10 +44,10 @@ var (
 	datacsize int = 10
 	datac         = make(chan Data, datacsize)
 
-	frameSliceChan            = make(chan []*rw.Frame, 10)
-	evtChan                   = make(chan *event.Event)
-	timeStamps       []uint64 // set of all processed timestamps
-	recoedTimeStamps []uint64 // set of all reconstructed timestamps
+	frameSliceChan           = make(chan []*rw.Frame, 10)
+	evtChan                  = make(chan *event.Event)
+	timeStamps      []uint64 // set of all processed timestamps
+	allClosedEvents []uint64 // set of timestamps of all closed events
 
 	terminateRun = make(chan bool)
 	pauseRun     = make(chan bool)
@@ -658,8 +658,6 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 						dqplots.FillHistos(event)
 
 						if *iEvent%*monFreq == 0 {
-							// Webserver data
-
 							var qs Quartets
 							sampFreq := 5
 							if *monLight {
@@ -801,23 +799,23 @@ func makePulses(f *rw.Frame, sigThreshold uint) [4]*pulse.Pulse {
 	return pulses
 }
 
-func timeStampsToSendToReco(framesMap map[uint64][]*rw.Frame) []uint64 {
-	var tsForReco []uint64
+func closedEvents(framesMap map[uint64][]*rw.Frame) []uint64 {
+	var closedEvts []uint64
 	for ts, _ := range framesMap {
 		n := 0
 		for j := len(timeStamps) - 1; timeStamps[j] != ts; j-- {
 			n++
 		}
 		if n > 20 {
-			tsForReco = append(tsForReco, ts)
+			closedEvts = append(closedEvts, ts)
 		}
 	}
-	return tsForReco
+	return closedEvts
 }
 
-func timeStampAlreadySentToReco(timestamp uint64) bool {
-	for i := len(recoedTimeStamps) - 1; i >= 0; i-- {
-		if timestamp == recoedTimeStamps[i] {
+func eventAlreadyClosed(timestamp uint64) bool {
+	for i := len(allClosedEvents) - 1; i >= 0; i-- {
+		if timestamp == allClosedEvents[i] {
 			return true
 		}
 	}
@@ -866,27 +864,27 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 
 		/////////////////////////////////////////////////////////////////////////////////////
 		// The following check is possibly time consuming, consider removing it
-		if timeStampAlreadySentToReco(frame.Block.TimeStamp) {
+		if eventAlreadyClosed(frame.Block.TimeStamp) {
 			log.Fatalf("Timestamp %v already sent to reconstruction\n", frame.Block.TimeStamp)
 		}
 		/////////////////////////////////////////////////////////////////////////////////////
 
-		tsForReco := timeStampsToSendToReco(framesMap)
+		closedEvts := closedEvents(framesMap)
 
-		//fmt.Println("Number of ts for reco =", len(tsForReco))
+		//fmt.Println("Number of ts for reco =", len(closedEvts))
 
-		for _, ts := range tsForReco {
+		for _, ts := range closedEvts {
 			// 			if len(framesMap[ts]) < 2 {
 			// 				fmt.Println("len(framesMap[ts] < 2)")
 			// 			}
-			if nframes%5000 == 0 {
+			if nframes%50 == 0 {
 				fmt.Println("toto")
 				frameSliceChan <- framesMap[ts]
 			}
 			delete(framesMap, ts)
 		}
 
-		recoedTimeStamps = append(recoedTimeStamps, tsForReco...)
+		allClosedEvents = append(allClosedEvents, closedEvts...)
 		nframes++
 	}
 }
