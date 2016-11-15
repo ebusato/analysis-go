@@ -362,39 +362,42 @@ func main() {
 	}
 	r.SigThreshold = *sigthres
 
-	// determine run number
-	var runCSVFileName string
-	switch *test {
-	case true:
-		runCSVFileName = os.Getenv("HOME") + "/godaq/runs/runs_test.csv"
-	case false:
-		runCSVFileName = os.Getenv("HOME") + "/godaq/runs/runs.csv"
-	}
-	if !utils.Exists(runCSVFileName) {
-		fmt.Printf("could not open %v -> nothing will be written to it.\n", runCSVFileName)
-		return
-	}
-	prevRunNumber := getPreviousRunNumber(runCSVFileName)
-	currentRunNumber := prevRunNumber + 1
-	fmt.Printf("Previous run number is %v -> setting current run number to %v\n", prevRunNumber, currentRunNumber)
-
-	// Writer for binary file
-	if *outfileName == "" {
-		*outfileName = "run" + strconv.FormatUint(uint64(currentRunNumber), 10)
-		if *test {
-			*outfileName += "_test"
+	var w *rw.Writer
+	if *con != "none" {
+		// determine run number
+		var runCSVFileName string
+		switch *test {
+		case true:
+			runCSVFileName = os.Getenv("HOME") + "/godaq/runs/runs_test.csv"
+		case false:
+			runCSVFileName = os.Getenv("HOME") + "/godaq/runs/runs.csv"
 		}
-		*outfileName += ".bin"
-	}
-	filew, err := os.Create(*outfileName)
-	if err != nil {
-		log.Fatalf("could not create data file: %v\n", err)
-	}
-	defer filew.Close()
+		if !utils.Exists(runCSVFileName) {
+			fmt.Printf("could not open %v -> nothing will be written to it.\n", runCSVFileName)
+			return
+		}
+		prevRunNumber := getPreviousRunNumber(runCSVFileName)
+		currentRunNumber := prevRunNumber + 1
+		fmt.Printf("Previous run number is %v -> setting current run number to %v\n", prevRunNumber, currentRunNumber)
 
-	bufiow := bufio.NewWriter(filew)
-	w := rw.NewWriter(bufiow)
-	defer w.Close()
+		// Writer for binary file
+		if *outfileName == "" {
+			*outfileName = "run" + strconv.FormatUint(uint64(currentRunNumber), 10)
+			if *test {
+				*outfileName += "_test"
+			}
+			*outfileName += ".bin"
+		}
+		filew, err := os.Create(*outfileName)
+		if err != nil {
+			log.Fatalf("could not create data file: %v\n", err)
+		}
+		defer filew.Close()
+
+		bufiow := bufio.NewWriter(filew)
+		w = rw.NewWriter(bufiow)
+		defer w.Close()
+	}
 
 	// web address handling
 	webadSlice := strings.Split(*webad, ":")
@@ -422,9 +425,9 @@ func main() {
 	defer htmlw.Close()
 
 	err = t.Execute(htmlw, map[string]interface{}{
-		"WebAd":     *webad,
-		"RunNumber": currentRunNumber,
+		"WebAd": *webad,
 		/*
+			"RunNumber": currentRunNumber,
 			"TimeStart":               time.Unix(int64(hdr.TimeStart), 0).Format(time.UnixDate),
 			"TimeStop":                time.Unix(int64(hdr.TimeStop), 0).Format(time.UnixDate),
 			"NoEvents":                strconv.FormatUint(uint64(hdr.NoEvents), 10),
@@ -455,7 +458,7 @@ func main() {
 
 	go readFrames(r, w, &wg)
 	go reconstructEvent(r)
-	go monitor(currentRunNumber, r, w)
+	go monitor(r, w)
 	go webserver()
 	go command()
 
@@ -579,7 +582,7 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 	return data
 }
 
-func monitor(run uint32, r *rw.Reader, w *rw.Writer) {
+func monitor(r *rw.Reader, w *rw.Writer) {
 	if *ped != "" {
 		dpgadetector.Det.ReadPedestalsFile(*ped)
 	}
