@@ -44,21 +44,22 @@ import (
 type frameSliceType []*rw.Frame
 
 var (
-	noEvents uint
-
 	datacsize int = 10
 	datac         = make(chan Data, datacsize)
 
 	frameSliceChan = make(chan struct {
-		uint
+		uint    // event index
+		float64 // event processing frequency
 		frameSliceType
 	}, 10)
-	evtChan                  = make(chan *event.Event)
+	evtChan = make(chan struct {
+		float64
+		*event.Event
+	})
 	timeStamps      []uint64 // set of all processed timestamps
 	allClosedEvents []uint64 // set of timestamps of all closed events
 
 	noEventsForMon uint
-	start          time.Time
 
 	cpuprof     = flag.String("cpuprof", "", "Name of file for CPU profiling")
 	noEventsTot = flag.Uint("n", 100000, "Number of events")
@@ -440,8 +441,6 @@ func main() {
 		r.Debug = true
 	}
 
-	start = time.Now()
-
 	go readFrames(r, w, &wg)
 	go reconstructEvent(r)
 	go monitor(currentRunNumber, r, w)
@@ -585,7 +584,8 @@ func monitor(run uint32, r *rw.Reader, w *rw.Writer) {
 	}
 
 	for {
-		event := <-evtChan
+		evt := <-evtChan
+		event := evt.Event
 
 		switch event.IsCorrupted {
 		case false:
@@ -644,11 +644,6 @@ func monitor(run uint32, r *rw.Reader, w *rw.Writer) {
 				chargeRsvg = utils.RenderSVG(tpchargeR, 45, 30)
 			}
 
-			stop := time.Now()
-			duration := stop.Sub(start).Seconds()
-			start = stop
-			freq := float64(noEventsForMon) / duration
-
 			// Make DeltaT30 plot
 			pDeltaT30, err := hplot.New()
 			if err != nil {
@@ -688,7 +683,7 @@ func monitor(run uint32, r *rw.Reader, w *rw.Writer) {
 			datac <- Data{
 				EvtID:           event.ID,
 				MonBufSize:      len(datac),
-				Freq:            freq,
+				Freq:            evt.float64,
 				UDPPayloadSizes: event.UDPPayloadSizes,
 				Qs:              qs,
 				Mult:            Multsvg,
@@ -753,6 +748,8 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 	AMCFrameCounterPrev := uint32(0)
 	ASMFrameCounterPrev := uint64(0)
 	framesMap := make(map[uint64][]*rw.Frame)
+	var noEvents uint
+	start := time.Now()
 	for {
 		if nframes%*frameFreq == 0 {
 			fmt.Printf("reading frame %v\n", nframes)
@@ -811,10 +808,16 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 					fmt.Printf("len(framesMap[tsToMonitor] < 2)\n")
 				}
 				if noEvents%*monFreq == 0 {
+					stop := time.Now()
+					duration := stop.Sub(start).Seconds()
+					start = stop
+					fmt.Println("noEventsForMon, duration =", noEventsForMon, duration)
+					freq := float64(noEventsForMon) / duration
 					frameSliceChan <- struct {
 						uint
+						float64
 						frameSliceType
-					}{noEvents, framesMap[tsToMonitor]}
+					}{noEvents, freq, framesMap[tsToMonitor]}
 					noEventsForMon = 0
 				}
 				noEvents += uint(noClosedEvts)
@@ -854,6 +857,9 @@ func reconstructEvent(r *rw.Reader) {
 			evt.UDPPayloadSizes = append(evt.UDPPayloadSizes, frame.Block.UDPPayloadSize)
 			firstFrame = false
 		}
-		evtChan <- evt
+		evtChan <- struct {
+			float64
+			*event.Event
+		}{frameSlice.float64, evt}
 	}
 }
