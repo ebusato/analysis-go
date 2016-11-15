@@ -66,7 +66,7 @@ var (
 	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
 	ip          = flag.String("ip", "192.168.100.11", "IP address")
 	port        = flag.String("p", "1024", "Port number")
-	monFreq     = flag.Uint("mf", 100, "Monitoring frequency")
+	monFreq     = flag.Uint("mf", 1, "Monitoring frequency")
 	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
 	frameFreq   = flag.Uint("ff", 1000, "Frame printing frequency")
 	evtFreq     = flag.Uint("ef", 1000, "Event printing frequency")
@@ -86,7 +86,7 @@ var (
 	ped         = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 	tdo         = flag.String("tdo", "", "Name of the csv file containing time dependent offsets. If not set, time dependent offsets are not applied. Relevant only when ped!=\"\".")
 	en          = flag.String("en", "", "Name of the csv file containing energy calibration constants. If not set, energy calibration is not applied.")
-	con         = flag.String("con", "udp", "Connection type. Possible values: udp, tcp, none. If none, infileName is read")
+	con         = flag.String("con", "none", "Connection type. Possible values: udp, tcp, none. If none, infileName is read")
 	infileName  = flag.String("i", "", "Name of the input file.")
 )
 
@@ -587,7 +587,6 @@ func monitor(run uint32, r *rw.Reader, w *rw.Writer) {
 		dpgadetector.Det.ReadTimeDepOffsetsFile(*tdo)
 	}
 	if *en != "" {
-		fmt.Println("test 00")
 		dpgadetector.Det.ReadEnergyCalibFile(*en)
 	}
 	dqplots := dq.NewDQPlot()
@@ -766,9 +765,9 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 		if nframes%*frameFreq == 0 {
 			fmt.Printf("reading frame %v\n", nframes)
 		}
-		if noEvents%*evtFreq == 0 {
-			fmt.Printf("reading event %v\n", noEvents)
-		}
+		// 		if noEvents%*evtFreq == 0 {
+		// 			fmt.Printf("reading event %v\n", noEvents)
+		// 		}
 		frame, _ := r.Frame()
 		timeStamps = append(timeStamps, frame.Block.TimeStamp)
 		framesMap[frame.Block.TimeStamp] = append(framesMap[frame.Block.TimeStamp], frame)
@@ -845,7 +844,7 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 
 		allClosedEvents = append(allClosedEvents, closedEvts...)
 		nframes++
-	}
+	} //frame loop
 }
 
 func reconstructEvent(r *rw.Reader) {
