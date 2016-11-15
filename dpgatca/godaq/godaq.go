@@ -2,6 +2,7 @@
 //   - manage runs.csv and runs_test.csv
 //   - add header to binary files and code that fills it properly on godaq side
 //   - put same stuff on monitoring as there was in the VME version (multiplicity, minimal reconstruction, hv, ...)
+//   - reintroduce in a proper way user commands to pause/resume/stop run and monitoring
 
 package main
 
@@ -49,10 +50,8 @@ var (
 	timeStamps      []uint64 // set of all processed timestamps
 	allClosedEvents []uint64 // set of timestamps of all closed events
 
-	terminateRun = make(chan bool)
-	pauseRun     = make(chan bool)
-	resumeRun    = make(chan bool)
-	pauseMonBool bool
+	noEventsForMon uint64
+	start          time.Time
 
 	cpuprof     = flag.String("cpuprof", "", "Name of file for CPU profiling")
 	noEvents    = flag.Uint("n", 100000, "Number of events")
@@ -436,6 +435,8 @@ func main() {
 
 	iEvent := uint(0)
 
+	start = time.Now()
+
 	go readFrames(r, w, &wg)
 	go reconstructEvent(r)
 	go stream(currentRunNumber, r, w, &iEvent, evtChan)
@@ -541,28 +542,13 @@ func dataHandler(ws *websocket.Conn) {
 
 // func command(terminateRun, pauseRun chan bool) {
 func command() {
+	in := bufio.NewReader(os.Stdin) // to be replaced by Scanner
 	for {
-		in := bufio.NewReader(os.Stdin) // to be replaced by Scanner
 		word, _ := in.ReadString('\n')
 		word = strings.Replace(word, "\n", "", -1)
 		switch word {
 		default:
 			fmt.Println("command not known, what do you mean ?", word)
-		case "stop":
-			fmt.Println("stopping run")
-			terminateRun <- true
-		case "pause":
-			fmt.Println("pausing run")
-			pauseRun <- true
-		case "resume":
-			fmt.Println("resuming run")
-			resumeRun <- true
-		case "pause mon":
-			fmt.Println("pausing monitoring")
-			pauseMonBool = true
-		case "resume mon":
-			fmt.Println("resuming monitoring")
-			pauseMonBool = false
 		}
 	}
 }
@@ -599,7 +585,6 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 		fmt.Println("test 00")
 		dpgadetector.Det.ReadEnergyCalibFile(*en)
 	}
-	noEventsForMon := uint64(0)
 	dqplots := dq.NewDQPlot()
 	if *refplots != "" {
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
@@ -609,165 +594,154 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, evtChan chan *
 	if !*notree {
 		treeMult2 = trees.NewTreeMult2(outrootfileName)
 	}
-	start := time.Now()
 
 	for {
-		select {
-		case <-terminateRun:
-			*noEvents = *iEvent + 1
-			fmt.Printf("terminating stream for total number of events = %v.\n", *noEvents)
-		case <-pauseRun:
-			<-resumeRun
-		case event := <-evtChan:
-			switch *iEvent < *noEvents {
-			case true:
-				if *iEvent%*evtFreq == 0 {
-					fmt.Printf("event %v\n", *iEvent)
-				}
-				//event.Print(false, false)
-				switch event.IsCorrupted {
-				case false:
-					event.ID = *iEvent
-					//event.Print(true, false)
-					//w.Event(event)
-					noEventsForMon++
-					////////////////////////////////////////////////////////////////////////////////////////////
-					// Monitoring
-					if !pauseMonBool {
-						//////////////////////////////////////////////////////
-						// Corrections
-						doPedestal := false
-						doTimeDepOffset := false
-						doEnergyCalib := false
-						if *ped != "" {
-							doPedestal = true
-						}
-						if *tdo != "" {
-							doTimeDepOffset = true
-						}
-						if *en != "" {
-							doEnergyCalib = true
-						}
-						event = applyCorrCalib.CorrectEvent(event, doPedestal, doTimeDepOffset, doEnergyCalib)
-						//////////////////////////////////////////////////////
-						dqplots.FillHistos(event)
-
-						if *iEvent%*monFreq == 0 {
-							var qs Quartets
-							sampFreq := 5
-							if *monLight {
-								sampFreq = 20
-							}
-							for iq := 0; iq < len(qs); iq++ {
-								qs[iq][0] = GetMonData(sampFreq, event.Clusters[iq].Pulses[0])
-								qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])
-								qs[iq][2] = GetMonData(sampFreq, event.Clusters[iq].Pulses[2])
-								qs[iq][3] = GetMonData(sampFreq, event.Clusters[iq].Pulses[3])
-							}
-
-							// Make frequency histo plot
-							tpfreq := dqplots.MakeFreqTiledPlot()
-							freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
-
-							chargeLsvg := ""
-							chargeRsvg := ""
-							if !*monLight {
-								// Make charge (or amplitude) distrib histo plot
-								var whichVar dq.WhichVar
-								switch *distr {
-								case "charge":
-									whichVar = dq.Charge
-								case "ampl":
-									whichVar = dq.Amplitude
-								case "energy":
-									whichVar = dq.Energy
-								default:
-									panic("String passed to option -distr not recognized (see godaq -h)")
-								}
-								tpchargeL := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Left)
-								tpchargeR := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Right)
-								chargeLsvg = utils.RenderSVG(tpchargeL, 45, 30)
-								chargeRsvg = utils.RenderSVG(tpchargeR, 45, 30)
-							}
-
-							stop := time.Now()
-							duration := stop.Sub(start).Seconds()
-							start = stop
-							freq := float64(noEventsForMon) / duration
-							if *iEvent == 0 {
-								freq = 0
-							}
-
-							// Make DeltaT30 plot
-							pDeltaT30, err := hplot.New()
-							if err != nil {
-								panic(err)
-							}
-							pDeltaT30.X.Label.Text = "Delta T30 (ns)"
-							pDeltaT30.Y.Label.Text = "No entries"
-							pDeltaT30.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
-							hpDeltaT30, err := hplot.NewH1D(dqplots.DeltaT30)
-							if err != nil {
-								panic(err)
-							}
-							pDeltaT30.Add(hpDeltaT30)
-							pDeltaT30.Add(hplot.NewGrid())
-							DeltaT30svg := utils.RenderSVG(pDeltaT30, 15, 7)
-
-							// Make multiplicity plot
-							pMult, err := hplot.New()
-							if err != nil {
-								panic(err)
-							}
-							pMult.X.Label.Text = "Pulse multiplicity"
-							pMult.Y.Label.Text = "No entries"
-							pMult.X.Tick.Marker = &hplot.FreqTicks{N: 17, Freq: 1}
-							hMult, err := hplot.NewH1D(dqplots.HMultiplicity)
-							if err != nil {
-								panic(err)
-							}
-							pMult.Add(hMult)
-							pMult.Add(hplot.NewGrid())
-							Multsvg := utils.RenderSVG(pMult, 15, 7)
-
-							// send to channel
-							if float64(len(datac)) >= 0.6*float64(datacsize) {
-								fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
-							}
-							datac <- Data{
-								EvtID:           event.ID,
-								MonBufSize:      len(datac),
-								Freq:            freq,
-								UDPPayloadSizes: event.UDPPayloadSizes,
-								Qs:              qs,
-								Mult:            Multsvg,
-								FreqH:           freqhsvg,
-								ChargeL:         chargeLsvg,
-								ChargeR:         chargeRsvg,
-								DeltaT30:        DeltaT30svg,
-							}
-							noEventsForMon = 0
-						}
-					}
-					// End of monitoring
-					////////////////////////////////////////////////////////////////////////////////////////////
-					*iEvent++
-					//noEventsForMon++
-					if *sleep {
-						fmt.Println("Warning: sleeping for 1 second")
-						time.Sleep(1 * time.Second)
-					}
-				case true:
-					fmt.Println("warning, event is corrupted and therefore not written to output file.")
-					log.Fatalf(" -> quitting")
-				}
-			case false:
-				fmt.Println("reached specified number of events, stopping.")
-				if treeMult2 != nil {
-					treeMult2.Close()
-				}
-				return
+		event := <-evtChan
+		switch *iEvent < *noEvents {
+		case true:
+			if *iEvent%*evtFreq == 0 {
+				fmt.Printf("event %v\n", *iEvent)
 			}
+			//event.Print(false, false)
+			switch event.IsCorrupted {
+			case false:
+				event.ID = *iEvent
+				//event.Print(true, false)
+				//w.Event(event)
+				////////////////////////////////////////////////////////////////////////////////////////////
+				// Monitoring
+				//////////////////////////////////////////////////////
+				// Corrections
+				doPedestal := false
+				doTimeDepOffset := false
+				doEnergyCalib := false
+				if *ped != "" {
+					doPedestal = true
+				}
+				if *tdo != "" {
+					doTimeDepOffset = true
+				}
+				if *en != "" {
+					doEnergyCalib = true
+				}
+				event = applyCorrCalib.CorrectEvent(event, doPedestal, doTimeDepOffset, doEnergyCalib)
+				//////////////////////////////////////////////////////
+				dqplots.FillHistos(event)
+
+				if *iEvent%*monFreq == 0 {
+					var qs Quartets
+					sampFreq := 5
+					if *monLight {
+						sampFreq = 20
+					}
+					for iq := 0; iq < len(qs); iq++ {
+						qs[iq][0] = GetMonData(sampFreq, event.Clusters[iq].Pulses[0])
+						qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])
+						qs[iq][2] = GetMonData(sampFreq, event.Clusters[iq].Pulses[2])
+						qs[iq][3] = GetMonData(sampFreq, event.Clusters[iq].Pulses[3])
+					}
+
+					// Make frequency histo plot
+					tpfreq := dqplots.MakeFreqTiledPlot()
+					freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
+
+					chargeLsvg := ""
+					chargeRsvg := ""
+					if !*monLight {
+						// Make charge (or amplitude) distrib histo plot
+						var whichVar dq.WhichVar
+						switch *distr {
+						case "charge":
+							whichVar = dq.Charge
+						case "ampl":
+							whichVar = dq.Amplitude
+						case "energy":
+							whichVar = dq.Energy
+						default:
+							panic("String passed to option -distr not recognized (see godaq -h)")
+						}
+						tpchargeL := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Left)
+						tpchargeR := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Right)
+						chargeLsvg = utils.RenderSVG(tpchargeL, 45, 30)
+						chargeRsvg = utils.RenderSVG(tpchargeR, 45, 30)
+					}
+
+					stop := time.Now()
+					duration := stop.Sub(start).Seconds()
+					start = stop
+					freq := float64(noEventsForMon) / duration
+					if *iEvent == 0 {
+						freq = 0
+					}
+
+					// Make DeltaT30 plot
+					pDeltaT30, err := hplot.New()
+					if err != nil {
+						panic(err)
+					}
+					pDeltaT30.X.Label.Text = "Delta T30 (ns)"
+					pDeltaT30.Y.Label.Text = "No entries"
+					pDeltaT30.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
+					hpDeltaT30, err := hplot.NewH1D(dqplots.DeltaT30)
+					if err != nil {
+						panic(err)
+					}
+					pDeltaT30.Add(hpDeltaT30)
+					pDeltaT30.Add(hplot.NewGrid())
+					DeltaT30svg := utils.RenderSVG(pDeltaT30, 15, 7)
+
+					// Make multiplicity plot
+					pMult, err := hplot.New()
+					if err != nil {
+						panic(err)
+					}
+					pMult.X.Label.Text = "Pulse multiplicity"
+					pMult.Y.Label.Text = "No entries"
+					pMult.X.Tick.Marker = &hplot.FreqTicks{N: 17, Freq: 1}
+					hMult, err := hplot.NewH1D(dqplots.HMultiplicity)
+					if err != nil {
+						panic(err)
+					}
+					pMult.Add(hMult)
+					pMult.Add(hplot.NewGrid())
+					Multsvg := utils.RenderSVG(pMult, 15, 7)
+
+					// send to channel
+					if float64(len(datac)) >= 0.6*float64(datacsize) {
+						fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
+					}
+					datac <- Data{
+						EvtID:           event.ID,
+						MonBufSize:      len(datac),
+						Freq:            freq,
+						UDPPayloadSizes: event.UDPPayloadSizes,
+						Qs:              qs,
+						Mult:            Multsvg,
+						FreqH:           freqhsvg,
+						ChargeL:         chargeLsvg,
+						ChargeR:         chargeRsvg,
+						DeltaT30:        DeltaT30svg,
+					}
+					noEventsForMon = 0
+				}
+				// End of monitoring
+				////////////////////////////////////////////////////////////////////////////////////////////
+				*iEvent++
+				//noEventsForMon++
+				if *sleep {
+					fmt.Println("Warning: sleeping for 1 second")
+					time.Sleep(1 * time.Second)
+				}
+			case true:
+				fmt.Println("warning, event is corrupted and therefore not written to output file.")
+				log.Fatalf(" -> quitting")
+			}
+		case false:
+			fmt.Println("reached specified number of events, stopping.")
+			if treeMult2 != nil {
+				treeMult2.Close()
+			}
+			return
 		}
 	} // event loop
 }
@@ -875,6 +849,7 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 				frameSliceChan <- framesMap[ts]
 			}
 			delete(framesMap, ts)
+			noEventsForMon++
 		}
 
 		allClosedEvents = append(allClosedEvents, closedEvts...)
