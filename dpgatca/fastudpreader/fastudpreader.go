@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"log"
@@ -69,25 +70,46 @@ func main() {
 	r.ReadMode = rw.UDPHalfDRS
 	nframes := uint(0)
 	AMCFrameCounterPrev := uint32(0)
-	ASMFrameCounterPrev := uint64(0)
+	//ASMFrameCounterPrev := uint64(0)
 	for {
 		if nframes%*frameFreq == 0 {
 			fmt.Printf("reading frame %v\n", nframes)
 		}
-		frame, _ := r.Frame()
+		/////////////////////////////////////
+		// Option 1
+		/*
+			frame, _ := r.Frame()
+			if nframes > 0 {
+				if frame.Block.AMCFrameCounter != AMCFrameCounterPrev+1 {
+					fmt.Printf("frame.Block.AMCFrameCounter != AMCFrameCounterPrev + 1\n")
+				}
+				if frame.Block.ASMFrameCounter != ASMFrameCounterPrev+1 {
+					fmt.Printf("frame.Block.ASMFrameCounter != ASMFrameCounterPrev + 1\n")
+				}
+			}
+			AMCFrameCounterPrev = frame.Block.AMCFrameCounter
+			ASMFrameCounterPrev = frame.Block.ASMFrameCounter
+			if r.ReadMode == rw.UDPHalfDRS && frame.Block.UDPPayloadSize < 8230 {
+				log.Printf("frame.Block.UDPPayloadSize = %v\n", frame.Block.UDPPayloadSize)
+			}
+		*/
+		/////////////////////////////////////
+
+		/////////////////////////////////////
+		// Option 2
+		data := make([]byte, 8238)
+		conn.ReadFromUDP(data)
+		AMCFrameCounter0 := binary.BigEndian.Uint16(data[2:4])
+		AMCFrameCounter1 := binary.BigEndian.Uint16(data[4:6])
+		AMCFrameCounter := (uint32(AMCFrameCounter0) << 16) + uint32(AMCFrameCounter1)
 		if nframes > 0 {
-			if frame.Block.AMCFrameCounter != AMCFrameCounterPrev+1 {
-				fmt.Printf("frame.Block.AMCFrameCounter != AMCFrameCounterPrev + 1\n")
-			}
-			if frame.Block.ASMFrameCounter != ASMFrameCounterPrev+1 {
-				fmt.Printf("frame.Block.ASMFrameCounter != ASMFrameCounterPrev + 1\n")
+			if AMCFrameCounter != AMCFrameCounterPrev+1 {
+				fmt.Printf("AMCFrameCounter != AMCFrameCounterPrev+1\n")
 			}
 		}
-		AMCFrameCounterPrev = frame.Block.AMCFrameCounter
-		ASMFrameCounterPrev = frame.Block.ASMFrameCounter
-		if r.ReadMode == rw.UDPHalfDRS && frame.Block.UDPPayloadSize < 8230 {
-			log.Printf("frame.Block.UDPPayloadSize = %v\n", frame.Block.UDPPayloadSize)
-		}
+		AMCFrameCounterPrev = AMCFrameCounter
+		/////////////////////////////////////
+
 		nframes++
 	}
 }
