@@ -727,7 +727,6 @@ func makePulses(f *rw.Frame, sigThreshold uint) [4]*pulse.Pulse {
 			sample := pulse.NewSample(ampl, uint16(j), float64(j)*dpgadetector.Det.SamplingFreq())
 			pul.AddSample(sample, dpgadetector.Det.Capacitor(iHemi, iASM, iDRS, iQuartet, iChannel, 0), float64(sigThreshold))
 		}
-
 		pulses[i] = pul
 	}
 	return pulses
