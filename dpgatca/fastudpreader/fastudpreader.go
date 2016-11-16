@@ -1,3 +1,6 @@
+// Questions:
+//   - is it better to have bufio or not ?
+
 package main
 
 import (
@@ -71,6 +74,8 @@ func main() {
 	nframes := uint(0)
 	AMCFrameCounterPrev := uint32(0)
 	//ASMFrameCounterPrev := uint64(0)
+	data := make([]byte, 8238)
+	//amplitudes := make([]uint16, 1022)
 	for {
 		if nframes%*frameFreq == 0 {
 			fmt.Printf("reading frame %v\n", nframes)
@@ -97,8 +102,15 @@ func main() {
 
 		/////////////////////////////////////
 		// Option 2
-		data := make([]byte, 8238)
 		conn.ReadFromUDP(data)
+		/*
+			for i := 0; i < 4; i++ {
+				for j := range amplitudes {
+					amplitudes[j] = binary.BigEndian.Uint16(data[44+2*j+i*2*1023 : 46+2*j+i*2*1023])
+				}
+			}*/
+
+		//fmt.Println(data)
 		AMCFrameCounter0 := binary.BigEndian.Uint16(data[2:4])
 		AMCFrameCounter1 := binary.BigEndian.Uint16(data[4:6])
 		AMCFrameCounter := (uint32(AMCFrameCounter0) << 16) + uint32(AMCFrameCounter1)
@@ -108,6 +120,7 @@ func main() {
 			}
 		}
 		AMCFrameCounterPrev = AMCFrameCounter
+
 		/////////////////////////////////////
 
 		nframes++
