@@ -81,51 +81,47 @@ func (w *Writer) writeFrame(f *Frame) {
 	if w.err != nil {
 		return
 	}
-	w.writeBlock(&f.Block)
+	w.writeHeader(f)
+	w.writeData(f)
+	w.writeTrailer(f)
 }
 
-func (w *Writer) writeBlock(blk *Block) {
-	w.writeBlockHeader(blk)
-	w.writeBlockData(blk)
-	w.writeBlockTrailer(blk)
-}
-
-func (w *Writer) writeBlockHeader(blk *Block) {
+func (w *Writer) writeHeader(f *Frame) {
 	if w.err != nil {
 		return
 	}
-	//fmt.Printf("rw: writing block header: %v %v %x\n", blk.Evt, blk.ID, blockHeader)
-	w.writeU16(blk.FirstBlockWord)
-	w.write(blk.AMCFrameCounters)
-	w.writeU16(blk.ParityFEIdCtrl)
-	w.writeU16(blk.TriggerMode)
-	w.writeU16(blk.Trigger)
-	w.write(blk.ASMFrameCounters)
-	w.writeU16(blk.Cafe)
-	w.writeU16(blk.Deca)
-	w.write(blk.Counters)
-	w.write(blk.TimeStamps)
-	w.writeU16(blk.NoSamples)
+	//fmt.Printf("rw: writing block header: %v %v %x\n", f.Evt, f.ID, blockHeader)
+	w.writeU16(f.FirstBlockWord)
+	w.write(f.AMCFrameCounters)
+	w.writeU16(f.ParityFEIdCtrl)
+	w.writeU16(f.TriggerMode)
+	w.writeU16(f.Trigger)
+	w.write(f.ASMFrameCounters)
+	w.writeU16(f.Cafe)
+	w.writeU16(f.Deca)
+	w.write(f.Counters)
+	w.write(f.TimeStamps)
+	w.writeU16(f.NoSamples)
 }
 
-func (w *Writer) writeBlockData(blk *Block) {
+func (w *Writer) writeData(f *Frame) {
 	if w.err != nil {
 		return
 	}
-	for i := range blk.Data.Data {
-		data := &blk.Data.Data[i]
+	for i := range f.Data.Data {
+		data := &f.Data.Data[i]
 		w.writeU16(data.ParityChanIdCtrl)
 		w.write(data.Amplitudes)
-		if blk.Err == ErrorCode1 {
+		if f.Err == ErrorCode1 {
 			//fmt.Println("ErrorCode1, add extra word")
 			w.writeU16(uint16(0))
 		}
 	}
 }
 
-func (w *Writer) writeBlockTrailer(blk *Block) {
-	w.writeU16(blk.CRC)
-	w.writeU16(blk.ParityFEIdCtrl2)
+func (w *Writer) writeTrailer(f *Frame) {
+	w.writeU16(f.CRC)
+	w.writeU16(f.ParityFEIdCtrl2)
 }
 
 /*

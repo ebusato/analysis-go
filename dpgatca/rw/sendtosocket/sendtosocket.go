@@ -90,15 +90,15 @@ func main() {
 			}
 			frame, err := r.Frame()
 			if nFrames > 0 {
-				if frame.Block.AMCFrameCounter != AMCFrameCounterPrev+1 {
+				if frame.AMCFrameCounter != AMCFrameCounterPrev+1 {
 					fmt.Printf("frame.Block.AMCFrameCounter != AMCFrameCounterPrev + 1\n")
 				}
-				if frame.Block.ASMFrameCounter != ASMFrameCounterPrev+1 {
+				if frame.ASMFrameCounter != ASMFrameCounterPrev+1 {
 					fmt.Printf("frame.Block.ASMFrameCounter != ASMFrameCounterPrev + 1\n")
 				}
 			}
-			AMCFrameCounterPrev = frame.Block.AMCFrameCounter
-			ASMFrameCounterPrev = frame.Block.ASMFrameCounter
+			AMCFrameCounterPrev = frame.AMCFrameCounter
+			ASMFrameCounterPrev = frame.ASMFrameCounter
 			nFrames++
 			// 			fmt.Println("AMCFrameCounter =", frame.Block.AMCFrameCounter)
 			// 			fmt.Println("ASMFrameCounter =", frame.Block.ASMFrameCounter)

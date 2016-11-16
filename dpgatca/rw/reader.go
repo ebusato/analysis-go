@@ -109,7 +109,7 @@ func (r *Reader) Frame() (*Frame, error) {
 			r.UDPHalfDRSBuffer[i] = 0
 		}
 		n, err := r.r.Read(r.UDPHalfDRSBuffer)
-		blk.UDPPayloadSize = n
+		f.UDPPayloadSize = n
 		if r.err != nil {
 			panic(err)
 		}
@@ -118,80 +118,80 @@ func (r *Reader) Frame() (*Frame, error) {
 		// 	}
 	}
 
-	r.readBlockHeader(blk)
-	r.err = blk.IntegrityHeader()
+	r.readHeader(f)
+	r.err = f.IntegrityHeader()
 	if r.err != nil {
 		fmt.Println("IntegrityHeader check failed")
-		blk.Print("short")
-		return
+		f.Print("short")
+		return nil, nil
 	}
-	r.readBlockData(blk)
-	r.err = blk.IntegrityData()
+	r.readData(f)
+	r.err = f.IntegrityData()
 	if r.err != nil {
 		fmt.Println("IntegrityData check failed")
-		blk.Print("short")
-		return
+		f.Print("short")
+		return nil, nil
 	}
-	r.readBlockTrailer(blk)
-	r.err = blk.IntegrityTrailer()
+	r.readTrailer(f)
+	r.err = f.IntegrityTrailer()
 	if r.err != nil {
 		fmt.Println("IntegrityTrailer check failed")
-		blk.Print("medium")
-		return
+		f.Print("medium")
+		return nil, nil
 	}
 	return f, r.err
 }
 
-func (r *Reader) readBlockHeader(blk *Block) {
+func (r *Reader) readHeader(f *Frame) {
 	switch r.ReadMode {
 	case UDPHalfDRS:
-		blk.FirstBlockWord = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[0:2])
-		blk.AMCFrameCounters[0] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[2:4])
-		blk.AMCFrameCounters[1] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[4:6])
-		blk.ParityFEIdCtrl = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[6:8])
-		blk.TriggerMode = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[8:10])
-		blk.Trigger = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[10:12])
-		blk.ASMFrameCounters[0] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[12:14])
-		blk.ASMFrameCounters[1] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[14:16])
-		blk.ASMFrameCounters[2] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[16:18])
-		blk.ASMFrameCounters[3] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[18:20])
-		blk.Cafe = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[20:22])
-		blk.Deca = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[22:24])
-		blk.Counters[0] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[24:26])
-		blk.Counters[1] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[26:28])
-		blk.Counters[2] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[28:30])
-		blk.Counters[3] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[30:32])
-		blk.TimeStamps[0] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[32:34])
-		blk.TimeStamps[1] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[34:36])
-		blk.TimeStamps[2] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[36:38])
-		blk.TimeStamps[3] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[38:40])
-		blk.NoSamples = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[40:42])
+		f.FirstBlockWord = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[0:2])
+		f.AMCFrameCounters[0] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[2:4])
+		f.AMCFrameCounters[1] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[4:6])
+		f.ParityFEIdCtrl = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[6:8])
+		f.TriggerMode = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[8:10])
+		f.Trigger = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[10:12])
+		f.ASMFrameCounters[0] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[12:14])
+		f.ASMFrameCounters[1] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[14:16])
+		f.ASMFrameCounters[2] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[16:18])
+		f.ASMFrameCounters[3] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[18:20])
+		f.Cafe = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[20:22])
+		f.Deca = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[22:24])
+		f.Counters[0] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[24:26])
+		f.Counters[1] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[26:28])
+		f.Counters[2] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[28:30])
+		f.Counters[3] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[30:32])
+		f.TimeStamps[0] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[32:34])
+		f.TimeStamps[1] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[34:36])
+		f.TimeStamps[2] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[36:38])
+		f.TimeStamps[3] = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[38:40])
+		f.NoSamples = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[40:42])
 	case Default:
-		r.readU16(&blk.FirstBlockWord)
-		r.read(&blk.AMCFrameCounters)
-		r.readU16(&blk.ParityFEIdCtrl)
-		r.readU16(&blk.TriggerMode)
-		r.readU16(&blk.Trigger)
-		r.read(&blk.ASMFrameCounters)
-		r.readU16(&blk.Cafe)
-		r.readU16(&blk.Deca)
-		r.read(&blk.Counters)
-		r.read(&blk.TimeStamps)
-		r.readU16(&blk.NoSamples)
+		r.readU16(&f.FirstBlockWord)
+		r.read(&f.AMCFrameCounters)
+		r.readU16(&f.ParityFEIdCtrl)
+		r.readU16(&f.TriggerMode)
+		r.readU16(&f.Trigger)
+		r.read(&f.ASMFrameCounters)
+		r.readU16(&f.Cafe)
+		r.readU16(&f.Deca)
+		r.read(&f.Counters)
+		r.read(&f.TimeStamps)
+		r.readU16(&f.NoSamples)
 	}
-	blk.AMCFrameCounter = (uint32(blk.AMCFrameCounters[0]) << 16) + uint32(blk.AMCFrameCounters[1])
-	blk.FrontEndId = (blk.ParityFEIdCtrl & 0x7fff) >> 8
-	blk.ASMFrameCounter = (uint64(blk.ASMFrameCounters[0]) << 48) + (uint64(blk.ASMFrameCounters[1]) << 32) + (uint64(blk.ASMFrameCounters[2]) << 16) + uint64(blk.ASMFrameCounters[3])
-	temp := (uint64(blk.TimeStamps[0]) << 16) | uint64(blk.TimeStamps[1])
+	f.AMCFrameCounter = (uint32(f.AMCFrameCounters[0]) << 16) + uint32(f.AMCFrameCounters[1])
+	f.FrontEndId = (f.ParityFEIdCtrl & 0x7fff) >> 8
+	f.ASMFrameCounter = (uint64(f.ASMFrameCounters[0]) << 48) + (uint64(f.ASMFrameCounters[1]) << 32) + (uint64(f.ASMFrameCounters[2]) << 16) + uint64(f.ASMFrameCounters[3])
+	temp := (uint64(f.TimeStamps[0]) << 16) | uint64(f.TimeStamps[1])
 	temp = (temp << 32)
-	temp1 := (uint64(blk.TimeStamps[2]) << 16) | uint64(blk.TimeStamps[3])
+	temp1 := (uint64(f.TimeStamps[2]) << 16) | uint64(f.TimeStamps[3])
 	// 	temp |= temp1
-	blk.TimeStamp = temp | temp1
+	f.TimeStamp = temp | temp1
 	///////////////////////////////////////////////////////////////////////
 	// This +11 is necessary but currently not really understood
 	// 11 clock periods are generated by "machine d'etat" in ASM firmware
 	// These additionnal 11 samples should currently be considered junk
-	blk.Data.SetNoSamples(blk.NoSamples + 11)
+	f.Data.SetNoSamples(f.NoSamples + 11)
 	///////////////////////////////////////////////////////////////////////
 }
 
@@ -201,8 +201,8 @@ var (
 )
 
 // readParityChanIdCtrl is a temporary fix, until we understand where the additionnal 16 bits words come from
-func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
-	data := &blk.Data.Data[i]
+func (r *Reader) readParityChanIdCtrl(f *Frame, i int) bool {
+	data := &f.Data.Data[i]
 	switch r.ReadMode {
 	case UDPHalfDRS:
 		data.ParityChanIdCtrl = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[42+i*2*1023+2*noAttempts : 44+i*2*1023+2*noAttempts])
@@ -215,35 +215,35 @@ func (r *Reader) readParityChanIdCtrl(blk *Block, i int) bool {
 		return true
 	}
 	data.Channel = (data.ParityChanIdCtrl & 0x7f00) >> 8
-	if data.Channel != blk.Data.Data[0].Channel+uint16(i) {
-		//panic("reader.readParityChanIdCtrl: data.Channel != blk.Data.Data[0].Channel+uint16(i)")
+	if data.Channel != f.Data.Data[0].Channel+uint16(i) {
+		//panic("reader.readParityChanIdCtrl: data.Channel != f.Data.Data[0].Channel+uint16(i)")
 		return true
 	}
-	blk.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(blk.FrontEndId, data.Channel)
-	//fmt.Printf("   -> %v, %v, %v\n", data.Channel, blk.QuartetAbsIdx60, QuartetAbsIdx60old)
-	if i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old {
-		//panic("i > 0 && blk.QuartetAbsIdx60 != QuartetAbsIdx60old")
+	f.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(f.FrontEndId, data.Channel)
+	//fmt.Printf("   -> %v, %v, %v\n", data.Channel, f.QuartetAbsIdx60, QuartetAbsIdx60old)
+	if i > 0 && f.QuartetAbsIdx60 != QuartetAbsIdx60old {
+		//panic("i > 0 && f.QuartetAbsIdx60 != QuartetAbsIdx60old")
 		return true
 	}
-	QuartetAbsIdx60old = blk.QuartetAbsIdx60
+	QuartetAbsIdx60old = f.QuartetAbsIdx60
 	return false
 }
 
-func (r *Reader) readBlockData(blk *Block) {
+func (r *Reader) readData(f *Frame) {
 	if r.err != nil {
 		return
 	}
-	//blk.Print("short")
-	for i := range blk.Data.Data {
-		data := &blk.Data.Data[i]
-		for r.readParityChanIdCtrl(blk, i) {
+	//f.Print("short")
+	for i := range f.Data.Data {
+		data := &f.Data.Data[i]
+		for r.readParityChanIdCtrl(f, i) {
 			noAttempts++
 			if noAttempts >= 4 {
 				log.Fatalf("reader.readParityChanIdCtrl: noAttempts >= 4\n")
 			}
 		}
 		if noAttempts == 1 {
-			blk.Err = ErrorCode1
+			f.Err = ErrorCode1
 		}
 		noAttempts = 0
 		//fmt.Printf("data.ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
@@ -261,25 +261,25 @@ func (r *Reader) readBlockData(blk *Block) {
 	}
 }
 
-func (r *Reader) readBlockTrailer(blk *Block) {
+func (r *Reader) readTrailer(f *Frame) {
 	switch r.ReadMode {
 	case UDPHalfDRS:
-		if blk.Err == ErrorCode1 {
-			blk.CRC = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[len(r.UDPHalfDRSBuffer)-4 : len(r.UDPHalfDRSBuffer)-2])
-			blk.ParityFEIdCtrl2 = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[len(r.UDPHalfDRSBuffer)-2 : len(r.UDPHalfDRSBuffer)])
+		if f.Err == ErrorCode1 {
+			f.CRC = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[len(r.UDPHalfDRSBuffer)-4 : len(r.UDPHalfDRSBuffer)-2])
+			f.ParityFEIdCtrl2 = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[len(r.UDPHalfDRSBuffer)-2 : len(r.UDPHalfDRSBuffer)])
 		} else {
-			blk.CRC = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[len(r.UDPHalfDRSBuffer)-12 : len(r.UDPHalfDRSBuffer)-10])
-			blk.ParityFEIdCtrl2 = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[len(r.UDPHalfDRSBuffer)-10 : len(r.UDPHalfDRSBuffer)-8])
+			f.CRC = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[len(r.UDPHalfDRSBuffer)-12 : len(r.UDPHalfDRSBuffer)-10])
+			f.ParityFEIdCtrl2 = binary.BigEndian.Uint16(r.UDPHalfDRSBuffer[len(r.UDPHalfDRSBuffer)-10 : len(r.UDPHalfDRSBuffer)-8])
 		}
 	case Default:
-		r.readU16(&blk.CRC)
+		r.readU16(&f.CRC)
 		// Temporary fix, until we understand where these additionnal 16 bits come from
-		if blk.CRC != ctrl0xCRC {
-			//fmt.Printf("CRC = %x (should be %x)\n", blk.CRC, ctrl0xCRC)
-			r.readU16(&blk.CRC)
-			//fmt.Printf("new CRC = %x\n", blk.CRC)
+		if f.CRC != ctrl0xCRC {
+			//fmt.Printf("CRC = %x (should be %x)\n", f.CRC, ctrl0xCRC)
+			r.readU16(&f.CRC)
+			//fmt.Printf("new CRC = %x\n", f.CRC)
 		}
 		// End of temporary fix
-		r.readU16(&blk.ParityFEIdCtrl2)
+		r.readU16(&f.ParityFEIdCtrl2)
 	}
 }
