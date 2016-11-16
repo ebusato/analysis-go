@@ -1,6 +1,7 @@
 package rw
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log"
 )
@@ -44,9 +45,9 @@ const (
 	ErrorCode1 ErrorCode = iota + 1 // value of error code if block has 4 extra 16 bits words after each sample block
 )
 
-// Block is a single data frame produced by AMC
-// Each block is associated to one half DRS
-type Block struct {
+// Frame is a single data frame produced by AMC
+// Each frame is associated to one half DRS
+type Frame struct {
 	// Raw quantities
 	FirstBlockWord   uint16
 	AMCFrameCounters [numAMCFrameCounters]uint16
@@ -77,63 +78,100 @@ type Block struct {
 	UDPPayloadSize int
 }
 
-func (b *Block) IntegrityHeader() error {
-	if b.FirstBlockWord != ctrlFirstWord {
+func NewFrame(udppayloadsize int, buffer []byte) *Frame {
+	f := &Frame{}
+	f.UDPPayloadSize = udppayloadsize
+	f.ReadHeader(buffer)
+	err := f.IntegrityHeader()
+	if err != nil {
+		fmt.Println("IntegrityHeader check failed")
+		f.Print("short")
+		return nil
+	}
+	return f
+}
+
+func (f *Frame) IntegrityHeader() error {
+	if f.FirstBlockWord != ctrlFirstWord {
 		return fmt.Errorf("asm: missing %x magic\n", ctrlFirstWord)
 	}
-	if (b.ParityFEIdCtrl & 0xff) != ctrl0xfe {
+	if (f.ParityFEIdCtrl & 0xff) != ctrl0xfe {
 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xfe)
 	}
-	if b.Cafe != ctrl0xCafe {
+	if f.Cafe != ctrl0xCafe {
 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xCafe)
 	}
-	if b.Deca != ctrl0xDeca {
+	if f.Deca != ctrl0xDeca {
 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xDeca)
 	}
 	return nil
 }
 
-func (b *Block) IntegrityData() error {
-	for i := range b.Data.Data {
-		if (b.Data.Data[i].ParityChanIdCtrl & 0xff) != ctrl0xfd {
+func (f *Frame) IntegrityData() error {
+	for i := range f.Data.Data {
+		if (f.Data.Data[i].ParityChanIdCtrl & 0xff) != ctrl0xfd {
 			return fmt.Errorf("asm: missing %x magic\n", ctrl0xfd)
 		}
 	}
 	return nil
 }
 
-func (b *Block) IntegrityTrailer() error {
-	if b.CRC != ctrl0xCRC {
+func (f *Frame) IntegrityTrailer() error {
+	if f.CRC != ctrl0xCRC {
 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xCRC)
 	}
-	if (b.ParityFEIdCtrl2 & 0xff) != ctrl0xfb {
+	if (f.ParityFEIdCtrl2 & 0xff) != ctrl0xfb {
 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xfb)
 	}
-	if (b.ParityFEIdCtrl2&0x7fff)>>8 != b.FrontEndId {
+	if (f.ParityFEIdCtrl2&0x7fff)>>8 != f.FrontEndId {
 		log.Fatalf("Front end ids in header and trailer don't match\n")
 	}
 	return nil
 }
 
-func (b *Block) Print(s string) {
-	fmt.Printf(" Printing block (UDP payload size=%v):\n", b.UDPPayloadSize)
-	fmt.Printf("   -> FirstBlockWord = %x\n", b.FirstBlockWord)
-	fmt.Printf("   -> AMCFrameCounters = %x (AMCFrameCounter = %v)\n", b.AMCFrameCounters, b.AMCFrameCounter)
-	fmt.Printf("   -> ParityFEIdCtrl = %x (FrontEndId = %x)\n", b.ParityFEIdCtrl, b.FrontEndId)
-	fmt.Printf("   -> TriggerMode = %x\n", b.TriggerMode)
-	fmt.Printf("   -> Trigger = %x\n", b.Trigger)
-	fmt.Printf("   -> ASMFrameCounters = %x (ASMFrameCounter = %v)\n", b.ASMFrameCounters, b.ASMFrameCounter)
-	fmt.Printf("   -> Cafe = %x\n", b.Cafe)
-	fmt.Printf("   -> Deca = %x\n", b.Deca)
-	fmt.Printf("   -> Counters = %x\n", b.Counters)
-	fmt.Printf("   -> TimeStamps = %x (TimeStamp = %v)\n", b.TimeStamps, b.TimeStamp)
-	fmt.Printf("   -> NoSamples = %x\n", b.NoSamples)
+func (f *Frame) ReadHeader(buffer []byte) {
+	f.FirstBlockWord = binary.BigEndian.Uint16(buffer[0:2])
+	f.AMCFrameCounters[0] = binary.BigEndian.Uint16(buffer[2:4])
+	f.AMCFrameCounters[1] = binary.BigEndian.Uint16(buffer[4:6])
+	f.ParityFEIdCtrl = binary.BigEndian.Uint16(buffer[6:8])
+	f.TriggerMode = binary.BigEndian.Uint16(buffer[8:10])
+	f.Trigger = binary.BigEndian.Uint16(buffer[10:12])
+	f.ASMFrameCounters[0] = binary.BigEndian.Uint16(buffer[12:14])
+	f.ASMFrameCounters[1] = binary.BigEndian.Uint16(buffer[14:16])
+	f.ASMFrameCounters[2] = binary.BigEndian.Uint16(buffer[16:18])
+	f.ASMFrameCounters[3] = binary.BigEndian.Uint16(buffer[18:20])
+	f.Cafe = binary.BigEndian.Uint16(buffer[20:22])
+	f.Deca = binary.BigEndian.Uint16(buffer[22:24])
+	f.Counters[0] = binary.BigEndian.Uint16(buffer[24:26])
+	f.Counters[1] = binary.BigEndian.Uint16(buffer[26:28])
+	f.Counters[2] = binary.BigEndian.Uint16(buffer[28:30])
+	f.Counters[3] = binary.BigEndian.Uint16(buffer[30:32])
+	f.TimeStamps[0] = binary.BigEndian.Uint16(buffer[32:34])
+	f.TimeStamps[1] = binary.BigEndian.Uint16(buffer[34:36])
+	f.TimeStamps[2] = binary.BigEndian.Uint16(buffer[36:38])
+	f.TimeStamps[3] = binary.BigEndian.Uint16(buffer[38:40])
+	f.NoSamples = binary.BigEndian.Uint16(buffer[40:42])
+}
+
+func (f *Frame) Print(s string) {
+	fmt.Printf(" Printing block (UDP payload size=%v):\n", f.UDPPayloadSize)
+	fmt.Printf("   -> FirstBlockWord = %x\n", f.FirstBlockWord)
+	fmt.Printf("   -> AMCFrameCounters = %x (AMCFrameCounter = %v)\n", f.AMCFrameCounters, f.AMCFrameCounter)
+	fmt.Printf("   -> ParityFEIdCtrl = %x (FrontEndId = %x)\n", f.ParityFEIdCtrl, f.FrontEndId)
+	fmt.Printf("   -> TriggerMode = %x\n", f.TriggerMode)
+	fmt.Printf("   -> Trigger = %x\n", f.Trigger)
+	fmt.Printf("   -> ASMFrameCounters = %x (ASMFrameCounter = %v)\n", f.ASMFrameCounters, f.ASMFrameCounter)
+	fmt.Printf("   -> Cafe = %x\n", f.Cafe)
+	fmt.Printf("   -> Deca = %x\n", f.Deca)
+	fmt.Printf("   -> Counters = %x\n", f.Counters)
+	fmt.Printf("   -> TimeStamps = %x (TimeStamp = %v)\n", f.TimeStamps, f.TimeStamp)
+	fmt.Printf("   -> NoSamples = %x\n", f.NoSamples)
 
 	switch s {
 	case "short":
 	case "medium":
-		for i := range b.Data.Data {
-			data := &b.Data.Data[i]
+		for i := range f.Data.Data {
+			data := &f.Data.Data[i]
 			fmt.Printf("   -> ParityChanIdCtrl = %x (channel = %v)\n", data.ParityChanIdCtrl, data.Channel)
 			fmt.Printf("   -> Amplitudes[0] = %x\n", data.Amplitudes[0])
 			fmt.Printf("   -> Amplitudes[1] = %x\n", data.Amplitudes[1])
@@ -146,22 +184,22 @@ func (b *Block) Print(s string) {
 		}
 		/*
 			case "long":
-				fmt.Printf("  Data %v = %x\n", 0, b.Data[0])
-				fmt.Printf("  Data %v = %x\n", 1, b.Data[1])
-				fmt.Printf("  Data %v = %x\n", 2, b.Data[2])
-				fmt.Printf("  Data %v = %x\n", 3, b.Data[3])
+				fmt.Printf("  Data %v = %x\n", 0, f.Data[0])
+				fmt.Printf("  Data %v = %x\n", 1, f.Data[1])
+				fmt.Printf("  Data %v = %x\n", 2, f.Data[2])
+				fmt.Printf("  Data %v = %x\n", 3, f.Data[3])
 				fmt.Println("\t.\n\t.")
-				fmt.Printf("  Data %v = %x\n", len(b.Data)-3, b.Data[len(b.Data)-3])
-				fmt.Printf("  Data %v = %x\n", len(b.Data)-2, b.Data[len(b.Data)-2])
-				fmt.Printf("  Data %v = %x\n", len(b.Data)-1, b.Data[len(b.Data)-1])
-				fmt.Printf("  SRout = %v\n", b.SRout)
-				for i := range b.Counters {
-					fmt.Printf("  Counter %v = %v\n", i, b.Counters[i])
+				fmt.Printf("  Data %v = %x\n", len(f.Data)-3, f.Data[len(f.Data)-3])
+				fmt.Printf("  Data %v = %x\n", len(f.Data)-2, f.Data[len(f.Data)-2])
+				fmt.Printf("  Data %v = %x\n", len(f.Data)-1, f.Data[len(f.Data)-1])
+				fmt.Printf("  SRout = %v\n", f.SRout)
+				for i := range f.Counters {
+					fmt.Printf("  Counter %v = %v\n", i, f.Counters[i])
 				}
 		*/
 	case "full":
-		for i := range b.Data.Data {
-			data := &b.Data.Data[i]
+		for i := range f.Data.Data {
+			data := &f.Data.Data[i]
 			fmt.Printf("   -> ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
 			fmt.Printf("   -> Amplitudes = %x\n", data.Amplitudes)
 		}
@@ -169,41 +207,30 @@ func (b *Block) Print(s string) {
 
 }
 
-// Frame is a single frame in an ASM stream
-type Frame struct {
-	ID    uint32 // id of the frame in the ASM stream
-	Block Block  // data payload for this frame
-}
-
-func (f *Frame) Print(s string) {
-	fmt.Printf("Printing frame ID = %v\n", f.ID)
-	f.Block.Print(s)
-}
-
 func (f *Frame) Buffer() []byte {
 	var buffer []uint16
-	buffer = append(buffer, f.Block.FirstBlockWord)
-	buffer = append(buffer, f.Block.AMCFrameCounters[:]...)
-	buffer = append(buffer, f.Block.ParityFEIdCtrl)
-	buffer = append(buffer, f.Block.TriggerMode)
-	buffer = append(buffer, f.Block.Trigger)
-	buffer = append(buffer, f.Block.ASMFrameCounters[:]...)
-	buffer = append(buffer, f.Block.Cafe)
-	buffer = append(buffer, f.Block.Deca)
-	buffer = append(buffer, f.Block.Counters[:]...)
-	buffer = append(buffer, f.Block.TimeStamps[:]...)
-	buffer = append(buffer, f.Block.NoSamples)
-	for i := range f.Block.Data.Data {
-		data := &f.Block.Data.Data[i]
+	buffer = append(buffer, f.FirstBlockWord)
+	buffer = append(buffer, f.AMCFrameCounters[:]...)
+	buffer = append(buffer, f.ParityFEIdCtrl)
+	buffer = append(buffer, f.TriggerMode)
+	buffer = append(buffer, f.Trigger)
+	buffer = append(buffer, f.ASMFrameCounters[:]...)
+	buffer = append(buffer, f.Cafe)
+	buffer = append(buffer, f.Deca)
+	buffer = append(buffer, f.Counters[:]...)
+	buffer = append(buffer, f.TimeStamps[:]...)
+	buffer = append(buffer, f.NoSamples)
+	for i := range f.Data.Data {
+		data := &f.Data.Data[i]
 		buffer = append(buffer, data.ParityChanIdCtrl)
 		buffer = append(buffer, data.Amplitudes...)
-		if f.Block.Err == ErrorCode1 {
+		if f.Err == ErrorCode1 {
 			//fmt.Println("ErrorCode1, add extra word")
 			buffer = append(buffer, uint16(0))
 		}
 	}
-	buffer = append(buffer, f.Block.CRC)
-	buffer = append(buffer, f.Block.ParityFEIdCtrl2)
+	buffer = append(buffer, f.CRC)
+	buffer = append(buffer, f.ParityFEIdCtrl2)
 
 	var buffer8 []byte
 	for i := range buffer {

@@ -99,37 +99,11 @@ func (r *Reader) ReadU16(v *uint16) {
 	r.readU16(v)
 }
 
-// Frame reads a single frame from the underlying io.Reader.
-// Frame returns io.EOF when there are no more frame to read.
 func (r *Reader) Frame() (*Frame, error) {
-	if r.err != nil {
-		return &Frame{}, r.err
-	}
-	f := &Frame{
-	/*
-		Block: Block{
-			Data: make([]uint16, r.noSamples),
-		},
-	*/
-
-	}
-	r.readFrame(f)
-	return f, r.err
-}
-
-func (r *Reader) readFrame(f *Frame) {
+	f := &Frame{}
 	if r.Debug {
 		fmt.Printf("rw: start reading frame\n")
 	}
-	r.readBlock(&f.Block)
-	if r.err != nil {
-		if r.err != io.EOF {
-			log.Fatalf("error loading frame: %v\n", r.err)
-		}
-	}
-}
-
-func (r *Reader) readBlock(blk *Block) {
 	if r.ReadMode == UDPHalfDRS {
 		for i := range r.UDPHalfDRSBuffer {
 			r.UDPHalfDRSBuffer[i] = 0
@@ -165,6 +139,7 @@ func (r *Reader) readBlock(blk *Block) {
 		blk.Print("medium")
 		return
 	}
+	return f, r.err
 }
 
 func (r *Reader) readBlockHeader(blk *Block) {
