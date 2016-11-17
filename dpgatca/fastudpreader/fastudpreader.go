@@ -5,7 +5,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/binary"
 	"flag"
 	"fmt"
 	"log"
@@ -89,31 +88,25 @@ func main() {
 		if nframes%*frameFreq == 0 {
 			fmt.Printf("reading frame %v\n", nframes)
 		}
-		conn.ReadFromUDP(buf)
-		frame := &rw.Frame{}  // <- here
+		n, _, err := conn.ReadFromUDP(buf)
+		frame := rw.NewFrame(n) // <- here
+		//fmt.Println("payload =", n)
 		frame.FillHeader(buf) // <- here
-		// 		err := frame.IntegrityHeader()
-		// 		if err != nil {
-		// 			panic(err)
-		// 		}
-
-		// 		if nframes > 0 {
-		// 			if frame.AMCFrameCounter != AMCFrameCounterPrev+1 {
-		// 				fmt.Printf("frame.AMCFrameCounter != AMCFrameCounterPrev+1\n")
-		// 			}
-		// 		}
-		// 		AMCFrameCounterPrev = frame.AMCFrameCounter
-
-		AMCFrameCounter0 := binary.BigEndian.Uint16(buf[2:4])
-		AMCFrameCounter1 := binary.BigEndian.Uint16(buf[4:6])
-		AMCFrameCounter := (uint32(AMCFrameCounter0) << 16) + uint32(AMCFrameCounter1)
+		err = frame.IntegrityHeader()
+		if err != nil {
+			panic(err)
+		}
+		frame.FillData(buf)
+		err = frame.IntegrityData()
+		if err != nil {
+			panic(err)
+		}
 		if nframes > 0 {
-			if AMCFrameCounter != AMCFrameCounterPrev+1 {
-				fmt.Printf("AMCFrameCounter != AMCFrameCounterPrev+1\n")
+			if frame.AMCFrameCounter != AMCFrameCounterPrev+1 {
+				fmt.Printf("frame.AMCFrameCounter != AMCFrameCounterPrev+1\n")
 			}
 		}
-		AMCFrameCounterPrev = AMCFrameCounter
-
+		AMCFrameCounterPrev = frame.AMCFrameCounter
 		/////////////////////////////////////
 		nframes++
 	}

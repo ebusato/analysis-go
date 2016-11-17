@@ -457,10 +457,10 @@ func main() {
 	}
 
 	go readFrames(r, w, &wg)
-	go reconstructEvent(r)
-	go monitor(r, w)
-	go webserver()
-	go command()
+	// 	go reconstructEvent(r)
+	// 	go monitor(r, w)
+	// 	go webserver()
+	// 	go command()
 
 	wg.Wait()
 }
@@ -714,12 +714,12 @@ func monitor(r *rw.Reader, w *rw.Writer) {
 }
 
 func makePulses(f *rw.Frame, sigThreshold uint) [4]*pulse.Pulse {
-	var pulses [len(f.Block.Data.Data)]*pulse.Pulse
-	for i := range f.Block.Data.Data {
-		chanData := &f.Block.Data.Data[i]
+	var pulses [len(f.Data.Data)]*pulse.Pulse
+	for i := range f.Data.Data {
+		chanData := &f.Data.Data[i]
 		channelId023 := chanData.Channel
 		iChannel := uint8(channelId023 % 4)
-		iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx60ToRelIdx(f.Block.QuartetAbsIdx60)
+		iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx60ToRelIdx(f.QuartetAbsIdx60)
 		detChannel := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel)
 		pul := pulse.NewPulse(detChannel)
 		for j := range chanData.Amplitudes {
@@ -771,39 +771,40 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 		// 			fmt.Printf("reading event %v\n", noEvents)
 		// 		}
 		frame, _ := r.Frame()
-		timeStamps = append(timeStamps, frame.Block.TimeStamp)
-		framesMap[frame.Block.TimeStamp] = append(framesMap[frame.Block.TimeStamp], frame)
+		timeStamps = append(timeStamps, frame.TimeStamp)
+		framesMap[frame.TimeStamp] = append(framesMap[frame.TimeStamp], frame)
 
 		/////////////////////////////////////////////////////////////////////////////////////
 		// Sanity checks
-		// 		fmt.Println("AMCFrameCounter =", frame.Block.AMCFrameCounter)
-		// 		fmt.Println("ASMFrameCounter =", frame.Block.ASMFrameCounter)
+		// 		fmt.Println("AMCFrameCounter =", frame.AMCFrameCounter)
+		// 		fmt.Println("ASMFrameCounter =", frame.ASMFrameCounter)
 		if nframes > 0 {
-			if frame.Block.AMCFrameCounter != AMCFrameCounterPrev+1 {
-				fmt.Printf("frame.Block.AMCFrameCounter != AMCFrameCounterPrev + 1\n")
+			if frame.AMCFrameCounter != AMCFrameCounterPrev+1 {
+				fmt.Printf("frame.AMCFrameCounter != AMCFrameCounterPrev + 1\n")
 			}
-			if frame.Block.ASMFrameCounter != ASMFrameCounterPrev+1 {
-				fmt.Printf("frame.Block.ASMFrameCounter != ASMFrameCounterPrev + 1\n")
+			if frame.ASMFrameCounter != ASMFrameCounterPrev+1 {
+				fmt.Printf("frame.ASMFrameCounter != ASMFrameCounterPrev + 1\n")
 			}
 		}
-		AMCFrameCounterPrev = frame.Block.AMCFrameCounter
-		ASMFrameCounterPrev = frame.Block.ASMFrameCounter
-		if r.ReadMode == rw.UDPHalfDRS && frame.Block.UDPPayloadSize < 8230 {
-			log.Printf("frame.Block.UDPPayloadSize = %v\n", frame.Block.UDPPayloadSize)
+		AMCFrameCounterPrev = frame.AMCFrameCounter
+		ASMFrameCounterPrev = frame.ASMFrameCounter
+
+		if r.ReadMode == rw.UDPHalfDRS && frame.UDPPayloadSize < 8230 {
+			log.Printf("frame.UDPPayloadSize = %v\n", frame.UDPPayloadSize)
 		}
 		/////////////////////////////////////////////////////////////////////////////////////
 
 		/////////////////////////////////////////////////////////////////////////////////////
 		// Write to disk
-		// 		for i := 0; i < frame.Block.UDPPayloadSize; i++ {
+		// 		for i := 0; i < frame.UDPPayloadSize; i++ {
 		// 			w.writeByte(r.UDPHalfDRSBuffer[i])
 		// 		}
 		/////////////////////////////////////////////////////////////////////////////////////
 
 		/////////////////////////////////////////////////////////////////////////////////////
 		// The following check is possibly time consuming, consider removing it
-		if eventAlreadyClosed(frame.Block.TimeStamp) {
-			log.Fatalf("Timestamp %v already sent to reconstruction\n", frame.Block.TimeStamp)
+		if eventAlreadyClosed(frame.TimeStamp) {
+			log.Fatalf("Timestamp %v already sent to reconstruction\n", frame.TimeStamp)
 		}
 		/////////////////////////////////////////////////////////////////////////////////////
 
@@ -838,6 +839,7 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 				fmt.Println("reached specified number of events, stopping.")
 				return
 			}
+
 		}
 
 		for _, ts := range closedEvts {
@@ -845,6 +847,7 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 		}
 
 		allClosedEvents = append(allClosedEvents, closedEvts...)
+
 		nframes++
 	} //frame loop
 }
@@ -857,16 +860,16 @@ func reconstructEvent(r *rw.Reader) {
 		evt.ID = frameSlice.uint
 		// build event from slice of frames
 		for _, frame := range frameSlice.frameSliceType {
-			if !firstFrame && frame.Block.TimeStamp != evt.TimeStamp {
+			if !firstFrame && frame.TimeStamp != evt.TimeStamp {
 				log.Fatalf("Time stamps are not all equal to the same value. This should never happen !\n")
 			}
-			evt.TimeStamp = frame.Block.TimeStamp
+			evt.TimeStamp = frame.TimeStamp
 			pulses := makePulses(frame, r.SigThreshold)
-			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[0] = *pulses[0]
-			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[1] = *pulses[1]
-			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[2] = *pulses[2]
-			evt.Clusters[frame.Block.QuartetAbsIdx60].Pulses[3] = *pulses[3]
-			evt.UDPPayloadSizes = append(evt.UDPPayloadSizes, frame.Block.UDPPayloadSize)
+			evt.Clusters[frame.QuartetAbsIdx60].Pulses[0] = *pulses[0]
+			evt.Clusters[frame.QuartetAbsIdx60].Pulses[1] = *pulses[1]
+			evt.Clusters[frame.QuartetAbsIdx60].Pulses[2] = *pulses[2]
+			evt.Clusters[frame.QuartetAbsIdx60].Pulses[3] = *pulses[3]
+			evt.UDPPayloadSizes = append(evt.UDPPayloadSizes, frame.UDPPayloadSize)
 			firstFrame = false
 		}
 		evtChan <- struct {
