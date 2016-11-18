@@ -56,8 +56,8 @@ var (
 		float64
 		*event.Event
 	})
-	timeStamps      []uint64 // set of all processed timestamps
-	allClosedEvents []uint64 // set of timestamps of all closed events
+	timeStamps      [20]uint64 // set of last 20 timestamps
+	allClosedEvents []uint64   // set of timestamps of all closed events
 
 	noEventsForMon uint
 
@@ -66,9 +66,9 @@ var (
 	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
 	ip          = flag.String("ip", "192.168.100.11", "IP address")
 	port        = flag.String("p", "1024", "Port number")
-	monFreq     = flag.Uint("mf", 1, "Monitoring frequency")
+	monFreq     = flag.Int("mf", 1, "Monitoring frequency")
 	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
-	frameFreq   = flag.Uint("ff", 1000, "Frame printing frequency")
+	frameFreq   = flag.Int("ff", 1000, "Frame printing frequency")
 	evtFreq     = flag.Uint("ef", 1000, "Event printing frequency")
 	st          = flag.Bool("st", false, "If set, server start time is used rather than client's one")
 	debug       = flag.Bool("d", false, "If set, debugging informations are printed")
@@ -457,10 +457,10 @@ func main() {
 	}
 
 	go readFrames(r, w, &wg)
-	// 	go reconstructEvent(r)
-	// 	go monitor(r, w)
-	// 	go webserver()
-	// 	go command()
+	go reconstructEvent(r)
+	go monitor(r, w)
+	go webserver()
+	go command()
 
 	wg.Wait()
 }
@@ -734,13 +734,17 @@ func makePulses(f *rw.Frame, sigThreshold uint) [4]*pulse.Pulse {
 
 func closedEvents(framesMap map[uint64][]*rw.Frame) []uint64 {
 	var closedEvts []uint64
-	for ts, _ := range framesMap {
-		n := 0
-		for j := len(timeStamps) - 1; timeStamps[j] != ts; j-- {
-			n++
+	for ts1, _ := range framesMap {
+		canBeClosed := true
+		for _, ts2 := range timeStamps {
+			if ts1 == ts2 {
+				// event can't be closed
+				canBeClosed = false
+				break
+			}
 		}
-		if n > 20 {
-			closedEvts = append(closedEvts, ts)
+		if canBeClosed {
+			closedEvts = append(closedEvts, ts1)
 		}
 	}
 	return closedEvts
@@ -757,7 +761,7 @@ func eventAlreadyClosed(timestamp uint64) bool {
 
 func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 	defer wg.Done()
-	nframes := uint(0)
+	var nframes int
 	AMCFrameCounterPrev := uint32(0)
 	ASMFrameCounterPrev := uint64(0)
 	framesMap := make(map[uint64][]*rw.Frame)
@@ -771,7 +775,7 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 		// 			fmt.Printf("reading event %v\n", noEvents)
 		// 		}
 		frame, _ := r.Frame()
-		timeStamps = append(timeStamps, frame.TimeStamp)
+		timeStamps[nframes%len(timeStamps)] = frame.TimeStamp
 		framesMap[frame.TimeStamp] = append(framesMap[frame.TimeStamp], frame)
 
 		/////////////////////////////////////////////////////////////////////////////////////
@@ -808,20 +812,22 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 		}
 		/////////////////////////////////////////////////////////////////////////////////////
 
-		closedEvts := closedEvents(framesMap)
-		noClosedEvts := len(closedEvts)
+		if nframes%*monFreq == 0 {
+			closedEvts := closedEvents(framesMap)
+			noClosedEvts := len(closedEvts)
+			noEvents += uint(noClosedEvts)
+			noEventsForMon += uint(noClosedEvts)
 
-		if noClosedEvts >= 1 {
-			switch noEvents < *noEventsTot {
-			case true:
-				if noClosedEvts >= 2 {
-					log.Fatalf("len(closedEvts) > 1\n")
-				}
-				tsToMonitor := closedEvts[noClosedEvts-1]
-				if len(framesMap[tsToMonitor]) < 2 {
-					fmt.Printf("len(framesMap[tsToMonitor] < 2)\n")
-				}
-				if noEvents%*monFreq == 0 {
+			if noClosedEvts >= 1 {
+				switch noEvents < *noEventsTot {
+				case true:
+					// 					if noClosedEvts >= 2 {
+					// 						log.Fatalf("len(closedEvts) > 1\n")
+					// 					}
+					tsToMonitor := closedEvts[noClosedEvts-1]
+					if len(framesMap[tsToMonitor]) < 2 {
+						fmt.Printf("len(framesMap[tsToMonitor] < 2)\n")
+					}
 					stop := time.Now()
 					duration := stop.Sub(start).Seconds()
 					start = stop
@@ -832,21 +838,18 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 						frameSliceType
 					}{noEvents, freq, framesMap[tsToMonitor]}
 					noEventsForMon = 0
+
+				case false:
+					fmt.Println("reached specified number of events, stopping.")
+					return
 				}
-				noEvents += uint(noClosedEvts)
-				noEventsForMon += uint(noClosedEvts)
-			case false:
-				fmt.Println("reached specified number of events, stopping.")
-				return
+			}
+			for _, ts := range closedEvts {
+				delete(framesMap, ts)
 			}
 
+			allClosedEvents = append(allClosedEvents, closedEvts...)
 		}
-
-		for _, ts := range closedEvts {
-			delete(framesMap, ts)
-		}
-
-		allClosedEvents = append(allClosedEvents, closedEvts...)
 
 		nframes++
 	} //frame loop
