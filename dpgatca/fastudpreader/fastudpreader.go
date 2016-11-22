@@ -5,6 +5,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"log"
@@ -20,7 +21,7 @@ var (
 	ip         = flag.String("ip", "192.168.100.11", "IP address")
 	port       = flag.String("p", "1024", "Port number")
 	frameFreq  = flag.Uint("ff", 1000, "Frame printing frequency")
-	nFramesTot = flag.Uint("n", 100000, "Number of frames to process")
+	nFramesTot = flag.Uint("n", 300000, "Number of frames to process")
 )
 
 func UDPConn(p *string) *net.UDPConn {
@@ -76,6 +77,7 @@ func main() {
 			log.Fatalf("Cannot find port to connect to server")
 		}
 	}
+	// 	conn.SetReadBuffer(200)
 	conn.SetReadBuffer(216320) // not sure what is the unit of the argument
 	conn.Write([]byte("Hello from client"))
 	r, _ = rw.NewReader(bufio.NewReader(NewReader(conn)))
@@ -88,26 +90,44 @@ func main() {
 		if nframes%*frameFreq == 0 {
 			fmt.Printf("reading frame %v\n", nframes)
 		}
-		n, _, err := conn.ReadFromUDP(buf)
-		frame := rw.NewFrame(n) // <- here
-		//fmt.Println("payload =", n)
-		frame.FillHeader(buf) // <- here
-		err = frame.IntegrityHeader()
-		if err != nil {
-			panic(err)
-		}
-		frame.FillData(buf)
-		err = frame.IntegrityData()
-		if err != nil {
-			panic(err)
-		}
+		///////////////////////////////////////////////////////
+		// Option 1 : fastest
+		conn.ReadFromUDP(buf)
+		AMCFrameCounters0 := binary.BigEndian.Uint16(buf[2:4])
+		AMCFrameCounters1 := binary.BigEndian.Uint16(buf[4:6])
+		AMCFrameCounter := (uint32(AMCFrameCounters0) << 16) + uint32(AMCFrameCounters1)
 		if nframes > 0 {
-			if frame.AMCFrameCounter != AMCFrameCounterPrev+1 {
-				fmt.Printf("frame.AMCFrameCounter != AMCFrameCounterPrev+1\n")
+			if AMCFrameCounter != AMCFrameCounterPrev+1 {
+				fmt.Printf("AMCFrameCounter != AMCFrameCounterPrev+1\n")
 			}
 		}
-		AMCFrameCounterPrev = frame.AMCFrameCounter
-		/////////////////////////////////////
+		AMCFrameCounterPrev = AMCFrameCounter
+		///////////////////////////////////////////////////////
+
+		/*
+			//////////////////////////////////////////////////////
+			// Option 2 : a bit more refined
+			  n, _, err := conn.ReadFromUDP(buf)
+				frame := rw.NewFrame(n) // <- here
+				//fmt.Println("payload =", n)
+				frame.FillHeader(buf) // <- here
+				err = frame.IntegrityHeader()
+				if err != nil {
+					panic(err)
+				}
+				frame.FillData(buf)
+				err = frame.IntegrityData()
+				if err != nil {
+					panic(err)
+				}
+				if nframes > 0 {
+					if frame.AMCFrameCounter != AMCFrameCounterPrev+1 {
+						fmt.Printf("frame.AMCFrameCounter != AMCFrameCounterPrev+1\n")
+					}
+				}
+				AMCFrameCounterPrev = frame.AMCFrameCounter
+			//////////////////////////////////////////////////////
+		*/
 		nframes++
 	}
 }

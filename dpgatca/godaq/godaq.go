@@ -822,7 +822,7 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 				switch noEvents < *noEventsTot {
 				case true:
 					// 					if noClosedEvts >= 2 {
-					// 						log.Fatalf("len(closedEvts) > 1\n")
+					// 						log.Fatalf("len(closedEvts) > 1 (len(closedEvts) = %v)\n", noClosedEvts)
 					// 					}
 					tsToMonitor := closedEvts[noClosedEvts-1]
 					if len(framesMap[tsToMonitor]) < 2 {
@@ -859,6 +859,7 @@ func reconstructEvent(r *rw.Reader) {
 	for {
 		frameSlice := <-frameSliceChan
 		firstFrame := true
+		start := time.Now()
 		evt := event.NewEvent(dpgadetector.Det.NoClusters())
 		evt.ID = frameSlice.uint
 		// build event from slice of frames
@@ -875,6 +876,9 @@ func reconstructEvent(r *rw.Reader) {
 			evt.UDPPayloadSizes = append(evt.UDPPayloadSizes, frame.UDPPayloadSize)
 			firstFrame = false
 		}
+		stop := time.Now()
+		duration := stop.Sub(start).Seconds()
+		fmt.Printf("Time for event making = %v (no frames = %v)\n", duration, len(frameSlice.frameSliceType))
 		evtChan <- struct {
 			float64
 			*event.Event
