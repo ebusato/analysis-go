@@ -65,7 +65,7 @@ var (
 	noEventsTot = flag.Uint("n", 100000, "Number of events")
 	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
 	ip          = flag.String("ip", "192.168.100.11", "IP address")
-	port        = flag.String("p", "1024", "Port number")
+	port        = flag.String("p", "6000", "Port number")
 	monFreq     = flag.Int("mf", 1, "Monitoring frequency")
 	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
 	frameFreq   = flag.Int("ff", 1000, "Frame printing frequency")
@@ -251,6 +251,7 @@ func TCPConn(p *string) *net.TCPConn {
 	return tcp
 }
 
+/*
 func UDPConn(p *string) *net.UDPConn {
 	fmt.Println("addr", *ip+":"+*p)
 	// 	conn, err := net.Dial("tcp", *ip+":"+*p)
@@ -258,6 +259,16 @@ func UDPConn(p *string) *net.UDPConn {
 	RemoteAddr, err := net.ResolveUDPAddr("udp", *ip+":"+*p)
 	fmt.Println("client RemoteAddr =", RemoteAddr.IP, RemoteAddr.Port, RemoteAddr.Zone)
 	conn, err := net.DialUDP("udp", nil, RemoteAddr)
+	if err != nil {
+		return nil
+	}
+	return conn
+}*/
+
+func UDPConn(p *string) *net.UDPConn {
+	fmt.Println("addr", *ip+":"+*p)
+	locAddr, err := net.ResolveUDPAddr("udp", *ip+":"+*p)
+	conn, err := net.ListenUDP("udp", locAddr)
 	if err != nil {
 		return nil
 	}
@@ -273,7 +284,8 @@ func NewReader(conn *net.UDPConn) *Reader {
 }
 
 func (r *Reader) Read(p []byte) (n int, err error) {
-	n, _, err = r.conn.ReadFromUDP(p)
+	//n, _, err = r.conn.ReadFromUDP(p)
+	n, err = r.conn.Read(p)
 	return
 }
 
@@ -318,7 +330,7 @@ func main() {
 		}
 		conn.SetReadBuffer(216320) // not sure what is the unit of the argument
 		//conn.SetReadBuffer(216320)
-		conn.Write([]byte("Hello from client"))
+		//conn.Write([]byte("Hello from client"))
 		r, err = rw.NewReader(bufio.NewReader(NewReader(conn)))
 		r.ReadMode = rw.UDPHalfDRS
 	case "tcp":

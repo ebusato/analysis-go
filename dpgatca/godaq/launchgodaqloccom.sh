@@ -1,1 +1,1 @@
-godaq -nobro -p 5556 -ip localhost -test
+godaq -nobro -ip 127.0.0.1 -test -con udp

@@ -18,7 +18,7 @@ func main() {
 	var (
 		fileName = flag.String("i", "", "Input file name")
 		ip       = flag.String("ip", "localhost", "IP address")
-		port     = flag.String("p", "5556", "Port number")
+		port     = flag.String("p", "6000", "Port number")
 		con      = flag.String("con", "udp", "Connection type (possible values: udp, tcp)")
 		//freq     = flag.Uint("freq", 100, "Event number printing frequency")
 	)
@@ -68,18 +68,11 @@ func main() {
 		}
 	case "udp":
 		addr, err := net.ResolveUDPAddr("udp", *ip+":"+*port) // maybe change to udp4
-		conn, err := net.ListenUDP("udp", addr)
+		conn, err := net.DialUDP("udp", nil, addr)
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer conn.Close()
-
-		var buf [2]byte
-		fmt.Println("Server: before ReadFromUDP")
-		// 		_, addrClient, _ := conn.ReadFromUDP(buf[:])
-		// 		fmt.Println("UDP client address: ", addrClient)
-		addrClient, err := net.ResolveUDPAddr("udp", *ip+":6000")
-		fmt.Printf("buf[:] from client= %v\n", buf[:])
 
 		AMCFrameCounterPrev := uint32(0)
 		ASMFrameCounterPrev := uint64(0)
@@ -114,8 +107,7 @@ func main() {
 			// These two lines are slower than the TCP equivalent
 			//    -> try to understand why
 			udpBuf := frame.Buffer()
-			//conn.WriteToUDP(udpBuf, addrClient)
-			conn.WriteToUDP(udpBuf, addrClient)
+			conn.Write(udpBuf)
 
 			//time.Sleep(100000 * time.Microsecond)
 		}

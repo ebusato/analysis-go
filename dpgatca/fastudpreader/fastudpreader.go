@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	ip         = flag.String("ip", "localhost", "IP address")
+	ip         = flag.String("ip", "127.0.0.1", "IP address")
 	port       = flag.String("p", "6000", "Port number")
 	frameFreq  = flag.Uint("ff", 1000, "Frame printing frequency")
 	nFramesTot = flag.Uint("n", 300000, "Number of frames to process")
@@ -25,31 +25,10 @@ func UDPConn(p *string) *net.UDPConn {
 	fmt.Println("addr", *ip+":"+*p)
 	locAddr, err := net.ResolveUDPAddr("udp", *ip+":"+*p)
 	conn, err := net.ListenUDP("udp", locAddr)
-
-	// 	conn, err := net.Dial("tcp", *ip+":"+*p)
-
-	// 	RemoteAddr, err := net.ResolveUDPAddr("udp", *ip+":"+*p)
-	// 	fmt.Println("RemoteAddr =", RemoteAddr.IP, RemoteAddr.Port, RemoteAddr.Zone)
-	//conn, err := net.DialUDP("udp", nil, RemoteAddr)
-	//LocAddr, err := net.ResolveUDPAddr("udp", *ip+":5557")
-	//conn, err := net.DialUDP("udp", LocAddr, RemoteAddr)
 	if err != nil {
 		return nil
 	}
 	return conn
-}
-
-type Reader struct {
-	conn *net.UDPConn
-}
-
-func NewReader(conn *net.UDPConn) *Reader {
-	return &Reader{conn: conn}
-}
-
-func (r *Reader) Read(p []byte) (n int, err error) {
-	n, _, err = r.conn.ReadFromUDP(p)
-	return
 }
 
 func main() {
@@ -91,7 +70,7 @@ func main() {
 		}
 		///////////////////////////////////////////////////////
 		// Option 1 : fastest
-		conn.ReadFromUDP(buf)
+		conn.Read(buf)
 		AMCFrameCounters0 := binary.BigEndian.Uint16(buf[2:4])
 		AMCFrameCounters1 := binary.BigEndian.Uint16(buf[4:6])
 		AMCFrameCounter := (uint32(AMCFrameCounters0) << 16) + uint32(AMCFrameCounters1)
