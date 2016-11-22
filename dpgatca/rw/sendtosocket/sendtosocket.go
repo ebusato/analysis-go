@@ -76,8 +76,9 @@ func main() {
 
 		var buf [2]byte
 		fmt.Println("Server: before ReadFromUDP")
-		_, addrClient, _ := conn.ReadFromUDP(buf[:])
-		fmt.Println("UDP client address: ", addrClient)
+		// 		_, addrClient, _ := conn.ReadFromUDP(buf[:])
+		// 		fmt.Println("UDP client address: ", addrClient)
+		addrClient, err := net.ResolveUDPAddr("udp", *ip+":6000")
 		fmt.Printf("buf[:] from client= %v\n", buf[:])
 
 		AMCFrameCounterPrev := uint32(0)
@@ -113,6 +114,7 @@ func main() {
 			// These two lines are slower than the TCP equivalent
 			//    -> try to understand why
 			udpBuf := frame.Buffer()
+			//conn.WriteToUDP(udpBuf, addrClient)
 			conn.WriteToUDP(udpBuf, addrClient)
 
 			//time.Sleep(100000 * time.Microsecond)

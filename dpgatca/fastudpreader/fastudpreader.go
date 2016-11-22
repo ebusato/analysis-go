@@ -4,7 +4,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/binary"
 	"flag"
 	"fmt"
@@ -13,24 +12,27 @@ import (
 	"os"
 	"runtime/pprof"
 	"strconv"
-
-	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rw"
 )
 
 var (
-	ip         = flag.String("ip", "192.168.100.11", "IP address")
-	port       = flag.String("p", "1024", "Port number")
+	ip         = flag.String("ip", "localhost", "IP address")
+	port       = flag.String("p", "6000", "Port number")
 	frameFreq  = flag.Uint("ff", 1000, "Frame printing frequency")
 	nFramesTot = flag.Uint("n", 300000, "Number of frames to process")
 )
 
 func UDPConn(p *string) *net.UDPConn {
 	fmt.Println("addr", *ip+":"+*p)
+	locAddr, err := net.ResolveUDPAddr("udp", *ip+":"+*p)
+	conn, err := net.ListenUDP("udp", locAddr)
+
 	// 	conn, err := net.Dial("tcp", *ip+":"+*p)
 
-	RemoteAddr, err := net.ResolveUDPAddr("udp", *ip+":"+*p)
-	fmt.Println("client RemoteAddr =", RemoteAddr.IP, RemoteAddr.Port, RemoteAddr.Zone)
-	conn, err := net.DialUDP("udp", nil, RemoteAddr)
+	// 	RemoteAddr, err := net.ResolveUDPAddr("udp", *ip+":"+*p)
+	// 	fmt.Println("RemoteAddr =", RemoteAddr.IP, RemoteAddr.Port, RemoteAddr.Zone)
+	//conn, err := net.DialUDP("udp", nil, RemoteAddr)
+	//LocAddr, err := net.ResolveUDPAddr("udp", *ip+":5557")
+	//conn, err := net.DialUDP("udp", LocAddr, RemoteAddr)
 	if err != nil {
 		return nil
 	}
@@ -61,7 +63,6 @@ func main() {
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
 
-	var r *rw.Reader
 	conn := UDPConn(port)
 	for i := 0; conn == nil; i++ {
 		newportu, err := strconv.ParseUint(*port, 10, 64)
@@ -79,12 +80,10 @@ func main() {
 	}
 	// 	conn.SetReadBuffer(200)
 	conn.SetReadBuffer(216320) // not sure what is the unit of the argument
-	conn.Write([]byte("Hello from client"))
-	r, _ = rw.NewReader(bufio.NewReader(NewReader(conn)))
-	r.ReadMode = rw.UDPHalfDRS
+	//conn.Write([]byte("Hello from client"))
+
 	nframes := uint(0)
 	AMCFrameCounterPrev := uint32(0)
-	//ASMFrameCounterPrev := uint64(0)
 	buf := make([]byte, 8238)
 	for nframes < *nFramesTot {
 		if nframes%*frameFreq == 0 {
