@@ -61,11 +61,15 @@ var (
 
 	noEventsForMon uint
 
+	udpconn *net.UDPConn
+
 	cpuprof     = flag.String("cpuprof", "", "Name of file for CPU profiling")
 	noEventsTot = flag.Uint("n", 100000, "Number of events")
 	outfileName = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
 	ip          = flag.String("ip", "192.168.100.11", "IP address")
 	port        = flag.String("p", "6000", "Port number")
+	ipremote    = flag.String("ipremote", "192.168.100.11", "IP address")
+	portremote  = flag.String("premote", "6001", "Port number")
 	monFreq     = flag.Int("mf", 1, "Monitoring frequency")
 	monLight    = flag.Bool("monlight", false, "If set, the program performs a light monitoring, removing some plots")
 	frameFreq   = flag.Int("ff", 1000, "Frame printing frequency")
@@ -275,19 +279,19 @@ func UDPConn(p *string) *net.UDPConn {
 	return conn
 }
 
-type Reader struct {
-	conn *net.UDPConn
-}
-
-func NewReader(conn *net.UDPConn) *Reader {
-	return &Reader{conn: conn}
-}
-
-func (r *Reader) Read(p []byte) (n int, err error) {
-	//n, _, err = r.conn.ReadFromUDP(p)
-	n, err = r.conn.Read(p)
-	return
-}
+// type Reader struct {
+// 	conn *net.UDPConn
+// }
+//
+// func NewReader(conn *net.UDPConn) *Reader {
+// 	return &Reader{conn: conn}
+// }
+//
+// func (r *Reader) Read(p []byte) (n int, err error) {
+// 	//n, _, err = r.conn.ReadFromUDP(p)
+// 	n, err = r.conn.Read(p)
+// 	return
+// }
 
 func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
@@ -313,8 +317,8 @@ func main() {
 	var err error
 	switch *con {
 	case "udp":
-		conn := UDPConn(port)
-		for i := 0; conn == nil; i++ {
+		udpconn = UDPConn(port)
+		for i := 0; udpconn == nil; i++ {
 			newportu, err := strconv.ParseUint(*port, 10, 64)
 			if err != nil {
 				panic(err)
@@ -323,15 +327,16 @@ func main() {
 			newport := strconv.FormatUint(newportu, 10)
 			fmt.Printf("Port %v not responding, trying %v\n", *port, newport)
 			*port = newport
-			conn = UDPConn(port)
+			udpconn = UDPConn(port)
 			if i >= 5 {
 				log.Fatalf("Cannot find port to connect to server")
 			}
 		}
-		conn.SetReadBuffer(216320) // not sure what is the unit of the argument
-		//conn.SetReadBuffer(216320)
-		//conn.Write([]byte("Hello from client"))
-		r, err = rw.NewReader(bufio.NewReader(NewReader(conn)))
+		udpconn.SetReadBuffer(216320) // not sure what is the unit of the argument
+		//udpconn.SetReadBuffer(216320)
+		//udpconn.Write([]byte("Hello from client"))
+		// 		r, err = rw.NewReader(bufio.NewReader(NewReader(udpconn)))
+		r, err = rw.NewReader(bufio.NewReader(udpconn))
 		r.ReadMode = rw.UDPHalfDRS
 	case "tcp":
 		conn := TCPConn(port)
@@ -779,6 +784,7 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 	framesMap := make(map[uint64][]*rw.Frame)
 	var noEvents uint
 	start := time.Now()
+	remoteAddr, _ := net.ResolveUDPAddr("udp", *ipremote+":"+*portremote)
 	for {
 		if nframes%*frameFreq == 0 {
 			fmt.Printf("reading frame %v\n", nframes)
@@ -825,6 +831,7 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 		/////////////////////////////////////////////////////////////////////////////////////
 
 		if nframes%*monFreq == 0 {
+			udpconn.WriteToUDP([]byte{0xaa, 0xdc}, remoteAddr)
 			closedEvts := closedEvents(framesMap)
 			noClosedEvts := len(closedEvts)
 			noEvents += uint(noClosedEvts)
@@ -861,6 +868,7 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 			}
 
 			allClosedEvents = append(allClosedEvents, closedEvts...)
+			udpconn.WriteToUDP([]byte{0xaa, 0xcd}, remoteAddr)
 		}
 
 		nframes++

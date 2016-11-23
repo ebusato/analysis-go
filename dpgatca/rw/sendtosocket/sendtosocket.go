@@ -12,16 +12,21 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rw"
 )
 
+var (
+	pauseEmission  = make(chan bool)
+	resumeEmission = make(chan bool)
+
+	fileName = flag.String("i", "", "Input file name")
+	ip       = flag.String("ip", "localhost", "IP address")
+	port     = flag.String("p", "6000", "Port number")
+	portloc  = flag.String("ploc", "6001", "Local port number (for incoming messages)")
+	con      = flag.String("con", "udp", "Connection type (possible values: udp, tcp)")
+	//freq     = flag.Uint("freq", 100, "Event number printing frequency")
+)
+
 func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
-	var (
-		fileName = flag.String("i", "", "Input file name")
-		ip       = flag.String("ip", "localhost", "IP address")
-		port     = flag.String("p", "6000", "Port number")
-		con      = flag.String("con", "udp", "Connection type (possible values: udp, tcp)")
-		//freq     = flag.Uint("freq", 100, "Event number printing frequency")
-	)
 	flag.Parse()
 
 	// Reader
@@ -68,7 +73,8 @@ func main() {
 		}
 	case "udp":
 		addr, err := net.ResolveUDPAddr("udp", *ip+":"+*port) // maybe change to udp4
-		conn, err := net.DialUDP("udp", nil, addr)
+		addrloc, err := net.ResolveUDPAddr("udp", *ip+":"+*portloc)
+		conn, err := net.DialUDP("udp", addrloc, addr)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -77,39 +83,60 @@ func main() {
 		AMCFrameCounterPrev := uint32(0)
 		ASMFrameCounterPrev := uint64(0)
 
+		go readIncomingMessages(conn)
+
 		nFrames := 0
 		for {
-			if nFrames%1000 == 0 {
-				fmt.Printf("frame %v\n", nFrames)
-			}
-			frame, err := r.Frame()
-			if nFrames > 0 {
-				if frame.AMCFrameCounter != AMCFrameCounterPrev+1 {
-					fmt.Printf("frame.Block.AMCFrameCounter != AMCFrameCounterPrev + 1\n")
+			select {
+			case <-pauseEmission:
+				<-resumeEmission
+			default:
+				if nFrames%1000 == 0 {
+					fmt.Printf("frame %v\n", nFrames)
 				}
-				if frame.ASMFrameCounter != ASMFrameCounterPrev+1 {
-					fmt.Printf("frame.Block.ASMFrameCounter != ASMFrameCounterPrev + 1\n")
+				frame, err := r.Frame()
+				if nFrames > 0 {
+					if frame.AMCFrameCounter != AMCFrameCounterPrev+1 {
+						fmt.Printf("frame.Block.AMCFrameCounter != AMCFrameCounterPrev + 1\n")
+					}
+					if frame.ASMFrameCounter != ASMFrameCounterPrev+1 {
+						fmt.Printf("frame.Block.ASMFrameCounter != ASMFrameCounterPrev + 1\n")
+					}
 				}
-			}
-			AMCFrameCounterPrev = frame.AMCFrameCounter
-			ASMFrameCounterPrev = frame.ASMFrameCounter
-			nFrames++
-			// 			fmt.Println("AMCFrameCounter =", frame.Block.AMCFrameCounter)
-			// 			fmt.Println("ASMFrameCounter =", frame.Block.ASMFrameCounter)
+				AMCFrameCounterPrev = frame.AMCFrameCounter
+				ASMFrameCounterPrev = frame.ASMFrameCounter
+				nFrames++
+				// 			fmt.Println("AMCFrameCounter =", frame.Block.AMCFrameCounter)
+				// 			fmt.Println("ASMFrameCounter =", frame.Block.ASMFrameCounter)
 
-			if err != nil {
-				if err != io.EOF {
-					log.Fatalf("error loading frame: %v\n", err)
+				if err != nil {
+					if err != io.EOF {
+						log.Fatalf("error loading frame: %v\n", err)
+					}
+					break
 				}
-				break
+
+				// These two lines are slower than the TCP equivalent
+				//    -> try to understand why
+				udpBuf := frame.Buffer()
+				conn.Write(udpBuf)
+
+				//time.Sleep(100000 * time.Microsecond)
 			}
+		}
+	}
+}
 
-			// These two lines are slower than the TCP equivalent
-			//    -> try to understand why
-			udpBuf := frame.Buffer()
-			conn.Write(udpBuf)
-
-			//time.Sleep(100000 * time.Microsecond)
+func readIncomingMessages(conn *net.UDPConn) {
+	buf := make([]byte, 2)
+	for {
+		conn.Read(buf)
+		fmt.Printf("the buf %x\n", buf)
+		if buf[0] == 0xaa && buf[1] == 0xdc {
+			pauseEmission <- true
+		}
+		if buf[0] == 0xaa && buf[1] == 0xcd {
+			resumeEmission <- true
 		}
 	}
 }

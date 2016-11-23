@@ -4,7 +4,6 @@
 package main
 
 import (
-	"encoding/binary"
 	"flag"
 	"fmt"
 	"log"
@@ -12,6 +11,8 @@ import (
 	"os"
 	"runtime/pprof"
 	"strconv"
+
+	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rw"
 )
 
 var (
@@ -70,7 +71,7 @@ func main() {
 		}
 		///////////////////////////////////////////////////////
 		// Option 1 : fastest
-		conn.Read(buf)
+		/*conn.Read(buf)
 		AMCFrameCounters0 := binary.BigEndian.Uint16(buf[2:4])
 		AMCFrameCounters1 := binary.BigEndian.Uint16(buf[4:6])
 		AMCFrameCounter := (uint32(AMCFrameCounters0) << 16) + uint32(AMCFrameCounters1)
@@ -79,33 +80,33 @@ func main() {
 				fmt.Printf("AMCFrameCounter != AMCFrameCounterPrev+1\n")
 			}
 		}
-		AMCFrameCounterPrev = AMCFrameCounter
+		AMCFrameCounterPrev = AMCFrameCounter*/
 		///////////////////////////////////////////////////////
 
-		/*
-			//////////////////////////////////////////////////////
-			// Option 2 : a bit more refined
-			  n, _, err := conn.ReadFromUDP(buf)
-				frame := rw.NewFrame(n) // <- here
-				//fmt.Println("payload =", n)
-				frame.FillHeader(buf) // <- here
-				err = frame.IntegrityHeader()
-				if err != nil {
-					panic(err)
-				}
-				frame.FillData(buf)
-				err = frame.IntegrityData()
-				if err != nil {
-					panic(err)
-				}
-				if nframes > 0 {
-					if frame.AMCFrameCounter != AMCFrameCounterPrev+1 {
-						fmt.Printf("frame.AMCFrameCounter != AMCFrameCounterPrev+1\n")
-					}
-				}
-				AMCFrameCounterPrev = frame.AMCFrameCounter
-			//////////////////////////////////////////////////////
-		*/
+		//////////////////////////////////////////////////////
+		// Option 2 : a bit more refined
+		//n, _, err := conn.ReadFromUDP(buf)
+		n, err := conn.Read(buf)
+		frame := rw.NewFrame(n)
+		//fmt.Println("payload =", n)
+		frame.FillHeader(buf)
+		err = frame.IntegrityHeader()
+		if err != nil {
+			panic(err)
+		}
+		frame.FillData(buf)
+		err = frame.IntegrityData()
+		if err != nil {
+			panic(err)
+		}
+		if nframes > 0 {
+			if frame.AMCFrameCounter != AMCFrameCounterPrev+1 {
+				fmt.Printf("frame.AMCFrameCounter != AMCFrameCounterPrev+1\n")
+			}
+		}
+		AMCFrameCounterPrev = frame.AMCFrameCounter
+		//////////////////////////////////////////////////////
+
 		nframes++
 	}
 }
