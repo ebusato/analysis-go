@@ -18,8 +18,8 @@ var (
 
 	fileName = flag.String("i", "", "Input file name")
 	ip       = flag.String("ip", "localhost", "IP address")
-	port     = flag.String("p", "6000", "Port number")
-	portloc  = flag.String("ploc", "6001", "Local port number (for incoming messages)")
+	port     = flag.String("p", "60000", "Port number")
+	portloc  = flag.String("ploc", "60001", "Local port number (for incoming messages)")
 	con      = flag.String("con", "udp", "Connection type (possible values: udp, tcp)")
 	//freq     = flag.Uint("freq", 100, "Event number printing frequency")
 )
@@ -131,11 +131,12 @@ func readIncomingMessages(conn *net.UDPConn) {
 	buf := make([]byte, 2)
 	for {
 		conn.Read(buf)
-		fmt.Printf("the buf %x\n", buf)
 		if buf[0] == 0xaa && buf[1] == 0xdc {
+			fmt.Printf("Pausing emission\n")
 			pauseEmission <- true
 		}
 		if buf[0] == 0xaa && buf[1] == 0xcd {
+			fmt.Printf("Resuming emission\n")
 			resumeEmission <- true
 		}
 	}
