@@ -16,6 +16,8 @@ void plot(TString name, int evt)
 	TFile* f = new TFile(name, "read");
 	TTree* tree = (TTree*) f->Get("tree");
 	
+	TF1 *fExp = new TF1("fExp","TMath::Exp([0] - [1]*x)");
+	
 	// Make plot
 	TCanvas* c1 = new TCanvas("c1","c1",900,900);
 	c1->Divide(2,2);
@@ -27,11 +29,31 @@ void plot(TString name, int evt)
 	g1->SetMarkerColor(kRed);
 	g1->SetMarkerStyle(8);
 	g1->SetMarkerSize(0.5);
+	g1->Fit("fExp", "", "", 75, 200);
+	TF1* fg1 = g1->GetFunction("fExp");
+	fg1->SetLineColor(kOrange+1);
+	fg1->SetLineWidth(4);
+	Double_t par1 = fExp->GetParameter(1);
+	Double_t decayTime0 = 0;
+	if(par1 != 0) {
+		decayTime0 = 1/par1;
+	}
+	cout << "decayTime0 = " << decayTime0 << " ns" << endl;
 	tree->Draw("Pulse[0]*Ampl[1]/Ampl[0] : SampleTimes", Form("Evt == %i", evt),"same");
 	TGraph *g2 = new TGraph(999,tree->GetV2(),tree->GetV1());
 	g2->SetMarkerColor(kBlue);
 	g2->SetMarkerStyle(8);
 	g2->SetMarkerSize(0.5);
+	g2->Fit("fExp", "", "", 75, 200);
+	TF1* fg2 = g2->GetFunction("fExp");
+	fg2->SetLineColor(kGreen+1);
+	fg2->SetLineWidth(4);
+	par1 = fExp->GetParameter(1);
+	Double_t decayTime1 = 0;
+	if(par1 != 0) {
+		decayTime1 = 1/par1;
+	}
+	cout << "decayTime1 = " << decayTime1 << " ns" << endl;
 	TMultiGraph* mg = new TMultiGraph();
 	mg->Add(g1);
 	mg->Add(g2);
@@ -68,6 +90,12 @@ void plot(TString name, int evt)
 	TLatex* la3 = new TLatex(110, amplitude1 * 0.7, Form("ampl[1]=%f", amplitude1));
 	la3->SetTextColor(kRed);
 	la3->Draw();
+	TLatex* la4 = new TLatex(110, amplitude1 * 0.5, Form("Decay time 0=%f", decayTime0));
+	la4->SetTextColor(kRed);
+	la4->Draw();
+	TLatex* la5 = new TLatex(110, amplitude1 * 0.4, Form("Decay time 1=%f", decayTime1));
+	la5->SetTextColor(kRed);
+	la5->Draw();
 	
 	// Make pulse plot with fit
 	//TF1 *fPulse = new TF1("fPulse",fitf,0,200,7);
