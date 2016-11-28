@@ -351,9 +351,9 @@ func ChannelAbsIdx288ToFifoID144(iChannelAbs uint16) uint16 {
 
 // iFifo can go from 0 to 143
 // The returned value can go from 0 to 119
-func FifoID144ToFifoID120(iFifo uint16) uint16 {
+func FifoID144ToFifoID120(iFifo uint16, throwErr bool) uint16 {
 	i := iFifo % 12
-	if i == 10 || i == 11 {
+	if throwErr && (i == 10 || i == 11) {
 		log.Fatalf("iFifo=%v -> corresponds to an unused fifo.\n", iFifo)
 	}
 	return iFifo - 2*(iFifo/12)
@@ -361,15 +361,17 @@ func FifoID144ToFifoID120(iFifo uint16) uint16 {
 
 // iFifo can go from 0 to 143
 // QuartetAbsIdx60 can go from 0 to 59
-func FifoID144ToQuartetAbsIdx60(iFifo uint16) uint8 {
-	return uint8(FifoID144ToFifoID120(iFifo) / 2)
+func FifoID144ToQuartetAbsIdx60(iFifo uint16, throwErr bool) uint8 {
+	return uint8(FifoID144ToFifoID120(iFifo, throwErr) / 2)
 }
 
 // FEIdAndChanIdToQuartetAbsIdx60 return the quartet absolute Id (0->59)
 // from an input front end (ASM) board id and a channel Id (0 -> 23)
-func FEIdAndChanIdToQuartetAbsIdx60(FEId uint16, ChanId uint16) uint8 {
+func FEIdAndChanIdToQuartetAbsIdx60(FEId uint16, ChanId uint16, throwErr bool) uint8 {
 	var FEIdNew uint16
 	switch FEId {
+	case 0x10:
+		FEIdNew = 0
 	case 0x1e:
 		FEIdNew = 0
 	default:
@@ -377,7 +379,7 @@ func FEIdAndChanIdToQuartetAbsIdx60(FEId uint16, ChanId uint16) uint8 {
 	}
 	ChanAbsIdx288 := FEIdNew*24 + ChanId
 	FifoId144 := ChannelAbsIdx288ToFifoID144(ChanAbsIdx288)
-	return FifoID144ToQuartetAbsIdx60(FifoId144)
+	return FifoID144ToQuartetAbsIdx60(FifoId144, throwErr)
 }
 
 func RelIdxToAbsIdx240(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {

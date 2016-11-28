@@ -100,7 +100,14 @@ func (w *Writer) writeHeader(f *Frame) {
 	w.writeU16(f.Cafe)
 	w.writeU16(f.Deca)
 	w.write(f.Counters)
-	w.write(f.TimeStamps)
+	w.write(f.TimeStampsASM)
+	w.write(&f.TimeStampsTrigThorASM)
+	w.writeU16(f.ThorTT)
+	w.write(&f.Patterns)
+	w.writeU16(f.Bobo)
+	w.write(&f.ThorTrigTimeStamps)
+	w.write(&f.CptsTriggerThor)
+	w.write(&f.CptsTriggerASM)
 	w.writeU16(f.NoSamples)
 }
 

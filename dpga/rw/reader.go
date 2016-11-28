@@ -313,7 +313,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			}
 			firstPass = false
 			fifoID144 := uint16(frame.Block.ID)
-			iCluster := dpgadetector.FifoID144ToQuartetAbsIdx60(fifoID144)
+			iCluster := dpgadetector.FifoID144ToQuartetAbsIdx60(fifoID144, true)
 			if iCluster >= 60 {
 				log.Fatalf("error ! iCluster=%v (>= 60)\n", iCluster)
 			}

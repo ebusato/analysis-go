@@ -9,17 +9,22 @@ import (
 )
 
 const (
-	numAMCFrameCounters uint8  = 2
-	numASMFrameCounters uint8  = 4
-	numCounters         uint8  = 4
-	numTimeStamps       uint8  = 4
-	ctrlFirstWord       uint16 = 0x1230
-	ctrl0xfe            uint16 = 0xfe
-	ctrl0xfd            uint16 = 0xfd
-	ctrl0xCafe          uint16 = 0xCAFE
-	ctrl0xDeca          uint16 = 0xDECA
-	ctrl0xCRC           uint16 = 0x9876
-	ctrl0xfb            uint16 = 0xfb
+	numAMCFrameCounters      uint8  = 2
+	numASMFrameCounters      uint8  = 4
+	numCounters              uint8  = 4
+	numTimeStampsASM         uint8  = 4
+	numTimeStampsTrigThorASM uint8  = 4
+	numPatterns              uint8  = 3
+	numThorTrigTimeStamps    uint8  = 3
+	numCptsTriggerThor       uint8  = 2
+	numCptsTriggerASM        uint8  = 2
+	ctrlFirstWord            uint16 = 0x1230
+	ctrl0xfe                 uint16 = 0xfe
+	ctrl0xfd                 uint16 = 0xfd
+	ctrl0xCafe               uint16 = 0xCAFE
+	ctrl0xDeca               uint16 = 0xDECA
+	ctrl0xCRC                uint16 = 0x9876
+	ctrl0xfb                 uint16 = 0xfb
 )
 
 type ChanData struct {
@@ -51,27 +56,39 @@ const (
 // Each frame is associated to one half DRS
 type Frame struct {
 	// Raw quantities
-	FirstBlockWord   uint16
-	AMCFrameCounters [numAMCFrameCounters]uint16
-	ParityFEIdCtrl   uint16
-	TriggerMode      uint16
-	Trigger          uint16
-	ASMFrameCounters [numASMFrameCounters]uint16
-	Cafe             uint16
-	Deca             uint16
-	Counters         [numCounters]uint16
-	TimeStamps       [numTimeStamps]uint16
-	NoSamples        uint16
-	Data             HalfDRSData
-	CRC              uint16
-	ParityFEIdCtrl2  uint16
+	FirstBlockWord        uint16                           // 0
+	AMCFrameCounters      [numAMCFrameCounters]uint16      // 1 -> 2
+	ParityFEIdCtrl        uint16                           // 3
+	TriggerMode           uint16                           // 4
+	Trigger               uint16                           // 5
+	ASMFrameCounters      [numASMFrameCounters]uint16      // 6 -> 9
+	Cafe                  uint16                           // 10
+	Deca                  uint16                           // 11
+	Counters              [numCounters]uint16              // 12 -> 15
+	TimeStampsASM         [numTimeStampsASM]uint16         // 16 -> 19
+	TimeStampsTrigThorASM [numTimeStampsTrigThorASM]uint16 // 20 -> 23
+	ThorTT                uint16                           // 24
+	Patterns              [numPatterns]uint16              // 25 -> 27
+	Bobo                  uint16                           // 28
+	ThorTrigTimeStamps    [numThorTrigTimeStamps]uint16    // 29 -> 31
+	CptsTriggerThor       [numCptsTriggerThor]uint16       // 32 -> 33
+	CptsTriggerASM        [numCptsTriggerASM]uint16        // 34 -> 35
+	NoSamples             uint16                           // 36
+	Data                  HalfDRSData
+	CRC                   uint16
+	ParityFEIdCtrl2       uint16
 
 	// Derived quantities
-	AMCFrameCounter uint32
-	FrontEndId      uint16
-	ASMFrameCounter uint64
-	TimeStamp       uint64
-	QuartetAbsIdx60 uint8
+	AMCFrameCounter      uint32
+	FrontEndId           uint16
+	ASMFrameCounter      uint64
+	TimeStampASM         uint64
+	TimeStampTrigThorASM uint64
+	Pattern              uint64
+	ThorTrigTimeStamp    uint64
+	CptTriggerThor       uint32
+	CptTriggerASM        uint32
+	QuartetAbsIdx60      uint8
 
 	// Error handling
 	Err ErrorCode
@@ -108,19 +125,35 @@ func (f *Frame) FillHeader(buffer []byte) {
 	f.Counters[1] = binary.BigEndian.Uint16(buffer[26:28])
 	f.Counters[2] = binary.BigEndian.Uint16(buffer[28:30])
 	f.Counters[3] = binary.BigEndian.Uint16(buffer[30:32])
-	f.TimeStamps[0] = binary.BigEndian.Uint16(buffer[32:34])
-	f.TimeStamps[1] = binary.BigEndian.Uint16(buffer[34:36])
-	f.TimeStamps[2] = binary.BigEndian.Uint16(buffer[36:38])
-	f.TimeStamps[3] = binary.BigEndian.Uint16(buffer[38:40])
-	f.NoSamples = binary.BigEndian.Uint16(buffer[40:42])
+	f.TimeStampsASM[0] = binary.BigEndian.Uint16(buffer[32:34])
+	f.TimeStampsASM[1] = binary.BigEndian.Uint16(buffer[34:36])
+	f.TimeStampsASM[2] = binary.BigEndian.Uint16(buffer[36:38])
+	f.TimeStampsASM[3] = binary.BigEndian.Uint16(buffer[38:40])
+	f.TimeStampsTrigThorASM[0] = binary.BigEndian.Uint16(buffer[40:42])
+	f.TimeStampsTrigThorASM[1] = binary.BigEndian.Uint16(buffer[42:44])
+	f.TimeStampsTrigThorASM[2] = binary.BigEndian.Uint16(buffer[44:46])
+	f.TimeStampsTrigThorASM[3] = binary.BigEndian.Uint16(buffer[46:48])
+	f.ThorTT = binary.BigEndian.Uint16(buffer[48:50])
+	f.Patterns[0] = binary.BigEndian.Uint16(buffer[50:52])
+	f.Patterns[1] = binary.BigEndian.Uint16(buffer[52:54])
+	f.Patterns[2] = binary.BigEndian.Uint16(buffer[54:56])
+	f.Bobo = binary.BigEndian.Uint16(buffer[56:58])
+	f.ThorTrigTimeStamps[0] = binary.BigEndian.Uint16(buffer[58:60])
+	f.ThorTrigTimeStamps[1] = binary.BigEndian.Uint16(buffer[60:62])
+	f.ThorTrigTimeStamps[2] = binary.BigEndian.Uint16(buffer[62:64])
+	f.CptsTriggerThor[0] = binary.BigEndian.Uint16(buffer[64:66])
+	f.CptsTriggerThor[1] = binary.BigEndian.Uint16(buffer[66:68])
+	f.CptsTriggerASM[0] = binary.BigEndian.Uint16(buffer[68:70])
+	f.CptsTriggerASM[1] = binary.BigEndian.Uint16(buffer[70:72])
+	f.NoSamples = binary.BigEndian.Uint16(buffer[72:74])
 	f.AMCFrameCounter = (uint32(f.AMCFrameCounters[0]) << 16) + uint32(f.AMCFrameCounters[1])
 	f.FrontEndId = (f.ParityFEIdCtrl & 0x7fff) >> 8
 	f.ASMFrameCounter = (uint64(f.ASMFrameCounters[0]) << 48) + (uint64(f.ASMFrameCounters[1]) << 32) + (uint64(f.ASMFrameCounters[2]) << 16) + uint64(f.ASMFrameCounters[3])
-	temp := (uint64(f.TimeStamps[0]) << 16) | uint64(f.TimeStamps[1])
+	temp := (uint64(f.TimeStampsASM[0]) << 16) | uint64(f.TimeStampsASM[1])
 	temp = (temp << 32)
-	temp1 := (uint64(f.TimeStamps[2]) << 16) | uint64(f.TimeStamps[3])
+	temp1 := (uint64(f.TimeStampsASM[2]) << 16) | uint64(f.TimeStampsASM[3])
 	// 	temp |= temp1
-	f.TimeStamp = temp | temp1
+	f.TimeStampASM = temp | temp1
 	///////////////////////////////////////////////////////////////////////
 	// This +11 is necessary but currently not really understood
 	// 11 clock periods are generated by "machine d'etat" in ASM firmware
@@ -150,11 +183,11 @@ func (f *Frame) IntegrityHeader() error {
 // readParityChanIdCtrl is a temporary fix, until we understand where the additionnal 16 bits words come from
 func (f *Frame) fillParityChanIdCtrl(buffer []byte, i int) (bool, int) {
 	data := &f.Data.Data[i]
-	beg := 42 + i*2*1023 + 2*f.noAttempts
+	beg := 74 + i*2*1023 + 2*f.noAttempts
 	end := beg + 2
 	data.ParityChanIdCtrl = binary.BigEndian.Uint16(buffer[beg:end])
 
-	//fmt.Printf("%v, %x (f.noAttempts=%v)\n", i, data.ParityChanIdCtrl, f.noAttempts)
+	// 	fmt.Printf("%v, %x (f.noAttempts=%v)\n", i, data.ParityChanIdCtrl, f.noAttempts)
 	if (data.ParityChanIdCtrl & 0xff) != ctrl0xfd {
 		//panic("(data.ParityChanIdCtrl & 0xff) != ctrl0xfd")
 		return true, 0
@@ -164,7 +197,7 @@ func (f *Frame) fillParityChanIdCtrl(buffer []byte, i int) (bool, int) {
 		//panic("reader.readParityChanIdCtrl: data.Channel != f.Data.Data[0].Channel+uint16(i)")
 		return true, 0
 	}
-	f.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(f.FrontEndId, data.Channel)
+	f.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(f.FrontEndId, data.Channel, false)
 	//fmt.Printf("   -> %v, %v, %v\n", data.Channel, f.QuartetAbsIdx60, f.QuartetAbsIdx60old)
 	if i > 0 && f.QuartetAbsIdx60 != f.QuartetAbsIdx60old {
 		//panic("i > 0 && f.QuartetAbsIdx60 != f.QuartetAbsIdx60old")
@@ -193,6 +226,7 @@ func (f *Frame) FillData(buffer []byte) {
 		//fmt.Printf("data.ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
 		for j := range data.Amplitudes {
 			//data.Amplitudes[j] = binary.BigEndian.Uint16(buffer[44+2*j+i*2*1023+2*f.noAttempts : 46+2*j+i*2*1023+2*f.noAttempts])
+			//fmt.Printf("j, lastIdx: %v, %v\n", j, lastIdx)
 			data.Amplitudes[j] = binary.BigEndian.Uint16(buffer[lastIdx+2*j : lastIdx+2+2*j])
 		}
 		// 		for j := range data.Amplitudes {
@@ -244,7 +278,15 @@ func (f *Frame) Print(s string) {
 	fmt.Printf("   -> Cafe = %x\n", f.Cafe)
 	fmt.Printf("   -> Deca = %x\n", f.Deca)
 	fmt.Printf("   -> Counters = %x\n", f.Counters)
-	fmt.Printf("   -> TimeStamps = %x (TimeStamp = %v)\n", f.TimeStamps, f.TimeStamp)
+	fmt.Printf("   -> TimeStampsASM = %x (TimeStampASM = %v)\n", f.TimeStampsASM, f.TimeStampASM)
+	fmt.Printf("   -> TimeStampsTrigThorASM = %x (TimeStampTrigThorASM = %v)\n", f.TimeStampsTrigThorASM, f.TimeStampTrigThorASM)
+	fmt.Printf("   -> ThorTT = %x\n", f.ThorTT)
+	fmt.Printf("   -> Patterns = %x (Pattern = %v)\n", f.Patterns, f.Pattern)
+	fmt.Printf("   -> Bobo = %x\n", f.Bobo)
+	fmt.Printf("   -> ThorTrigTimeStamps = %x (ThorTrigTimeStamp = %v)\n", f.ThorTrigTimeStamps, f.ThorTrigTimeStamp)
+	fmt.Printf("   -> CptsTriggerThor = %x (CptTriggerThor = %v)\n", f.CptsTriggerThor, f.CptTriggerThor)
+	fmt.Printf("   -> CptsTriggerASM = %x (CptTriggerASM = %v)\n", f.CptsTriggerASM, f.CptTriggerASM)
+	fmt.Printf("   -> QuartetAbsIdx60 = %x\n", f.QuartetAbsIdx60)
 	fmt.Printf("   -> NoSamples = %x\n", f.NoSamples)
 
 	switch s {
@@ -298,7 +340,14 @@ func (f *Frame) Buffer() []byte {
 	buffer = append(buffer, f.Cafe)
 	buffer = append(buffer, f.Deca)
 	buffer = append(buffer, f.Counters[:]...)
-	buffer = append(buffer, f.TimeStamps[:]...)
+	buffer = append(buffer, f.TimeStampsASM[:]...)
+	buffer = append(buffer, f.TimeStampsTrigThorASM[:]...)
+	buffer = append(buffer, f.ThorTT)
+	buffer = append(buffer, f.Patterns[:]...)
+	buffer = append(buffer, f.Bobo)
+	buffer = append(buffer, f.ThorTrigTimeStamps[:]...)
+	buffer = append(buffer, f.CptsTriggerThor[:]...)
+	buffer = append(buffer, f.CptsTriggerASM[:]...)
 	buffer = append(buffer, f.NoSamples)
 	for i := range f.Data.Data {
 		data := &f.Data.Data[i]

@@ -793,8 +793,8 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 		// 			fmt.Printf("reading event %v\n", noEvents)
 		// 		}
 		frame, _ := r.Frame()
-		timeStamps[nframes%len(timeStamps)] = frame.TimeStamp
-		framesMap[frame.TimeStamp] = append(framesMap[frame.TimeStamp], frame)
+		timeStamps[nframes%len(timeStamps)] = frame.TimeStampASM
+		framesMap[frame.TimeStampASM] = append(framesMap[frame.TimeStampASM], frame)
 
 		/////////////////////////////////////////////////////////////////////////////////////
 		// Sanity checks
@@ -825,8 +825,8 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 
 		/////////////////////////////////////////////////////////////////////////////////////
 		// The following check is possibly time consuming, consider removing it
-		if eventAlreadyClosed(frame.TimeStamp) {
-			log.Fatalf("Timestamp %v already sent to reconstruction\n", frame.TimeStamp)
+		if eventAlreadyClosed(frame.TimeStampASM) {
+			log.Fatalf("TimeStampASM %v already sent to reconstruction\n", frame.TimeStampASM)
 		}
 		/////////////////////////////////////////////////////////////////////////////////////
 
@@ -884,10 +884,24 @@ func reconstructEvent(r *rw.Reader) {
 		evt.ID = frameSlice.uint
 		// build event from slice of frames
 		for _, frame := range frameSlice.frameSliceType {
-			if !firstFrame && frame.TimeStamp != evt.TimeStamp {
+			if !firstFrame && frame.TimeStampASM != evt.TimeStamp {
 				log.Fatalf("Time stamps are not all equal to the same value. This should never happen !\n")
 			}
-			evt.TimeStamp = frame.TimeStamp
+			//////////////////////////////////////////////////////////////////////////////////
+			// Fix: do not include frames for channels 20 -> 23
+			rejectFrame := false
+			for i := range frame.Data.Data {
+				channel := int(frame.Data.Data[i].Channel)
+				if channel == 20 || channel == 21 || channel == 22 || channel == 23 {
+					rejectFrame = true
+					break
+				}
+			}
+			if rejectFrame {
+				continue
+			}
+			///////////////////////////////////////////////////////////////////////////////////
+			evt.TimeStamp = frame.TimeStampASM
 			pulses := makePulses(frame, r.SigThreshold)
 			evt.Clusters[frame.QuartetAbsIdx60].Pulses[0] = *pulses[0]
 			evt.Clusters[frame.QuartetAbsIdx60].Pulses[1] = *pulses[1]
