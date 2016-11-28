@@ -79,9 +79,11 @@ type Pulse struct {
 	AmplIndex           int
 	Charg               float64 // Charge, removed the final "e" because the name "Charge" is already used by the method
 	E                   float64 // Energy (equal to 0 until energy calibration is performed)
+	Time10              float64 // time at 10% on rising front of the pulse
 	Time20              float64 // time at 20% on rising front of the pulse
 	Time30              float64 // time at 30% on rising front of the pulse
 	Time80              float64 // time at 80% on rising front of the pulse
+	Time90              float64 // time at 90% on rising front of the pulse
 	NoLocMaxRisingFront int     // number of local maxima on rising front (counted between 20% and 80%)
 	Channel             *detector.Channel
 }
@@ -309,19 +311,25 @@ func (p *Pulse) T(recomputeAmpl bool, frac float64, idxStart int) (float64, int,
 }
 
 // CalcRisingFront returns various quantities calculated on the rising front:
+//  - Time at 90%
 //  - Time at 80%
 //  - Time at 30%
 //  - Time at 20%
+//  - Time at 10%
 //  - Number of local maxima on rising front, between 20% and 80%
-func (p *Pulse) CalcRisingFront(recomputeAmpl bool) (float64, float64, float64, int) {
-	time80, i80low, _ := p.T(recomputeAmpl, 0.8, p.AmplIndex)
+func (p *Pulse) CalcRisingFront(recomputeAmpl bool) (float64, float64, float64, float64, float64, int) {
+	time90, i90low, _ := p.T(recomputeAmpl, 0.9, p.AmplIndex)
+	time80, i80low, _ := p.T(false, 0.8, i90low)
 	time30, i30low, noLocMax8030 := p.T(false, 0.3, i80low)
-	time20, _, noLocMax3020 := p.T(false, 0.2, i30low)
+	time20, i20low, noLocMax3020 := p.T(false, 0.2, i30low)
+	time10, _, _ := p.T(false, 0.1, i20low)
+	p.Time90 = time90
 	p.Time80 = time80
 	p.Time30 = time30
 	p.Time20 = time20
+	p.Time10 = time10
 	p.NoLocMaxRisingFront = noLocMax8030 + noLocMax3020
-	return p.Time80, p.Time30, p.Time20, p.NoLocMaxRisingFront
+	return p.Time90, p.Time80, p.Time30, p.Time20, p.Time10, p.NoLocMaxRisingFront
 }
 
 // XaxisType defines the x axis type for plotting
