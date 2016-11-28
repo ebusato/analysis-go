@@ -831,7 +831,9 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 		/////////////////////////////////////////////////////////////////////////////////////
 
 		if nframes%*monFreq == 0 {
-			udpconn.WriteToUDP([]byte{0xaa, 0xdc}, remoteAddr)
+			if udpconn != nil {
+				udpconn.WriteToUDP([]byte{0xaa, 0xdc}, remoteAddr)
+			}
 			closedEvts := closedEvents(framesMap)
 			noClosedEvts := len(closedEvts)
 			noEvents += uint(noClosedEvts)
@@ -868,7 +870,9 @@ func readFrames(r *rw.Reader, w *rw.Writer, wg *sync.WaitGroup) {
 			}
 
 			allClosedEvents = append(allClosedEvents, closedEvts...)
-			udpconn.WriteToUDP([]byte{0xaa, 0xcd}, remoteAddr)
+			if udpconn != nil {
+				udpconn.WriteToUDP([]byte{0xaa, 0xcd}, remoteAddr)
+			}
 		}
 
 		nframes++
@@ -901,6 +905,7 @@ func reconstructEvent(r *rw.Reader) {
 				continue
 			}
 			///////////////////////////////////////////////////////////////////////////////////
+			//frame.Print("medium")
 			evt.TimeStamp = frame.TimeStampASM
 			pulses := makePulses(frame, r.SigThreshold)
 			evt.Clusters[frame.QuartetAbsIdx60].Pulses[0] = *pulses[0]
