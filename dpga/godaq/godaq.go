@@ -209,21 +209,21 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 
 // Data is the struct that is sent via the websocket to the web client.
 type Data struct {
-	EvtID             uint     `json:"evt"`               // event id (64 bits a priori)
-	Time              float64  `json:"time"`              // time at which monitoring data are taken (64 bits)
+	EvtID             uint                   `json:"evt"`               // event id (64 bits a priori)
+	Time              float64                `json:"time"`              // time at which monitoring data are taken (64 bits)
 	Counters          []uint32 `json:"counters"`          // counters provided by Thor
-	MonBufSize        int      `json:"monbufsize"`        // monitoring channel buffer size
-	Freq              float64  `json:"freq"`              // number of events processed per second (64 bits)
-	Qs                Quartets `json:"quartets"`          // (30689280 bits)
-	Mult              H1D      `json:"mult"`              // multiplicity of pulses (1024 bits)
-	FreqH             string   `json:"freqh"`             // frequency histogram
-	ChargeL           string   `json:"chargel"`           // charge histograms for left hemisphere
-	ChargeR           string   `json:"charger"`           // charge histograms for right hemisphere
-	HVvals            string   `json:"hv"`                // hv values
-	MinRec            []XYZ    `json:"minrec"`            // outcome of the minimal reconstruction algorithm
-	MinRec1DDistrs    string   `json:"minrec1Ddistrs"`    // minimal reconstruction X, Y, Z distributions
-	DeltaT30          string   `json:"deltat30"`          // distribution of the difference of T30
-	ChargeCorrelation string   `json:"chargecorrelation"` // charge correlation for events with multiplicity=2
+	MonBufSize        int                    `json:"monbufsize"`        // monitoring channel buffer size
+	Freq              float64                `json:"freq"`              // number of events processed per second (64 bits)
+	Qs                Quartets               `json:"quartets"`          // (30689280 bits)
+	Mult              H1D                    `json:"mult"`              // multiplicity of pulses (1024 bits)
+	FreqH             string                 `json:"freqh"`             // frequency histogram
+	ChargeL           string                 `json:"chargel"`           // charge histograms for left hemisphere
+	ChargeR           string                 `json:"charger"`           // charge histograms for right hemisphere
+	HVvals            string                 `json:"hv"`                // hv values
+	MinRec            []XYZ                  `json:"minrec"`            // outcome of the minimal reconstruction algorithm
+	MinRec1DDistrs    string                 `json:"minrec1Ddistrs"`    // minimal reconstruction X, Y, Z distributions
+	DeltaT30          string                 `json:"deltat30"`          // distribution of the difference of T30
+	ChargeCorrelation string                 `json:"chargecorrelation"` // charge correlation for events with multiplicity=2
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -800,6 +800,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							if float64(len(datac)) >= 0.6*float64(datacsize) {
 								fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
 							}
+							fmt.Println(event.Counters)
 							datac <- Data{
 								EvtID:             event.ID,
 								Time:              time,

@@ -28,6 +28,18 @@
 		
 		var freqplot = new plot("frequency (Hz)", [], 'orange')
 		
+		var counterssingleplot1 = new plot("single trig. rate (Hz) - board 1", [], 'red')
+		var counterssingleplot2 = new plot("single trig. rate (Hz) - board 2", [], 'green')
+		var counterssingleplot3 = new plot("single trig. rate (Hz) - board 3", [], 'blue')
+		var counterssingleplot4 = new plot("single trig. rate (Hz) - board 4", [], 'magenta')
+		var counterssingleplot5 = new plot("single trig. rate (Hz) - board 5", [], 'yellow')
+		var counterssingleplot6 = new plot("single trig. rate (Hz) - board 6", [], 'orange')
+		var counterssingleplot7 = new plot("single trig. rate (Hz) - board 7", [], 'red')
+		var counterssingleplot8 = new plot("single trig. rate (Hz) - board 8", [], 'green')
+		var counterssingleplot9 = new plot("single trig. rate (Hz) - board 9", [], 'blue')
+		var counterssingleplot10 = new plot("single trig. rate (Hz) - board 10", [], 'magenta')
+		var counterssingleplot11 = new plot("single trig. rate (Hz) - board 11", [], 'yellow')
+		var counterssingleplot12 = new plot("single trig. rate (Hz) - board 12", [], 'orange')
 		var counters1plot = new plot("trigger rate (Hz)", [], 'green') 
 		
 		var multplot = new plot("Pulse multiplicity", [], 'orange')
@@ -94,6 +106,14 @@
 			var counters1 = $.plot("#my-counters1-plot", [counters1plot], opts);
 			counters1.setupGrid(); // needed as x-axis changes
 			counters1.draw();
+			var counterssingle1 = $.plot("#my-counterssingle1-plot", [counterssingleplot1, counterssingleplot2, counterssingleplot3, counterssingleplot4,
+										counterssingleplot5, counterssingleplot6], opts);
+			counterssingle1.setupGrid(); // needed as x-axis changes
+			counterssingle1.draw();
+			var counterssingle2 = $.plot("#my-counterssingle2-plot", [counterssingleplot7, counterssingleplot8, counterssingleplot9, counterssingleplot10,
+										counterssingleplot11, counterssingleplot12], opts);
+			counterssingle2.setupGrid(); // needed as x-axis changes
+			counterssingle2.draw();
 			var multopts = $.extend(true, {}, opts); // deep copy of options
 			multopts.xaxis = {ticks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
 			var mult = $.plot("#my-mult-plot", [multplot], multopts);
@@ -170,10 +190,22 @@
 					freqplot.data.push([data.evt, data.freq])
 					monbufsizeplot.data.push([data.evt, data.monbufsize])
 				}
-				if (data.time != 0) {
-					// in the following line, the first argument (data.counters[])
-					// will need to be replaced by the time from Thor's timestamp
-					counters1plot.data.push([data.time, data.counters[13]/data.time])
+				if (data.evt != 0 && data.counters[0] != 0) {
+// 					// in the following line, the first argument (data.counters[])
+// 					// will need to be replaced by the time from Thor's timestamp
+					counters1plot.data.push([data.evt, data.counters[14]/(data.counters[0]*1/64e6)])
+					counterssingleplot1.data.push([data.evt, data.counters[2]/(data.counters[0]*1/64e6)])
+					counterssingleplot2.data.push([data.evt, data.counters[3]/(data.counters[0]*1/64e6)])
+					counterssingleplot3.data.push([data.evt, data.counters[4]/(data.counters[0]*1/64e6)])
+					counterssingleplot4.data.push([data.evt, data.counters[5]/(data.counters[0]*1/64e6)])
+					counterssingleplot5.data.push([data.evt, data.counters[6]/(data.counters[0]*1/64e6)])
+					counterssingleplot6.data.push([data.evt, data.counters[7]/(data.counters[0]*1/64e6)])
+					counterssingleplot7.data.push([data.evt, data.counters[8]/(data.counters[0]*1/64e6)])
+					counterssingleplot8.data.push([data.evt, data.counters[9]/(data.counters[0]*1/64e6)])
+					counterssingleplot9.data.push([data.evt, data.counters[10]/(data.counters[0]*1/64e6)])
+					counterssingleplot10.data.push([data.evt, data.counters[11]/(data.counters[0]*1/64e6)])
+					counterssingleplot11.data.push([data.evt, data.counters[12]/(data.counters[0]*1/64e6)])
+					counterssingleplot12.data.push([data.evt, data.counters[13]/(data.counters[0]*1/64e6)])
 				}
 				for (var i = 0; i < 8; i += 1) {
 					multplot.data.push([data.mult[i].X, data.mult[i].Y])
@@ -212,6 +244,12 @@
 		.my-plot-stylefreq {
 			width: 250px;
 			height: 200px;
+			font-size: 14px;
+			line-height: 1.2em;
+		}
+		.my-plot-stylecounter {
+			width: 500px;
+			height: 300px;
 			font-size: 14px;
 			line-height: 1.2em;
 		}
@@ -262,12 +300,20 @@
 		</div>
 		<table cellspacing="15">
 		<tr>
+		<td>
+			<div id="my-counterssingle1-plot" class="my-plot-stylecounter"></div>
+		</td>
+		<td>
+			<div id="my-counterssingle2-plot" class="my-plot-stylecounter"></div>
+		</td>
+		<td>
+			<div id="my-counters1-plot" class="my-plot-stylecounter"></div>
+		</td>
+		</tr>
+		<tr>
 		<!--td valign="top">
 			<div id="graph3DMinReco"></div>
 		</td-->		
-		<td width="600">
-			<div id="my-counters1-plot" class="my-plot-stylefreq"></div>
-		</td>
 		<td width="600">
 			<div id="my-mult-plot" class="my-plot-stylefreq"></div>
 			<div id="my-deltat30-plot" class="my-plot-stylefreq"></div>
