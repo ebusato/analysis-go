@@ -71,6 +71,7 @@ func main() {
 		}
 		evtIDprev = evtID
 		if err != nil {
+			log.Println("error is not nil", err)
 			if err != io.EOF {
 				log.Fatalf("error loading frame: %v\n", err)
 			}
@@ -78,6 +79,13 @@ func main() {
 				log.Fatalf("invalid last frame id. got=%d. want=%d", frame.ID, rw.LastFrame())
 			}
 			break
+		}
+		if frame.FirstOfEvent {
+			//fmt.Println("FirstOfEvent=", frame.FirstOfEvent)
+			w.WriteU32(rw.FirstEventWord)
+			for _, v := range r.Counters {
+				w.WriteU32(v)
+			}
 		}
 		err = w.Frame(frame)
 		if err != nil {

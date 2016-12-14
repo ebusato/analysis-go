@@ -20,6 +20,7 @@ type Reader struct {
 	evtIDPrevFrame    uint32
 	firstFrameOfEvent *Frame
 	SigThreshold      uint
+	Counters          [NumCounters]uint32
 	Debug             bool
 }
 
@@ -62,6 +63,7 @@ func (r *Reader) Frame() (*Frame, error) {
 	if r.err != nil {
 		return &Frame{}, r.err
 	}
+	//fmt.Println("making block with", r.noSamples, " samples")
 	f := &Frame{
 		Block: Block{
 			Data: make([]uint32, r.noSamples),
@@ -81,6 +83,10 @@ func (r *Reader) read(v interface{}) {
 		case *uint32:
 			fmt.Printf("word = %x\n", *v)
 		case *[]uint32:
+			for _, vv := range *v {
+				fmt.Printf("word = %x\n", vv)
+			}
+		case *[NumCounters]uint32:
 			for _, vv := range *v {
 				fmt.Printf("word = %x\n", vv)
 			}
@@ -150,6 +156,12 @@ func (r *Reader) readFrame(f *Frame) {
 		fmt.Printf("rw: start reading frame\n")
 	}
 	r.readU32(&f.ID)
+	if f.ID == FirstEventWord {
+		// First frame of event, read counters first
+		f.FirstOfEvent = true
+		r.read(&r.Counters)
+		r.readU32(&f.ID)
+	}
 	//fmt.Printf("rw: frame id = %v\n", f.ID)
 	if f.ID == lastFrame {
 		r.err = io.EOF
@@ -180,10 +192,10 @@ func (r *Reader) readBlockHeader(blk *Block) {
 	r.readU32(&blk.ID)
 	var ctrl uint32
 	r.readU32(&ctrl)
+	//fmt.Printf("rw: reading block header %v %v %x\n", blk.Evt, blk.ID, ctrl)
 	if ctrl != blockHeader && r.err == nil {
 		r.err = fmt.Errorf("asm: missing 0xCAFEDECA magic")
 	}
-	//fmt.Printf("rw: reading block header %v %v %x\n", blk.Evt, blk.ID, ctrl)
 }
 
 func (r *Reader) readBlockData(blk *Block) {
@@ -195,8 +207,7 @@ func (r *Reader) readBlockData(blk *Block) {
 	//	r.readU32(&blk.Data[i])
 	//}
 	r.readU32(&blk.SRout)
-	r.read(&blk.Counters)
-	//fmt.Printf("rw: srout = %v\n", blk.SRout)
+	//r.read(&blk.Counters)
 	//for i := range blk.Counters {
 	//	r.readU32(&blk.Counters[i])
 	//}
@@ -204,10 +215,13 @@ func (r *Reader) readBlockData(blk *Block) {
 
 func (r *Reader) readBlockTrailer(blk *Block) {
 	var ctrl uint32
+	// This is an extra word that we have to read coming from socket
 	r.readU32(&ctrl)
+	r.readU32(&ctrl)
+	//fmt.Printf("rw: ctrl = %x\n", ctrl)
 	//fmt.Printf("rw: block trailer = %x\n", ctrl)
 	if (ctrl>>4) != blockTrailer && r.err == nil {
-		r.err = fmt.Errorf("asm: missing 0xBADCAFEF magic")
+		r.err = fmt.Errorf("asm: missing 0xBADCAFEF magic (found %v)\n", ctrl)
 	}
 }
 
@@ -286,16 +300,20 @@ func MakePulses(f *Frame, iCluster uint8, sigThreshold uint) (*pulse.Pulse, *pul
 
 func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 	event := event.NewEvent(dpgadetector.Det.NoClusters())
+	event.Counters = make([]uint32, NumCounters)
+	for i := range event.Counters {
+		event.Counters[i] = r.Counters[i]
+	}
 	firstPass := true
 	for { // loop over frames
 		var frame *Frame = nil
 		if r.firstFrameOfEvent != nil { // enter this only for first frame of event
 			frame = r.firstFrameOfEvent
 			if r.err != nil {
+				log.Println("error not nil", r.err)
 				if r.err == io.EOF {
 					return nil, false
 				}
-				log.Fatal("error not nil", r.err)
 			}
 			r.firstFrameOfEvent = nil
 		} else { // enter this for all frames but the first one of the event
@@ -333,14 +351,6 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			case SecondFrameOfCluster:
 				event.Clusters[iCluster].Pulses[2] = *pulse0
 				event.Clusters[iCluster].Pulses[3] = *pulse1
-			}
-			// The counter treatment should be clarified with Magali
-			// For now just initialize the slice without filling it
-			if len(event.Clusters[iCluster].CountersFifo1) == 0 {
-				event.Clusters[iCluster].CountersFifo1 = make([]uint32, numCounters)
-			}
-			if len(event.Clusters[iCluster].CountersFifo2) == 0 {
-				event.Clusters[iCluster].CountersFifo2 = make([]uint32, numCounters)
 			}
 		} else { // switched to next event
 			r.firstFrameOfEvent = frame
@@ -389,24 +399,6 @@ func (r *Reader) ReadNextEventFull() (*event.Event, bool) {
 		pulse2, pulse3 := MakePulses(frame2, iCluster, r.SigThreshold)
 
 		event.Clusters[iCluster] = *pulse.NewCluster(iCluster, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
-
-		// The counter treatment should be clarified with Magali
-		// For now keep the info without checking that countersf1 == countersf2
-		// But it's not clear whether this is the right thing to do
-		// (are we supposed to have the same counters within one quartet, as the
-		// code below implies ? -> not sure, to be checked)
-		event.Clusters[iCluster].CountersFifo1 = make([]uint32, numCounters)
-		event.Clusters[iCluster].CountersFifo2 = make([]uint32, numCounters)
-		/*
-			for i := uint8(0); i < numCounters; i++ {
-				counterf1 := frame1.Block.Counters[i]
-				//counterf2 := frame2.Block.Counters[i]
-				//if counterf1 != counterf2 {
-				//	log.Fatalf("rw: countersf1 != countersf2")
-				//}
-				event.Clusters[iCluster].Counters[i] = counterf1
-			}
-		*/
 	}
 
 	return event, true

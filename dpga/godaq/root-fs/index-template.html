@@ -28,6 +28,8 @@
 		
 		var freqplot = new plot("frequency (Hz)", [], 'orange')
 		
+		var counters1plot = new plot("trigger rate (Hz)", [], 'green') 
+		
 		var multplot = new plot("Pulse multiplicity", [], 'orange')
 		multplot.bars = { show: true }
 		
@@ -89,6 +91,9 @@
 			var bufsize = $.plot("#my-monbufsize-plot", [monbufsizeplot], opts);
 			bufsize.setupGrid(); // needed as x-axis changes
 			bufsize.draw();
+			var counters1 = $.plot("#my-counters1-plot", [counters1plot], opts);
+			counters1.setupGrid(); // needed as x-axis changes
+			counters1.draw();
 			var multopts = $.extend(true, {}, opts); // deep copy of options
 			multopts.xaxis = {ticks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
 			var mult = $.plot("#my-mult-plot", [multplot], multopts);
@@ -164,6 +169,11 @@
 					//freqplot.data.push([data.time, data.freq])
 					freqplot.data.push([data.evt, data.freq])
 					monbufsizeplot.data.push([data.evt, data.monbufsize])
+				}
+				if (data.time != 0) {
+					// in the following line, the first argument (data.counters[])
+					// will need to be replaced by the time from Thor's timestamp
+					counters1plot.data.push([data.time, data.counters[13]/data.time])
 				}
 				for (var i = 0; i < 8; i += 1) {
 					multplot.data.push([data.mult[i].X, data.mult[i].Y])
@@ -255,6 +265,9 @@
 		<!--td valign="top">
 			<div id="graph3DMinReco"></div>
 		</td-->		
+		<td width="600">
+			<div id="my-counters1-plot" class="my-plot-stylefreq"></div>
+		</td>
 		<td width="600">
 			<div id="my-mult-plot" class="my-plot-stylefreq"></div>
 			<div id="my-deltat30-plot" class="my-plot-stylefreq"></div>

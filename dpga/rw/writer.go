@@ -79,6 +79,10 @@ func (w *Writer) writeU32(v uint32) {
 	_, w.err = w.w.Write(buf[:])
 }
 
+func (w *Writer) WriteU32(v uint32) {
+	w.writeU32(v)
+}
+	
 func (w *Writer) writeHeader(hdr *Header, clientTime bool) {
 	switch {
 	case hdr.HdrType == HeaderCAL:
@@ -126,6 +130,7 @@ func (w *Writer) writeFrame(f *Frame) {
 func (w *Writer) writeBlock(blk *Block, fid uint32) {
 	w.writeBlockHeader(blk)
 	w.writeBlockData(blk)
+	w.writeU32(uint32(0))
 	w.writeU32((blockTrailer << 4) + fid)
 }
 
@@ -147,9 +152,6 @@ func (w *Writer) writeBlockData(blk *Block) {
 		w.writeU32(v)
 	}
 	w.writeU32(blk.SRout)
-	for _, v := range blk.Counters {
-		w.writeU32(v)
-	}
 }
 
 func (w *Writer) MakeFrame(iCluster int, evtID uint32, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse) *Frame {
@@ -177,34 +179,30 @@ func (w *Writer) MakeFrame(iCluster int, evtID uint32, pulse0 *pulse.Pulse, puls
 }
 
 func (w *Writer) Event(event *event.Event) {
+	w.writeU32(FirstEventWord)
+	for _, v := range event.Counters {
+		w.writeU32(v)
+	}
 	for iCluster := range event.Clusters {
 		cluster := &event.Clusters[iCluster]
 		pulses := &cluster.Pulses
 
 		if pulses[0].NoSamples() != 0 || pulses[1].NoSamples() != 0 {
 			frame := w.MakeFrame(iCluster, uint32(event.ID), &pulses[0], &pulses[1])
-			if uint8(len(cluster.CountersFifo1)) != numCounters {
-				log.Fatalf("rw: len(cluster.CountersFifo1) = %v, numCounters = %v", len(cluster.CountersFifo1), numCounters)
-			}
-			for j := 0; j < int(numCounters); j++ {
-				frame.Block.Counters[j] = cluster.CounterFifo1(j)
-			}
 			w.Frame(frame)
 		}
 		if pulses[2].NoSamples() != 0 || pulses[3].NoSamples() != 0 {
 			frame := w.MakeFrame(iCluster, uint32(event.ID), &pulses[2], &pulses[3])
-			if uint8(len(cluster.CountersFifo2)) != numCounters {
-				log.Fatalf("rw: len(cluster.CountersFifo2) = %v, numCounters = %v", len(cluster.CountersFifo2), numCounters)
-			}
-			for j := 0; j < int(numCounters); j++ {
-				frame.Block.Counters[j] = cluster.CounterFifo2(j)
-			}
 			w.Frame(frame)
 		}
 	}
 }
 
 func (w *Writer) EventFull(event *event.Event) {
+	w.writeU32(FirstEventWord)
+	for _, v := range event.Counters {
+		w.writeU32(v)
+	}
 	iframe := 0
 	for i := range event.Clusters {
 		if iframe >= 120 {
@@ -250,17 +248,6 @@ func (w *Writer) EventFull(event *event.Event) {
 			amp2, amp3 := uint32(pulses[2].Samples[j].Amplitude), uint32(pulses[3].Samples[j].Amplitude)
 			word = (amp2&0xFFF)<<16 | (amp3 & 0xFFF)
 			block2.Data = append(block2.Data, word)
-		}
-
-		if uint8(len(cluster.CountersFifo1)) != numCounters {
-			log.Fatalf("rw: len(cluster.CountersFifo1) = %v, numCounters = %v", len(cluster.CountersFifo1), numCounters)
-		}
-		if uint8(len(cluster.CountersFifo2)) != numCounters {
-			log.Fatalf("rw: len(cluster.CountersFifo2) = %v, numCounters = %v", len(cluster.CountersFifo2), numCounters)
-		}
-		for j := 0; j < int(numCounters); j++ {
-			block1.Counters[j] = cluster.CounterFifo1(j)
-			block2.Counters[j] = cluster.CounterFifo2(j)
 		}
 
 		w.Frame(&frame1)

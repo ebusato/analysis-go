@@ -11,6 +11,7 @@ type Event struct {
 	Clusters        []pulse.Cluster
 	ID              uint
 	TimeStamp       uint64
+	Counters        []uint32
 	IsCorrupted     bool
 	UDPPayloadSizes []int // number of octets for each frame making this event (FrameSize has NoFrames components)
 }
@@ -36,10 +37,6 @@ func (e *Event) Copy() *Event {
 			*oldPulses[2].Copy(),
 			*oldPulses[3].Copy()}
 		newevent.Clusters[i].ID = e.Clusters[i].ID
-		newevent.Clusters[i].CountersFifo1 = make([]uint32, len(e.Clusters[i].CountersFifo1))
-		newevent.Clusters[i].CountersFifo2 = make([]uint32, len(e.Clusters[i].CountersFifo2))
-		copy(newevent.Clusters[i].CountersFifo1, e.Clusters[i].CountersFifo1)
-		copy(newevent.Clusters[i].CountersFifo2, e.Clusters[i].CountersFifo2)
 	}
 	return newevent
 }

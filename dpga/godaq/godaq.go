@@ -211,6 +211,7 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 type Data struct {
 	EvtID             uint     `json:"evt"`               // event id (64 bits a priori)
 	Time              float64  `json:"time"`              // time at which monitoring data are taken (64 bits)
+	Counters          []uint32 `json:"counters"`          // counters provided by Thor
 	MonBufSize        int      `json:"monbufsize"`        // monitoring channel buffer size
 	Freq              float64  `json:"freq"`              // number of events processed per second (64 bits)
 	Qs                Quartets `json:"quartets"`          // (30689280 bits)
@@ -613,6 +614,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 					fmt.Printf("event %v\n", *iEvent)
 				}
 				event, status := r.ReadNextEvent()
+				//fmt.Println("counters:", event.Counters)
 				if status == false {
 					panic("error: status is false\n")
 				}
@@ -801,6 +803,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							datac <- Data{
 								EvtID:             event.ID,
 								Time:              time,
+								Counters:          event.Counters,
 								MonBufSize:        len(datac),
 								Freq:              freq,
 								Qs:                qs,

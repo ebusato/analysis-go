@@ -6,7 +6,8 @@ import (
 )
 
 const (
-	numCounters  uint8  = 17
+	NumCounters  uint8  = 35
+	FirstEventWord uint32 = 0xbabababa
 	blockHeader  uint32 = 0xCAFEDECA
 	blockTrailer uint32 = 0xBADCAFE
 	lastFrame    uint32 = 0xFFFFFFFF
@@ -107,9 +108,8 @@ type Block struct {
 	Evt uint32 // event id
 	ID  uint32 // ID of fifo (0 -> 143)
 
-	Data     []uint32
-	SRout    uint32
-	Counters [numCounters]uint32
+	Data  []uint32
+	SRout uint32
 }
 
 func (b *Block) Print(s string) {
@@ -124,9 +124,6 @@ func (b *Block) Print(s string) {
 		fmt.Println("\t.\n\t.")
 		fmt.Printf("  Data %v = %x\n", len(b.Data)-1, b.Data[len(b.Data)-1])
 		fmt.Printf("  SRout = %v\n", b.SRout)
-		fmt.Printf("  Counter %v = %v\n", 0, b.Counters[0])
-		fmt.Println("\t.\n\t.")
-		fmt.Printf("  Counter %v = %v\n", len(b.Counters)-1, b.Counters[len(b.Counters)-1])
 	case "long":
 		fmt.Printf("  Data %v = %x\n", 0, b.Data[0])
 		fmt.Printf("  Data %v = %x\n", 1, b.Data[1])
@@ -137,17 +134,11 @@ func (b *Block) Print(s string) {
 		fmt.Printf("  Data %v = %x\n", len(b.Data)-2, b.Data[len(b.Data)-2])
 		fmt.Printf("  Data %v = %x\n", len(b.Data)-1, b.Data[len(b.Data)-1])
 		fmt.Printf("  SRout = %v\n", b.SRout)
-		for i := range b.Counters {
-			fmt.Printf("  Counter %v = %v\n", i, b.Counters[i])
-		}
 	case "full":
 		for i := range b.Data {
 			fmt.Printf("  Data %v = %x\n", i, b.Data[i])
 		}
 		fmt.Printf("  SRout = %v\n", b.SRout)
-		for i := range b.Counters {
-			fmt.Printf("  Counter %v = %v\n", i, b.Counters[i])
-		}
 	}
 }
 
@@ -163,6 +154,7 @@ type Frame struct {
 	ID          uint32 // id of the frame in the ASM stream
 	Block       Block  // data payload for this frame
 	typeOfFrame TypeOfFrame
+	FirstOfEvent bool
 }
 
 func (f *Frame) Print(s string) {
