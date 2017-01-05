@@ -28,6 +28,12 @@ func NewEvent(noClusters uint8) *Event {
 func (e *Event) Copy() *Event {
 	newevent := NewEvent(uint8(e.NoClusters()))
 	newevent.ID = e.ID
+	newevent.TimeStamp = e.TimeStamp
+	newevent.UDPPayloadSizes = e.UDPPayloadSizes
+	newevent.Counters = make([]uint32, len(e.Counters))
+	for i := range e.Counters {
+		newevent.Counters[i] = e.Counters[i]
+	}
 	newevent.IsCorrupted = e.IsCorrupted
 	for i := range e.Clusters {
 		oldPulses := e.Clusters[i].Pulses
