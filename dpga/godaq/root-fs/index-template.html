@@ -28,19 +28,42 @@
 		
 		var freqplot = new plot("frequency (Hz)", [], 'orange')
 		
-		var counterssingleplot1 = new plot("single trig. rate (Hz) - board 1", [], 'red')
-		var counterssingleplot2 = new plot("single trig. rate (Hz) - board 2", [], 'green')
-		var counterssingleplot3 = new plot("single trig. rate (Hz) - board 3", [], 'blue')
-		var counterssingleplot4 = new plot("single trig. rate (Hz) - board 4", [], 'magenta')
-		var counterssingleplot5 = new plot("single trig. rate (Hz) - board 5", [], 'yellow')
-		var counterssingleplot6 = new plot("single trig. rate (Hz) - board 6", [], 'orange')
-		var counterssingleplot7 = new plot("single trig. rate (Hz) - board 7", [], 'red')
-		var counterssingleplot8 = new plot("single trig. rate (Hz) - board 8", [], 'green')
-		var counterssingleplot9 = new plot("single trig. rate (Hz) - board 9", [], 'blue')
-		var counterssingleplot10 = new plot("single trig. rate (Hz) - board 10", [], 'magenta')
-		var counterssingleplot11 = new plot("single trig. rate (Hz) - board 11", [], 'yellow')
-		var counterssingleplot12 = new plot("single trig. rate (Hz) - board 12", [], 'orange')
-		var counters1plot = new plot("trigger rate (Hz)", [], 'green') 
+		var counterssingleplot1 = new plot("board 1 (Hz)", [], 'red')
+		var counterssingleplot2 = new plot("board 2 (Hz)", [], 'green')
+		var counterssingleplot3 = new plot("board 3 (Hz)", [], 'blue')
+		var counterssingleplot4 = new plot("board 4 (Hz)", [], 'magenta')
+		var counterssingleplot5 = new plot("board 5 (Hz)", [], 'yellow')
+		var counterssingleplot6 = new plot("board 6 (Hz)", [], 'orange')
+		var counterssingleplot7 = new plot("board 7 (Hz)", [], 'red')
+		var counterssingleplot8 = new plot("board 8 (Hz)", [], 'green')
+		var counterssingleplot9 = new plot("board 9 (Hz)", [], 'blue')
+		var counterssingleplot10 = new plot("board 10 (Hz)", [], 'magenta')
+		var counterssingleplot11 = new plot("board 11 (Hz)", [], 'yellow')
+		var counterssingleplot12 = new plot("board 12 (Hz)", [], 'orange')
+		
+		var countersleftvsright1plot = new plot("L vs R 1 (Hz)", [], 'red') 
+		var countersleftvsright2plot = new plot("L vs R 2 (Hz)", [], 'green') 
+		var countersleftvsright3plot = new plot("L vs R 3 (Hz)", [], 'blue') 
+		var countersleftvsright4plot = new plot("L vs R 4 (Hz)", [], 'magenta') 
+		var countersleftvsright5plot = new plot("L vs R 5 (Hz)", [], 'yellow') 
+		var countersleftvsright6plot = new plot("L vs R 6 (Hz)", [], 'orange') 
+		var countersleftvsright7plot = new plot("L vs R 7 (Hz)", [], 'black') 
+		
+		var counterslinevsline1plot = new plot("Line vs Line 1 (Hz)", [], 'red') 
+		var counterslinevsline2plot = new plot("Line vs Line 2 (Hz)", [], 'green') 
+		var counterslinevsline3plot = new plot("Line vs Line 3 (Hz)", [], 'blue') 
+		var counterslinevsline4plot = new plot("Line vs Line 4 (Hz)", [], 'magenta') 
+		var counterslinevsline5plot = new plot("Line vs Line 5 (Hz)", [], 'yellow') 
+		var counterslinevsline6plot = new plot("Line vs Line 6 (Hz)", [], 'orange') 
+		var counterslinevsline7plot = new plot("Line vs Line 7 (Hz)", [], 'black') 
+		
+		var counterslinevs3lines1plot = new plot("Line vs 3 Lines 1 (Hz)", [], 'red') 
+		var counterslinevs3lines2plot = new plot("Line vs 3 Lines 2 (Hz)", [], 'green') 
+		var counterslinevs3lines3plot = new plot("Line vs 3 Lines 3 (Hz)", [], 'blue') 
+		var counterslinevs3lines4plot = new plot("Line vs 3 Lines 4 (Hz)", [], 'magenta') 
+		var counterslinevs3lines5plot = new plot("Line vs 3 Lines 5 (Hz)", [], 'yellow') 
+		var counterslinevs3lines6plot = new plot("Line vs 3 Lines 6 (Hz)", [], 'orange') 
+		var counterslinevs3lines7plot = new plot("Line vs 3 Lines 7 (Hz)", [], 'black') 
 		
 		var multplot = new plot("Pulse multiplicity", [], 'orange')
 		multplot.bars = { show: true }
@@ -103,9 +126,18 @@
 			var bufsize = $.plot("#my-monbufsize-plot", [monbufsizeplot], opts);
 			bufsize.setupGrid(); // needed as x-axis changes
 			bufsize.draw();
-			var counters1 = $.plot("#my-counters1-plot", [counters1plot], opts);
-			counters1.setupGrid(); // needed as x-axis changes
-			counters1.draw();
+			var countersleftvsright = $.plot("#my-countersleftvsright-plot", [countersleftvsright1plot, countersleftvsright2plot, countersleftvsright3plot,
+							countersleftvsright4plot, countersleftvsright5plot, countersleftvsright6plot, countersleftvsright7plot], opts);
+			countersleftvsright.setupGrid(); // needed as x-axis changes
+			countersleftvsright.draw();
+			var counterslinevsline = $.plot("#my-counterslinevsline-plot", [counterslinevsline1plot, counterslinevsline2plot, counterslinevsline3plot,
+							counterslinevsline4plot, counterslinevsline5plot, counterslinevsline6plot, counterslinevsline7plot], opts);
+			counterslinevsline.setupGrid(); // needed as x-axis changes
+			counterslinevsline.draw();
+			var counterslinevs3lines = $.plot("#my-counterslinevs3lines-plot", [counterslinevs3lines1plot, counterslinevs3lines2plot, counterslinevs3lines3plot,
+							counterslinevs3lines4plot, counterslinevs3lines5plot, counterslinevs3lines6plot, counterslinevs3lines7plot], opts);
+			counterslinevs3lines.setupGrid(); // needed as x-axis changes
+			counterslinevs3lines.draw();
 			var counterssingle1 = $.plot("#my-counterssingle1-plot", [counterssingleplot1, counterssingleplot2, counterssingleplot3, counterssingleplot4,
 										counterssingleplot5, counterssingleplot6], opts);
 			counterssingle1.setupGrid(); // needed as x-axis changes
@@ -193,7 +225,30 @@
 				if (data.evt != 0 && data.counters[0] != 0) {
 // 					// in the following line, the first argument (data.counters[])
 // 					// will need to be replaced by the time from Thor's timestamp
-					counters1plot.data.push([data.evt, data.counters[14]/(data.counters[0]*1/64e6)])
+					countersleftvsright1plot.data.push([data.evt, data.counters[14]/(data.counters[0]*1/64e6)])
+					countersleftvsright2plot.data.push([data.evt, data.counters[15]/(data.counters[0]*1/64e6)])
+					countersleftvsright3plot.data.push([data.evt, data.counters[16]/(data.counters[0]*1/64e6)])
+					countersleftvsright4plot.data.push([data.evt, data.counters[17]/(data.counters[0]*1/64e6)])
+					countersleftvsright5plot.data.push([data.evt, data.counters[18]/(data.counters[0]*1/64e6)])
+					countersleftvsright6plot.data.push([data.evt, data.counters[19]/(data.counters[0]*1/64e6)])
+					countersleftvsright7plot.data.push([data.evt, data.counters[20]/(data.counters[0]*1/64e6)])
+					
+					counterslinevsline1plot.data.push([data.evt, data.counters[21]/(data.counters[0]*1/64e6)])
+					counterslinevsline2plot.data.push([data.evt, data.counters[22]/(data.counters[0]*1/64e6)])
+					counterslinevsline3plot.data.push([data.evt, data.counters[23]/(data.counters[0]*1/64e6)])
+					counterslinevsline4plot.data.push([data.evt, data.counters[24]/(data.counters[0]*1/64e6)])
+					counterslinevsline5plot.data.push([data.evt, data.counters[25]/(data.counters[0]*1/64e6)])
+					counterslinevsline6plot.data.push([data.evt, data.counters[26]/(data.counters[0]*1/64e6)])
+					counterslinevsline7plot.data.push([data.evt, data.counters[27]/(data.counters[0]*1/64e6)])
+					
+					counterslinevs3lines1plot.data.push([data.evt, data.counters[28]/(data.counters[0]*1/64e6)])
+					counterslinevs3lines2plot.data.push([data.evt, data.counters[29]/(data.counters[0]*1/64e6)])
+					counterslinevs3lines3plot.data.push([data.evt, data.counters[30]/(data.counters[0]*1/64e6)])
+					counterslinevs3lines4plot.data.push([data.evt, data.counters[31]/(data.counters[0]*1/64e6)])
+					counterslinevs3lines5plot.data.push([data.evt, data.counters[32]/(data.counters[0]*1/64e6)])
+					counterslinevs3lines6plot.data.push([data.evt, data.counters[33]/(data.counters[0]*1/64e6)])
+					counterslinevs3lines7plot.data.push([data.evt, data.counters[34]/(data.counters[0]*1/64e6)])
+					
 					counterssingleplot1.data.push([data.evt, data.counters[2]/(data.counters[0]*1/64e6)])
 					counterssingleplot2.data.push([data.evt, data.counters[3]/(data.counters[0]*1/64e6)])
 					counterssingleplot3.data.push([data.evt, data.counters[4]/(data.counters[0]*1/64e6)])
@@ -248,8 +303,8 @@
 			line-height: 1.2em;
 		}
 		.my-plot-stylecounter {
-			width: 500px;
-			height: 300px;
+			width: 350px;
+			height: 200px;
 			font-size: 14px;
 			line-height: 1.2em;
 		}
@@ -306,10 +361,20 @@
 		<td>
 			<div id="my-counterssingle2-plot" class="my-plot-stylecounter"></div>
 		</td>
+		</tr>
+		<tr>
 		<td>
-			<div id="my-counters1-plot" class="my-plot-stylecounter"></div>
+			<div id="my-countersleftvsright-plot" class="my-plot-stylecounter"></div>
+		</td>
+		<td>
+			<div id="my-counterslinevsline-plot" class="my-plot-stylecounter"></div>
+		</td>
+		<td>
+			<div id="my-counterslinevs3lines-plot" class="my-plot-stylecounter"></div>
 		</td>
 		</tr>
+		</table>
+		<table cellspacing="15">
 		<tr>
 		<!--td valign="top">
 			<div id="graph3DMinReco"></div>
