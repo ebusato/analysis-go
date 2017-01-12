@@ -261,6 +261,11 @@
 					counterssingleplot10.data.push([data.evt, data.counters[13]/(data.counters[0]*1/64e6)])
 					counterssingleplot11.data.push([data.evt, data.counters[14]/(data.counters[0]*1/64e6)])
 					counterssingleplot12.data.push([data.evt, data.counters[15]/(data.counters[0]*1/64e6)])
+					
+					var elapsedtime = data.timestamp*1/64e6;
+					var elapsedtimefixed = elapsedtime.toFixed(2)
+					document.getElementById("timestampfield").innerHTML = "Duration since start of run: "+elapsedtimefixed+" seconds";  
+					
 				}
 				for (var i = 0; i < 8; i += 1) {
 					multplot.data.push([data.mult[i].X, data.mult[i].Y])
@@ -331,6 +336,7 @@
 			<td valign="top">
 				<b>Run number:</b> {{.RunNumber}} <br>
 				<b>Start time:</b> {{.TimeStart}} <br>
+				<p id="timestampfield"></p>
 				<b>Number of ASM Cards:</b> {{.NoASMCards}}<br>
 				<b>Number of samples:</b> {{.NoSamples}}<br>
 				<b>Data read:</b> {{.DataToRead}}<br>
@@ -352,6 +358,7 @@
 			</td>
 			</tr>
 			</table>
+			
 		</div>
 		<table cellspacing="15">
 		<tr>
@@ -401,7 +408,7 @@
 		<div class="tabs standard">
 			<ul class="tab-links">
 			<li class="active"><a href="#tab1">Occupancy and pulses</a></li>
-			<li><a href="#tab2">Charge/Amplitude/Energy distribution</a></li>
+			<li><a href="#tab2">Amplitude/Charge/Energy distribution</a></li>
 			<li><a href="#tab3">HV</a></li>
 			<img border="0" src="DPGAmapping.png" style="width:304px;" align="right">
 			</ul>
