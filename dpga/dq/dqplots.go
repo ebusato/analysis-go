@@ -158,6 +158,7 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 	p1 := tp.Plot(0, 0)
 	p1.X.Min = 0
 	p1.X.Max = 240
+	p1.Y.Min = 0
 	p1.X.Label.Text = "channel"
 	p1.Y.Label.Text = "No pulses"
 	p1.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
@@ -177,6 +178,7 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 	p2 := tp.Plot(1, 0)
 	p2.X.Min = 0
 	p2.X.Max = 240
+	p2.Y.Min = 0
 	p2.X.Label.Text = "channel"
 	p2.Y.Label.Text = "No sat. pulses"
 	p2.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}

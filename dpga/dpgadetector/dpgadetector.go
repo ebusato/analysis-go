@@ -903,8 +903,8 @@ func init() {
 	HVmap[12] = HVSerialChan{SerialNumber: 1, ChannelNumber: 8}
 	HVmap[13] = HVSerialChan{SerialNumber: 1, ChannelNumber: 9}
 	HVmap[14] = HVSerialChan{SerialNumber: 1, ChannelNumber: 10}
-	HVmap[15] = HVSerialChan{SerialNumber: 4, ChannelNumber: 9}  // this inversion between 15 and 16 is weird
-	HVmap[16] = HVSerialChan{SerialNumber: 4, ChannelNumber: 10} // this inversion between 15 and 16 is weird
+	HVmap[15] = HVSerialChan{SerialNumber: 4, ChannelNumber: 10}  // this inversion between 15 and 16 is weird
+	HVmap[16] = HVSerialChan{SerialNumber: 4, ChannelNumber: 9} // this inversion between 15 and 16 is weird
 	HVmap[17] = HVSerialChan{SerialNumber: 4, ChannelNumber: 8}
 	HVmap[18] = HVSerialChan{SerialNumber: 4, ChannelNumber: 7}
 	HVmap[19] = HVSerialChan{SerialNumber: 4, ChannelNumber: 6}

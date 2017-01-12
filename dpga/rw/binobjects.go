@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	NumCounters  uint8  = 35
+	NumCounters  uint8  = 37
 	FirstEventWord uint32 = 0xbabababa
 	blockHeader  uint32 = 0xCAFEDECA
 	blockTrailer uint32 = 0xBADCAFE
