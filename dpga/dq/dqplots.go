@@ -64,7 +64,7 @@ func NewDQPlot() *DQPlot {
 		dqp.HEnergy[i] = make([]hbook.H1D, N)
 		for j := 0; j < N; j++ {
 			dqp.HCharge[i][j] = *hbook.NewH1D(100, 0, 0.5)
-			dqp.HAmplitude[i][j] = *hbook.NewH1D(200, 0, 4095)
+			dqp.HAmplitude[i][j] = *hbook.NewH1D(150, 0, 4095)
 			dqp.HEnergy[i][j] = *hbook.NewH1D(200, 0, 1022)
 		}
 	}
