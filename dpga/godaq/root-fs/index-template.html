@@ -118,10 +118,10 @@
 				if (ip == 0) {
 					// hack, 0 not printing if not a string
 					if (iq == 0) {
-						legend = "0->3"
+						legend = "board 0"
 					}
 					else {
-						legend = iq*4 + "->" + (iq*4+3) 
+						legend = "board "+iq 
 					}
 				}
 				pulseplots.push(new plot(legend, [], colors[ip]))
