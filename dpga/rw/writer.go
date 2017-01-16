@@ -82,7 +82,7 @@ func (w *Writer) writeU32(v uint32) {
 func (w *Writer) WriteU32(v uint32) {
 	w.writeU32(v)
 }
-	
+
 func (w *Writer) writeHeader(hdr *Header, clientTime bool) {
 	switch {
 	case hdr.HdrType == HeaderCAL:
@@ -154,7 +154,7 @@ func (w *Writer) writeBlockData(blk *Block) {
 	w.writeU32(blk.SRout)
 }
 
-func (w *Writer) MakeFrame(iCluster int, evtID uint32, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse) *Frame {
+func (w *Writer) MakeFrame(evtID uint32, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse) *Frame {
 	frame := &Frame{ID: w.frameCounter}
 	w.frameCounter++
 	block := &frame.Block
@@ -188,14 +188,29 @@ func (w *Writer) Event(event *event.Event) {
 		pulses := &cluster.Pulses
 
 		if pulses[0].NoSamples() != 0 || pulses[1].NoSamples() != 0 {
-			frame := w.MakeFrame(iCluster, uint32(event.ID), &pulses[0], &pulses[1])
+			frame := w.MakeFrame(uint32(event.ID), &pulses[0], &pulses[1])
 			w.Frame(frame)
 		}
 		if pulses[2].NoSamples() != 0 || pulses[3].NoSamples() != 0 {
-			frame := w.MakeFrame(iCluster, uint32(event.ID), &pulses[2], &pulses[3])
+			frame := w.MakeFrame(uint32(event.ID), &pulses[2], &pulses[3])
 			w.Frame(frame)
 		}
+		// Every 5 clusters (i.e. every ASM board), insert clustersWoData if any
+		if iCluster%5 == 4 {
+			clusterWoData := &event.ClustersWoData[iCluster/5]
+			pulsesWoData := &clusterWoData.Pulses
+
+			if pulsesWoData[0].NoSamples() != 0 || pulsesWoData[1].NoSamples() != 0 {
+				frame := w.MakeFrame(uint32(event.ID), &pulsesWoData[0], &pulsesWoData[1])
+				w.Frame(frame)
+			}
+			if pulsesWoData[2].NoSamples() != 0 || pulsesWoData[3].NoSamples() != 0 {
+				frame := w.MakeFrame(uint32(event.ID), &pulsesWoData[2], &pulsesWoData[3])
+				w.Frame(frame)
+			}
+		}
 	}
+
 }
 
 func (w *Writer) EventFull(event *event.Event) {

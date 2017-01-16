@@ -365,6 +365,12 @@ func FifoID144ToQuartetAbsIdx60(iFifo uint16, throwErr bool) uint8 {
 	return uint8(FifoID144ToFifoID120(iFifo, throwErr) / 2)
 }
 
+// iFifo can go from 0 to 143
+// QuartetAbsIdx72 can go from 0 to 71
+func FifoID144ToQuartetAbsIdx72(iFifo uint16) uint8 {
+	return uint8(iFifo) / 2
+}
+
 // FEIdAndChanIdToQuartetAbsIdx60 return the quartet absolute Id (0->59)
 // from an input front end (ASM) board id and a channel Id (0 -> 23)
 func FEIdAndChanIdToQuartetAbsIdx60(FEId uint16, ChanId uint16, throwErr bool) uint8 {

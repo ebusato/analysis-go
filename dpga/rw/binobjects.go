@@ -6,11 +6,11 @@ import (
 )
 
 const (
-	NumCounters  uint8  = 37
+	NumCounters    uint8  = 37
 	FirstEventWord uint32 = 0xbabababa
-	blockHeader  uint32 = 0xCAFEDECA
-	blockTrailer uint32 = 0xBADCAFE
-	lastFrame    uint32 = 0xFFFFFFFF
+	blockHeader    uint32 = 0xCAFEDECA
+	blockTrailer   uint32 = 0xBADCAFE
+	lastFrame      uint32 = 0xFFFFFFFF
 )
 
 func LastFrame() uint32 {
@@ -151,9 +151,9 @@ const (
 
 // Frame is a single frame in an ASM stream
 type Frame struct {
-	ID          uint32 // id of the frame in the ASM stream
-	Block       Block  // data payload for this frame
-	typeOfFrame TypeOfFrame
+	ID           uint32 // id of the frame in the ASM stream
+	Block        Block  // data payload for this frame
+	typeOfFrame  TypeOfFrame
 	FirstOfEvent bool
 }
 

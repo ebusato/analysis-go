@@ -225,7 +225,7 @@ func (r *Reader) readBlockTrailer(blk *Block) {
 	}
 }
 
-func MakePulses(f *Frame, iCluster uint8, sigThreshold uint) (*pulse.Pulse, *pulse.Pulse) {
+func MakePulses(f *Frame, sigThreshold uint) (*pulse.Pulse, *pulse.Pulse) {
 	iChannelAbs288_1 := uint16(2 * f.Block.ID)
 	iChannelAbs288_2 := uint16(iChannelAbs288_1 + 1)
 
@@ -248,8 +248,11 @@ func MakePulses(f *Frame, iCluster uint8, sigThreshold uint) (*pulse.Pulse, *pul
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////
-	// Sanity check
-	iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx60ToRelIdx(iCluster)
+	// Retrieve iHemi, iASM, iDRS, iQuartet
+	// Perform sanity check while we are at it
+	fifoID144 := uint16(f.Block.ID)
+	quartetAbsIdx72 := dpgadetector.FifoID144ToQuartetAbsIdx72(fifoID144)
+	iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx72ToRelIdx(quartetAbsIdx72)
 	detChannel1debug := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel1)
 	detChannel2debug := dpgadetector.Det.Channel(iHemi, iASM, iDRS, iQuartet, iChannel2)
 
@@ -331,26 +334,57 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			}
 			firstPass = false
 			fifoID144 := uint16(frame.Block.ID)
-			iCluster := dpgadetector.FifoID144ToQuartetAbsIdx60(fifoID144, true)
-			if iCluster >= 60 {
-				log.Fatalf("error ! iCluster=%v (>= 60)\n", iCluster)
-			}
-			//fmt.Printf("fifoID144=%v, iCluster = %v\n", fifoID144, iCluster)
+
+			////////////////////////////////////////////////////////
+			// determine typeOfFrame
 			switch fifoID144 % 2 {
 			case 0:
 				frame.typeOfFrame = FirstFrameOfCluster
 			case 1:
 				frame.typeOfFrame = SecondFrameOfCluster
 			}
-			pulse0, pulse1 := MakePulses(frame, iCluster, r.SigThreshold)
-			event.Clusters[iCluster].ID = iCluster
-			switch frame.typeOfFrame {
-			case FirstFrameOfCluster:
-				event.Clusters[iCluster].Pulses[0] = *pulse0
-				event.Clusters[iCluster].Pulses[1] = *pulse1
-			case SecondFrameOfCluster:
-				event.Clusters[iCluster].Pulses[2] = *pulse0
-				event.Clusters[iCluster].Pulses[3] = *pulse1
+			////////////////////////////////////////////////////////
+
+			pulse0, pulse1 := MakePulses(frame, r.SigThreshold)
+
+			i := fifoID144 % 12
+			if i == 10 || i == 11 {
+				iChannelWoData := i-10
+				iChannelWoData+=2*(fifoID144/12)
+				iClusterWoData := iChannelWoData/2
+				//fmt.Println(fifoID144, iChannelWoData, iClusterWoData)
+				event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
+				
+				////////////////////////////////////////////////////////
+				// Put pulses in event
+				switch frame.typeOfFrame {
+				case FirstFrameOfCluster:
+					event.ClustersWoData[iClusterWoData].Pulses[0] = *pulse0
+					event.ClustersWoData[iClusterWoData].Pulses[1] = *pulse1
+				case SecondFrameOfCluster:
+					event.ClustersWoData[iClusterWoData].Pulses[2] = *pulse0
+					event.ClustersWoData[iClusterWoData].Pulses[3] = *pulse1
+				}
+				////////////////////////////////////////////////////////
+			} else {
+				iCluster := dpgadetector.FifoID144ToQuartetAbsIdx60(fifoID144, true)
+				if iCluster >= 60 {
+					log.Fatalf("error ! iCluster=%v (>= 60)\n", iCluster)
+				}
+				//fmt.Printf("fifoID144=%v, iCluster = %v\n", fifoID144, iCluster)
+				event.Clusters[iCluster].ID = iCluster
+
+				////////////////////////////////////////////////////////
+				// Put pulses in event
+				switch frame.typeOfFrame {
+				case FirstFrameOfCluster:
+					event.Clusters[iCluster].Pulses[0] = *pulse0
+					event.Clusters[iCluster].Pulses[1] = *pulse1
+				case SecondFrameOfCluster:
+					event.Clusters[iCluster].Pulses[2] = *pulse0
+					event.Clusters[iCluster].Pulses[3] = *pulse1
+				}
+				////////////////////////////////////////////////////////
 			}
 		} else { // switched to next event
 			r.firstFrameOfEvent = frame
@@ -395,8 +429,8 @@ func (r *Reader) ReadNextEventFull() (*event.Event, bool) {
 			}
 		}
 
-		pulse0, pulse1 := MakePulses(frame1, iCluster, r.SigThreshold)
-		pulse2, pulse3 := MakePulses(frame2, iCluster, r.SigThreshold)
+		pulse0, pulse1 := MakePulses(frame1, r.SigThreshold)
+		pulse2, pulse3 := MakePulses(frame2, r.SigThreshold)
 
 		event.Clusters[iCluster] = *pulse.NewCluster(iCluster, [4]pulse.Pulse{*pulse0, *pulse1, *pulse2, *pulse3})
 	}
