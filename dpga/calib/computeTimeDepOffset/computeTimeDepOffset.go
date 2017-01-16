@@ -62,7 +62,7 @@ func main() {
 		}
 
 		// this should be safe as pedestals calibration coefficients have been loaded previously.
-		event = applyCorrCalib.HV(event, true, false)
+		event = applyCorrCalib.CorrectEvent(event, true, false, false)
 
 		event.PushTimeDepOffsetSamples()
 	}
