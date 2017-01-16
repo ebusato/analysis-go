@@ -102,6 +102,9 @@ type Quartet [4]Pulse
 // A value of type Quartets occupies 60*4*N*128 = 30689280 bits (taking N=999)
 type Quartets [60]Quartet
 
+// QuartetsWoData is an array of 12 Quartets without data (the last ones of each ASM board)
+type QuartetsWoData [12]Quartet
+
 // H1D is a local struct representing a histogram
 // The length of the slice is the number of bins
 // X is the bin center and Y the bin content
@@ -209,22 +212,23 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 
 // Data is the struct that is sent via the websocket to the web client.
 type Data struct {
-	EvtID             uint     `json:"evt"`               // event id (64 bits a priori)
-	Time              float64  `json:"time"`              // time at which monitoring data are taken (64 bits)
-	Counters          []uint32 `json:"counters"`          // counters provided by Thor
-	TimeStamp         uint64   `json:"timestamp"`         // absolute timestamp from 64 MHz clock on Thor
-	MonBufSize        int      `json:"monbufsize"`        // monitoring channel buffer size
-	Freq              float64  `json:"freq"`              // number of events processed per second (64 bits)
-	Qs                Quartets `json:"quartets"`          // (30689280 bits)
-	Mult              H1D      `json:"mult"`              // multiplicity of pulses (1024 bits)
-	FreqH             string   `json:"freqh"`             // frequency histogram
-	ChargeL           string   `json:"chargel"`           // charge histograms for left hemisphere
-	ChargeR           string   `json:"charger"`           // charge histograms for right hemisphere
-	HVvals            string   `json:"hv"`                // hv values
-	MinRec            []XYZ    `json:"minrec"`            // outcome of the minimal reconstruction algorithm
-	MinRec1DDistrs    string   `json:"minrec1Ddistrs"`    // minimal reconstruction X, Y, Z distributions
-	DeltaT30          string   `json:"deltat30"`          // distribution of the difference of T30
-	ChargeCorrelation string   `json:"chargecorrelation"` // charge correlation for events with multiplicity=2
+	EvtID             uint           `json:"evt"`               // event id (64 bits a priori)
+	Time              float64        `json:"time"`              // time at which monitoring data are taken (64 bits)
+	Counters          []uint32       `json:"counters"`          // counters provided by Thor
+	TimeStamp         uint64         `json:"timestamp"`         // absolute timestamp from 64 MHz clock on Thor
+	MonBufSize        int            `json:"monbufsize"`        // monitoring channel buffer size
+	Freq              float64        `json:"freq"`              // number of events processed per second (64 bits)
+	Qs                Quartets       `json:"quartets"`          // quartets (30689280 bits)
+	QsWoData          QuartetsWoData `json:"quartetswodata"`    // quartets without data
+	Mult              H1D            `json:"mult"`              // multiplicity of pulses (1024 bits)
+	FreqH             string         `json:"freqh"`             // frequency histogram
+	ChargeL           string         `json:"chargel"`           // charge histograms for left hemisphere
+	ChargeR           string         `json:"charger"`           // charge histograms for right hemisphere
+	HVvals            string         `json:"hv"`                // hv values
+	MinRec            []XYZ          `json:"minrec"`            // outcome of the minimal reconstruction algorithm
+	MinRec1DDistrs    string         `json:"minrec1Ddistrs"`    // minimal reconstruction X, Y, Z distributions
+	DeltaT30          string         `json:"deltat30"`          // distribution of the difference of T30
+	ChargeCorrelation string         `json:"chargecorrelation"` // charge correlation for events with multiplicity=2
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -694,6 +698,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							// Webserver data
 
 							var qs Quartets
+							var qsWoData QuartetsWoData
 							sampFreq := 5
 							if *monLight {
 								sampFreq = 20
@@ -703,6 +708,12 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])
 								qs[iq][2] = GetMonData(sampFreq, event.Clusters[iq].Pulses[2])
 								qs[iq][3] = GetMonData(sampFreq, event.Clusters[iq].Pulses[3])
+							}
+							for iq := 0; iq < len(qsWoData); iq++ {
+								qsWoData[iq][0] = GetMonData(sampFreq, event.ClustersWoData[iq].Pulses[0])
+								qsWoData[iq][1] = GetMonData(sampFreq, event.ClustersWoData[iq].Pulses[1])
+								qsWoData[iq][2] = GetMonData(sampFreq, event.ClustersWoData[iq].Pulses[2])
+								qsWoData[iq][3] = GetMonData(sampFreq, event.ClustersWoData[iq].Pulses[3])
 							}
 
 							// Make frequency histo plot
@@ -812,6 +823,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								MonBufSize:        len(datac),
 								Freq:              freq,
 								Qs:                qs,
+								QsWoData:          qsWoData,
 								Mult:              NewH1D(dqplots.HMultiplicity),
 								FreqH:             freqhsvg,
 								ChargeL:           chargeLsvg,

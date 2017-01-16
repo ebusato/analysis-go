@@ -83,6 +83,8 @@
 		
 		var Nquartets = 60
 		var quartetplots = []
+		var NquartetsWoData = 12
+		var quartetWoDataplots = []
 		var Nplots = 4
 			
 		for (var iq = 0; iq < Nquartets; iq += 1) {
@@ -106,11 +108,37 @@
 			quartetplots.push(pulseplots)
 		}
 		
+		for (var iq = 0; iq < NquartetsWoData; iq += 1) {
+			var pulseplots = []
+			for (var ip = 0; ip < Nplots; ip += 1) {
+				//pulseplots.push(new plot("q"+iq+"c"+ip, [], colors[ip]))
+				// hack, for the moment put plot info in legend, it's not simplest option
+				// though not the best one
+				legend = ""
+				if (ip == 0) {
+					// hack, 0 not printing if not a string
+					if (iq == 0) {
+						legend = "0->3"
+					}
+					else {
+						legend = iq*4 + "->" + (iq*4+3) 
+					}
+				}
+				pulseplots.push(new plot(legend, [], colors[ip]))
+			}
+			quartetWoDataplots.push(pulseplots)
+		}
+		
 		function clearplots() {
 			multplot.data = []
 			for (var iq = 0; iq < Nquartets; iq += 1) {
 				for (var ip = 0; ip < Nplots; ip += 1) {
 					quartetplots[iq][ip].data = []
+				}
+			}
+			for (var iq = 0; iq < NquartetsWoData; iq += 1) {
+				for (var ip = 0; ip < Nplots; ip += 1) {
+					quartetWoDataplots[iq][ip].data = []
 				}
 			}
 		}
@@ -181,7 +209,15 @@
 					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], optsL); 
 					p.setupGrid();
 					p.draw();
-				}	
+				}
+			}
+			for (var i = 0; i < NquartetsWoData; i++) {
+				//optsWoData = new options('#FFFF00') // yellow
+				//optsR.zoom = {interactive: true}
+				//optsR.pan = {interactive: true}
+				var p = $.plot("#my-qWoData"+i+"-plot", quartetWoDataplots[i]); //, optsWoData); 
+				p.setupGrid();
+				p.draw();
 			}
 		};
 
@@ -284,6 +320,13 @@
 						}
 					}
 				}
+				for (var iq = 0; iq < NquartetsWoData; iq += 1) {
+					for (var ip = 0; ip < Nplots; ip += 1) {
+						for (var is = 0; is < data.quartetswodata[iq][ip].length; is += 1) {
+							quartetWoDataplots[iq][ip].data.push([data.quartetswodata[iq][ip][is].X, data.quartetswodata[iq][ip][is].Y]);
+						}
+					}
+				}
 				update();
 				clearplots();
 
@@ -321,6 +364,12 @@
 		}
 		.my-plot-style {
 			width: 180px;
+			height: 130px;
+			font-size: 14px;
+			line-height: 1.2em;
+		}
+		.my-plot-style2 {
+			width: 150px;
 			height: 130px;
 			font-size: 14px;
 			line-height: 1.2em;
@@ -498,6 +547,22 @@
 						<td><div id="my-q27-plot" class="my-plot-style"></div></td>
 						<td><div id="my-q26-plot" class="my-plot-style"></div></td>
 						<td><div id="my-q25-plot" class="my-plot-style"></div></td>
+					</tr>
+				</table>
+				<table>
+					<tr>
+						<td><div id="my-qWoData0-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData1-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData2-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData3-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData4-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData5-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData6-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData7-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData8-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData9-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData10-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData11-plot" class="my-plot-style2"></div></td>
 					</tr>
 				</table>
 				</div> <!-- tab 1 content -->
