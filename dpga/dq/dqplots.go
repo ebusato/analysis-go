@@ -529,8 +529,8 @@ func (d *DQPlot) MakeAmplCorrelationPlot() *plot.Plot {
 	if err != nil {
 		panic(err)
 	}
-	pAmplCorrelation.X.Label.Text = "Ampl 0"
-	pAmplCorrelation.Y.Label.Text = "Ampl 1"
+	pAmplCorrelation.X.Label.Text = "Amplitude pulse 0 (ADC counts)"
+	pAmplCorrelation.Y.Label.Text = "Amplitude pulse 1 (ADC counts)"
 	pAmplCorrelation.X.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
 	pAmplCorrelation.Y.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
 	pAmplCorrelation.X.Min = d.AmplCorrelation.XMin()
