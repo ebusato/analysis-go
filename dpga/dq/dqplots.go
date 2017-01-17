@@ -22,19 +22,19 @@ import (
 )
 
 type DQPlot struct {
-	Nevents           uint
-	HFrequency        *hbook.H1D
-	HSatFrequency     *hbook.H1D
-	HMultiplicity     *hbook.H1D
-	HSatMultiplicity  *hbook.H1D
-	HCharge           [][]hbook.H1D
-	HAmplitude        [][]hbook.H1D
-	HEnergy           [][]hbook.H1D
-	HMinRecX          *hbook.H1D
-	HMinRecY          *hbook.H1D
-	HMinRecZ          *hbook.H1D
-	DeltaT30          *hbook.H1D
-	ChargeCorrelation *utils.H2D
+	Nevents          uint
+	HFrequency       *hbook.H1D
+	HSatFrequency    *hbook.H1D
+	HMultiplicity    *hbook.H1D
+	HSatMultiplicity *hbook.H1D
+	HCharge          [][]hbook.H1D
+	HAmplitude       [][]hbook.H1D
+	HEnergy          [][]hbook.H1D
+	HMinRecX         *hbook.H1D
+	HMinRecY         *hbook.H1D
+	HMinRecZ         *hbook.H1D
+	DeltaT30         *hbook.H1D
+	AmplCorrelation  *hbook.H2D
 
 	HV [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
 
@@ -45,18 +45,19 @@ func NewDQPlot() *DQPlot {
 	const N = 4
 	NoClusters := dpgadetector.Det.NoClusters()
 	dqp := &DQPlot{
-		HFrequency:        hbook.NewH1D(240, 0, 240),
-		HSatFrequency:     hbook.NewH1D(240, 0, 240),
-		HMultiplicity:     hbook.NewH1D(8, -0.5, 7.5),
-		HSatMultiplicity:  hbook.NewH1D(8, -0.5, 7.5),
-		HCharge:           make([][]hbook.H1D, NoClusters),
-		HAmplitude:        make([][]hbook.H1D, NoClusters),
-		HEnergy:           make([][]hbook.H1D, NoClusters),
-		HMinRecX:          hbook.NewH1D(200, -50, 50),
-		HMinRecY:          hbook.NewH1D(240, -60, 60),
-		HMinRecZ:          hbook.NewH1D(300, -150, 150),
-		DeltaT30:          hbook.NewH1D(300, -30, 30),
-		ChargeCorrelation: utils.NewH2D(50, 0, 0.5, 50, 0, 0.5),
+		HFrequency:       hbook.NewH1D(240, 0, 240),
+		HSatFrequency:    hbook.NewH1D(240, 0, 240),
+		HMultiplicity:    hbook.NewH1D(8, -0.5, 7.5),
+		HSatMultiplicity: hbook.NewH1D(8, -0.5, 7.5),
+		HCharge:          make([][]hbook.H1D, NoClusters),
+		HAmplitude:       make([][]hbook.H1D, NoClusters),
+		HEnergy:          make([][]hbook.H1D, NoClusters),
+		HMinRecX:         hbook.NewH1D(200, -50, 50),
+		HMinRecY:         hbook.NewH1D(240, -60, 60),
+		HMinRecZ:         hbook.NewH1D(300, -150, 150),
+		DeltaT30:         hbook.NewH1D(300, -30, 30),
+		// 		AmplCorrelation: hbook.NewH2D(50, 0, 0.5, 50, 0, 0.5),
+		AmplCorrelation: hbook.NewH2D(50, 0, 4095, 50, 0, 4095),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
@@ -523,6 +524,24 @@ func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
 	return tp
 }
 
+func (d *DQPlot) MakeAmplCorrelationPlot() *plot.Plot {
+	pAmplCorrelation, err := plot.New()
+	if err != nil {
+		panic(err)
+	}
+	pAmplCorrelation.X.Label.Text = "Ampl 0"
+	pAmplCorrelation.Y.Label.Text = "Ampl 1"
+	pAmplCorrelation.X.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
+	pAmplCorrelation.Y.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
+	pAmplCorrelation.X.Min = d.AmplCorrelation.XMin()
+	pAmplCorrelation.Y.Min = d.AmplCorrelation.YMin()
+	pAmplCorrelation.X.Max = d.AmplCorrelation.XMax()
+	pAmplCorrelation.Y.Max = d.AmplCorrelation.YMax()
+	pAmplCorrelation.Add(hplot.NewH2D(d.AmplCorrelation, nil))
+	pAmplCorrelation.Add(plotter.NewGrid())
+	return pAmplCorrelation
+}
+
 // SaveHistos saves histograms on disk.
 // If d.DQPlotRef is not nil, current histograms
 // are overlaid with the provided reference histograms.
@@ -591,29 +610,3 @@ func (d *DQPlot) WriteGob(fileName string) error {
 
 	return err
 }
-
-/*
-	// Make ChargeCorrelation plot
-	pChargeCorrelation, err := hplot.New()
-	if err != nil {
-		panic(err)
-	}
-	pChargeCorrelation.X.Label.Text = "Charge 0"
-	pChargeCorrelation.Y.Label.Text = "Charge 1"
-	pChargeCorrelation.X.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
-	pChargeCorrelation.Y.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
-	pChargeCorrelation.X.Min = dqplots.ChargeCorrelation.LowX
-	pChargeCorrelation.Y.Min = dqplots.ChargeCorrelation.LowY
-	pChargeCorrelation.X.Max = dqplots.ChargeCorrelation.HighX
-	pChargeCorrelation.Y.Max = dqplots.ChargeCorrelation.HighY
-	hpChargeCorrelation := plotter.NewHeatMap(dqplots.ChargeCorrelation, palette.Heat(200, 1))
-	if err != nil {
-		panic(err)
-	}
-	pChargeCorrelation.Add(hpChargeCorrelation)
-	pChargeCorrelation.Add(hplot.NewGrid())
-	ChargeCorrelationsvg := ""
-	if false { //*iEvent > 0 {
-		ChargeCorrelationsvg = utils.RenderSVG(pChargeCorrelation, 13, 13)
-	}
-*/

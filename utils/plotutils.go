@@ -18,7 +18,7 @@ import (
 func H1DToGonum(histo ...hbook.H1D) []plotter.Histogram {
 	output := make([]plotter.Histogram, len(histo))
 	for i, h := range histo {
-		h, err := plotter.NewHistogram(&h, h.Axis().Bins())
+		h, err := plotter.NewHistogram(&h, len(h.Binning().Bins()))
 		if err != nil {
 			panic(err)
 		}
@@ -30,8 +30,8 @@ func H1DToGonum(histo ...hbook.H1D) []plotter.Histogram {
 }
 
 // H1dToHplot converts hbook.H1D objects to hplot.Histogram objects.
-func H1dToHplot(lineStyle draw.LineStyle, histo ...hbook.H1D) []hplot.Histogram {
-	output := make([]hplot.Histogram, len(histo))
+func H1dToHplot(lineStyle draw.LineStyle, histo ...hbook.H1D) []hplot.H1D {
+	output := make([]hplot.H1D, len(histo))
 	for i := range histo {
 		hi, err := hplot.NewH1D(&histo[i])
 		if err != nil {
@@ -49,8 +49,8 @@ func H1dToHplot(lineStyle draw.LineStyle, histo ...hbook.H1D) []hplot.Histogram 
 }
 
 // H1dptrToHplot converts hbook.H1D objects to hplot.Histogram objects.
-func H1dptrToHplot(lineStyle draw.LineStyle, histos ...*hbook.H1D) []hplot.Histogram {
-	var output []hplot.Histogram
+func H1dptrToHplot(lineStyle draw.LineStyle, histos ...*hbook.H1D) []hplot.H1D {
+	var output []hplot.H1D
 	for i := range histos {
 		histo := histos[i]
 		if histo != nil {
@@ -91,7 +91,7 @@ func MakeHPlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D)
 }
 
 // MakeHPl makes a hplot with hplot.Histogram objects.
-func MakeHPl(xTitle string, yTitle string, outFile string, hHplot ...hplot.Histogram) {
+func MakeHPl(xTitle string, yTitle string, outFile string, hHplot ...hplot.H1D) {
 	p, err := hplot.New()
 	if err != nil {
 		panic(err)

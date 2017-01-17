@@ -76,7 +76,7 @@
 		var hvplot = ""
 		var minrec1Ddistr = ""
 		var deltat30plot = ""
-		var chargeCorrelationplot = ""
+		var amplCorrelationplot = ""
 		
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
@@ -191,8 +191,8 @@
 			p5.innerHTML = minrec1Ddistr;
 			var p6 = document.getElementById("my-deltat30-plot");
 			p6.innerHTML = deltat30plot;
-			var p7 = document.getElementById("my-chargeCorrelation-plot");
-			p7.innerHTML = chargeCorrelationplot;
+			var p7 = document.getElementById("my-amplCorrelation-plot");
+			p7.innerHTML = amplCorrelationplot;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					optsR = new options('#FFFF00') // yellow
@@ -312,7 +312,7 @@
 				hvplot = data.hv;
 				minrec1Ddistr = data.minrec1Ddistrs
 				deltat30plot = data.deltat30
-				chargeCorrelationplot = data.chargecorrelation
+				amplCorrelationplot = data.amplcorrelation
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < data.quartets[iq][ip].length; is += 1) {
@@ -417,8 +417,8 @@
 		<td>
 			<div id="my-counterssingle2-plot" class="my-plot-stylecounter"></div>
 		</td>
-		</tr>
-		<tr>
+		<!--/tr>
+		<tr-->
 		<td>
 			<div id="my-countersleftvsright-plot" class="my-plot-stylecounter"></div>
 		</td>
@@ -429,28 +429,35 @@
 			<div id="my-counterslinevsline-plot" class="my-plot-stylecounter"></div>
 		</td>
 		</tr>
+		<tr>
+		<td>
+			<div id="my-mult-plot" class="my-plot-stylecounter"></div>
+		</td>
+		<td width="600" colspan="2">
+			<div id="my-deltat30-plot"></div>
+		</td>
+		</tr>
 		</table>
-		<table cellspacing="15">
+		<br><br>
+		<table>
 		<tr>
 		<!--td valign="top">
 			<div id="graph3DMinReco"></div>
 		</td-->		
-		<td width="600">
-			<div id="my-mult-plot" class="my-plot-stylefreq"></div>
-			<div id="my-deltat30-plot" class="my-plot-stylefreq"></div>
+		<td>
+			<div id="my-minrec1Ddistr-plot"></div>
 		</td>
-		<td valign="top">
-			<div id="my-chargeCorrelation-plot" class="my-plot-stylefreq"></div>
+		<td>
+			<div id="my-amplCorrelation-plot"></div>
 		</td>
 		</tr>
 		<tr>
-		<td width="600">
+		<!-- td width="600">
 		<br><br><br><br>
 			<div id="my-minrec1Ddistr-plot" class="my-plot-stylefreq"></div>
-		</td>	
+		</td -->	
 		</tr>
 		</table>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 	</header>
 	<div class="main">
 	<hr size="5" noshade>

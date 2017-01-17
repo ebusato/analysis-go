@@ -22,8 +22,6 @@ import (
 	"github.com/go-hep/csvutil"
 	"github.com/go-hep/hbook"
 	"github.com/go-hep/hplot"
-	"github.com/gonum/plot/palette"
-	"github.com/gonum/plot/plotter"
 	"github.com/toqueteos/webbrowser"
 
 	"golang.org/x/net/websocket"
@@ -212,23 +210,23 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 
 // Data is the struct that is sent via the websocket to the web client.
 type Data struct {
-	EvtID             uint           `json:"evt"`               // event id (64 bits a priori)
-	Time              float64        `json:"time"`              // time at which monitoring data are taken (64 bits)
-	Counters          []uint32       `json:"counters"`          // counters provided by Thor
-	TimeStamp         uint64         `json:"timestamp"`         // absolute timestamp from 64 MHz clock on Thor
-	MonBufSize        int            `json:"monbufsize"`        // monitoring channel buffer size
-	Freq              float64        `json:"freq"`              // number of events processed per second (64 bits)
-	Qs                Quartets       `json:"quartets"`          // quartets (30689280 bits)
-	QsWoData          QuartetsWoData `json:"quartetswodata"`    // quartets without data
-	Mult              H1D            `json:"mult"`              // multiplicity of pulses (1024 bits)
-	FreqH             string         `json:"freqh"`             // frequency histogram
-	ChargeL           string         `json:"chargel"`           // charge histograms for left hemisphere
-	ChargeR           string         `json:"charger"`           // charge histograms for right hemisphere
-	HVvals            string         `json:"hv"`                // hv values
-	MinRec            []XYZ          `json:"minrec"`            // outcome of the minimal reconstruction algorithm
-	MinRec1DDistrs    string         `json:"minrec1Ddistrs"`    // minimal reconstruction X, Y, Z distributions
-	DeltaT30          string         `json:"deltat30"`          // distribution of the difference of T30
-	ChargeCorrelation string         `json:"chargecorrelation"` // charge correlation for events with multiplicity=2
+	EvtID           uint           `json:"evt"`             // event id (64 bits a priori)
+	Time            float64        `json:"time"`            // time at which monitoring data are taken (64 bits)
+	Counters        []uint32       `json:"counters"`        // counters provided by Thor
+	TimeStamp       uint64         `json:"timestamp"`       // absolute timestamp from 64 MHz clock on Thor
+	MonBufSize      int            `json:"monbufsize"`      // monitoring channel buffer size
+	Freq            float64        `json:"freq"`            // number of events processed per second (64 bits)
+	Qs              Quartets       `json:"quartets"`        // quartets (30689280 bits)
+	QsWoData        QuartetsWoData `json:"quartetswodata"`  // quartets without data
+	Mult            H1D            `json:"mult"`            // multiplicity of pulses (1024 bits)
+	FreqH           string         `json:"freqh"`           // frequency histogram
+	ChargeL         string         `json:"chargel"`         // charge histograms for left hemisphere
+	ChargeR         string         `json:"charger"`         // charge histograms for right hemisphere
+	HVvals          string         `json:"hv"`              // hv values
+	MinRec          []XYZ          `json:"minrec"`          // outcome of the minimal reconstruction algorithm
+	MinRec1DDistrs  string         `json:"minrec1Ddistrs"`  // minimal reconstruction X, Y, Z distributions
+	DeltaT30        string         `json:"deltat30"`        // distribution of the difference of T30
+	AmplCorrelation string         `json:"amplcorrelation"` // amplitude correlation for events with multiplicity=2
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -691,7 +689,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 										treeMult2.Fill(run, uint32(event.ID), pulsesWithSignal[0], pulsesWithSignal[1])
 									}
 								}
-								dqplots.ChargeCorrelation.Fill(pulsesWithSignal[0].Charg/1e6, pulsesWithSignal[1].Charg/1e6)
+								dqplots.AmplCorrelation.Fill(pulsesWithSignal[0].Ampl, pulsesWithSignal[1].Ampl, 1)
 							}
 						}
 						if *iEvent%*monFreq == 0 {
@@ -755,7 +753,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								hvsvg = utils.RenderSVG(hvTiled, 45, 30)
 
 								tpMinRec1D := dqplots.MakeMinRec1DTiledPlot()
-								minrec1Dsvg = utils.RenderSVG(tpMinRec1D, 30, 13)
+								minrec1Dsvg = utils.RenderSVG(tpMinRec1D, 25, 13)
 							}
 
 							stop := time.Now()
@@ -783,29 +781,12 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							pDeltaT30.Add(hplot.NewGrid())
 							DeltaT30svg := utils.RenderSVG(pDeltaT30, 15, 7)
 
-							// Make ChargeCorrelation plot
+							// Make AmplCorrelation plot
 
-							pChargeCorrelation, err := hplot.New()
-							if err != nil {
-								panic(err)
-							}
-							pChargeCorrelation.X.Label.Text = "Charge 0"
-							pChargeCorrelation.Y.Label.Text = "Charge 1"
-							pChargeCorrelation.X.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
-							pChargeCorrelation.Y.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
-							pChargeCorrelation.X.Min = dqplots.ChargeCorrelation.LowX
-							pChargeCorrelation.Y.Min = dqplots.ChargeCorrelation.LowY
-							pChargeCorrelation.X.Max = dqplots.ChargeCorrelation.HighX
-							pChargeCorrelation.Y.Max = dqplots.ChargeCorrelation.HighY
-							hpChargeCorrelation := plotter.NewHeatMap(dqplots.ChargeCorrelation, palette.Heat(200, 1))
-							if err != nil {
-								panic(err)
-							}
-							pChargeCorrelation.Add(hpChargeCorrelation)
-							pChargeCorrelation.Add(hplot.NewGrid())
-							ChargeCorrelationsvg := ""
-							if false { //*iEvent > 0 {
-								ChargeCorrelationsvg = utils.RenderSVG(pChargeCorrelation, 13, 13)
+							pAmplCorrelation := dqplots.MakeAmplCorrelationPlot()
+							AmplCorrelationsvg := ""
+							if *iEvent > 0 {
+								AmplCorrelationsvg = utils.RenderSVG(pAmplCorrelation, 13, 13)
 							}
 
 							// send to channel
@@ -816,23 +797,23 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							// 							var tstamp uint64 = uint64(event.Counters[3]) << 32 | uint64(event.Counters[2])
 							// 							fmt.Println("tstamp = ", tstamp)
 							datac <- Data{
-								EvtID:             event.ID,
-								Time:              time,
-								Counters:          event.Counters,
-								TimeStamp:         uint64(event.Counters[3])<<32 | uint64(event.Counters[2]),
-								MonBufSize:        len(datac),
-								Freq:              freq,
-								Qs:                qs,
-								QsWoData:          qsWoData,
-								Mult:              NewH1D(dqplots.HMultiplicity),
-								FreqH:             freqhsvg,
-								ChargeL:           chargeLsvg,
-								ChargeR:           chargeRsvg,
-								HVvals:            hvsvg,
-								MinRec:            minrec,
-								MinRec1DDistrs:    minrec1Dsvg,
-								DeltaT30:          DeltaT30svg,
-								ChargeCorrelation: ChargeCorrelationsvg,
+								EvtID:           event.ID,
+								Time:            time,
+								Counters:        event.Counters,
+								TimeStamp:       uint64(event.Counters[3])<<32 | uint64(event.Counters[2]),
+								MonBufSize:      len(datac),
+								Freq:            freq,
+								Qs:              qs,
+								QsWoData:        qsWoData,
+								Mult:            NewH1D(dqplots.HMultiplicity),
+								FreqH:           freqhsvg,
+								ChargeL:         chargeLsvg,
+								ChargeR:         chargeRsvg,
+								HVvals:          hvsvg,
+								MinRec:          minrec,
+								MinRec1DDistrs:  minrec1Dsvg,
+								DeltaT30:        DeltaT30svg,
+								AmplCorrelation: AmplCorrelationsvg,
 							}
 							noEventsForMon = 0
 							minrec = nil
