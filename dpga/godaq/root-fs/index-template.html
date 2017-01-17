@@ -77,6 +77,7 @@
 		var minrec1Ddistr = ""
 		var deltat30plot = ""
 		var amplCorrelationplot = ""
+		var hitQuartetsplot = ""
 		
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
@@ -193,6 +194,8 @@
 			p6.innerHTML = deltat30plot;
 			var p7 = document.getElementById("my-amplCorrelation-plot");
 			p7.innerHTML = amplCorrelationplot;
+			var p8 = document.getElementById("my-hitQuartets-plot");
+			p8.innerHTML = hitQuartetsplot;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					optsR = new options('#FFFF00') // yellow
@@ -313,6 +316,7 @@
 				minrec1Ddistr = data.minrec1Ddistrs
 				deltat30plot = data.deltat30
 				amplCorrelationplot = data.amplcorrelation
+				hitQuartetsplot = data.hitquartets
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < data.quartets[iq][ip].length; is += 1) {
@@ -449,6 +453,9 @@
 		</td>
 		<td>
 			<div id="my-amplCorrelation-plot"></div>
+		</td>
+		<td>
+			<div id="my-hitQuartets-plot"></div>
 		</td>
 		</tr>
 		<tr>

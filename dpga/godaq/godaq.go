@@ -227,6 +227,7 @@ type Data struct {
 	MinRec1DDistrs  string         `json:"minrec1Ddistrs"`  // minimal reconstruction X, Y, Z distributions
 	DeltaT30        string         `json:"deltat30"`        // distribution of the difference of T30
 	AmplCorrelation string         `json:"amplcorrelation"` // amplitude correlation for events with multiplicity=2
+	HitQuartets     string         `json:"hitquartets"`     // 2D plot displaying quartets that are hit for events with multiplicity=2
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -690,6 +691,10 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 									}
 								}
 								dqplots.AmplCorrelation.Fill(pulsesWithSignal[0].Ampl, pulsesWithSignal[1].Ampl, 1)
+								quartet0 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(pulsesWithSignal[0].Channel.FifoID144(), true))
+								quartet1 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(pulsesWithSignal[1].Channel.FifoID144(), true))
+								//fmt.Println("quartet0, quartet1:", quartet0, quartet1)
+								dqplots.HitQuartets.Fill(quartet0, quartet1, 1)
 							}
 						}
 						if *iEvent%*monFreq == 0 {
@@ -753,7 +758,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								hvsvg = utils.RenderSVG(hvTiled, 45, 30)
 
 								tpMinRec1D := dqplots.MakeMinRec1DTiledPlot()
-								minrec1Dsvg = utils.RenderSVG(tpMinRec1D, 25, 13)
+								minrec1Dsvg = utils.RenderSVG(tpMinRec1D, 25, 12)
 							}
 
 							stop := time.Now()
@@ -782,11 +787,17 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							DeltaT30svg := utils.RenderSVG(pDeltaT30, 15, 7)
 
 							// Make AmplCorrelation plot
-
 							pAmplCorrelation := dqplots.MakeAmplCorrelationPlot()
 							AmplCorrelationsvg := ""
 							if *iEvent > 0 {
-								AmplCorrelationsvg = utils.RenderSVG(pAmplCorrelation, 13, 13)
+								AmplCorrelationsvg = utils.RenderSVG(pAmplCorrelation, 12, 12)
+							}
+
+							// Make HitQuartets plot
+							pHitQuartets := dqplots.MakeHitQuartetsPlot()
+							HitQuartetssvg := ""
+							if *iEvent > 0 {
+								HitQuartetssvg = utils.RenderSVG(pHitQuartets, 12, 12)
 							}
 
 							// send to channel
@@ -814,6 +825,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								MinRec1DDistrs:  minrec1Dsvg,
 								DeltaT30:        DeltaT30svg,
 								AmplCorrelation: AmplCorrelationsvg,
+								HitQuartets:     HitQuartetssvg,
 							}
 							noEventsForMon = 0
 							minrec = nil

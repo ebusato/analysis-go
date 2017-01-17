@@ -35,6 +35,7 @@ type DQPlot struct {
 	HMinRecZ         *hbook.H1D
 	DeltaT30         *hbook.H1D
 	AmplCorrelation  *hbook.H2D
+	HitQuartets      *hbook.H2D
 
 	HV [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
 
@@ -58,6 +59,7 @@ func NewDQPlot() *DQPlot {
 		DeltaT30:         hbook.NewH1D(300, -30, 30),
 		// 		AmplCorrelation: hbook.NewH2D(50, 0, 0.5, 50, 0, 0.5),
 		AmplCorrelation: hbook.NewH2D(50, 0, 4095, 50, 0, 4095),
+		HitQuartets:     hbook.NewH2D(30, 0, 30, 30, 30, 60),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
@@ -538,8 +540,26 @@ func (d *DQPlot) MakeAmplCorrelationPlot() *plot.Plot {
 	pAmplCorrelation.X.Max = d.AmplCorrelation.XMax()
 	pAmplCorrelation.Y.Max = d.AmplCorrelation.YMax()
 	pAmplCorrelation.Add(hplot.NewH2D(d.AmplCorrelation, nil))
-	pAmplCorrelation.Add(plotter.NewGrid())
+	//pAmplCorrelation.Add(plotter.NewGrid())
 	return pAmplCorrelation
+}
+
+func (d *DQPlot) MakeHitQuartetsPlot() *plot.Plot {
+	pHitQuartets, err := plot.New()
+	if err != nil {
+		panic(err)
+	}
+	pHitQuartets.X.Label.Text = "Quartet Id (right hemisphere)"
+	pHitQuartets.Y.Label.Text = "Quartet Id (left hemisphere)"
+	pHitQuartets.X.Tick.Marker = &hplot.FreqTicks{N: 31, Freq: 1}
+	pHitQuartets.Y.Tick.Marker = &hplot.FreqTicks{N: 31, Freq: 1}
+	pHitQuartets.X.Min = d.HitQuartets.XMin()
+	pHitQuartets.Y.Min = d.HitQuartets.YMin()
+	pHitQuartets.X.Max = d.HitQuartets.XMax()
+	pHitQuartets.Y.Max = d.HitQuartets.YMax()
+	pHitQuartets.Add(hplot.NewH2D(d.HitQuartets, nil))
+	//pHitQuartets.Add(plotter.NewGrid())
+	return pHitQuartets
 }
 
 // SaveHistos saves histograms on disk.
