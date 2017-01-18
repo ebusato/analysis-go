@@ -12,6 +12,7 @@ import (
 	"github.com/go-hep/hbook"
 	"github.com/go-hep/hplot"
 	"github.com/gonum/plot"
+	"github.com/gonum/plot/palette/brewer"
 	"github.com/gonum/plot/plotter"
 	"github.com/gonum/plot/plotutil"
 	"github.com/gonum/plot/vg"
@@ -557,7 +558,8 @@ func (d *DQPlot) MakeHitQuartetsPlot() *plot.Plot {
 	pHitQuartets.Y.Min = d.HitQuartets.YMin()
 	pHitQuartets.X.Max = d.HitQuartets.XMax()
 	pHitQuartets.Y.Max = d.HitQuartets.YMax()
-	pHitQuartets.Add(hplot.NewH2D(d.HitQuartets, nil))
+	p, _ := brewer.GetPalette(brewer.TypeAny, "RdYlBu", 11)
+	pHitQuartets.Add(hplot.NewH2D(d.HitQuartets, p))
 	//pHitQuartets.Add(plotter.NewGrid())
 	return pHitQuartets
 }
