@@ -789,14 +789,14 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							// Make AmplCorrelation plot
 							pAmplCorrelation := dqplots.MakeAmplCorrelationPlot()
 							AmplCorrelationsvg := ""
-							if *iEvent > 0 {
+							if *iEvent > 0 && dqplots.AmplCorrelation.Entries() > 0 {
 								AmplCorrelationsvg = utils.RenderSVG(pAmplCorrelation, 12, 12)
 							}
 
 							// Make HitQuartets plot
 							pHitQuartets := dqplots.MakeHitQuartetsPlot()
 							HitQuartetssvg := ""
-							if *iEvent > 0 {
+							if *iEvent > 0 && dqplots.HitQuartets.Entries() > 0 {
 								HitQuartetssvg = utils.RenderSVG(pHitQuartets, 12, 12)
 							}
 
@@ -804,7 +804,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							if float64(len(datac)) >= 0.6*float64(datacsize) {
 								fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
 							}
-							fmt.Println(event.Counters)
+							//fmt.Println(event.Counters)
 							// 							var tstamp uint64 = uint64(event.Counters[3]) << 32 | uint64(event.Counters[2])
 							// 							fmt.Println("tstamp = ", tstamp)
 							datac <- Data{
