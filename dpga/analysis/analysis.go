@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gonum/plot/vg"
 
@@ -14,17 +15,18 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
-	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/trees"
 )
 
 func main() {
 	log.SetFlags(log.Llongfile | log.LstdFlags)
 
 	var (
-		infileName = flag.String("i", "testdata/tenevents_hex.txt", "Name of the input file.")
+		infileName = flag.String("i", "", "Name of the input file.")
 		noEvents   = flag.Uint("n", 10000000, "Number of events to process.")
 		ped        = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
 		tdo        = flag.String("tdo", "", "Name of the csv file containing time dependent offsets. If not set, time dependent offsets are not applied. Relevant only when ped!=\"\".")
+		en         = flag.String("en", "", "Name of the csv file containing energy calibration constants. If not set, energy calibration is not applied.")
 		wGob       = flag.String("wgob", "dqplots.gob", "Name of the output gob file containing dq plots. If not set, the gob file is not produced.")
 	)
 
@@ -60,33 +62,53 @@ func main() {
 	if *tdo != "" {
 		dpgadetector.Det.ReadTimeDepOffsetsFile(*tdo)
 	}
+	if *en != "" {
+		dpgadetector.Det.ReadEnergyCalibFile(*en)
+	}
 	dqplots := dq.NewDQPlot()
 
+	outrootfileName := strings.Replace(*infileName, ".bin", ".root", 1)
+	var treeMult2 *trees.TreeMult2 = trees.NewTreeMult2(outrootfileName)
+
+	hdr := r.Header()
+
 	for event, status := r.ReadNextEvent(); status && event.ID < *noEvents; event, status = r.ReadNextEvent() {
-		if event.ID%50 == 0 {
+		if event.ID%500 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
 		///////////////////////////////////////////////////////////
 		// Corrections
 		doPedestal := false
 		doTimeDepOffset := false
+		doEnergyCalib := false
 		if *ped != "" {
 			doPedestal = true
 		}
 		if *tdo != "" {
 			doTimeDepOffset = true
 		}
-		event = applyCorrCalib.HV(event, doPedestal, doTimeDepOffset)
+		if *en != "" {
+			doEnergyCalib = true
+		}
+		event = applyCorrCalib.CorrectEvent(event, doPedestal, doTimeDepOffset, doEnergyCalib)
 		///////////////////////////////////////////////////////////
 
 		///////////////////////////////////////////////////////////
 		// Plotting
 		// pulses
-		if event.ID < 100 {
-			event.PlotPulses(pulse.XaxisCapacitor, false, pulse.YRangePedestal, true)
-		}
+		// 		if event.ID < 20 {
+		// 			event.PlotPulses(pulse.XaxisCapacitor, false, pulse.YRangePedestal, true)
+		// 		}
 		// dq
 		dqplots.FillHistos(event)
+		////////////////////////////////////////////////////////////
+
+		///////////////////////////////////////////////////////////
+		// ROOT Tree making
+		mult, pulsesWithSignal := event.Multiplicity()
+		if mult == 2 {
+			treeMult2.Fill(hdr.RunNumber, uint32(event.ID), pulsesWithSignal[0], pulsesWithSignal[1])
+		}
 		////////////////////////////////////////////////////////////
 
 		//event.Print(true)
@@ -101,4 +123,5 @@ func main() {
 	dqplots.WriteGob(*wGob)
 	dqplots.SaveHistos()
 
+	treeMult2.Close()
 }

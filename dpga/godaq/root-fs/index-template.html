@@ -76,7 +76,7 @@
 		var hvplot = ""
 		var minrec1Ddistr = ""
 		var deltat30plot = ""
-		var amplCorrelationplot = ""
+		var amplenergyCorrelationplot = ""
 		var hitQuartetsplot = ""
 		
 		// colors are red, green, blue, pink
@@ -192,8 +192,8 @@
 			p5.innerHTML = minrec1Ddistr;
 			var p6 = document.getElementById("my-deltat30-plot");
 			p6.innerHTML = deltat30plot;
-			var p7 = document.getElementById("my-amplCorrelation-plot");
-			p7.innerHTML = amplCorrelationplot;
+			var p7 = document.getElementById("my-amplenergyCorrelation-plot");
+			p7.innerHTML = amplenergyCorrelationplot;
 			var p8 = document.getElementById("my-hitQuartets-plot");
 			p8.innerHTML = hitQuartetsplot;
 			for (var i = 0; i < Nquartets; i++) {
@@ -315,7 +315,7 @@
 				hvplot = data.hv;
 				minrec1Ddistr = data.minrec1Ddistrs
 				deltat30plot = data.deltat30
-				amplCorrelationplot = data.amplcorrelation
+				amplenergyCorrelationplot = data.amplenergycorrelation
 				hitQuartetsplot = data.hitquartets
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
@@ -452,7 +452,7 @@
 			<div id="my-minrec1Ddistr-plot"></div>
 		</td>
 		<td>
-			<div id="my-amplCorrelation-plot"></div>
+			<div id="my-amplenergyCorrelation-plot"></div>
 		</td>
 		<td>
 			<div id="my-hitQuartets-plot"></div>

@@ -23,20 +23,21 @@ import (
 )
 
 type DQPlot struct {
-	Nevents          uint
-	HFrequency       *hbook.H1D
-	HSatFrequency    *hbook.H1D
-	HMultiplicity    *hbook.H1D
-	HSatMultiplicity *hbook.H1D
-	HCharge          [][]hbook.H1D
-	HAmplitude       [][]hbook.H1D
-	HEnergy          [][]hbook.H1D
-	HMinRecX         *hbook.H1D
-	HMinRecY         *hbook.H1D
-	HMinRecZ         *hbook.H1D
-	DeltaT30         *hbook.H1D
-	AmplCorrelation  *hbook.H2D
-	HitQuartets      *hbook.H2D
+	Nevents           uint
+	HFrequency        *hbook.H1D
+	HSatFrequency     *hbook.H1D
+	HMultiplicity     *hbook.H1D
+	HSatMultiplicity  *hbook.H1D
+	HCharge           [][]hbook.H1D
+	HAmplitude        [][]hbook.H1D
+	HEnergy           [][]hbook.H1D
+	HMinRecX          *hbook.H1D
+	HMinRecY          *hbook.H1D
+	HMinRecZ          *hbook.H1D
+	DeltaT30          *hbook.H1D
+	AmplCorrelation   *hbook.H2D
+	EnergyCorrelation *hbook.H2D
+	HitQuartets       *hbook.H2D
 
 	HV [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
 
@@ -59,8 +60,9 @@ func NewDQPlot() *DQPlot {
 		HMinRecZ:         hbook.NewH1D(300, -150, 150),
 		DeltaT30:         hbook.NewH1D(300, -30, 30),
 		// 		AmplCorrelation: hbook.NewH2D(50, 0, 0.5, 50, 0, 0.5),
-		AmplCorrelation: hbook.NewH2D(50, 0, 4095, 50, 0, 4095),
-		HitQuartets:     hbook.NewH2D(30, 0, 30, 30, 30, 60),
+		AmplCorrelation:   hbook.NewH2D(50, 0, 4095, 50, 0, 4095),
+		EnergyCorrelation: hbook.NewH2D(50, 0, 1000, 50, 0, 1000),
+		HitQuartets:       hbook.NewH2D(30, 0, 30, 30, 30, 60),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
@@ -528,21 +530,39 @@ func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
 }
 
 func (d *DQPlot) MakeAmplCorrelationPlot() *plot.Plot {
-	pAmplCorrelation, err := plot.New()
+	pCorrelation, err := plot.New()
 	if err != nil {
 		panic(err)
 	}
-	pAmplCorrelation.X.Label.Text = "Amplitude pulse 0 (ADC counts)"
-	pAmplCorrelation.Y.Label.Text = "Amplitude pulse 1 (ADC counts)"
-	pAmplCorrelation.X.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
-	pAmplCorrelation.Y.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
-	pAmplCorrelation.X.Min = d.AmplCorrelation.XMin()
-	pAmplCorrelation.Y.Min = d.AmplCorrelation.YMin()
-	pAmplCorrelation.X.Max = d.AmplCorrelation.XMax()
-	pAmplCorrelation.Y.Max = d.AmplCorrelation.YMax()
-	pAmplCorrelation.Add(hplot.NewH2D(d.AmplCorrelation, nil))
-	//pAmplCorrelation.Add(plotter.NewGrid())
-	return pAmplCorrelation
+	pCorrelation.X.Label.Text = "Amplitude pulse 0 (ADC counts)"
+	pCorrelation.Y.Label.Text = "Amplitude pulse 1 (ADC counts)"
+	pCorrelation.X.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
+	pCorrelation.Y.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
+	pCorrelation.X.Min = d.AmplCorrelation.XMin()
+	pCorrelation.Y.Min = d.AmplCorrelation.YMin()
+	pCorrelation.X.Max = d.AmplCorrelation.XMax()
+	pCorrelation.Y.Max = d.AmplCorrelation.YMax()
+	pCorrelation.Add(hplot.NewH2D(d.AmplCorrelation, nil))
+	//pCorrelation.Add(plotter.NewGrid())
+	return pCorrelation
+}
+
+func (d *DQPlot) MakeEnergyCorrelationPlot() *plot.Plot {
+	pCorrelation, err := plot.New()
+	if err != nil {
+		panic(err)
+	}
+	pCorrelation.X.Label.Text = "Energy pulse 0 (keV)"
+	pCorrelation.Y.Label.Text = "Energy pulse 1 (keV)"
+	pCorrelation.X.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
+	pCorrelation.Y.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
+	pCorrelation.X.Min = d.EnergyCorrelation.XMin()
+	pCorrelation.Y.Min = d.EnergyCorrelation.YMin()
+	pCorrelation.X.Max = d.EnergyCorrelation.XMax()
+	pCorrelation.Y.Max = d.EnergyCorrelation.YMax()
+	pCorrelation.Add(hplot.NewH2D(d.EnergyCorrelation, nil))
+	//pCorrelation.Add(plotter.NewGrid())
+	return pCorrelation
 }
 
 func (d *DQPlot) MakeHitQuartetsPlot() *plot.Plot {

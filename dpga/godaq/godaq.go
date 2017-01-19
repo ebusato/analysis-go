@@ -210,24 +210,24 @@ func NewHVvalues(hvex *HVexec) *HVvalues {
 
 // Data is the struct that is sent via the websocket to the web client.
 type Data struct {
-	EvtID           uint           `json:"evt"`             // event id (64 bits a priori)
-	Time            float64        `json:"time"`            // time at which monitoring data are taken (64 bits)
-	Counters        []uint32       `json:"counters"`        // counters provided by Thor
-	TimeStamp       uint64         `json:"timestamp"`       // absolute timestamp from 64 MHz clock on Thor
-	MonBufSize      int            `json:"monbufsize"`      // monitoring channel buffer size
-	Freq            float64        `json:"freq"`            // number of events processed per second (64 bits)
-	Qs              Quartets       `json:"quartets"`        // quartets (30689280 bits)
-	QsWoData        QuartetsWoData `json:"quartetswodata"`  // quartets without data
-	Mult            H1D            `json:"mult"`            // multiplicity of pulses (1024 bits)
-	FreqH           string         `json:"freqh"`           // frequency histogram
-	ChargeL         string         `json:"chargel"`         // charge histograms for left hemisphere
-	ChargeR         string         `json:"charger"`         // charge histograms for right hemisphere
-	HVvals          string         `json:"hv"`              // hv values
-	MinRec          []XYZ          `json:"minrec"`          // outcome of the minimal reconstruction algorithm
-	MinRec1DDistrs  string         `json:"minrec1Ddistrs"`  // minimal reconstruction X, Y, Z distributions
-	DeltaT30        string         `json:"deltat30"`        // distribution of the difference of T30
-	AmplCorrelation string         `json:"amplcorrelation"` // amplitude correlation for events with multiplicity=2
-	HitQuartets     string         `json:"hitquartets"`     // 2D plot displaying quartets that are hit for events with multiplicity=2
+	EvtID                 uint           `json:"evt"`                   // event id (64 bits a priori)
+	Time                  float64        `json:"time"`                  // time at which monitoring data are taken (64 bits)
+	Counters              []uint32       `json:"counters"`              // counters provided by Thor
+	TimeStamp             uint64         `json:"timestamp"`             // absolute timestamp from 64 MHz clock on Thor
+	MonBufSize            int            `json:"monbufsize"`            // monitoring channel buffer size
+	Freq                  float64        `json:"freq"`                  // number of events processed per second (64 bits)
+	Qs                    Quartets       `json:"quartets"`              // quartets (30689280 bits)
+	QsWoData              QuartetsWoData `json:"quartetswodata"`        // quartets without data
+	Mult                  H1D            `json:"mult"`                  // multiplicity of pulses (1024 bits)
+	FreqH                 string         `json:"freqh"`                 // frequency histogram
+	ChargeL               string         `json:"chargel"`               // charge histograms for left hemisphere
+	ChargeR               string         `json:"charger"`               // charge histograms for right hemisphere
+	HVvals                string         `json:"hv"`                    // hv values
+	MinRec                []XYZ          `json:"minrec"`                // outcome of the minimal reconstruction algorithm
+	MinRec1DDistrs        string         `json:"minrec1Ddistrs"`        // minimal reconstruction X, Y, Z distributions
+	DeltaT30              string         `json:"deltat30"`              // distribution of the difference of T30
+	AmplEnergyCorrelation string         `json:"amplenergycorrelation"` // amplitude or energy correlation for events with multiplicity=2
+	HitQuartets           string         `json:"hitquartets"`           // 2D plot displaying quartets that are hit for events with multiplicity=2
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -585,7 +585,6 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 		dpgadetector.Det.ReadTimeDepOffsetsFile(*tdo)
 	}
 	if *en != "" {
-		fmt.Println("test 00")
 		dpgadetector.Det.ReadEnergyCalibFile(*en)
 	}
 	noEventsForMon := uint64(0)
@@ -691,6 +690,10 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 									}
 								}
 								dqplots.AmplCorrelation.Fill(pulsesWithSignal[0].Ampl, pulsesWithSignal[1].Ampl, 1)
+								if *distr == "energy" {
+									dqplots.EnergyCorrelation.Fill(pulsesWithSignal[0].E, pulsesWithSignal[1].E, 1)
+								}
+
 								quartet0 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(pulsesWithSignal[0].Channel.FifoID144(), true))
 								quartet1 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(pulsesWithSignal[1].Channel.FifoID144(), true))
 								//fmt.Println("quartet0, quartet1:", quartet0, quartet1)
@@ -793,6 +796,13 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								AmplCorrelationsvg = utils.RenderSVG(pAmplCorrelation, 12, 12)
 							}
 
+							// Make AmplCorrelation plot
+							pEnergyCorrelation := dqplots.MakeEnergyCorrelationPlot()
+							EnergyCorrelationsvg := ""
+							if *iEvent > 0 && dqplots.EnergyCorrelation.Entries() > 0 {
+								EnergyCorrelationsvg = utils.RenderSVG(pEnergyCorrelation, 12, 12)
+							}
+
 							// Make HitQuartets plot
 							pHitQuartets := dqplots.MakeHitQuartetsPlot()
 							HitQuartetssvg := ""
@@ -807,25 +817,30 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							//fmt.Println(event.Counters)
 							// 							var tstamp uint64 = uint64(event.Counters[3]) << 32 | uint64(event.Counters[2])
 							// 							fmt.Println("tstamp = ", tstamp)
+
+							Correlationsvg := AmplCorrelationsvg
+							if *distr == "energy" {
+								Correlationsvg = EnergyCorrelationsvg
+							}
 							datac <- Data{
-								EvtID:           event.ID,
-								Time:            time,
-								Counters:        event.Counters,
-								TimeStamp:       uint64(event.Counters[3])<<32 | uint64(event.Counters[2]),
-								MonBufSize:      len(datac),
-								Freq:            freq,
-								Qs:              qs,
-								QsWoData:        qsWoData,
-								Mult:            NewH1D(dqplots.HMultiplicity),
-								FreqH:           freqhsvg,
-								ChargeL:         chargeLsvg,
-								ChargeR:         chargeRsvg,
-								HVvals:          hvsvg,
-								MinRec:          minrec,
-								MinRec1DDistrs:  minrec1Dsvg,
-								DeltaT30:        DeltaT30svg,
-								AmplCorrelation: AmplCorrelationsvg,
-								HitQuartets:     HitQuartetssvg,
+								EvtID:                 event.ID,
+								Time:                  time,
+								Counters:              event.Counters,
+								TimeStamp:             uint64(event.Counters[3])<<32 | uint64(event.Counters[2]),
+								MonBufSize:            len(datac),
+								Freq:                  freq,
+								Qs:                    qs,
+								QsWoData:              qsWoData,
+								Mult:                  NewH1D(dqplots.HMultiplicity),
+								FreqH:                 freqhsvg,
+								ChargeL:               chargeLsvg,
+								ChargeR:               chargeRsvg,
+								HVvals:                hvsvg,
+								MinRec:                minrec,
+								MinRec1DDistrs:        minrec1Dsvg,
+								DeltaT30:              DeltaT30svg,
+								AmplEnergyCorrelation: Correlationsvg,
+								HitQuartets:           HitQuartetssvg,
 							}
 							noEventsForMon = 0
 							minrec = nil

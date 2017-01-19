@@ -12,9 +12,10 @@ func correctCluster(cluster *pulse.Cluster, doPedestal bool, doTimeDepOffset boo
 		if doPedestal {
 			cluster.Pulses[j].SubtractPedestal()
 			if doTimeDepOffset {
+				//fmt.Println("toto")
 				cluster.Pulses[j].SubtractTimeDepOffsets()
 				if doEnergyCalib {
-					//fmt.Println("pointer", i, j, cluster.Pulses[j].Channel)
+					//fmt.Println("pointer", j, cluster.Pulses[j].Channel)
 					cluster.Pulses[j].Amplitude()
 					if cluster.Pulses[j].Channel != nil {
 						cluster.Pulses[j].E = cluster.Pulses[j].Channel.EnergyCalib.Y(cluster.Pulses[j].Ampl)

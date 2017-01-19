@@ -21,14 +21,21 @@ TF1* Fit(TH1F* h) {
 	Double_t low = 1400;
 	Double_t high = 3000;
 	TF1* f = 0;
+	h->GetXaxis()->SetRange(h->GetXaxis()->FindBin(0.),h->GetXaxis()->FindBin(3000.));
+	int maxbin = h->GetMaximumBin();
+	double AbscissaAtMax = h->GetXaxis()->GetBinCenter(maxbin);
+	//cout << "AbscissaAtMax = " << AbscissaAtMax << endl;
+	h->Fit("gaus", "Q", "", AbscissaAtMax - 0.20*AbscissaAtMax, AbscissaAtMax + 0.20*AbscissaAtMax);
+	f = h->GetFunction("gaus");
+	/*
 	for(int i = 0; i < 3; i++) {
 		h->Fit("gaus", "Q", "", low, high);
 		f = h->GetFunction("gaus");
-		cout << "here1" << endl;
+		//cout << "here1" << endl;
 		if(f) {
 			Double_t mean = f->GetParameter(1);
 			Double_t sigma = f->GetParameter(2);
-			cout << "here2" << endl;
+			//cout << "here2" << endl;
 			if(mean == 0) {
 				cout << "ERROR: fitted mean is zero" << endl;
 				return 0;
@@ -40,15 +47,30 @@ TF1* Fit(TH1F* h) {
 			high = mean + 2 * sigma;
 		}
 	}
+	*/
 	return f;
 }
 
-void DistribAmplCharge(TString fileName) {
+void DistribAmplCharge(TString fileName0, TString fileName1="", TString fileName2="", TString fileName3="", TString fileName4="") {
 	gStyle->SetOptStat(0);
 	gStyle->SetOptTitle(0);
-	TFile* f = new TFile(fileName, "read");
 	
-        TTreeReader reader("tree", f);
+	TChain ch("tree");
+	ch.Add(fileName0);
+	if(fileName1 != "") {
+		ch.Add(fileName1);
+	}
+	if(fileName2 != "") {
+		ch.Add(fileName2);
+	}
+	if(fileName3 != "") {
+		ch.Add(fileName3);
+	}
+	if(fileName4 != "") {
+		ch.Add(fileName4);
+	}
+	
+        TTreeReader reader(&ch);
         TTreeReaderValue<UInt_t> Run(reader, "Run");
         TTreeReaderValue<UInt_t> Evt(reader, "Evt");
         TTreeReaderArray<UShort_t> IChanAbs240(reader, "IChanAbs240");
@@ -86,7 +108,13 @@ void DistribAmplCharge(TString fileName) {
 	cRight->Divide(5, 6);
 	
 	ofstream of("energy.csv");
-	of << "# LAPD energy calibration constants (creation date: " << currentDateTime() << ", input file: " << fileName.Data() <<  ")" << endl;
+	of << "# LAPD energy calibration constants (creation date: " << currentDateTime() 
+	   << ", input files:" 
+	   << " " << fileName0.Data() 
+	   << " " << fileName1.Data() 
+	   << " " << fileName2.Data()
+	   << " " << fileName3.Data()
+	   << ")" << endl;
 	of << "# Calibration constant defined as the number of ADC counts corresponding to 511 keV" << endl;
         of << "# iChannelAbs240 calibConstant calibConstantError " << endl;
 	
@@ -133,7 +161,7 @@ void DistribAmplCharge(TString fileName) {
 			} else {
 				histos[iChanAbs240]->Draw("same");
 			}
-			cout << "iChanAbs240: " << iChanAbs240 << endl;
+			cout << "iChanAbs240: " << iChanAbs240 ;
 			TF1* fitfunc = 0;
 			if(histos[iChanAbs240]->GetEntries() > 0) {
 				fitfunc = Fit(histos[iChanAbs240]);
@@ -141,10 +169,13 @@ void DistribAmplCharge(TString fileName) {
 					Double_t mean = fitfunc->GetParameter(1);
 					Double_t sigma = fitfunc->GetParameter(2);
 					Double_t meanErr = fitfunc->GetParError(1);
-					cout << " ->  " << mean << "  " << meanErr << "  " << sigma << endl;
+					cout << " ->  " << mean << "  " << meanErr << "  " << sigma;
 					if(sigma < 500 && meanErr < 0.20*mean) {
 						of << iChanAbs240 << " " << mean << " " << meanErr << endl;
-					} 
+					} else {
+						cout << " <=== Warning !!" ;
+					}
+					cout << endl;
 				}
 			} else {
 				of << iChanAbs240 << " 0 0" << endl;
