@@ -5,6 +5,7 @@ import (
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
 type ROOTDataMult2 struct {
@@ -14,6 +15,7 @@ type ROOTDataMult2 struct {
 	IQuartetAbs60       [2]uint8
 	E                   [2]float64
 	Ampl                [2]float64
+	Sat                 [2]uint8
 	Charge              [2]float64
 	T10                 [2]float64
 	T20                 [2]float64
@@ -51,6 +53,7 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 	_, err = t.tree.Branch2("IQuartetAbs60", &t.data.IQuartetAbs60, "IQuartetAbs60[2]/b", bufsiz)
 	_, err = t.tree.Branch2("E", &t.data.E, "E[2]/D", bufsiz)
 	_, err = t.tree.Branch2("Ampl", &t.data.Ampl, "Ampl[2]/D", bufsiz)
+	_, err = t.tree.Branch2("Sat", &t.data.Sat, "Sat[2]/b", bufsiz)
 	_, err = t.tree.Branch2("Charge", &t.data.Charge, "Charge[2]/D", bufsiz)
 	_, err = t.tree.Branch2("T10", &t.data.T10, "T10[2]/D", bufsiz)
 	_, err = t.tree.Branch2("T20", &t.data.T20, "T20[2]/D", bufsiz)
@@ -77,6 +80,8 @@ func (t *TreeMult2) Fill(run uint32, ievent uint32, pulse0 *pulse.Pulse, pulse1 
 	t.data.E[1] = pulse1.E
 	t.data.Ampl[0] = pulse0.Ampl
 	t.data.Ampl[1] = pulse1.Ampl
+	t.data.Sat[0] = utils.BoolToUint8(pulse0.HasSatSignal)
+	t.data.Sat[1] = utils.BoolToUint8(pulse1.HasSatSignal)
 	t.data.Charge[0] = pulse0.Charg
 	t.data.Charge[1] = pulse1.Charg
 	t.data.T10[0] = pulse0.Time10
