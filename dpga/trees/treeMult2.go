@@ -22,9 +22,13 @@ type ROOTDataMult2 struct {
 	T30                 [2]float64
 	T80                 [2]float64
 	T90                 [2]float64
+	Tf20                [2]float64
 	NoLocMaxRisingFront [2]uint16
 	SampleTimes         [999]float64
 	Pulse               [2][999]float64
+	Xmaa                float64
+	Ymaa                float64
+	Zmaa                float64
 }
 
 type TreeMult2 struct {
@@ -60,16 +64,20 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 	_, err = t.tree.Branch2("T30", &t.data.T30, "T30[2]/D", bufsiz)
 	_, err = t.tree.Branch2("T80", &t.data.T80, "T80[2]/D", bufsiz)
 	_, err = t.tree.Branch2("T90", &t.data.T90, "T90[2]/D", bufsiz)
+	_, err = t.tree.Branch2("Tf20", &t.data.Tf20, "Tf20[2]/D", bufsiz)
 	_, err = t.tree.Branch2("NoLocMaxRisingFront", &t.data.NoLocMaxRisingFront, "NoLocMaxRisingFront[2]/s", bufsiz)
 	_, err = t.tree.Branch2("SampleTimes", &t.data.SampleTimes, "SampleTimes[999]/D", bufsiz)
 	_, err = t.tree.Branch2("Pulse", &t.data.Pulse, "Pulse[2][999]/D", bufsiz)
+	_, err = t.tree.Branch2("Xmaa", &t.data.Xmaa, "Xmaa/D", bufsiz)
+	_, err = t.tree.Branch2("Ymaa", &t.data.Ymaa, "Ymaa/D", bufsiz)
+	_, err = t.tree.Branch2("Zmaa", &t.data.Zmaa, "Zmaa/D", bufsiz)
 
 	//t.data.Pulse[0] = make([]float64, dpgadetector.Det.NoSamples())
 	//t.data.Pulse[1] = make([]float64, dpgadetector.Det.NoSamples())
 	return &t
 }
 
-func (t *TreeMult2) Fill(run uint32, ievent uint32, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse) {
+func (t *TreeMult2) Fill(run uint32, ievent uint32, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse, Xmaa, Ymaa, Zmaa float64) {
 	t.data.Run = run
 	t.data.Evt = ievent
 	t.data.IChanAbs240[0] = uint16(pulse0.Channel.AbsID240())
@@ -94,6 +102,8 @@ func (t *TreeMult2) Fill(run uint32, ievent uint32, pulse0 *pulse.Pulse, pulse1 
 	t.data.T80[1] = pulse1.Time80
 	t.data.T90[0] = pulse0.Time90
 	t.data.T90[1] = pulse1.Time90
+	t.data.Tf20[0] = pulse0.TimeFall20
+	t.data.Tf20[1] = pulse1.TimeFall20
 	t.data.NoLocMaxRisingFront[0] = uint16(pulse0.NoLocMaxRisingFront)
 	t.data.NoLocMaxRisingFront[1] = uint16(pulse1.NoLocMaxRisingFront)
 	for i := range pulse0.Samples {
@@ -101,6 +111,9 @@ func (t *TreeMult2) Fill(run uint32, ievent uint32, pulse0 *pulse.Pulse, pulse1 
 		t.data.Pulse[0][i] = pulse0.Samples[i].Amplitude
 		t.data.Pulse[1][i] = pulse1.Samples[i].Amplitude
 	}
+	t.data.Xmaa = Xmaa
+	t.data.Ymaa = Ymaa
+	t.data.Zmaa = Zmaa
 	_, err := t.tree.Fill()
 	if err != nil {
 		panic(err)

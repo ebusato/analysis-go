@@ -97,25 +97,4 @@ void plot(TString name, int evt)
 	la5->SetTextColor(kRed);
 	la5->Draw();
 	
-	// Make pulse plot with fit
-	//TF1 *fPulse = new TF1("fPulse",fitf,0,200,7);
-	//g1->Fit("fPulse", "", "", 20, 200);
-	
-	/*
-	TF1* fPulse = new TF1("fPulse", "[0]*-1*TMath::Exp(-(x-[4])/[1]) + [2]*TMath::Exp(-(x - [4])/[3])", 0, 200);
-	fPulse->SetLineColor(kBlack);
-	fPulse->SetParameters(1, 4, 1, 40, 20);
-	c1->cd(3);
-	g1->Fit("fPulse", "", "", 20, 200);
-	//fPulse->Draw();
-	g1->Draw("ap");
-	*/
-	
-	/*
-	TF1* f1 = new TF1("fPulse","[2]*(1 + TMath::Erf((x-[0])/[1])) + [3]*TMath::Erf(-(x-[5])/[4])", 20, 200);
-	f1->SetParameter(4, 40);
-	f1->SetParameter(2, 1200);
-	//f1->Draw();
-	g1->Fit("fPulse", "R");
-	*/
 }

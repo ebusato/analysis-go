@@ -84,6 +84,7 @@ type Pulse struct {
 	Time30              float64 // time at 30% on rising front of the pulse
 	Time80              float64 // time at 80% on rising front of the pulse
 	Time90              float64 // time at 90% on rising front of the pulse
+	TimeFall20          float64 // time at 30% on falling front of the pulse
 	NoLocMaxRisingFront int     // number of local maxima on rising front (counted between 20% and 80%)
 	Channel             *detector.Channel
 }
@@ -239,7 +240,7 @@ func (p *Pulse) Charge() float64 {
 	return p.Charg
 }
 
-// Time returns the time at which the signal is a factor "frac" (second parameter) of its amplitude plus the index ilow.
+// T returns the time at which the signal is a factor "frac" (second parameter) of its amplitude, plus the index ilow corresponding to this time and the number of local maxima on the rising edge.
 // If recomputeAmpl is true, then idxStart is ignored and iteration start at p.AmplIndex.
 // If recomputeAmpl is false, then downwards iterations start at idxStart (it is assumed in this case that the amplitude
 // has been computed prior to the call to this method and thus that p.AmplIndex is available in case the user wants
@@ -330,6 +331,64 @@ func (p *Pulse) CalcRisingFront(recomputeAmpl bool) (float64, float64, float64, 
 	p.Time10 = time10
 	p.NoLocMaxRisingFront = noLocMax8030 + noLocMax3020
 	return p.Time90, p.Time80, p.Time30, p.Time20, p.Time10, p.NoLocMaxRisingFront
+}
+
+// Tfall returns the time at which the signal is a factor "frac" (second parameter) of its amplitude on the falling front of the pulse, plus the index ilow corresponding to this time.
+// If recomputeAmpl is true, then the amplitude of the pulse is recomputed
+func (p *Pulse) Tfall(recomputeAmpl bool, frac float64) (float64, int) {
+	if recomputeAmpl {
+		p.Amplitude()
+	} else if p.Ampl == 0 {
+		panic("pulse amplitude is 0, meaning that the amplitude was never calculated before. You should set the recomputeAmpl flag to true")
+	}
+	//fmt.Println("debug Time:", p.Ampl)
+	// Determination of ilow
+	// ilow is the index of the sample for which the amplitude is just below frac of the pulse amplitude
+	var ilow int
+	var ampllow float64
+	for i := p.AmplIndex; i < len(p.Samples); i++ {
+		//fmt.Println("   ->", i, p.Samples[i].Amplitude)
+		ampl := p.Samples[i].Amplitude
+		if ampl < frac*p.Ampl {
+			ilow = i
+			ampllow = p.Samples[i].Amplitude
+			//fmt.Println("   -> found ilow, breaking")
+			break
+		}
+	}
+	// if ilow == 0, then we do not know Time -> return 0
+	if ilow == 0 {
+		return 0, 0
+	}
+	ihigh := ilow - 1
+	amplhigh := p.Samples[ihigh].Amplitude
+	// Sanity check
+	if amplhigh < frac*p.Ampl {
+		panic("p.Samples[i30high] < frac * p.Ampl, this should never happen")
+	}
+	if amplhigh == ampllow {
+		// This should never happen but just to be sure
+		// Following calculations are undefined in this case
+		return 0, 0
+	}
+	// As of now, work with time rather than with indices
+	tlow := p.Samples[ilow].Time
+	thigh := p.Samples[ihigh].Time
+	// Linear interpolation between tlow and thigh
+	//fmt.Println("  -> ilow, ihigh, tlow, thigh, ampllow, amplhigh:", ilow, ihigh, tlow, thigh, ampllow, amplhigh)
+	t := ((frac*p.Ampl-amplhigh)*tlow + (ampllow-frac*p.Ampl)*thigh) / (ampllow - amplhigh)
+	//fmt.Println("  -> T30 =", T30)
+	if t < thigh || t > tlow {
+		panic("t < thigh || t > tlow")
+	}
+	return t, ilow
+}
+
+// CalcFallingFront returns the time at 30% calculated on the falling front
+func (p *Pulse) CalcFallingFront(recomputeAmpl bool) float64 {
+	time20, _ := p.Tfall(recomputeAmpl, 0.2)
+	p.TimeFall20 = time20
+	return p.TimeFall20
 }
 
 // XaxisType defines the x axis type for plotting
