@@ -137,7 +137,7 @@ void DistribAmplCharge(TString fileName0, TString fileName1="", TString fileName
 // 		gPad->SetTopMargin(0);
 // 		gPad->SetLeftMargin(0);
 // 		gPad->SetRightMargin(0);
-		TLegend* leg = new TLegend(0.6,0.6,1,1);
+		TLegend* leg = new TLegend(0.7,0.6,1,1);
 		for (int iC = 0; iC < 4; iC++) {
 			int iChanAbs240 = 4*iQ + iC;
 			int color;
@@ -184,6 +184,7 @@ void DistribAmplCharge(TString fileName0, TString fileName1="", TString fileName
 		}
 		leg->SetLineWidth(0);
 		leg->Draw();
+		gPad->SaveAs(Form("pad_%i.png", iQ));
 	}
 	of.close();
 }

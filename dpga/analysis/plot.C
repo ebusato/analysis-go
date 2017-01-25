@@ -12,6 +12,11 @@ void plot(TString name, int evt)
 {
 	gStyle->SetPadGridX(true);
 	gStyle->SetPadGridY(true);
+	gStyle->SetOptTitle(0);
+	
+	gStyle->SetPadLeftMargin(0.2);
+	gStyle->SetTitleOffset(2.3, "y");
+	gStyle->SetTitleOffset(1.3, "x");
 	
 	TFile* f = new TFile(name, "read");
 	TTree* tree = (TTree*) f->Get("tree");
@@ -97,4 +102,40 @@ void plot(TString name, int evt)
 	la5->SetTextColor(kRed);
 	la5->Draw();
 	
+	TCanvas* c2 = new TCanvas("c2", "c2", 500, 500);
+	tree->Draw("E >>hE(200, 0, 1200)");
+	TH1F* hE = (TH1F*) gDirectory->Get("hE");
+	hE->SetStats(false);
+	hE->GetXaxis()->SetTitle("E [keV]");
+	hE->GetYaxis()->SetTitle("Counts");
+	c2->SaveAs("c2.png");
+	
+	TCanvas* c3 = new TCanvas("c3", "c3", 500, 500);
+	gPad->SetLogy();
+	hE->Draw();
+	c3->SaveAs("c3.png");
+	
+	TCanvas* c4 = new TCanvas("c4", "c4", 500, 500);
+	tree->Draw("E[0] >>hE0(200, 0, 1200)");
+	TH1F* hE0 = (TH1F*) gDirectory->Get("hE0");
+	hE0->SetStats(false);
+	hE0->GetXaxis()->SetTitle("E [keV]");
+	hE0->GetYaxis()->SetTitle("Counts");
+	tree->Draw("E[0] >>hE0_gamma(200, 0, 1200)", "T30[0] > T30[1]","same");
+	TH1F* hE0_gamma = (TH1F*) gDirectory->Get("hE0_gamma");
+	hE0_gamma->SetLineColor(kRed);
+	hE0_gamma->SetFillColor(kRed);
+	hE0_gamma->SetFillStyle(3002);
+	hE0_gamma->SetStats(false);
+	hE0_gamma->GetXaxis()->SetTitle("E [keV]");
+	hE0_gamma->GetYaxis()->SetTitle("Counts");
+	tree->Draw("E[0] >>hE0_beta(200, 0, 1200)", "T30[0] < T30[1]","same");
+	TH1F* hE0_beta = (TH1F*) gDirectory->Get("hE0_beta");
+	hE0_beta->SetLineColor(kGreen+2);
+	hE0_beta->SetFillColor(kGreen+2);
+	hE0_beta->SetFillStyle(3002);
+	hE0_beta->SetStats(false);
+	hE0_beta->GetXaxis()->SetTitle("E [keV]");
+	hE0_beta->GetYaxis()->SetTitle("Counts");
+	c4->SaveAs("c4.png");
 }
