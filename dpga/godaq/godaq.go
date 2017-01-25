@@ -56,7 +56,7 @@ var (
 	st           = flag.Bool("st", false, "If set, server start time is used rather than client's one")
 	debug        = flag.Bool("d", false, "If set, debugging informations are printed")
 	webad        = flag.String("webad", ":5555", "server address:port")
-	nobro        = flag.Bool("nobro", false, "If set, no webbrowser are open (it's up to the user to open it with the right address)")
+	bro          = flag.Bool("bro", false, "If set, webbrowser is open (if not, it's up to the user to open it with the right address)")
 	sleep        = flag.Bool("s", false, "If set, sleep a bit between events")
 	sigthres     = flag.Uint("sigthres", 800, "Value above which a pulse is considered to have signal")
 	notree       = flag.Bool("notree", false, "If set, no root tree is produced")
@@ -485,7 +485,7 @@ func updateRunsCSV(csvFileName string, runNumber uint32, timeStop uint32, noEven
 }
 
 func webserver() {
-	if !*nobro {
+	if *bro {
 		webbrowser.Open("http://" + *webad)
 	}
 	//http.HandleFunc("/", plotHandle)
