@@ -61,8 +61,8 @@ func NewDQPlot() *DQPlot {
 		HMinRecY:         hbook.NewH1D(240, -60, 60),
 		HMinRecZ:         hbook.NewH1D(300, -150, 150),
 		DeltaT30:         hbook.NewH1D(300, -30, 30),
-		HEnergyAll:       hbook.NewH1D(50, 0, 1000),
-		HEnergyAllMult2:  hbook.NewH1D(50, 0, 1000),
+		HEnergyAll:       hbook.NewH1D(200, 0, 1022),
+		HEnergyAllMult2:  hbook.NewH1D(200, 0, 1022),
 		// 		AmplCorrelation: hbook.NewH2D(50, 0, 0.5, 50, 0, 0.5),
 		AmplCorrelation:   hbook.NewH2D(50, 0, 4095, 50, 0, 4095),
 		EnergyCorrelation: hbook.NewH2D(50, 0, 1000, 50, 0, 1000),
@@ -613,7 +613,7 @@ func (d *DQPlot) MakeEnergyPlot(mult2 bool) *hplot.Plot {
 	}
 	p.X.Label.Text = "Energy (keV)"
 	p.Y.Label.Text = "No entries"
-	p.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
+	p.X.Tick.Marker = &hplot.FreqTicks{N: 9, Freq: 1}
 	var hp *hplot.H1D
 	switch mult2 {
 	case false:
