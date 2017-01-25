@@ -1,8 +1,6 @@
 package trees
 
 import (
-	"fmt"
-
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
@@ -90,7 +88,6 @@ func (t *TreeMult2) Fill(run uint32, ievent uint32, pulse0 *pulse.Pulse, pulse1 
 	t.data.IQuartetAbs60[1] = dpgadetector.FifoID144ToQuartetAbsIdx60(pulse1.Channel.FifoID144(), true)
 	t.data.ILineAbs12[0] = dpgadetector.QuartetAbsIdx60ToLineAbsIdx12(t.data.IQuartetAbs60[0])
 	t.data.ILineAbs12[1] = dpgadetector.QuartetAbsIdx60ToLineAbsIdx12(t.data.IQuartetAbs60[1])
-	fmt.Println(t.data.IQuartetAbs60[0], t.data.ILineAbs12[0], "    ", t.data.IQuartetAbs60[1], t.data.ILineAbs12[1])
 	t.data.E[0] = pulse0.E
 	t.data.E[1] = pulse1.E
 	t.data.Ampl[0] = pulse0.Ampl
