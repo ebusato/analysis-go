@@ -76,6 +76,8 @@
 		var hvplot = ""
 		var minrec1Ddistr = ""
 		var deltat30plot = ""
+		var energyallplot = ""
+		var energyallmult2plot = ""
 		var amplenergyCorrelationplot = ""
 		var hitQuartetsplot = ""
 		
@@ -192,6 +194,10 @@
 			p5.innerHTML = minrec1Ddistr;
 			var p6 = document.getElementById("my-deltat30-plot");
 			p6.innerHTML = deltat30plot;
+			var p60 = document.getElementById("my-energyall-plot");
+			p60.innerHTML = energyallplot;
+			var p61 = document.getElementById("my-energyallmult2-plot");
+			p61.innerHTML = energyallmult2plot;
 			var p7 = document.getElementById("my-amplenergyCorrelation-plot");
 			p7.innerHTML = amplenergyCorrelationplot;
 			var p8 = document.getElementById("my-hitQuartets-plot");
@@ -315,6 +321,8 @@
 				hvplot = data.hv;
 				minrec1Ddistr = data.minrec1Ddistrs
 				deltat30plot = data.deltat30
+				energyallplot = data.energyall
+				energyallmult2plot = data.energyallmult2
 				amplenergyCorrelationplot = data.amplenergycorrelation
 				hitQuartetsplot = data.hitquartets
 				for (var iq = 0; iq < Nquartets; iq += 1) {
@@ -437,8 +445,14 @@
 		<td>
 			<div id="my-mult-plot" class="my-plot-stylecounter"></div>
 		</td>
-		<td width="600" colspan="2">
+		<td width="600" colspan="2" align="center">
 			<div id="my-deltat30-plot"></div>
+		</td>
+		<td width="600" colspan="1">
+			<div id="my-energyall-plot"></div>
+		</td>
+		<td width="600" colspan="1">
+			<div id="my-energyallmult2-plot"></div>
 		</td>
 		</tr>
 		</table>

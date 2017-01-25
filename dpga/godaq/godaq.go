@@ -21,7 +21,6 @@ import (
 
 	"github.com/go-hep/csvutil"
 	"github.com/go-hep/hbook"
-	"github.com/go-hep/hplot"
 	"github.com/toqueteos/webbrowser"
 
 	"golang.org/x/net/websocket"
@@ -227,6 +226,8 @@ type Data struct {
 	MinRec                []XYZ          `json:"minrec"`                // outcome of the minimal reconstruction algorithm
 	MinRec1DDistrs        string         `json:"minrec1Ddistrs"`        // minimal reconstruction X, Y, Z distributions
 	DeltaT30              string         `json:"deltat30"`              // distribution of the difference of T30
+	EnergyAll             string         `json:"energyall"`             // distribution of energy (inclusive)
+	EnergyAllMult2        string         `json:"energyallmult2"`        // distribution of energy of pulses in events with multiplicity=2
 	AmplEnergyCorrelation string         `json:"amplenergycorrelation"` // amplitude or energy correlation for events with multiplicity=2
 	HitQuartets           string         `json:"hitquartets"`           // 2D plot displaying quartets that are hit for events with multiplicity=2
 }
@@ -697,6 +698,8 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 									dqplots.EnergyCorrelation.Fill(pulsesWithSignal[0].E, pulsesWithSignal[1].E, 1)
 								}
 
+								dqplots.HEnergyAllMult2.Fill(pulsesWithSignal[0].E, 1)
+								dqplots.HEnergyAllMult2.Fill(pulsesWithSignal[1].E, 1)
 								quartet0 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(pulsesWithSignal[0].Channel.FifoID144(), true))
 								quartet1 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(pulsesWithSignal[1].Channel.FifoID144(), true))
 								//fmt.Println("quartet0, quartet1:", quartet0, quartet1)
@@ -777,20 +780,14 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							}
 
 							// Make DeltaT30 plot
-							pDeltaT30, err := hplot.New()
-							if err != nil {
-								panic(err)
-							}
-							pDeltaT30.X.Label.Text = "Delta T30 (ns)"
-							pDeltaT30.Y.Label.Text = "No entries"
-							pDeltaT30.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
-							hpDeltaT30, err := hplot.NewH1D(dqplots.DeltaT30)
-							if err != nil {
-								panic(err)
-							}
-							pDeltaT30.Add(hpDeltaT30)
-							pDeltaT30.Add(hplot.NewGrid())
+							pDeltaT30 := dqplots.MakeDeltaT30Plot()
 							DeltaT30svg := utils.RenderSVG(pDeltaT30, 15, 7)
+
+							// Make inclusive energy plots
+							pEnergyAll := dqplots.MakeEnergyPlot(false)
+							EnergyAllsvg := utils.RenderSVG(pEnergyAll, 10, 7)
+							pEnergyAllMult2 := dqplots.MakeEnergyPlot(true)
+							EnergyAllMult2svg := utils.RenderSVG(pEnergyAllMult2, 10, 7)
 
 							// Make AmplCorrelation plot
 							pAmplCorrelation := dqplots.MakeAmplCorrelationPlot()
@@ -842,6 +839,8 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								MinRec:                minrec,
 								MinRec1DDistrs:        minrec1Dsvg,
 								DeltaT30:              DeltaT30svg,
+								EnergyAll:             EnergyAllsvg,
+								EnergyAllMult2:        EnergyAllMult2svg,
 								AmplEnergyCorrelation: Correlationsvg,
 								HitQuartets:           HitQuartetssvg,
 							}

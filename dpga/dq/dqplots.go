@@ -35,6 +35,8 @@ type DQPlot struct {
 	HMinRecY          *hbook.H1D
 	HMinRecZ          *hbook.H1D
 	DeltaT30          *hbook.H1D
+	HEnergyAll        *hbook.H1D
+	HEnergyAllMult2   *hbook.H1D
 	AmplCorrelation   *hbook.H2D
 	EnergyCorrelation *hbook.H2D
 	HitQuartets       *hbook.H2D
@@ -59,6 +61,8 @@ func NewDQPlot() *DQPlot {
 		HMinRecY:         hbook.NewH1D(240, -60, 60),
 		HMinRecZ:         hbook.NewH1D(300, -150, 150),
 		DeltaT30:         hbook.NewH1D(300, -30, 30),
+		HEnergyAll:       hbook.NewH1D(50, 0, 1000),
+		HEnergyAllMult2:  hbook.NewH1D(50, 0, 1000),
 		// 		AmplCorrelation: hbook.NewH2D(50, 0, 0.5, 50, 0, 0.5),
 		AmplCorrelation:   hbook.NewH2D(50, 0, 4095, 50, 0, 4095),
 		EnergyCorrelation: hbook.NewH2D(50, 0, 1000, 50, 0, 1000),
@@ -125,6 +129,7 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 				_, ampl := pulse.Amplitude()
 				d.HAmplitude[i][j].Fill(ampl, 1)
 				d.HEnergy[i][j].Fill(pulse.E, 1)
+				d.HEnergyAll.Fill(pulse.E, 1)
 			}
 			counter++
 		}
@@ -582,6 +587,46 @@ func (d *DQPlot) MakeHitQuartetsPlot() *plot.Plot {
 	pHitQuartets.Add(hplot.NewH2D(d.HitQuartets, p))
 	//pHitQuartets.Add(plotter.NewGrid())
 	return pHitQuartets
+}
+
+func (d *DQPlot) MakeDeltaT30Plot() *hplot.Plot {
+	p, err := hplot.New()
+	if err != nil {
+		panic(err)
+	}
+	p.X.Label.Text = "Delta T30 (ns)"
+	p.Y.Label.Text = "No entries"
+	p.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
+	hp, err := hplot.NewH1D(d.DeltaT30)
+	if err != nil {
+		panic(err)
+	}
+	p.Add(hp)
+	p.Add(hplot.NewGrid())
+	return p
+}
+
+func (d *DQPlot) MakeEnergyPlot(mult2 bool) *hplot.Plot {
+	p, err := hplot.New()
+	if err != nil {
+		panic(err)
+	}
+	p.X.Label.Text = "Energy (keV)"
+	p.Y.Label.Text = "No entries"
+	p.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
+	var hp *hplot.H1D
+	switch mult2 {
+	case false:
+		hp, err = hplot.NewH1D(d.HEnergyAll)
+	case true:
+		hp, err = hplot.NewH1D(d.HEnergyAllMult2)
+	}
+	if err != nil {
+		panic(err)
+	}
+	p.Add(hp)
+	p.Add(hplot.NewGrid())
+	return p
 }
 
 // SaveHistos saves histograms on disk.
