@@ -62,8 +62,9 @@ var (
 	notree       = flag.Bool("notree", false, "If set, no root tree is produced")
 	test         = flag.Bool("test", false,
 		"If set, update runs_test.csv rather than the \"official\" runs.csv file and name by default the output binary file using the following scheme: runXXX_test.bin")
-	refplots = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
-		"Name of the file containing reference plots. If empty, no reference plots are overlayed")
+	//refplots = flag.String("ref", os.Getenv("GOPATH")+"/src/gitlab.in2p3.fr/avirm/analysis-go/dpga/dqref/dq-run37020evtsPedReference.gob",
+	//	"Name of the file containing reference plots. If empty, no reference plots are overlayed")
+	refplots    = flag.String("ref", "", "Name of the file containing reference plots. If empty, no reference plots are overlayed")
 	hvMonDegrad = flag.Uint("hvmondeg", 100, "HV monitoring frequency degradation factor")
 	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
 	distr       = flag.String("distr", "ampl", "Possible values: ampl (default), charge, energy")
