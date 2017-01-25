@@ -1,6 +1,8 @@
 package trees
 
 import (
+	"fmt"
+
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
@@ -13,6 +15,7 @@ type ROOTDataMult2 struct {
 	Evt                 uint32
 	IChanAbs240         [2]uint16
 	IQuartetAbs60       [2]uint8
+	ILineAbs12          [2]uint8
 	E                   [2]float64
 	Ampl                [2]float64
 	Sat                 [2]uint8
@@ -55,6 +58,7 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 	_, err = t.tree.Branch2("Evt", &t.data.Evt, "Evt/i", bufsiz)
 	_, err = t.tree.Branch2("IChanAbs240", &t.data.IChanAbs240, "IChanAbs240[2]/s", bufsiz)
 	_, err = t.tree.Branch2("IQuartetAbs60", &t.data.IQuartetAbs60, "IQuartetAbs60[2]/b", bufsiz)
+	_, err = t.tree.Branch2("ILineAbs12", &t.data.ILineAbs12, "ILineAbs12[2]/b", bufsiz)
 	_, err = t.tree.Branch2("E", &t.data.E, "E[2]/D", bufsiz)
 	_, err = t.tree.Branch2("Ampl", &t.data.Ampl, "Ampl[2]/D", bufsiz)
 	_, err = t.tree.Branch2("Sat", &t.data.Sat, "Sat[2]/b", bufsiz)
@@ -84,6 +88,9 @@ func (t *TreeMult2) Fill(run uint32, ievent uint32, pulse0 *pulse.Pulse, pulse1 
 	t.data.IChanAbs240[1] = uint16(pulse1.Channel.AbsID240())
 	t.data.IQuartetAbs60[0] = dpgadetector.FifoID144ToQuartetAbsIdx60(pulse0.Channel.FifoID144(), true)
 	t.data.IQuartetAbs60[1] = dpgadetector.FifoID144ToQuartetAbsIdx60(pulse1.Channel.FifoID144(), true)
+	t.data.ILineAbs12[0] = dpgadetector.QuartetAbsIdx60ToLineAbsIdx12(t.data.IQuartetAbs60[0])
+	t.data.ILineAbs12[1] = dpgadetector.QuartetAbsIdx60ToLineAbsIdx12(t.data.IQuartetAbs60[1])
+	fmt.Println(t.data.IQuartetAbs60[0], t.data.ILineAbs12[0], "    ", t.data.IQuartetAbs60[1], t.data.ILineAbs12[1])
 	t.data.E[0] = pulse0.E
 	t.data.E[1] = pulse1.E
 	t.data.Ampl[0] = pulse0.Ampl

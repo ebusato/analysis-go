@@ -371,6 +371,10 @@ func FifoID144ToQuartetAbsIdx72(iFifo uint16) uint8 {
 	return uint8(iFifo) / 2
 }
 
+func QuartetAbsIdx60ToLineAbsIdx12(iQuartet uint8) uint8 {
+	return iQuartet / 5
+}
+
 // FEIdAndChanIdToQuartetAbsIdx60 return the quartet absolute Id (0->59)
 // from an input front end (ASM) board id and a channel Id (0 -> 23)
 func FEIdAndChanIdToQuartetAbsIdx60(FEId uint16, ChanId uint16, throwErr bool) uint8 {
@@ -909,8 +913,8 @@ func init() {
 	HVmap[12] = HVSerialChan{SerialNumber: 1, ChannelNumber: 8}
 	HVmap[13] = HVSerialChan{SerialNumber: 1, ChannelNumber: 9}
 	HVmap[14] = HVSerialChan{SerialNumber: 1, ChannelNumber: 10}
-	HVmap[15] = HVSerialChan{SerialNumber: 4, ChannelNumber: 10}  // this inversion between 15 and 16 is weird
-	HVmap[16] = HVSerialChan{SerialNumber: 4, ChannelNumber: 9} // this inversion between 15 and 16 is weird
+	HVmap[15] = HVSerialChan{SerialNumber: 4, ChannelNumber: 10} // this inversion between 15 and 16 is weird -> irrelevant now
+	HVmap[16] = HVSerialChan{SerialNumber: 4, ChannelNumber: 9}  // this inversion between 15 and 16 is weird -> irrelevant now
 	HVmap[17] = HVSerialChan{SerialNumber: 4, ChannelNumber: 8}
 	HVmap[18] = HVSerialChan{SerialNumber: 4, ChannelNumber: 7}
 	HVmap[19] = HVSerialChan{SerialNumber: 4, ChannelNumber: 6}
