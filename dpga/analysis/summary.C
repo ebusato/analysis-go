@@ -74,7 +74,7 @@ void summary(TString fileName0, TString fileName1="", TString fileName2="", TStr
 	hE1->Draw("same");
 	hE1noSat->Draw("same");
 	c1->cd(9);
-	ch.Draw("T30[0] - T30[1]>>hCRT(200,-10,10)");
+	ch.Draw("T30[0] - T30[1]>>hCRT(200,-30,30)");
 	TH1F* hCRT = (TH1F*) gDirectory->Get("hCRT");
 	hCRT->Fit("gaus");
 	hCRT->SetStats(1);

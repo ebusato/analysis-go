@@ -302,11 +302,14 @@ func (p *Pulse) T(recomputeAmpl bool, frac float64, idxStart int) (float64, int,
 	tlow := p.Samples[ilow].Time
 	thigh := p.Samples[ihigh].Time
 	// Linear interpolation between tlow and thigh
-	//fmt.Println("  -> ilow, ihigh, tlow, thigh, ampllow, amplhigh:", ilow, ihigh, tlow, thigh, ampllow, amplhigh)
 	t := ((frac*p.Ampl-ampllow)*thigh + (amplhigh-frac*p.Ampl)*tlow) / (amplhigh - ampllow)
-	//fmt.Println("  -> T30 =", T30)
 	if t > thigh || t < tlow {
-		panic("t > thigh || t < tlow")
+		// 		fmt.Println("   -> t - thigh =", t-thigh)
+		if t-thigh > 0.000000000001 {
+			fmt.Println("  -> ilow, ihigh, tlow, thigh, ampllow, amplhigh:", ilow, ihigh, tlow, thigh, ampllow, amplhigh)
+			fmt.Println("  -> t =", t)
+			log.Printf("t > thigh || t < tlow")
+		}
 	}
 	return t, ilow, noLocMax
 }
