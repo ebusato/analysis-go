@@ -382,7 +382,11 @@ func (p *Pulse) Tfall(recomputeAmpl bool, frac float64) (float64, int) {
 	t := ((frac*p.Ampl-amplhigh)*tlow + (ampllow-frac*p.Ampl)*thigh) / (ampllow - amplhigh)
 	//fmt.Println("  -> T30 =", T30)
 	if t < thigh || t > tlow {
-		panic("t < thigh || t > tlow")
+		if thigh-t > 0.000000000001 {
+			fmt.Println("  -> ilow, ihigh, tlow, thigh, ampllow, amplhigh:", ilow, ihigh, tlow, thigh, ampllow, amplhigh)
+			fmt.Println("  -> t =", t)
+			log.Printf("t < thigh || t > tlow")
+		}
 	}
 	return t, ilow
 }
