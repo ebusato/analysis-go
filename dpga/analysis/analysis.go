@@ -141,7 +141,7 @@ func main() {
 				pulsesWithSignal[1].CalcRisingFront(true)
 				pulsesWithSignal[0].CalcFallingFront(false)
 				pulsesWithSignal[1].CalcFallingFront(false)
-				treeMult2.Fill(hdr.RunNumber, uint32(event.ID), pulsesWithSignal[0], pulsesWithSignal[1], x, y, z)
+				treeMult2.Fill(hdr.RunNumber, uint32(event.ID), event.Counters, pulsesWithSignal[0], pulsesWithSignal[1], x, y, z)
 			}
 		}
 		////////////////////////////////////////////////////////////

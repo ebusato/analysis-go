@@ -690,7 +690,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 									pulsesWithSignal[0].CalcFallingFront(false)
 									pulsesWithSignal[1].CalcFallingFront(false)
 									if treeMult2 != nil {
-										treeMult2.Fill(run, uint32(event.ID), pulsesWithSignal[0], pulsesWithSignal[1], x, y, z)
+										treeMult2.Fill(run, uint32(event.ID), event.Counters, pulsesWithSignal[0], pulsesWithSignal[1], x, y, z)
 									}
 								}
 								dqplots.AmplCorrelation.Fill(pulsesWithSignal[0].Ampl, pulsesWithSignal[1].Ampl, 1)
@@ -821,6 +821,9 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							Correlationsvg := AmplCorrelationsvg
 							if *distr == "energy" {
 								Correlationsvg = EnergyCorrelationsvg
+							}
+							if event.Counters[0] != 0 {
+								fmt.Println(event.Counters[4], event.Counters[0], uint64(event.Counters[4])*uint64(64000000)/uint64(event.Counters[0]))
 							}
 							datac <- Data{
 								EvtID:                 event.ID,

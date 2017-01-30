@@ -9,7 +9,7 @@ import (
 
 type Event struct {
 	Clusters        []pulse.Cluster
-	ClustersWoData  [12]pulse.Cluster  // These are the 12 clusters corresponding to the 12*4 channels unused for data at the end of each ASM board
+	ClustersWoData  [12]pulse.Cluster // These are the 12 clusters corresponding to the 12*4 channels unused for data at the end of each ASM board
 	ID              uint
 	TimeStamp       uint64
 	Counters        []uint32
@@ -52,7 +52,7 @@ func (e *Event) Copy() *Event {
 			*oldPulses[1].Copy(),
 			*oldPulses[2].Copy(),
 			*oldPulses[3].Copy()}
-		newevent.ClustersWoData[i].ID = e.ClustersWoData[i].ID	
+		newevent.ClustersWoData[i].ID = e.ClustersWoData[i].ID
 	}
 	return newevent
 }
@@ -140,23 +140,23 @@ func (e *Event) PushPedestalSamples() {
 	for iCluster := range e.Clusters {
 		cluster := &e.Clusters[iCluster]
 		e.pushPedestalCluster(cluster)
-// 		for iPulse := range cluster.Pulses {
-// 			pulse := &cluster.Pulses[iPulse]
-// 			if pulse.HasSignal {
-// 				continue
-// 			}
-// 			for iSample := range pulse.Samples {
-// 				sample := &pulse.Samples[iSample]
-// 				capacitor := sample.Capacitor
-// 				if capacitor != nil {
-// 					noSamples := capacitor.NoPedestalSamples()
-// 					if e.ID == 0 && noSamples != 0 {
-// 						log.Fatal("noSamples != 0!")
-// 					}
-// 					capacitor.AddPedestalSample(sample.Amplitude)
-// 				}
-// 			}
-// 		}
+		// 		for iPulse := range cluster.Pulses {
+		// 			pulse := &cluster.Pulses[iPulse]
+		// 			if pulse.HasSignal {
+		// 				continue
+		// 			}
+		// 			for iSample := range pulse.Samples {
+		// 				sample := &pulse.Samples[iSample]
+		// 				capacitor := sample.Capacitor
+		// 				if capacitor != nil {
+		// 					noSamples := capacitor.NoPedestalSamples()
+		// 					if e.ID == 0 && noSamples != 0 {
+		// 						log.Fatal("noSamples != 0!")
+		// 					}
+		// 					capacitor.AddPedestalSample(sample.Amplitude)
+		// 				}
+		// 			}
+		// 		}
 	}
 	for iCluster := range e.ClustersWoData {
 		cluster := &e.ClustersWoData[iCluster]
@@ -186,24 +186,41 @@ func (e *Event) PushTimeDepOffsetSamples() {
 	for iCluster := range e.Clusters {
 		cluster := &e.Clusters[iCluster]
 		e.pushTimeDepOffsetCluster(cluster)
-// 		for iPulse := range cluster.Pulses {
-// 			pulse := &cluster.Pulses[iPulse]
-// 			if pulse.HasSignal {
-// 				continue
-// 			}
-// 			ch := pulse.Channel
-// 			if ch == nil {
-// 				panic("pulse has no channel associated to it.")
-// 			}
-// 			ch.IncrementNoTimeDepOffsetSamples()
-// 			for iSample := range pulse.Samples {
-// 				sample := &pulse.Samples[iSample]
-// 				ch.AddTimeDepOffsetSample(iSample, sample.Amplitude)
-// 			}
-// 		}
+		// 		for iPulse := range cluster.Pulses {
+		// 			pulse := &cluster.Pulses[iPulse]
+		// 			if pulse.HasSignal {
+		// 				continue
+		// 			}
+		// 			ch := pulse.Channel
+		// 			if ch == nil {
+		// 				panic("pulse has no channel associated to it.")
+		// 			}
+		// 			ch.IncrementNoTimeDepOffsetSamples()
+		// 			for iSample := range pulse.Samples {
+		// 				sample := &pulse.Samples[iSample]
+		// 				ch.AddTimeDepOffsetSample(iSample, sample.Amplitude)
+		// 			}
+		// 		}
 	}
 	for iCluster := range e.ClustersWoData {
 		cluster := &e.ClustersWoData[iCluster]
 		e.pushTimeDepOffsetCluster(cluster)
 	}
 }
+
+// type Trigger int
+//
+// const (
+// 	LvsR Trigger = iota + 1
+// 	Lvs3L
+// 	LvsL
+// 	None
+// )
+//
+// func WhichTrigger(pulsesWithSignal []*pulse.Pulse) Trigger {
+// 	var trig Trigger
+// 	for i := range pulsesWithSignal {
+//
+// 	}
+// 	return trig
+// }

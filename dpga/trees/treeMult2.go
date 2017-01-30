@@ -9,8 +9,44 @@ import (
 )
 
 type ROOTDataMult2 struct {
-	Run                 uint32
-	Evt                 uint32
+	Run         uint32
+	Evt         uint32
+	TimeStamp   uint64
+	RateBoard1  float64
+	RateBoard2  float64
+	RateBoard3  float64
+	RateBoard4  float64
+	RateBoard5  float64
+	RateBoard6  float64
+	RateBoard7  float64
+	RateBoard8  float64
+	RateBoard9  float64
+	RateBoard10 float64
+	RateBoard11 float64
+	RateBoard12 float64
+	RateLvsR1   float64
+	RateLvsR2   float64
+	RateLvsR3   float64
+	RateLvsR4   float64
+	RateLvsR5   float64
+	RateLvsR6   float64
+	RateLvsR7   float64
+	RateLvs3L1  float64
+	RateLvs3L2  float64
+	RateLvs3L3  float64
+	RateLvs3L4  float64
+	RateLvs3L5  float64
+	RateLvs3L6  float64
+	RateLvs3L7  float64
+	RateLvsL1   float64
+	RateLvsL2   float64
+	RateLvsL3   float64
+	RateLvsL4   float64
+	RateLvsL5   float64
+	RateLvsL6   float64
+	RateLvsL7   float64
+	// 	TestSize            uint32
+	// 	TestSlice           []float64
 	IChanAbs240         [2]uint16
 	IQuartetAbs60       [2]uint8
 	ILineAbs12          [2]uint8
@@ -57,6 +93,42 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 
 	_, err = t.tree.Branch2("Run", &t.data.Run, "Run/i", bufsiz)
 	_, err = t.tree.Branch2("Evt", &t.data.Evt, "Evt/i", bufsiz)
+	_, err = t.tree.Branch2("TimeStamp", &t.data.TimeStamp, "TimeStamp/l", bufsiz)
+	_, err = t.tree.Branch2("RateBoard1", &t.data.RateBoard1, "RateBoard1/D", bufsiz)
+	_, err = t.tree.Branch2("RateBoard2", &t.data.RateBoard2, "RateBoard2/D", bufsiz)
+	_, err = t.tree.Branch2("RateBoard3", &t.data.RateBoard3, "RateBoard3/D", bufsiz)
+	_, err = t.tree.Branch2("RateBoard4", &t.data.RateBoard4, "RateBoard4/D", bufsiz)
+	_, err = t.tree.Branch2("RateBoard5", &t.data.RateBoard5, "RateBoard5/D", bufsiz)
+	_, err = t.tree.Branch2("RateBoard6", &t.data.RateBoard6, "RateBoard6/D", bufsiz)
+	_, err = t.tree.Branch2("RateBoard7", &t.data.RateBoard7, "RateBoard7/D", bufsiz)
+	_, err = t.tree.Branch2("RateBoard8", &t.data.RateBoard8, "RateBoard8/D", bufsiz)
+	_, err = t.tree.Branch2("RateBoard9", &t.data.RateBoard9, "RateBoard9/D", bufsiz)
+	_, err = t.tree.Branch2("RateBoard10", &t.data.RateBoard10, "RateBoard10/D", bufsiz)
+	_, err = t.tree.Branch2("RateBoard11", &t.data.RateBoard11, "RateBoard11/D", bufsiz)
+	_, err = t.tree.Branch2("RateBoard12", &t.data.RateBoard12, "RateBoard12/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsR1", &t.data.RateLvsR1, "RateLvsR1/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsR2", &t.data.RateLvsR2, "RateLvsR2/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsR3", &t.data.RateLvsR3, "RateLvsR3/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsR4", &t.data.RateLvsR4, "RateLvsR4/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsR5", &t.data.RateLvsR5, "RateLvsR5/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsR6", &t.data.RateLvsR6, "RateLvsR6/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsR7", &t.data.RateLvsR7, "RateLvsR7/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvs3L1", &t.data.RateLvs3L1, "RateLvs3L1/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvs3L2", &t.data.RateLvs3L2, "RateLvs3L2/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvs3L3", &t.data.RateLvs3L3, "RateLvs3L3/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvs3L4", &t.data.RateLvs3L4, "RateLvs3L4/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvs3L5", &t.data.RateLvs3L5, "RateLvs3L5/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvs3L6", &t.data.RateLvs3L6, "RateLvs3L6/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvs3L7", &t.data.RateLvs3L7, "RateLvs3L7/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsL1", &t.data.RateLvsL1, "RateLvsL1/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsL2", &t.data.RateLvsL2, "RateLvsL2/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsL3", &t.data.RateLvsL3, "RateLvsL3/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsL4", &t.data.RateLvsL4, "RateLvsL4/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsL5", &t.data.RateLvsL5, "RateLvsL5/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsL6", &t.data.RateLvsL6, "RateLvsL6/D", bufsiz)
+	_, err = t.tree.Branch2("RateLvsL7", &t.data.RateLvsL7, "RateLvsL7/D", bufsiz)
+	// 	_, err = t.tree.Branch2("TestSize", &t.data.TestSize, "TestSize/i", bufsiz)
+	// 	_, err = t.tree.Branch("TestSlice", &t.data.TestSlice, bufsiz, 0)
 	_, err = t.tree.Branch2("IChanAbs240", &t.data.IChanAbs240, "IChanAbs240[2]/s", bufsiz)
 	_, err = t.tree.Branch2("IQuartetAbs60", &t.data.IQuartetAbs60, "IQuartetAbs60[2]/b", bufsiz)
 	_, err = t.tree.Branch2("ILineAbs12", &t.data.ILineAbs12, "ILineAbs12[2]/b", bufsiz)
@@ -85,9 +157,48 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 	return &t
 }
 
-func (t *TreeMult2) Fill(run uint32, ievent uint32, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse, Xmaa, Ymaa, Zmaa float64) {
+func (t *TreeMult2) Fill(run uint32, ievent uint32, counters []uint32, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse, Xmaa, Ymaa, Zmaa float64) {
 	t.data.Run = run
 	t.data.Evt = ievent
+	t.data.TimeStamp = uint64(counters[3])<<32 | uint64(counters[2])
+	if counters[0] != 0 {
+		t.data.RateBoard1 = float64(counters[4]) * 64e6 / float64(counters[0])
+		t.data.RateBoard2 = float64(counters[5]) * 64e6 / float64(counters[0])
+		t.data.RateBoard3 = float64(counters[6]) * 64e6 / float64(counters[0])
+		t.data.RateBoard4 = float64(counters[7]) * 64e6 / float64(counters[0])
+		t.data.RateBoard5 = float64(counters[8]) * 64e6 / float64(counters[0])
+		t.data.RateBoard6 = float64(counters[9]) * 64e6 / float64(counters[0])
+		t.data.RateBoard7 = float64(counters[10]) * 64e6 / float64(counters[0])
+		t.data.RateBoard8 = float64(counters[11]) * 64e6 / float64(counters[0])
+		t.data.RateBoard9 = float64(counters[12]) * 64e6 / float64(counters[0])
+		t.data.RateBoard10 = float64(counters[13]) * 64e6 / float64(counters[0])
+		t.data.RateBoard11 = float64(counters[14]) * 64e6 / float64(counters[0])
+		t.data.RateBoard12 = float64(counters[15]) * 64e6 / float64(counters[0])
+		t.data.RateLvsR1 = float64(counters[16]) * 64e6 / float64(counters[0])
+		t.data.RateLvsR2 = float64(counters[17]) * 64e6 / float64(counters[0])
+		t.data.RateLvsR3 = float64(counters[18]) * 64e6 / float64(counters[0])
+		t.data.RateLvsR4 = float64(counters[19]) * 64e6 / float64(counters[0])
+		t.data.RateLvsR5 = float64(counters[20]) * 64e6 / float64(counters[0])
+		t.data.RateLvsR6 = float64(counters[21]) * 64e6 / float64(counters[0])
+		t.data.RateLvsR7 = float64(counters[22]) * 64e6 / float64(counters[0])
+		t.data.RateLvs3L1 = float64(counters[30]) * 64e6 / float64(counters[0])
+		t.data.RateLvs3L2 = float64(counters[31]) * 64e6 / float64(counters[0])
+		t.data.RateLvs3L3 = float64(counters[32]) * 64e6 / float64(counters[0])
+		t.data.RateLvs3L4 = float64(counters[33]) * 64e6 / float64(counters[0])
+		t.data.RateLvs3L5 = float64(counters[34]) * 64e6 / float64(counters[0])
+		t.data.RateLvs3L6 = float64(counters[35]) * 64e6 / float64(counters[0])
+		t.data.RateLvs3L7 = float64(counters[36]) * 64e6 / float64(counters[0])
+		t.data.RateLvsL1 = float64(counters[23]) * 64e6 / float64(counters[0])
+		t.data.RateLvsL2 = float64(counters[24]) * 64e6 / float64(counters[0])
+		t.data.RateLvsL3 = float64(counters[25]) * 64e6 / float64(counters[0])
+		t.data.RateLvsL4 = float64(counters[26]) * 64e6 / float64(counters[0])
+		t.data.RateLvsL5 = float64(counters[27]) * 64e6 / float64(counters[0])
+		t.data.RateLvsL6 = float64(counters[28]) * 64e6 / float64(counters[0])
+		t.data.RateLvsL7 = float64(counters[29]) * 64e6 / float64(counters[0])
+	}
+	// 	t.data.TestSize = 1
+	// 	t.data.TestSlice = make([]float64, t.data.TestSize)
+	// 	t.data.TestSlice[0] = 13
 	t.data.IChanAbs240[0] = uint16(pulse0.Channel.AbsID240())
 	t.data.IChanAbs240[1] = uint16(pulse1.Channel.AbsID240())
 	t.data.IQuartetAbs60[0] = dpgadetector.FifoID144ToQuartetAbsIdx60(pulse0.Channel.FifoID144(), true)
