@@ -69,6 +69,7 @@ type ROOTDataMult2 struct {
 	Xmaa                float64
 	Ymaa                float64
 	Zmaa                float64
+	TRF                 float64
 }
 
 type TreeMult2 struct {
@@ -151,6 +152,7 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 	_, err = t.tree.Branch2("Xmaa", &t.data.Xmaa, "Xmaa/D", bufsiz)
 	_, err = t.tree.Branch2("Ymaa", &t.data.Ymaa, "Ymaa/D", bufsiz)
 	_, err = t.tree.Branch2("Zmaa", &t.data.Zmaa, "Zmaa/D", bufsiz)
+	_, err = t.tree.Branch2("TRF", &t.data.TRF, "TRF/D", bufsiz)
 
 	//t.data.Pulse[0] = make([]float64, dpgadetector.Det.NoSamples())
 	//t.data.Pulse[1] = make([]float64, dpgadetector.Det.NoSamples())
