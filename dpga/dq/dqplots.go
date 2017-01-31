@@ -23,23 +23,24 @@ import (
 )
 
 type DQPlot struct {
-	Nevents           uint
-	HFrequency        *hbook.H1D
-	HSatFrequency     *hbook.H1D
-	HMultiplicity     *hbook.H1D
-	HSatMultiplicity  *hbook.H1D
-	HCharge           [][]hbook.H1D
-	HAmplitude        [][]hbook.H1D
-	HEnergy           [][]hbook.H1D
-	HMinRecX          *hbook.H1D
-	HMinRecY          *hbook.H1D
-	HMinRecZ          *hbook.H1D
-	DeltaT30          *hbook.H1D
-	HEnergyAll        *hbook.H1D
-	HEnergyAllMult2   *hbook.H1D
-	AmplCorrelation   *hbook.H2D
-	EnergyCorrelation *hbook.H2D
-	HitQuartets       *hbook.H2D
+	Nevents            uint
+	HFrequency         *hbook.H1D
+	HSatFrequency      *hbook.H1D
+	HMultiplicity      *hbook.H1D
+	HSatMultiplicity   *hbook.H1D
+	HCharge            [][]hbook.H1D
+	HAmplitude         [][]hbook.H1D
+	HEnergy            [][]hbook.H1D
+	HMinRecX           *hbook.H1D
+	HMinRecY           *hbook.H1D
+	HMinRecZ           *hbook.H1D
+	DeltaT30           *hbook.H1D
+	HEnergyAll         *hbook.H1D
+	HEnergyAllMult2    *hbook.H1D
+	AmplCorrelation    *hbook.H2D
+	EnergyCorrelation  *hbook.H2D
+	HitQuartets        *hbook.H2D
+	HEnergyVsDeltaggRF *hbook.H2D
 
 	HV [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
 
@@ -64,9 +65,10 @@ func NewDQPlot() *DQPlot {
 		HEnergyAll:       hbook.NewH1D(200, 0, 1022),
 		HEnergyAllMult2:  hbook.NewH1D(200, 0, 1022),
 		// 		AmplCorrelation: hbook.NewH2D(50, 0, 0.5, 50, 0, 0.5),
-		AmplCorrelation:   hbook.NewH2D(50, 0, 4095, 50, 0, 4095),
-		EnergyCorrelation: hbook.NewH2D(50, 0, 1000, 50, 0, 1000),
-		HitQuartets:       hbook.NewH2D(30, 0, 30, 30, 30, 60),
+		AmplCorrelation:    hbook.NewH2D(50, 0, 4095, 50, 0, 4095),
+		EnergyCorrelation:  hbook.NewH2D(50, 0, 1000, 50, 0, 1000),
+		HitQuartets:        hbook.NewH2D(30, 0, 30, 30, 30, 60),
+		HEnergyVsDeltaggRF: hbook.NewH2D(50, 0, 1000, 40, 0, 40),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
