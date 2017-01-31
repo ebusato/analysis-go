@@ -12,6 +12,7 @@ import (
 	"github.com/gonum/plot/vg"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/calib/selectCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
@@ -25,9 +26,10 @@ func main() {
 	var (
 		infileName = flag.String("i", "", "Name of the input file.")
 		noEvents   = flag.Uint("n", 10000000, "Number of events to process.")
-		ped        = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
-		tdo        = flag.String("tdo", "", "Name of the csv file containing time dependent offsets. If not set, time dependent offsets are not applied. Relevant only when ped!=\"\".")
-		en         = flag.String("en", "", "Name of the csv file containing energy calibration constants. If not set, energy calibration is not applied.")
+		calib      = flag.String("calib", "", "String indicating which calib to use (e.g. A1 for period A, version 1)")
+		noped      = flag.Bool("noped", false, "If specified, no pedestal correction applied")
+		notdo      = flag.Bool("notdo", false, "If specified, no time dependent offset correction applied")
+		noen       = flag.Bool("noen", false, "If specified, no energy calibration applied.")
 		wGob       = flag.String("wgob", "dqplots.gob", "Name of the output gob file containing dq plots. If not set, the gob file is not produced.")
 	)
 
@@ -56,15 +58,20 @@ func main() {
 	}
 
 	// Start doing concrete analysis
-
-	if *ped != "" {
-		dpgadetector.Det.ReadPedestalsFile(*ped)
-	}
-	if *tdo != "" {
-		dpgadetector.Det.ReadTimeDepOffsetsFile(*tdo)
-	}
-	if *en != "" {
-		dpgadetector.Det.ReadEnergyCalibFile(*en)
+	doPedestal := false
+	doTimeDepOffset := false
+	doEnergyCalib := false
+	if *calib != "" {
+		selectCalib.Which(*calib)
+		if !*noped {
+			doPedestal = true
+		}
+		if !*notdo {
+			doTimeDepOffset = true
+		}
+		if !*noen {
+			doEnergyCalib = true
+		}
 	}
 	dqplots := dq.NewDQPlot()
 
@@ -79,18 +86,6 @@ func main() {
 		}
 		///////////////////////////////////////////////////////////
 		// Corrections
-		doPedestal := false
-		doTimeDepOffset := false
-		doEnergyCalib := false
-		if *ped != "" {
-			doPedestal = true
-		}
-		if *tdo != "" {
-			doTimeDepOffset = true
-		}
-		if *en != "" {
-			doEnergyCalib = true
-		}
 		event = applyCorrCalib.CorrectEvent(event, doPedestal, doTimeDepOffset, doEnergyCalib)
 		///////////////////////////////////////////////////////////
 

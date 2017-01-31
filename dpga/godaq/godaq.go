@@ -26,6 +26,7 @@ import (
 	"golang.org/x/net/websocket"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/calib/selectCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
@@ -67,9 +68,10 @@ var (
 	hvMonDegrad = flag.Uint("hvmondeg", 100, "HV monitoring frequency degradation factor")
 	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
 	distr       = flag.String("distr", "ampl", "Possible values: ampl (default), charge, energy")
-	ped         = flag.String("ped", "", "Name of the csv file containing pedestal constants. If not set, pedestal corrections are not applied.")
-	tdo         = flag.String("tdo", "", "Name of the csv file containing time dependent offsets. If not set, time dependent offsets are not applied. Relevant only when ped!=\"\".")
-	en          = flag.String("en", "", "Name of the csv file containing energy calibration constants. If not set, energy calibration is not applied.")
+	calib       = flag.String("calib", "", "String indicating which calib to use (e.g. A1 for period A, version 1)")
+	noped       = flag.Bool("noped", false, "If specified, no pedestal correction applied")
+	notdo       = flag.Bool("notdo", false, "If specified, no time dependent offset correction applied")
+	noen        = flag.Bool("noen", false, "If specified, no energy calibration applied.")
 )
 
 // XY is a struct used to store a couple of values
@@ -580,14 +582,20 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 // func stream(terminateStream chan bool, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
-	if *ped != "" {
-		dpgadetector.Det.ReadPedestalsFile(*ped)
-	}
-	if *tdo != "" {
-		dpgadetector.Det.ReadTimeDepOffsetsFile(*tdo)
-	}
-	if *en != "" {
-		dpgadetector.Det.ReadEnergyCalibFile(*en)
+	doPedestal := false
+	doTimeDepOffset := false
+	doEnergyCalib := false
+	if *calib != "" {
+		selectCalib.Which(*calib)
+		if !*noped {
+			doPedestal = true
+		}
+		if !*notdo {
+			doTimeDepOffset = true
+		}
+		if !*noen {
+			doEnergyCalib = true
+		}
 	}
 	noEventsForMon := uint64(0)
 	dqplots := dq.NewDQPlot()
@@ -633,18 +641,6 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 					if !pauseMonBool {
 						//////////////////////////////////////////////////////
 						// Corrections
-						doPedestal := false
-						doTimeDepOffset := false
-						doEnergyCalib := false
-						if *ped != "" {
-							doPedestal = true
-						}
-						if *tdo != "" {
-							doTimeDepOffset = true
-						}
-						if *en != "" {
-							doEnergyCalib = true
-						}
 						event = applyCorrCalib.CorrectEvent(event, doPedestal, doTimeDepOffset, doEnergyCalib)
 						//////////////////////////////////////////////////////
 						dqplots.FillHistos(event)
