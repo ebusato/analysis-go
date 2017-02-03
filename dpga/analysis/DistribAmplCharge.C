@@ -21,12 +21,13 @@ TF1* Fit(TH1F* h) {
 	Double_t low = 1400;
 	Double_t high = 3000;
 	TF1* f = 0;
-	h->GetXaxis()->SetRange(h->GetXaxis()->FindBin(0.),h->GetXaxis()->FindBin(3000.));
+	h->GetXaxis()->SetRange(h->GetXaxis()->FindBin(0.),h->GetXaxis()->FindBin(3500.));
 	int maxbin = h->GetMaximumBin();
 	double AbscissaAtMax = h->GetXaxis()->GetBinCenter(maxbin);
 	//cout << "AbscissaAtMax = " << AbscissaAtMax << endl;
 	h->Fit("gaus", "Q", "", AbscissaAtMax - 0.20*AbscissaAtMax, AbscissaAtMax + 0.20*AbscissaAtMax);
 	f = h->GetFunction("gaus");
+	h->GetXaxis()->SetRange(h->GetXaxis()->FindBin(0.),h->GetXaxis()->FindBin(4095.));
 	/*
 	for(int i = 0; i < 3; i++) {
 		h->Fit("gaus", "Q", "", low, high);
