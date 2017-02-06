@@ -52,7 +52,9 @@ TF1* Fit(TH1F* h) {
 	return f;
 }
 
-void DistribAmplCharge(TString fileName0, TString fileName1="", TString fileName2="", TString fileName3="", TString fileName4="") {
+void DistribAmplCharge(TString fileName0, TString fileName1="", TString fileName2="", TString fileName3="", TString fileName4="", 
+		       TString fileName5="", TString fileName6="", TString fileName7="", 
+		       TString fileName8="", TString fileName9="") {
 	gStyle->SetOptStat(0);
 	gStyle->SetOptTitle(0);
 	
@@ -69,6 +71,21 @@ void DistribAmplCharge(TString fileName0, TString fileName1="", TString fileName
 	}
 	if(fileName4 != "") {
 		ch.Add(fileName4);
+	}
+	if(fileName5 != "") {
+		ch.Add(fileName5);
+	}
+	if(fileName6 != "") {
+		ch.Add(fileName6);
+	}
+	if(fileName7 != "") {
+		ch.Add(fileName7);
+	}
+	if(fileName8 != "") {
+		ch.Add(fileName8);
+	}
+	if(fileName9 != "") {
+		ch.Add(fileName9);
 	}
 	
         TTreeReader reader(&ch);
