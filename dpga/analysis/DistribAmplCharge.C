@@ -193,7 +193,7 @@ void DistribAmplCharge(TString fileName0, TString fileName1="", TString fileName
 					Double_t mean = fitfunc->GetParameter(1);
 					Double_t sigma = fitfunc->GetParameter(2);
 					Double_t meanErr = fitfunc->GetParError(1);
-					cout << " ->  " << mean << "  " << meanErr << "  " << sigma;
+					cout << " ->  " << mean << "  " << meanErr << "  " << sigma << "  " << sigma/mean*100*2.35 << "%" ;
 					if(sigma < 500 && meanErr < 0.20*mean) {
 						of << iChanAbs240 << " " << mean << " " << meanErr << endl;
 					} else {
