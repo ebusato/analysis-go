@@ -132,6 +132,12 @@ void DistribAmplCharge(TString fileName0, TString fileName1="", TString fileName
 	   << " " << fileName1.Data() 
 	   << " " << fileName2.Data()
 	   << " " << fileName3.Data()
+	   << " " << fileName4.Data()
+	   << " " << fileName5.Data()
+	   << " " << fileName6.Data()
+	   << " " << fileName7.Data()
+	   << " " << fileName8.Data()
+	   << " " << fileName9.Data()
 	   << ")" << endl;
 	of << "# Calibration constant defined as the number of ADC counts corresponding to 511 keV" << endl;
         of << "# iChannelAbs240 calibConstant calibConstantError " << endl;
