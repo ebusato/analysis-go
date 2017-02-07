@@ -1,36 +1,51 @@
 package main
 
 import (
+	"fmt"
+	"math"
 	"math/rand"
 
 	"github.com/gonum/stat/distuv"
 )
 
-type source struct {
+type Isotope struct {
 	Name string
-	Activity float64
-	N0 float64
+	T    float64 // half life in seconds
 }
 
-type process struct {
-	Name string
-	Rate float64
+// return value is in s-1
+func (i *Isotope) Lambda() float64 {
+	return math.Ln2 / i.T
 }
 
-type event struct {
-	Proc *process
-	T    float64 // time
+type Source struct {
+	Isotope   Isotope
+	Activity0 float64 // initial activity in Bq
+	T0        float64 // initial time in seconds
 }
 
-func newEvent(proc *process) *event {
+// t is in seconds
+func (s *Source) Activity(t float64) float64 {
+	return s.Activity0 * math.Exp(-1*s.Isotope.Lambda()*(t-s.T0))
+}
+
+// t is in seconds
+func (s *Source) NoNuclei(t float64) float64 {
+	return s.Activity(t) / s.Isotope.Lambda()
+}
+
+type Event struct {
+	Source *Source
+	Time   float64
+}
+
+func NewEvent(s *Source) *Event {
 	dist := distuv.Exponential{
-		Rate:   proc.Rate,
-		Source: rand.New(rand.NewSource(0)),
+		Rate:   s.Isotope.Lambda(),
+		Source: rand.New(rand.NewSource(99)),
 	}
 
-	var e *event
-	e.Proc = proc
-	e.T = dist.Rand()
+	e := &Event{Source: s, Time: dist.Rand()}
 	return e
 
 	/*
@@ -66,11 +81,20 @@ func newEvent(proc *process) *event {
 }
 
 func main() {
-	const npoints = 10000
-	
-	var na22_2MBq
-	
-	for i := 0; i < npoints; i++ {
-		newEvent(nil)
+	// Set initial and final run time
+	const ti = 0   // seconds
+	const tf = 200 // seconds
+
+	na22 := Isotope{Name: "Na22", T: 8.2e7}
+	na22_2MBq := &Source{Isotope: na22, Activity0: 2.69e6, T0: -1.077e8}
+
+	fmt.Println(" act =", na22_2MBq.Activity(ti), na22_2MBq.NoNuclei(ti))
+
+	na22_2MBq_noDecays := na22_2MBq.NoNuclei(ti) - na22_2MBq.NoNuclei(tf)
+	fmt.Println(" na22_2MBq_noDecays=", na22_2MBq_noDecays)
+
+	for i := int64(0); i < 10; i++ {
+		evt_Na22_2MBq := NewEvent(na22_2MBq)
+		fmt.Println("t =", evt_Na22_2MBq.Time)
 	}
 }
