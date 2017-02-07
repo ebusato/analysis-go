@@ -208,7 +208,7 @@ void DistribAmplCharge(TString fileName0, TString fileName1="", TString fileName
 		}
 		leg->SetLineWidth(0);
 		leg->Draw();
-		gPad->SaveAs(Form("pad_%i.png", iQ));
+		//gPad->SaveAs(Form("pad_%i.png", iQ));
 	}
 	of.close();
 }
