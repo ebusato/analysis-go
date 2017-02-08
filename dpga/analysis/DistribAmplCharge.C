@@ -17,17 +17,25 @@ const std::string currentDateTime() {
     return buf;
 }
 
-TF1* Fit(TH1F* h) {
+TF1* Fit(bool ampl, TH1F* h) {
 	Double_t low = 1400;
 	Double_t high = 3000;
 	TF1* f = 0;
-	h->GetXaxis()->SetRange(h->GetXaxis()->FindBin(0.),h->GetXaxis()->FindBin(3500.));
+	if(ampl) {
+		h->GetXaxis()->SetRange(h->GetXaxis()->FindBin(0.),h->GetXaxis()->FindBin(3500.));
+	} else {
+		h->GetXaxis()->SetRange(h->GetXaxis()->FindBin(0.),h->GetXaxis()->FindBin(1000.));
+	}
 	int maxbin = h->GetMaximumBin();
 	double AbscissaAtMax = h->GetXaxis()->GetBinCenter(maxbin);
 	//cout << "AbscissaAtMax = " << AbscissaAtMax << endl;
 	h->Fit("gaus", "Q", "", AbscissaAtMax - 0.20*AbscissaAtMax, AbscissaAtMax + 0.20*AbscissaAtMax);
 	f = h->GetFunction("gaus");
-	h->GetXaxis()->SetRange(h->GetXaxis()->FindBin(0.),h->GetXaxis()->FindBin(4095.));
+	if(ampl) {
+		h->GetXaxis()->SetRange(h->GetXaxis()->FindBin(0.),h->GetXaxis()->FindBin(4095.));
+	} else {
+		h->GetXaxis()->SetRange(h->GetXaxis()->FindBin(0.),h->GetXaxis()->FindBin(1022.));
+	}
 	/*
 	for(int i = 0; i < 3; i++) {
 		h->Fit("gaus", "Q", "", low, high);
@@ -52,7 +60,7 @@ TF1* Fit(TH1F* h) {
 	return f;
 }
 
-void DistribAmplCharge(TString fileName0, TString fileName1="", TString fileName2="", TString fileName3="", TString fileName4="", 
+void DistribAmplCharge(bool ampl, TString fileName0, TString fileName1="", TString fileName2="", TString fileName3="", TString fileName4="", 
 		       TString fileName5="", TString fileName6="", TString fileName7="", 
 		       TString fileName8="", TString fileName9="") {
 	gStyle->SetOptStat(0);
@@ -92,12 +100,16 @@ void DistribAmplCharge(TString fileName0, TString fileName1="", TString fileName
         TTreeReaderValue<UInt_t> Run(reader, "Run");
         TTreeReaderValue<UInt_t> Evt(reader, "Evt");
         TTreeReaderArray<UShort_t> IChanAbs240(reader, "IChanAbs240");
+        TTreeReaderArray<Double_t> E(reader, "E");
         TTreeReaderArray<Double_t> Ampl(reader, "Ampl");
         TTreeReaderArray<Double_t> Charge(reader, "Charge");
 
 	int Nbins = 200;
 	float minX = 0;
 	float maxX = 4095;
+	if(!ampl) {
+		float maxX = 1022;
+	}
 	
 	std::vector<TH1F*> histos;
 	for(int i = 0; i < 240; ++i) {
@@ -114,8 +126,13 @@ void DistribAmplCharge(TString fileName0, TString fileName1="", TString fileName
 			cout << "ERROR: IChanAbs240[1] < 120" << endl;
 			return;
 		}
-		histos[IChanAbs240[0]]->Fill(Ampl[0]);
-		histos[IChanAbs240[1]]->Fill(Ampl[1]);
+		if(ampl) {
+			histos[IChanAbs240[0]]->Fill(Ampl[0]);
+			histos[IChanAbs240[1]]->Fill(Ampl[1]);
+		} else {
+			histos[IChanAbs240[0]]->Fill(E[0]);
+			histos[IChanAbs240[1]]->Fill(E[1]);
+		}
         }
 	
 	TCanvas* cLeft = new TCanvas("cLeft", "cLeft", 1500, 800);
@@ -188,7 +205,7 @@ void DistribAmplCharge(TString fileName0, TString fileName1="", TString fileName
 			cout << "iChanAbs240: " << iChanAbs240 ;
 			TF1* fitfunc = 0;
 			if(histos[iChanAbs240]->GetEntries() > 0) {
-				fitfunc = Fit(histos[iChanAbs240]);
+				fitfunc = Fit(ampl, histos[iChanAbs240]);
 				if(fitfunc) {
 					Double_t mean = fitfunc->GetParameter(1);
 					Double_t sigma = fitfunc->GetParameter(2);
