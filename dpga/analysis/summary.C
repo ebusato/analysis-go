@@ -176,8 +176,8 @@ void summary(TString fileName0, TString fileName1="", TString fileName2="", TStr
 	TH1F* hE1 = (TH1F*) gDirectory->Get("hE1");
 	TH1F* hE1noSat = (TH1F*) gDirectory->Get("hE1noSat");
 	hE1noSat->SetLineStyle(7);
-	hE1->SetLineColor(kRed);
-	hE1noSat->SetLineColor(kRed);
+	hE1->SetLineColor(kRed); // left
+	hE1noSat->SetLineColor(kRed); //left
 	c1->cd(13);
 	gPad->SetLogy();
 	TH1F* hE0 = (TH1F*) gDirectory->Get("hE0");
