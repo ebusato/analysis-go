@@ -75,13 +75,16 @@ func NewEventColl(s *Source, ti float64, nEvents int) *EventColl {
 	return evtColl
 }
 
-func (ec *EventColl) DeadTimeLoss(dt float64) int {
+func (ec *EventColl) DeadTimeLoss(dt float64, paralizable bool) int {
 	var nEventsLost int
 	evtGeneratingDeadTime := &ec.Events[0] // the first event is generating the first dead time
 	for i := 1; i < len(ec.Events); i++ {
 		switch ec.Events[i].Time-evtGeneratingDeadTime.Time < dt {
 		case true:
 			nEventsLost++
+			if paralizable {
+				evtGeneratingDeadTime = &ec.Events[i]
+			}
 		case false:
 			evtGeneratingDeadTime = &ec.Events[i]
 		}
@@ -164,21 +167,24 @@ func (m *mVsrResults) XY(i int) (x, y float64) {
 }
 
 func mVsr(dt float64) {
-	const ti = 0 // seconds
-	const tf = 1 // seconds
+	const ti = 0   // seconds
+	const tf = 100 // seconds
 	// Take Na22 period (2.6 years)
 
-	mVsrRes := mVsrResults{}
+	mVsrRes := &mVsrResults{}
 
-	isotope := Isotope{Name: "MyIsotope", T: 8.2e7}
-	for i := 0; i < 1000; i++ {
-		r := float64(i) * 1e4
-		source := &Source{Isotope: isotope, Name: "", Activity0: r, T0: 0}
-		fmt.Println(source.NoNuclei(ti), source.NoNuclei(tf))
+	isotope := Isotope{Name: "Na22", T: 8.2e7}
+	for i := 1; i < 1000; i += 1 {
+		if i%100 == 0 {
+			fmt.Printf("i=%v\n", i)
+		}
+		r := float64(i) * 2
+		source := &Source{Isotope: isotope, Name: "Na22", Activity0: r, T0: -1.077e8}
+		//fmt.Printf("N(ti)=%v, N(tf)=%v\n", source.NoNuclei(ti), source.NoNuclei(tf))
 		noDecays := int(math.Ceil(source.NoNuclei(ti) - source.NoNuclei(tf)))
-		fmt.Println(noDecays)
+		//fmt.Println("noDecays =", noDecays)
 		events := NewEventColl(source, ti, noDecays)
-		nLost := events.DeadTimeLoss(dt)
+		nLost := events.DeadTimeLoss(dt, false)
 		nMeasured := noDecays - nLost
 		m := float64(nMeasured) / (tf - ti)
 
@@ -192,10 +198,16 @@ func mVsr(dt float64) {
 	p.Title.Text = "measured rate vs true rate"
 	p.X.Label.Text = "r"
 	p.Y.Label.Text = "m"
-
+	p.Y.Max = 2 * 1 / dt
 	p.Add(plotter.NewGrid())
 
-	err = plotutil.AddLinePoints(p, "", mVsrRes)
+	line := make(plotter.XYs, 2)
+	line[0].X = mVsrRes.r[0]
+	line[0].Y = 1 / dt
+	line[1].X = mVsrRes.r[len(mVsrRes.r)-1]
+	line[1].Y = 1 / dt
+
+	err = plotutil.AddLinePoints(p, "", mVsrRes, "Asymptotic value", line)
 
 	if err != nil {
 		panic(err)
@@ -211,7 +223,7 @@ func main() {
 	const ti = 0 // seconds
 	const tf = 1 // seconds
 
-	mVsr(0.4)
+	mVsr(0.04)
 
 	/*
 		na22 := Isotope{Name: "Na22", T: 8.2e7}
@@ -220,12 +232,12 @@ func main() {
 
 		fmt.Println(" na22_2MBq_noDecays=", na22_2MBq_noDecays)
 
-		events_Na22_2MBq := NewEventColl(na22_2MBq, ti, na22_2MBq_noDecays)
-		nLost_Na22_2MBq := events_Na22_2MBq.DeadTimeLoss(0.04)
-		fmt.Println(nLost_Na22_2MBq)
+			events_Na22_2MBq := NewEventColl(na22_2MBq, ti, na22_2MBq_noDecays)
+			nLost_Na22_2MBq := events_Na22_2MBq.DeadTimeLoss(0.04)
+			fmt.Println(nLost_Na22_2MBq)
 
-		// Cross check plots
-		events_Na22_2MBq.PlotTimeVsEvtIndex("events_Na22_2MBq_TimeVsEvtIndex.png")
-		events_Na22_2MBq.PlotRelTimeHist("events_Na22_2MBq_RelTimeHist.png")
+			// Cross check plots
+			events_Na22_2MBq.PlotTimeVsEvtIndex("events_Na22_2MBq_TimeVsEvtIndex.png")
+			events_Na22_2MBq.PlotRelTimeHist("events_Na22_2MBq_RelTimeHist.png")
 	*/
 }
