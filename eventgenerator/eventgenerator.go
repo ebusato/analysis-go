@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"sort"
 
 	"github.com/go-hep/hbook"
 	"github.com/go-hep/hplot"
@@ -41,6 +42,10 @@ func (s *Source) NoNuclei(t float64) float64 {
 	return s.Activity(t) / s.Isotope.Lambda()
 }
 
+func (s *Source) NoDecays(ti, tf float64) int {
+	return int(math.Ceil(s.NoNuclei(ti) - s.NoNuclei(tf)))
+}
+
 // Time is absolute (not relative to previous event)
 type Event struct {
 	Source *Source
@@ -53,10 +58,11 @@ func NewEvent(s *Source, t float64) Event {
 		Source: nil, //rand.New(rand.NewSource(0)),
 	}
 
-	e := Event{Time: dist.Rand() + t}
+	e := Event{Source: s, Time: dist.Rand() + t}
 	return e
 }
 
+// Events in the Events slice are sorted with increasing event time
 type EventColl struct {
 	Source *Source
 	Events []Event
@@ -67,12 +73,53 @@ func NewEventColl(s *Source, ti float64, nEvents int) *EventColl {
 	time := ti
 	evtColl.Events = make([]Event, nEvents)
 	for i := 0; i < nEvents; i++ {
-		evtColl.Events[i].Source = s
 		evtColl.Events[i] = NewEvent(s, time)
 		//fmt.Println(time, events_Na22_2MBq[i].Time, events_Na22_2MBq[i].Time-time)
 		time = evtColl.Events[i].Time
 	}
 	return evtColl
+}
+
+type ByTime []Event
+
+func (b ByTime) Len() int           { return len(b) }
+func (b ByTime) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
+func (b ByTime) Less(i, j int) bool { return b[i].Time < b[j].Time }
+
+// Gather multiple event collections into a single event collection
+func NewMixture(eColls ...*EventColl) *EventColl {
+	mixture := &EventColl{Source: nil}
+	for i := range eColls {
+		mixture.Events = append(mixture.Events, eColls[i].Events...)
+	}
+	sort.Sort(ByTime(mixture.Events))
+	return mixture
+
+	/*
+		totEvents := 0
+		var ti float64
+		var tMin float64 = 100000000
+
+		for iColl := range eColls {
+			eColl := eColls[iColl]
+			totEvents += len(eColl.Events)
+			tiColl := eColl.Events[0].Time
+			if tiColl < tMin {
+				tMin = tiColl
+			}
+		}*/
+}
+
+func (ec *EventColl) Print(n int) {
+	if ec.Source != nil {
+		fmt.Printf("Source: %v\n", ec.Source.Name)
+	} else {
+		fmt.Printf("Source: nil\n")
+	}
+	fmt.Printf("Printing first n events:\n", n)
+	for i := 0; i < n; i++ {
+		fmt.Printf("  -> event %v: source = %v, time = %v\n", i, ec.Events[i].Source.Name, ec.Events[i].Time)
+	}
 }
 
 func (ec *EventColl) DeadTimeLoss(dt float64, paralizable bool) int {
@@ -90,6 +137,23 @@ func (ec *EventColl) DeadTimeLoss(dt float64, paralizable bool) int {
 		}
 	}
 	return nEventsLost
+}
+
+func (ec *EventColl) DeadTimeLossPerProcess(dt float64, paralizable bool) map[string]int {
+	nEventsLostPerProcess := make(map[string]int)
+	evtGeneratingDeadTime := &ec.Events[0] // the first event is generating the first dead time
+	for i := 1; i < len(ec.Events); i++ {
+		switch ec.Events[i].Time-evtGeneratingDeadTime.Time < dt {
+		case true:
+			nEventsLostPerProcess[ec.Events[i].Source.Name]++
+			if paralizable {
+				evtGeneratingDeadTime = &ec.Events[i]
+			}
+		case false:
+			evtGeneratingDeadTime = &ec.Events[i]
+		}
+	}
+	return nEventsLostPerProcess
 }
 
 func (ec *EventColl) Len() int {
@@ -181,7 +245,7 @@ func mVsr(dt float64) {
 		r := float64(i) * 2
 		source := &Source{Isotope: isotope, Name: "Na22", Activity0: r, T0: -1.077e8}
 		//fmt.Printf("N(ti)=%v, N(tf)=%v\n", source.NoNuclei(ti), source.NoNuclei(tf))
-		noDecays := int(math.Ceil(source.NoNuclei(ti) - source.NoNuclei(tf)))
+		noDecays := source.NoDecays(ti, tf)
 		//fmt.Println("noDecays =", noDecays)
 		events := NewEventColl(source, ti, noDecays)
 		nLost := events.DeadTimeLoss(dt, false)
@@ -218,17 +282,39 @@ func mVsr(dt float64) {
 	}
 }
 
+func makeMixture(ti, tf float64) *EventColl {
+	na22 := Isotope{Name: "Na22", T: 8.2e7}
+	na22_2MBq := &Source{Isotope: na22, Name: "Na22_2MBq", Activity0: 2.69e6, T0: -1.077e8}
+	na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 392e3, T0: -3.784e+8}
+	// 	na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 2.69e6, T0: -1.077e8}
+	//fmt.Printf("activities=%v, %v\n", na22_2MBq.Activity(ti), na22_16kBq.Activity(tf))
+	na22_2MBq_noDecays := na22_2MBq.NoDecays(ti, tf)
+	na22_16kBq_noDecays := na22_16kBq.NoDecays(ti, tf)
+	fmt.Printf("noDecays=%v, %v\n", na22_2MBq_noDecays, na22_16kBq_noDecays)
+	events_Na22_2MBq := NewEventColl(na22_2MBq, ti, na22_2MBq_noDecays)
+	events_Na22_16kBq := NewEventColl(na22_16kBq, ti, na22_16kBq_noDecays)
+
+	mixture := NewMixture(events_Na22_2MBq, events_Na22_16kBq)
+	return mixture
+}
+
 func main() {
 	// Set initial and final run time
-	const ti = 0 // seconds
-	const tf = 1 // seconds
+	const ti = 0    // seconds
+	const tf = 100  // seconds
+	const dt = 0.04 // seconds
 
-	mVsr(0.04)
+	// 	mVsr(0.04)
+
+	mixture := makeMixture(ti, tf)
+	mixture.Print(10)
+	nLostPerProcess := mixture.DeadTimeLossPerProcess(dt, false)
+	fmt.Println(nLostPerProcess)
 
 	/*
 		na22 := Isotope{Name: "Na22", T: 8.2e7}
 		na22_2MBq := &Source{Isotope: na22, Name: "2MBq", Activity0: 2.69e6, T0: -1.077e8}
-		na22_2MBq_noDecays := int(math.Ceil(na22_2MBq.NoNuclei(ti) - na22_2MBq.NoNuclei(tf)))
+		na22_2MBq_noDecays := na22_2MBq.NoDecays(ti, tf)
 
 		fmt.Println(" na22_2MBq_noDecays=", na22_2MBq_noDecays)
 
