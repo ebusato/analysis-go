@@ -62,6 +62,14 @@ func NewEvent(s *Source, t float64) Event {
 	return e
 }
 
+func Print(evts []Event, n int) {
+	fmt.Printf("Source: %v\n", evts[0].Source.Name)
+	fmt.Printf("Printing first %v events:\n", n)
+	for i := 0; i < n; i++ {
+		fmt.Printf("  -> event %v: source = %v, time = %v\n", i, evts[i].Source.Name, evts[i].Time)
+	}
+}
+
 // Events in the Events slice are sorted with increasing event time
 type EventColl struct {
 	Source *Source
@@ -80,48 +88,6 @@ func NewEventColl(s *Source, ti float64, nEvents int) *EventColl {
 	return evtColl
 }
 
-type ByTime []Event
-
-func (b ByTime) Len() int           { return len(b) }
-func (b ByTime) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
-func (b ByTime) Less(i, j int) bool { return b[i].Time < b[j].Time }
-
-// Gather multiple event collections into a single event collection
-func NewMixture(eColls ...*EventColl) *EventColl {
-	mixture := &EventColl{Source: nil}
-	for i := range eColls {
-		mixture.Events = append(mixture.Events, eColls[i].Events...)
-	}
-	sort.Sort(ByTime(mixture.Events))
-	return mixture
-
-	/*
-		totEvents := 0
-		var ti float64
-		var tMin float64 = 100000000
-
-		for iColl := range eColls {
-			eColl := eColls[iColl]
-			totEvents += len(eColl.Events)
-			tiColl := eColl.Events[0].Time
-			if tiColl < tMin {
-				tMin = tiColl
-			}
-		}*/
-}
-
-func (ec *EventColl) Print(n int) {
-	if ec.Source != nil {
-		fmt.Printf("Source: %v\n", ec.Source.Name)
-	} else {
-		fmt.Printf("Source: nil\n")
-	}
-	fmt.Printf("Printing first n events:\n", n)
-	for i := 0; i < n; i++ {
-		fmt.Printf("  -> event %v: source = %v, time = %v\n", i, ec.Events[i].Source.Name, ec.Events[i].Time)
-	}
-}
-
 func (ec *EventColl) DeadTimeLoss(dt float64, paralizable bool) int {
 	var nEventsLost int
 	evtGeneratingDeadTime := &ec.Events[0] // the first event is generating the first dead time
@@ -137,23 +103,6 @@ func (ec *EventColl) DeadTimeLoss(dt float64, paralizable bool) int {
 		}
 	}
 	return nEventsLost
-}
-
-func (ec *EventColl) DeadTimeLossPerProcess(dt float64, paralizable bool) map[string]int {
-	nEventsLostPerProcess := make(map[string]int)
-	evtGeneratingDeadTime := &ec.Events[0] // the first event is generating the first dead time
-	for i := 1; i < len(ec.Events); i++ {
-		switch ec.Events[i].Time-evtGeneratingDeadTime.Time < dt {
-		case true:
-			nEventsLostPerProcess[ec.Events[i].Source.Name]++
-			if paralizable {
-				evtGeneratingDeadTime = &ec.Events[i]
-			}
-		case false:
-			evtGeneratingDeadTime = &ec.Events[i]
-		}
-	}
-	return nEventsLostPerProcess
 }
 
 func (ec *EventColl) Len() int {
@@ -212,6 +161,47 @@ func (ec *EventColl) PlotRelTimeHist(name string) {
 	// Save the plot to a PNG file.
 	if err := p.Save(6*vg.Inch, -1, name); err != nil {
 		log.Fatalf("error saving plot: %v\n", err)
+	}
+}
+
+type ByTime []Event
+
+func (b ByTime) Len() int           { return len(b) }
+func (b ByTime) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
+func (b ByTime) Less(i, j int) bool { return b[i].Time < b[j].Time }
+
+// Mixture is a mixture of events from different sources
+type Mixture struct {
+	NoEventsTot  map[string]int
+	NoEventsLost map[string]int
+	Events       []Event
+}
+
+// Gather multiple event collections into a single event collection
+func NewMixture(eColls ...*EventColl) *Mixture {
+	mixture := &Mixture{}
+	mixture.NoEventsTot = make(map[string]int)
+	mixture.NoEventsLost = make(map[string]int)
+	for i := range eColls {
+		mixture.NoEventsTot[eColls[i].Source.Name] = len(eColls[i].Events)
+		mixture.Events = append(mixture.Events, eColls[i].Events...)
+	}
+	sort.Sort(ByTime(mixture.Events))
+	return mixture
+}
+
+func (m *Mixture) DeadTimeLoss(dt float64, paralizable bool) {
+	evtGeneratingDeadTime := &m.Events[0] // the first event is generating the first dead time
+	for i := 1; i < len(m.Events); i++ {
+		switch m.Events[i].Time-evtGeneratingDeadTime.Time < dt {
+		case true:
+			m.NoEventsLost[m.Events[i].Source.Name]++
+			if paralizable {
+				evtGeneratingDeadTime = &m.Events[i]
+			}
+		case false:
+			evtGeneratingDeadTime = &m.Events[i]
+		}
 	}
 }
 
@@ -282,12 +272,12 @@ func mVsr(dt float64) {
 	}
 }
 
-func makeMixture(ti, tf float64) *EventColl {
+func makeMixture(ti, tf float64) *Mixture {
 	na22 := Isotope{Name: "Na22", T: 8.2e7}
 	na22_2MBq := &Source{Isotope: na22, Name: "Na22_2MBq", Activity0: 2.69e6, T0: -1.077e8}
 	na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 392e3, T0: -3.784e+8}
-	// 	na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 2.69e6, T0: -1.077e8}
-	//fmt.Printf("activities=%v, %v\n", na22_2MBq.Activity(ti), na22_16kBq.Activity(tf))
+	//na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 2.69e6, T0: -1.077e8}
+	fmt.Printf("activities=%v, %v\n", na22_2MBq.Activity(ti), na22_16kBq.Activity(tf))
 	na22_2MBq_noDecays := na22_2MBq.NoDecays(ti, tf)
 	na22_16kBq_noDecays := na22_16kBq.NoDecays(ti, tf)
 	fmt.Printf("noDecays=%v, %v\n", na22_2MBq_noDecays, na22_16kBq_noDecays)
@@ -301,15 +291,23 @@ func makeMixture(ti, tf float64) *EventColl {
 func main() {
 	// Set initial and final run time
 	const ti = 0    // seconds
-	const tf = 100  // seconds
+	const tf = 500  // seconds
 	const dt = 0.04 // seconds
 
-	// 	mVsr(0.04)
+	// 	mVsr(dt)
 
 	mixture := makeMixture(ti, tf)
-	mixture.Print(10)
-	nLostPerProcess := mixture.DeadTimeLossPerProcess(dt, false)
-	fmt.Println(nLostPerProcess)
+	Print(mixture.Events, 100)
+	mixture.DeadTimeLoss(dt, false)
+	fmt.Println(mixture.NoEventsTot)
+	fmt.Println(mixture.NoEventsLost)
+	fmt.Printf("\nSummary:\n")
+	for name := range mixture.NoEventsTot {
+		r := float64(mixture.NoEventsTot[name]) / (tf - ti)
+		noEventsMeasured := mixture.NoEventsTot[name] - mixture.NoEventsLost[name]
+		m := float64(noEventsMeasured) / (tf - ti)
+		fmt.Printf(" -> %v: %v %v\n", name, r, m)
+	}
 
 	/*
 		na22 := Isotope{Name: "Na22", T: 8.2e7}
