@@ -276,22 +276,26 @@ func makeMixture(ti, tf float64) *Mixture {
 	na22 := Isotope{Name: "Na22", T: 8.2e7}
 	na22_2MBq := &Source{Isotope: na22, Name: "Na22_2MBq", Activity0: 2.69e6, T0: -1.077e8}
 	na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 392e3, T0: -3.784e+8}
+	lyso := Isotope{Name: "lyso", T: 1e9}
+	lyso_1kBq := &Source{Isotope: lyso, Name: "lyso_1kBq", Activity0: 1000, T0: 0}
 	//na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 2.69e6, T0: -1.077e8}
-	fmt.Printf("activities=%v, %v\n", na22_2MBq.Activity(ti), na22_16kBq.Activity(tf))
+	fmt.Printf("activities=%v, %v, %v\n", na22_2MBq.Activity(ti), na22_16kBq.Activity(ti), lyso_1kBq.Activity(ti))
 	na22_2MBq_noDecays := na22_2MBq.NoDecays(ti, tf)
 	na22_16kBq_noDecays := na22_16kBq.NoDecays(ti, tf)
-	fmt.Printf("noDecays=%v, %v\n", na22_2MBq_noDecays, na22_16kBq_noDecays)
+	lyso_1kBq_noDecays := lyso_1kBq.NoDecays(ti, tf)
+	fmt.Printf("noDecays=%v, %v, %v\n", na22_2MBq_noDecays, na22_16kBq_noDecays, lyso_1kBq_noDecays)
 	events_Na22_2MBq := NewEventColl(na22_2MBq, ti, na22_2MBq_noDecays)
 	events_Na22_16kBq := NewEventColl(na22_16kBq, ti, na22_16kBq_noDecays)
+	events_Lyso_1kBq := NewEventColl(lyso_1kBq, ti, lyso_1kBq_noDecays)
 
-	mixture := NewMixture(events_Na22_2MBq, events_Na22_16kBq)
+	mixture := NewMixture(events_Na22_2MBq, events_Na22_16kBq, events_Lyso_1kBq)
 	return mixture
 }
 
 func main() {
 	// Set initial and final run time
 	const ti = 0    // seconds
-	const tf = 500  // seconds
+	const tf = 100  // seconds
 	const dt = 0.04 // seconds
 
 	// 	mVsr(dt)
