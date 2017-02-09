@@ -9,6 +9,7 @@ import (
 	"math"
 	"net"
 	"os"
+	"time"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
 )
@@ -22,6 +23,7 @@ func main() {
 		ip       = flag.String("ip", "localhost", "IP address")
 		port     = flag.String("p", "5556", "Port number")
 		freq     = flag.Uint("freq", 100, "Event number printing frequency")
+		sleep    = flag.Bool("s", false, "If set, sleep a bit between events")
 	)
 	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
 	flag.Parse()
@@ -62,6 +64,11 @@ func main() {
 	nFrames := uint(0)
 	evtIDprev := float64(-1)
 	for {
+		if *sleep {
+			fmt.Println("Warning: sleeping for 1 second")
+			time.Sleep(1 * time.Second)
+		}
+
 		frame, err := r.Frame()
 		evtID := float64(frame.Block.Evt)
 		if evtID != evtIDprev {
