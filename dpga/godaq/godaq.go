@@ -606,7 +606,13 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 	outrootfileName := strings.Replace(*outfileName, ".bin", ".root", 1)
 	var treeMult2 *trees.TreeMult2
 	if !*notree {
-		treeMult2 = trees.NewTreeMult2(outrootfileName)
+		path, _ := os.Getwd()
+		//fmt.Println(path)
+		if strings.Contains(path, "analysis-go") {
+			treeMult2 = trees.NewTreeMult2(outrootfileName)
+		} else {
+			treeMult2 = trees.NewTreeMult2(os.Getenv("HOME") + "/godaq_rootfiles/" + outrootfileName)
+		}
 	}
 	var minrec []XYZ
 	minrec1Dsvg := ""
@@ -818,9 +824,9 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							if *distr == "energy" {
 								Correlationsvg = EnergyCorrelationsvg
 							}
-							if event.Counters[0] != 0 {
-								fmt.Println(event.Counters[4], event.Counters[0], uint64(event.Counters[4])*uint64(64000000)/uint64(event.Counters[0]))
-							}
+							// 							if event.Counters[0] != 0 {
+							// 								fmt.Println(event.Counters[4], event.Counters[0], uint64(event.Counters[4])*uint64(64000000)/uint64(event.Counters[0]))
+							// 							}
 							datac <- Data{
 								EvtID:                 event.ID,
 								Time:                  time,
