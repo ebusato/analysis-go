@@ -172,14 +172,15 @@ func (b ByTime) Less(i, j int) bool { return b[i].Time < b[j].Time }
 
 // Mixture is a mixture of events from different sources
 type Mixture struct {
+	Name         string
 	NoEventsTot  map[string]int
 	NoEventsLost map[string]int
 	Events       []Event
 }
 
 // Gather multiple event collections into a single event collection
-func NewMixture(eColls ...*EventColl) *Mixture {
-	mixture := &Mixture{}
+func NewMixture(name string, eColls ...*EventColl) *Mixture {
+	mixture := &Mixture{Name: name}
 	mixture.NoEventsTot = make(map[string]int)
 	mixture.NoEventsLost = make(map[string]int)
 	for i := range eColls {
@@ -190,7 +191,39 @@ func NewMixture(eColls ...*EventColl) *Mixture {
 	return mixture
 }
 
-func (m *Mixture) DeadTimeLoss(dt float64, paralizable bool) {
+// MakeDPGAMixture tries to emulate mixture of processes in DPGA
+func MakeDPGAMixture(ti, tf float64) *Mixture {
+	na22 := Isotope{Name: "Na22", T: 8.2e7}
+	// Activities below account for detection efficiency
+	// They are taken from trigger rates for equation 3 vs 3L
+	na22_2MBq := &Source{Isotope: na22, Name: "Na22_2MBq", Activity0: 12500, T0: 0}
+	na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 50, T0: 0}
+	lyso := Isotope{Name: "lyso", T: 1e9}
+	lyso_1kBq := &Source{Isotope: lyso, Name: "lyso_1kBq", Activity0: 400, T0: 0}
+	//na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 2.69e6, T0: -1.077e8}
+	fmt.Printf("activities=%v, %v, %v\n", na22_2MBq.Activity(ti), na22_16kBq.Activity(ti), lyso_1kBq.Activity(ti))
+	na22_2MBq_noDecays := na22_2MBq.NoDecays(ti, tf)
+	na22_16kBq_noDecays := na22_16kBq.NoDecays(ti, tf)
+	lyso_1kBq_noDecays := lyso_1kBq.NoDecays(ti, tf)
+	fmt.Printf("noDecays=%v, %v, %v\n", na22_2MBq_noDecays, na22_16kBq_noDecays, lyso_1kBq_noDecays)
+	events_Na22_2MBq := NewEventColl(na22_2MBq, ti, na22_2MBq_noDecays)
+	events_Na22_16kBq := NewEventColl(na22_16kBq, ti, na22_16kBq_noDecays)
+	events_Lyso_1kBq := NewEventColl(lyso_1kBq, ti, lyso_1kBq_noDecays)
+
+	mixture := NewMixture("DPGA_nominal", events_Na22_2MBq, events_Na22_16kBq, events_Lyso_1kBq)
+	return mixture
+}
+
+func (m *Mixture) RateTrue(name string, ti, tf float64) float64 {
+	return float64(m.NoEventsTot[name]) / (tf - ti)
+}
+
+func (m *Mixture) RateMeasured(name string, ti, tf float64) float64 {
+	noEventsMeasured := m.NoEventsTot[name] - m.NoEventsLost[name]
+	return float64(noEventsMeasured) / (tf - ti)
+}
+
+func (m *Mixture) DeadTimeLoss(ti, tf, dt float64, paralizable bool) {
 	evtGeneratingDeadTime := &m.Events[0] // the first event is generating the first dead time
 	for i := 1; i < len(m.Events); i++ {
 		switch m.Events[i].Time-evtGeneratingDeadTime.Time < dt {
@@ -202,6 +235,26 @@ func (m *Mixture) DeadTimeLoss(dt float64, paralizable bool) {
 		case false:
 			evtGeneratingDeadTime = &m.Events[i]
 		}
+	}
+
+	fmt.Printf("\nSummary:\n")
+	fmt.Println("NoEventsTot:", m.NoEventsTot)
+	fmt.Println("NoEventsLost:", m.NoEventsLost)
+
+	// Compute total measured and true rates
+	rTot := 0.
+	rMeas := 0.
+	for name := range m.NoEventsTot {
+		rTot += m.RateTrue(name, ti, tf)
+		rMeas += m.RateMeasured(name, ti, tf)
+	}
+	fmt.Printf("Total true and measured rates = %v, %v\n", rTot, rMeas)
+
+	for name := range m.NoEventsTot {
+		fmt.Printf(" -> %v: %9.5v (%7.5v %% of total) %9.7v (%7.5v %% of total)\n",
+			name,
+			m.RateTrue(name, ti, tf), m.RateTrue(name, ti, tf)/rTot*100,
+			m.RateMeasured(name, ti, tf), m.RateMeasured(name, ti, tf)/rMeas*100)
 	}
 }
 
@@ -272,46 +325,17 @@ func mVsr(dt float64) {
 	}
 }
 
-func makeMixture(ti, tf float64) *Mixture {
-	na22 := Isotope{Name: "Na22", T: 8.2e7}
-	na22_2MBq := &Source{Isotope: na22, Name: "Na22_2MBq", Activity0: 2.69e6, T0: -1.077e8}
-	na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 392e3, T0: -3.784e+8}
-	lyso := Isotope{Name: "lyso", T: 1e9}
-	lyso_1kBq := &Source{Isotope: lyso, Name: "lyso_1kBq", Activity0: 1000, T0: 0}
-	//na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 2.69e6, T0: -1.077e8}
-	fmt.Printf("activities=%v, %v, %v\n", na22_2MBq.Activity(ti), na22_16kBq.Activity(ti), lyso_1kBq.Activity(ti))
-	na22_2MBq_noDecays := na22_2MBq.NoDecays(ti, tf)
-	na22_16kBq_noDecays := na22_16kBq.NoDecays(ti, tf)
-	lyso_1kBq_noDecays := lyso_1kBq.NoDecays(ti, tf)
-	fmt.Printf("noDecays=%v, %v, %v\n", na22_2MBq_noDecays, na22_16kBq_noDecays, lyso_1kBq_noDecays)
-	events_Na22_2MBq := NewEventColl(na22_2MBq, ti, na22_2MBq_noDecays)
-	events_Na22_16kBq := NewEventColl(na22_16kBq, ti, na22_16kBq_noDecays)
-	events_Lyso_1kBq := NewEventColl(lyso_1kBq, ti, lyso_1kBq_noDecays)
-
-	mixture := NewMixture(events_Na22_2MBq, events_Na22_16kBq, events_Lyso_1kBq)
-	return mixture
-}
-
 func main() {
 	// Set initial and final run time
 	const ti = 0    // seconds
-	const tf = 100  // seconds
+	const tf = 3000 // seconds
 	const dt = 0.04 // seconds
+	const paralizable = false
 
 	// 	mVsr(dt)
 
-	mixture := makeMixture(ti, tf)
-	Print(mixture.Events, 100)
-	mixture.DeadTimeLoss(dt, false)
-	fmt.Println(mixture.NoEventsTot)
-	fmt.Println(mixture.NoEventsLost)
-	fmt.Printf("\nSummary:\n")
-	for name := range mixture.NoEventsTot {
-		r := float64(mixture.NoEventsTot[name]) / (tf - ti)
-		noEventsMeasured := mixture.NoEventsTot[name] - mixture.NoEventsLost[name]
-		m := float64(noEventsMeasured) / (tf - ti)
-		fmt.Printf(" -> %v: %v %v\n", name, r, m)
-	}
+	dpgaMixture := MakeDPGAMixture(ti, tf)
+	dpgaMixture.DeadTimeLoss(ti, tf, dt, paralizable)
 
 	/*
 		na22 := Isotope{Name: "Na22", T: 8.2e7}

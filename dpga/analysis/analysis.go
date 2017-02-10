@@ -9,8 +9,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gonum/plot/vg"
-
 	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/calib/selectCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
@@ -30,7 +28,7 @@ func main() {
 		noped      = flag.Bool("noped", false, "If specified, no pedestal correction applied")
 		notdo      = flag.Bool("notdo", false, "If specified, no time dependent offset correction applied")
 		noen       = flag.Bool("noen", false, "If specified, no energy calibration applied.")
-		wGob       = flag.String("wgob", "dqplots.gob", "Name of the output gob file containing dq plots. If not set, the gob file is not produced.")
+		//wGob       = flag.String("wgob", "dqplots.gob", "Name of the output gob file containing dq plots. If not set, the gob file is not produced.")
 	)
 
 	flag.Parse()
@@ -143,15 +141,16 @@ func main() {
 
 		//event.Print(true)
 	}
-	dqplots.Finalize()
+	/*
+		dqplots.Finalize()
 
-	tpL := dqplots.MakeChargeAmplTiledPlot(dq.Amplitude, dpgadetector.Left)
-	tpL.Save(150*vg.Centimeter, 100*vg.Centimeter, "ChargeDistribTiledLeftHemi.png")
-	tpR := dqplots.MakeChargeAmplTiledPlot(dq.Amplitude, dpgadetector.Right)
-	tpR.Save(150*vg.Centimeter, 100*vg.Centimeter, "ChargeDistribTiledRightHemi.png")
+		tpL := dqplots.MakeChargeAmplTiledPlot(dq.Amplitude, dpgadetector.Left)
+		tpL.Save(150*vg.Centimeter, 100*vg.Centimeter, "ChargeDistribTiledLeftHemi.png")
+		tpR := dqplots.MakeChargeAmplTiledPlot(dq.Amplitude, dpgadetector.Right)
+		tpR.Save(150*vg.Centimeter, 100*vg.Centimeter, "ChargeDistribTiledRightHemi.png")
 
-	dqplots.WriteGob(*wGob)
-	dqplots.SaveHistos()
-
+		dqplots.WriteGob(*wGob)
+		dqplots.SaveHistos()
+	*/
 	treeMult2.Close()
 }
