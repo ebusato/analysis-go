@@ -192,15 +192,25 @@ func NewMixture(name string, eColls ...*EventColl) *Mixture {
 }
 
 // MakeDPGAMixture tries to emulate mixture of processes in DPGA
-func MakeDPGAMixture(ti, tf float64) *Mixture {
+func MakeDPGAMixture(ti, tf float64, factor float64) *Mixture {
 	na22 := Isotope{Name: "Na22", T: 8.2e7}
-	// Activities below account for detection efficiency
-	// They are taken from trigger rates for equation 3 vs 3L
-	na22_2MBq := &Source{Isotope: na22, Name: "Na22_2MBq", Activity0: 12500, T0: 0}
-	na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 50, T0: 0}
+	/*
+		// Activities below account for detection efficiency
+		// They are taken from trigger rates for equation 3 vs 3L
+		na22_2MBq := &Source{Isotope: na22, Name: "Na22_2MBq", Activity0: 12500 * factor, T0: 0}
+		na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 50 * factor, T0: 0}
+		lyso := Isotope{Name: "lyso", T: 1e9}
+		lyso_1kBq := &Source{Isotope: lyso, Name: "LYSO", Activity0: 400 * factor, T0: 0}
+	*/
+
+	///////////////////////////////////////////////////////////////////////////////
+	// for tests
+	na22_2MBq := &Source{Isotope: na22, Name: "Na22_2MBq", Activity0: 0.2 * factor, T0: 0}
+	na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 0.02 * factor, T0: 0}
 	lyso := Isotope{Name: "lyso", T: 1e9}
-	lyso_1kBq := &Source{Isotope: lyso, Name: "lyso_1kBq", Activity0: 400, T0: 0}
-	//na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 2.69e6, T0: -1.077e8}
+	lyso_1kBq := &Source{Isotope: lyso, Name: "LYSO", Activity0: 0.1 * factor, T0: 0}
+	///////////////////////////////////////////////////////////////////////////////
+
 	fmt.Printf("activities=%v, %v, %v\n", na22_2MBq.Activity(ti), na22_16kBq.Activity(ti), lyso_1kBq.Activity(ti))
 	na22_2MBq_noDecays := na22_2MBq.NoDecays(ti, tf)
 	na22_16kBq_noDecays := na22_16kBq.NoDecays(ti, tf)
@@ -223,7 +233,7 @@ func (m *Mixture) RateMeasured(name string, ti, tf float64) float64 {
 	return float64(noEventsMeasured) / (tf - ti)
 }
 
-func (m *Mixture) DeadTimeLoss(ti, tf, dt float64, paralizable bool) {
+func (m *Mixture) DeadTimeLoss(ti, tf, dt float64, paralizable bool) (float64, float64) {
 	evtGeneratingDeadTime := &m.Events[0] // the first event is generating the first dead time
 	for i := 1; i < len(m.Events); i++ {
 		switch m.Events[i].Time-evtGeneratingDeadTime.Time < dt {
@@ -237,39 +247,41 @@ func (m *Mixture) DeadTimeLoss(ti, tf, dt float64, paralizable bool) {
 		}
 	}
 
-	fmt.Printf("\nSummary:\n")
+	fmt.Printf("Summary:\n")
 	fmt.Println("NoEventsTot:", m.NoEventsTot)
 	fmt.Println("NoEventsLost:", m.NoEventsLost)
 
 	// Compute total measured and true rates
-	rTot := 0.
-	rMeas := 0.
+	rateTrueTot := 0.
+	rateMeasTot := 0.
 	for name := range m.NoEventsTot {
-		rTot += m.RateTrue(name, ti, tf)
-		rMeas += m.RateMeasured(name, ti, tf)
+		rateTrueTot += m.RateTrue(name, ti, tf)
+		rateMeasTot += m.RateMeasured(name, ti, tf)
 	}
-	fmt.Printf("Total true and measured rates = %v, %v\n", rTot, rMeas)
+	fmt.Printf("Total true and measured rates = %v, %v\n", rateTrueTot, rateMeasTot)
 
 	for name := range m.NoEventsTot {
 		fmt.Printf(" -> %v: %9.5v (%7.5v %% of total) %9.7v (%7.5v %% of total)\n",
 			name,
-			m.RateTrue(name, ti, tf), m.RateTrue(name, ti, tf)/rTot*100,
-			m.RateMeasured(name, ti, tf), m.RateMeasured(name, ti, tf)/rMeas*100)
+			m.RateTrue(name, ti, tf), m.RateTrue(name, ti, tf)/rateTrueTot*100,
+			m.RateMeasured(name, ti, tf), m.RateMeasured(name, ti, tf)/rateMeasTot*100)
 	}
+
+	return rateTrueTot, rateMeasTot
 }
 
-type mVsrResults struct {
-	r []float64
-	m []float64
+type XYResults struct {
+	X []float64
+	Y []float64
 }
 
-func (m *mVsrResults) Len() int {
-	return len(m.r)
+func (m *XYResults) Len() int {
+	return len(m.X)
 }
 
-func (m *mVsrResults) XY(i int) (x, y float64) {
-	x = m.r[i]
-	y = m.m[i]
+func (m *XYResults) XY(i int) (x, y float64) {
+	x = m.X[i]
+	y = m.Y[i]
 	return
 }
 
@@ -278,7 +290,7 @@ func mVsr(dt float64) {
 	const tf = 100 // seconds
 	// Take Na22 period (2.6 years)
 
-	mVsrRes := &mVsrResults{}
+	mVsrRes := &XYResults{}
 
 	isotope := Isotope{Name: "Na22", T: 8.2e7}
 	for i := 1; i < 1000; i += 1 {
@@ -295,8 +307,8 @@ func mVsr(dt float64) {
 		nMeasured := noDecays - nLost
 		m := float64(nMeasured) / (tf - ti)
 
-		mVsrRes.r = append(mVsrRes.r, r)
-		mVsrRes.m = append(mVsrRes.m, m)
+		mVsrRes.X = append(mVsrRes.X, r)
+		mVsrRes.Y = append(mVsrRes.Y, m)
 	}
 	p, err := plot.New()
 	if err != nil {
@@ -309,9 +321,9 @@ func mVsr(dt float64) {
 	p.Add(plotter.NewGrid())
 
 	line := make(plotter.XYs, 2)
-	line[0].X = mVsrRes.r[0]
+	line[0].X = mVsrRes.X[0]
 	line[0].Y = 1 / dt
-	line[1].X = mVsrRes.r[len(mVsrRes.r)-1]
+	line[1].X = mVsrRes.X[len(mVsrRes.X)-1]
 	line[1].Y = 1 / dt
 
 	err = plotutil.AddLinePoints(p, "", mVsrRes, "Asymptotic value", line)
@@ -325,17 +337,101 @@ func mVsr(dt float64) {
 	}
 }
 
+func mVsrDPGAMixture(dt, ti, tf float64) {
+	// Components:
+	//   0 -> mTot and rTot
+	//   1 -> mLyso and rLyso
+	//   2 -> mNa22_16kBq and rNa22_16kBq
+	//   3 -> mNa22_2MBq and rNa22_2MBq
+	var mVsrRes [4]XYResults
+	var ratioVsrRes [3]XYResults
+
+	for i := 1; i < 200; i += 1 {
+		if i%1 == 0 {
+			fmt.Printf("i=%v\n", i)
+		}
+		mixture := MakeDPGAMixture(ti, tf, float64(i))
+		rateTrueTot, rateMeasTot := mixture.DeadTimeLoss(ti, tf, dt, false)
+		mVsrRes[0].X = append(mVsrRes[0].X, rateTrueTot)
+		mVsrRes[1].X = append(mVsrRes[1].X, rateTrueTot)
+		mVsrRes[2].X = append(mVsrRes[2].X, rateTrueTot)
+		mVsrRes[3].X = append(mVsrRes[3].X, rateTrueTot)
+
+		mVsrRes[0].Y = append(mVsrRes[0].Y, rateMeasTot)
+		mVsrRes[1].Y = append(mVsrRes[1].Y, mixture.RateMeasured("LYSO", ti, tf))
+		mVsrRes[2].Y = append(mVsrRes[2].Y, mixture.RateMeasured("Na22_16kBq", ti, tf))
+		mVsrRes[3].Y = append(mVsrRes[3].Y, mixture.RateMeasured("Na22_2MBq", ti, tf))
+
+		ratioVsrRes[0].X = append(ratioVsrRes[0].X, rateTrueTot)
+		ratioVsrRes[1].X = append(ratioVsrRes[1].X, rateTrueTot)
+		ratioVsrRes[2].X = append(ratioVsrRes[2].X, rateTrueTot)
+
+		ratioVsrRes[0].Y = append(ratioVsrRes[0].Y, mixture.RateMeasured("LYSO", ti, tf)/rateMeasTot)
+		ratioVsrRes[1].Y = append(ratioVsrRes[1].Y, mixture.RateMeasured("Na22_16kBq", ti, tf)/rateMeasTot)
+		ratioVsrRes[2].Y = append(ratioVsrRes[2].Y, mixture.RateMeasured("Na22_2MBq", ti, tf)/rateMeasTot)
+	}
+
+	////////////////////////////////////////////
+	// plot m vs r
+	p0, err := plot.New()
+	if err != nil {
+		panic(err)
+	}
+	p0.Title.Text = "measured rates vs total true rate"
+	p0.X.Label.Text = "rTot"
+	p0.Y.Label.Text = "m"
+	p0.Y.Max = 2 * 1 / dt
+	p0.Add(plotter.NewGrid())
+
+	line := make(plotter.XYs, 2)
+	line[0].X = mVsrRes[0].X[0]
+	line[0].Y = 1 / dt
+	line[1].X = mVsrRes[0].X[len(mVsrRes[0].X)-1]
+	line[1].Y = 1 / dt
+
+	err = plotutil.AddLinePoints(p0, "Tot", &mVsrRes[0], "LYSO", &mVsrRes[1], "Na22_16kBq", &mVsrRes[2], "Na22_2MBq", &mVsrRes[3], "Asymptotic value", line)
+
+	if err != nil {
+		panic(err)
+	}
+
+	if err := p0.Save(14*vg.Inch, 5*vg.Inch, "mVsrDPGAMixture.png"); err != nil {
+		panic(err)
+	}
+	////////////////////////////////////////////
+
+	////////////////////////////////////////////
+	// plot ratios
+	p1, err := plot.New()
+	if err != nil {
+		panic(err)
+	}
+	p1.Title.Text = "measured rates/total measured rate vs total true rate"
+	p1.X.Label.Text = "rTot"
+	p1.Y.Label.Text = "measured rate/total measured rate"
+	p1.Y.Min = 0
+	p1.Add(plotter.NewGrid())
+
+	err = plotutil.AddLinePoints(p1, "LYSO", &ratioVsrRes[0], "Na22_16kBq", &ratioVsrRes[1], "Na22_2MBq", &ratioVsrRes[2])
+
+	if err != nil {
+		panic(err)
+	}
+
+	if err := p1.Save(14*vg.Inch, 5*vg.Inch, "ratiosVsrDPGAMixture.png"); err != nil {
+		panic(err)
+	}
+	////////////////////////////////////////////
+}
+
 func main() {
 	// Set initial and final run time
 	const ti = 0    // seconds
-	const tf = 3000 // seconds
-	const dt = 0.04 // seconds
-	const paralizable = false
+	const tf = 2000 // seconds
+	const dt = 4    // seconds
 
 	// 	mVsr(dt)
-
-	dpgaMixture := MakeDPGAMixture(ti, tf)
-	dpgaMixture.DeadTimeLoss(ti, tf, dt, paralizable)
+	mVsrDPGAMixture(dt, ti, tf)
 
 	/*
 		na22 := Isotope{Name: "Na22", T: 8.2e7}
