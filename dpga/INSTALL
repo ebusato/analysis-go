@@ -7,7 +7,7 @@ NC='\033[0m' # No Color
 
 # Compiling latest source
 echo -e "${RED}Compiling latest source${NC}"
-PATHANALYSISGO=/home/lestand/gowork/src/gitlab.in2p3.fr/avirm/analysis-go
+PATHANALYSISGO=/home/daq/Travail/gowork/src/gitlab.in2p3.fr/avirm/analysis-go
 PATHSOURCE=$PATHANALYSISGO"/"dpga/godaq
 echo " PATHANALYSISGO="$PATHANALYSISGO
 echo " PATHSOURCE="$PATHSOURCE
