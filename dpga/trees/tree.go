@@ -1,6 +1,8 @@
 package trees
 
 import (
+	"fmt"
+
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
@@ -212,6 +214,7 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		pulse := pulses[i]
 		pulse.CalcRisingFront(true)
 		pulse.CalcFallingFront(false)
+		fmt.Println("i=", i)
 		t.data.IChanAbs240[i] = uint16(pulse.Channel.AbsID240())
 		t.data.IQuartetAbs60[i] = dpgadetector.FifoID144ToQuartetAbsIdx60(pulse.Channel.FifoID144(), true)
 		t.data.ILineAbs12[i] = dpgadetector.QuartetAbsIdx60ToLineAbsIdx12(t.data.IQuartetAbs60[i])
