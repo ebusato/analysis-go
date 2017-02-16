@@ -82,9 +82,9 @@ func main() {
 		if event.ID%500 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
 		}
-		if event.ID < 86000 {
-			continue
-		}
+		// 		if event.ID < 86000 {
+		// 			continue
+		// 		}
 		///////////////////////////////////////////////////////////
 		// Corrections
 		event = applyCorrCalib.CorrectEvent(event, doPedestal, doTimeDepOffset, doEnergyCalib)
