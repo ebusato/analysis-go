@@ -101,7 +101,7 @@ func main() {
 
 		///////////////////////////////////////////////////////////
 		// ROOT Tree making
-		tree.Fill(hdr.RunNumber, event)
+		tree.Fill(hdr.RunNumber, r.Header(), event)
 
 		mult, pulsesWithSignal := event.Multiplicity()
 		if mult == 2 {

@@ -4,7 +4,9 @@ import (
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/reconstruction"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
@@ -165,7 +167,7 @@ func NewTree(outrootfileName string) *Tree {
 	return &t
 }
 
-func (t *Tree) Fill(run uint32, event *event.Event) {
+func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 	t.data.Run = run
 	t.data.Evt = uint32(event.ID)
 	t.data.TimeStamp = uint64(event.Counters[3])<<32 | uint64(event.Counters[2])
@@ -231,6 +233,37 @@ func (t *Tree) Fill(run uint32, event *event.Event) {
 		t.data.X[i] = pulse.Channel.X
 		t.data.Y[i] = pulse.Channel.Y
 		t.data.Z[i] = pulse.Channel.Z
+	}
+	if noPulses == 2 {
+		if len(pulses) != 2 {
+			panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
+		}
+		ch0 := pulses[0].Channel
+		ch1 := pulses[1].Channel
+		doMinRec := true
+		if hdr.TriggerEq == 3 {
+			// In case TriggerEq = 3 (pulser), one has to check that the two pulses are
+			// on different hemispheres, otherwise the minimal reconstruction is not well
+			// defined
+			hemi0, ok := ch0.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
+			if !ok {
+				panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
+			}
+			hemi1, ok := ch1.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
+			if !ok {
+				panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
+			}
+			if hemi0.Which() == hemi1.Which() {
+				doMinRec = false
+			}
+		}
+		if doMinRec {
+			xbeam, ybeam := 0., 0.
+			x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
+			t.data.Xmaa = x
+			t.data.Ymaa = y
+			t.data.Zmaa = z
+		}
 	}
 	_, err := t.tree.Fill()
 	if err != nil {
