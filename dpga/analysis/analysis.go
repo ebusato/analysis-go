@@ -11,11 +11,9 @@ import (
 
 	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/calib/selectCalib"
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/trees"
-	"gitlab.in2p3.fr/avirm/analysis-go/reconstruction"
 )
 
 func main() {
@@ -73,8 +71,8 @@ func main() {
 	}
 	dqplots := dq.NewDQPlot()
 
-	outrootfileNameMult2 := strings.Replace(*infileName, ".bin", "Mult2.root", 1)
-	var treeMult2 *trees.TreeMult2 = trees.NewTreeMult2(outrootfileNameMult2)
+	// 	outrootfileNameMult2 := strings.Replace(*infileName, ".bin", "Mult2.root", 1)
+	// 	var treeMult2 *trees.TreeMult2 = trees.NewTreeMult2(outrootfileNameMult2)
 	outrootfileName := strings.Replace(*infileName, ".bin", ".root", 1)
 	var tree *trees.Tree = trees.NewTree(outrootfileName)
 
@@ -103,46 +101,47 @@ func main() {
 		// ROOT Tree making
 		tree.Fill(hdr.RunNumber, r.Header(), event)
 
-		mult, pulsesWithSignal := event.Multiplicity()
-		if mult == 2 {
-			if len(pulsesWithSignal) != 2 {
-				panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
-			}
-			ch0 := pulsesWithSignal[0].Channel
-			ch1 := pulsesWithSignal[1].Channel
-			doMinRec := true
-			if r.Header().TriggerEq == 3 {
-				// In case TriggerEq = 3 (pulser), one has to check that the two pulses are
-				// on different hemispheres, otherwise the minimal reconstruction is not well
-				// defined
-				hemi0, ok := ch0.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
-				if !ok {
-					panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
+		/*
+			mult, pulsesWithSignal := event.Multiplicity()
+			if mult == 2 {
+				if len(pulsesWithSignal) != 2 {
+					panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
 				}
-				hemi1, ok := ch1.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
-				if !ok {
-					panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
+				ch0 := pulsesWithSignal[0].Channel
+				ch1 := pulsesWithSignal[1].Channel
+				doMinRec := true
+				if r.Header().TriggerEq == 3 {
+					// In case TriggerEq = 3 (pulser), one has to check that the two pulses are
+					// on different hemispheres, otherwise the minimal reconstruction is not well
+					// defined
+					hemi0, ok := ch0.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
+					if !ok {
+						panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
+					}
+					hemi1, ok := ch1.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
+					if !ok {
+						panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
+					}
+					if hemi0.Which() == hemi1.Which() {
+						doMinRec = false
+					}
 				}
-				if hemi0.Which() == hemi1.Which() {
-					doMinRec = false
-				}
-			}
-			if doMinRec {
-				xbeam, ybeam := 0., 0.
-				x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
-				dqplots.HMinRecX.Fill(x, 1)
-				dqplots.HMinRecY.Fill(y, 1)
-				dqplots.HMinRecZ.Fill(z, 1)
+				if doMinRec {
+					xbeam, ybeam := 0., 0.
+					x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
+					dqplots.HMinRecX.Fill(x, 1)
+					dqplots.HMinRecY.Fill(y, 1)
+					dqplots.HMinRecZ.Fill(z, 1)
 
-				pulsesWithSignal[0].CalcRisingFront(true)
-				pulsesWithSignal[1].CalcRisingFront(true)
-				pulsesWithSignal[0].CalcFallingFront(false)
-				pulsesWithSignal[1].CalcFallingFront(false)
-				treeMult2.Fill(hdr.RunNumber, uint32(event.ID), event.Counters, pulsesWithSignal[0], pulsesWithSignal[1], x, y, z)
+					pulsesWithSignal[0].CalcRisingFront(true)
+					pulsesWithSignal[1].CalcRisingFront(true)
+					pulsesWithSignal[0].CalcFallingFront(false)
+					pulsesWithSignal[1].CalcFallingFront(false)
+					treeMult2.Fill(hdr.RunNumber, uint32(event.ID), event.Counters, pulsesWithSignal[0], pulsesWithSignal[1], x, y, z)
+				}
 			}
-		}
+		*/
 		////////////////////////////////////////////////////////////
-
 		//event.Print(true)
 	}
 	/*
@@ -156,6 +155,6 @@ func main() {
 		dqplots.WriteGob(*wGob)
 		dqplots.SaveHistos()
 	*/
-	treeMult2.Close()
+	//treeMult2.Close()
 	tree.Close()
 }
