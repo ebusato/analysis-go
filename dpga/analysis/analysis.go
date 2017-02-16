@@ -73,8 +73,10 @@ func main() {
 	}
 	dqplots := dq.NewDQPlot()
 
+	outrootfileNameMult2 := strings.Replace(*infileName, ".bin", "Mult2.root", 1)
+	var treeMult2 *trees.TreeMult2 = trees.NewTreeMult2(outrootfileNameMult2)
 	outrootfileName := strings.Replace(*infileName, ".bin", ".root", 1)
-	var treeMult2 *trees.TreeMult2 = trees.NewTreeMult2(outrootfileName)
+	var tree *trees.Tree = trees.NewTree(outrootfileName)
 
 	hdr := r.Header()
 
@@ -99,6 +101,8 @@ func main() {
 
 		///////////////////////////////////////////////////////////
 		// ROOT Tree making
+		tree.Fill(hdr.RunNumber, event)
+
 		mult, pulsesWithSignal := event.Multiplicity()
 		if mult == 2 {
 			if len(pulsesWithSignal) != 2 {
@@ -153,4 +157,5 @@ func main() {
 		dqplots.SaveHistos()
 	*/
 	treeMult2.Close()
+	tree.Close()
 }
