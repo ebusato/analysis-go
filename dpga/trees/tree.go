@@ -10,7 +10,7 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
-const NoPulsesMax = 40
+const NoPulsesMax = 240
 
 type ROOTData struct {
 	Run         uint32
