@@ -99,6 +99,7 @@ void DistribAmplCharge(bool ampl, TString fileName0, TString fileName1="", TStri
         TTreeReader reader(&ch);
         TTreeReaderValue<UInt_t> Run(reader, "Run");
         TTreeReaderValue<UInt_t> Evt(reader, "Evt");
+	TTreeReaderValue<Int_t> NoPulses(reader, "NoPulses");
         TTreeReaderArray<UShort_t> IChanAbs240(reader, "IChanAbs240");
         TTreeReaderArray<Double_t> E(reader, "E");
         TTreeReaderArray<Double_t> Ampl(reader, "Ampl");
@@ -117,21 +118,25 @@ void DistribAmplCharge(bool ampl, TString fileName0, TString fileName1="", TStri
 	}
 	
         while (reader.Next()) {
-                //cout << *Run << " " << *Evt << " " << IChanAbs240[0] <<  " " << IChanAbs240[1] << " " << Ampl[0] << " " << Ampl[1] << endl;
-		if(IChanAbs240[0] >= 120) {
-			cout << "ERROR: IChanAbs240[0] >= 120" << endl;
-			return;
-		}
-		if(IChanAbs240[1] < 120) {
-			cout << "ERROR: IChanAbs240[1] < 120" << endl;
-			return;
-		}
-		if(ampl) {
-			histos[IChanAbs240[0]]->Fill(Ampl[0]);
-			histos[IChanAbs240[1]]->Fill(Ampl[1]);
-		} else {
-			histos[IChanAbs240[0]]->Fill(E[0]);
-			histos[IChanAbs240[1]]->Fill(E[1]);
+		//cout << *Run << " " << *Evt << endl;
+		if(*NoPulses == 2) {
+			//cout << "NoPulses, toto=" << *NoPulses << " " << IChanAbs240[0] << " " << E[1] << endl;
+			//cout << IChanAbs240[0] <<  " " << IChanAbs240[1] << " " << Ampl[0] << " " << Ampl[1] << endl;
+			if(IChanAbs240[0] >= 120) {
+				cout << "ERROR: IChanAbs240[0] >= 120" << endl;
+				return;
+			}
+			if(IChanAbs240[1] < 120) {
+				cout << "ERROR: IChanAbs240[1] < 120" << endl;
+				return;
+			}
+			if(ampl) {
+				histos[IChanAbs240[0]]->Fill(Ampl[0]);
+				histos[IChanAbs240[1]]->Fill(Ampl[1]);
+			} else {
+				histos[IChanAbs240[0]]->Fill(E[0]);
+				histos[IChanAbs240[1]]->Fill(E[1]);
+			}
 		}
         }
 	

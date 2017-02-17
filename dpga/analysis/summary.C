@@ -50,12 +50,6 @@ void summary(TString cut_base, TString fileName0, TString fileName1="", TString 
 	if(fileName9 != "") {
 		ch.Add(fileName9);
 	}
-	TTreeReader reader(&ch);
-        TTreeReaderValue<UInt_t> Run(reader, "Run");
-        TTreeReaderValue<UInt_t> Evt(reader, "Evt");
-        TTreeReaderArray<UShort_t> IChanAbs240(reader, "IChanAbs240");
-        TTreeReaderArray<Double_t> Ampl(reader, "Ampl");
-        TTreeReaderArray<Double_t> Charge(reader, "Charge");
 	
 	TCut c_base = cut_base.Data(); 
 	TCut c_noSat = "Sat[0] == 0 && Sat[1] == 0";

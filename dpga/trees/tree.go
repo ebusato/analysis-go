@@ -50,7 +50,7 @@ type ROOTData struct {
 	RateLvsL6   float64
 	RateLvsL7   float64
 
-	NoPulses  int64
+	NoPulses  int32
 	TestSlice [NoPulsesMax]float64
 
 	IChanAbs240         [NoPulsesMax]uint16
@@ -137,7 +137,7 @@ func NewTree(outrootfileName string) *Tree {
 
 	// 	_, err = t.tree.Branch2("TestSize", &t.data.TestSize, "TestSize/L", bufsiz)
 	// 	_, err = t.tree.Branch2("TestSlice", &t.data.TestSlice, "TestSlice[TestSize]/D", bufsiz)
-	_, err = t.tree.Branch2("NoPulses", &t.data.NoPulses, "NoPulses/L", bufsiz)
+	_, err = t.tree.Branch2("NoPulses", &t.data.NoPulses, "NoPulses/I", bufsiz)
 	_, err = t.tree.Branch2("IChanAbs240", &t.data.IChanAbs240, "IChanAbs240[NoPulses]/s", bufsiz)
 	_, err = t.tree.Branch2("IQuartetAbs60", &t.data.IQuartetAbs60, "IQuartetAbs60[NoPulses]/b", bufsiz)
 	_, err = t.tree.Branch2("ILineAbs12", &t.data.ILineAbs12, "ILineAbs12[NoPulses]/b", bufsiz)
@@ -207,7 +207,7 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		t.data.RateLvsL7 = float64(event.Counters[29]) * 64e6 / float64(event.Counters[0])
 	}
 	noPulses, pulses := event.Multiplicity()
-	t.data.NoPulses = int64(noPulses)
+	t.data.NoPulses = int32(noPulses)
 	for i := range pulses {
 		pulse := pulses[i]
 		pulse.CalcRisingFront(true)

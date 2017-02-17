@@ -217,9 +217,9 @@ func (e *Event) PushTimeDepOffsetSamples() {
 // 	None
 // )
 //
-// func WhichTrigger(pulsesWithSignal []*pulse.Pulse) Trigger {
+// func WhichTrigger(pulses []*pulse.Pulse) Trigger {
 // 	var trig Trigger
-// 	for i := range pulsesWithSignal {
+// 	for i := range pulses {
 //
 // 	}
 // 	return trig
