@@ -60,7 +60,7 @@ TF1* Fit(bool ampl, TH1F* h) {
 	return f;
 }
 
-void DistribAmplCharge(bool ampl, TString fileName0, TString fileName1="", TString fileName2="", TString fileName3="", TString fileName4="", 
+void DistribAmplCharge(bool ampl, TCut cut, TString fileName0, TString fileName1="", TString fileName2="", TString fileName3="", TString fileName4="", 
 		       TString fileName5="", TString fileName6="", TString fileName7="", 
 		       TString fileName8="", TString fileName9="") {
 	gStyle->SetOptStat(0);
@@ -117,25 +117,27 @@ void DistribAmplCharge(bool ampl, TString fileName0, TString fileName1="", TStri
 		histos.push_back(new TH1F(Form("histo_%i", i), Form("histo_%i", i), Nbins, minX, maxX));
 	}
 	
-        while (reader.Next()) {
-		//cout << *Run << " " << *Evt << endl;
-		if(*NoPulses == 2) {
-			//cout << "NoPulses, toto=" << *NoPulses << " " << IChanAbs240[0] << " " << E[1] << endl;
-			//cout << IChanAbs240[0] <<  " " << IChanAbs240[1] << " " << Ampl[0] << " " << Ampl[1] << endl;
-			if(IChanAbs240[0] >= 120) {
-				cout << "ERROR: IChanAbs240[0] >= 120" << endl;
-				return;
-			}
-			if(IChanAbs240[1] < 120) {
-				cout << "ERROR: IChanAbs240[1] < 120" << endl;
-				return;
-			}
+	ch.Draw(">>evtlist", cut);
+	TEventList *evtlist = (TEventList*)gDirectory->Get("evtlist");
+	int Nevents = evtlist->GetN();
+	
+	for(int i = 0; i < Nevents; i++) {
+        //while (reader.Next()) {
+		reader.SetEntry(evtlist->GetEntry(i));
+		cout << *Run << " " << *Evt << endl;
+		if(*NoPulses == 2 && IChanAbs240[0] >= 120) {
+			cout << "ERROR: IChanAbs240[0] >= 120" << endl;
+			return;
+		}
+		if(*NoPulses == 2 && IChanAbs240[1] < 120) {
+			cout << "ERROR: IChanAbs240[1] < 120" << endl;
+			return;
+		}
+		for(int j = 0; j < *NoPulses; j++) {
 			if(ampl) {
-				histos[IChanAbs240[0]]->Fill(Ampl[0]);
-				histos[IChanAbs240[1]]->Fill(Ampl[1]);
+				histos[IChanAbs240[j]]->Fill(Ampl[j]);
 			} else {
-				histos[IChanAbs240[0]]->Fill(E[0]);
-				histos[IChanAbs240[1]]->Fill(E[1]);
+				histos[IChanAbs240[j]]->Fill(E[j]);
 			}
 		}
         }
@@ -186,47 +188,50 @@ void DistribAmplCharge(bool ampl, TString fileName0, TString fileName1="", TStri
 		TLegend* leg = new TLegend(0.7,0.6,1,1);
 		for (int iC = 0; iC < 4; iC++) {
 			int iChanAbs240 = 4*iQ + iC;
-			int color;
-			if(iC == 0)
-				color = kRed;
-			else if(iC == 1)
-				color = kGreen+2;
-			else if(iC == 2)
-				color = kBlue;
-			else if(iC == 3)
-				color = kMagenta;
-			histos[iChanAbs240]->Scale(1/histos[iChanAbs240]->Integral());
-			histos[iChanAbs240]->SetLineColor(color);
-			histos[iChanAbs240]->SetLineWidth(1);
-			histos[iChanAbs240]->SetFillStyle(3001);
-			histos[iChanAbs240]->SetFillColor(color);
-			histos[iChanAbs240]->GetXaxis()->SetLabelSize(0.055);
-			histos[iChanAbs240]->GetYaxis()->SetLabelSize(0.055);
-			if(iC == 0) {
-				histos[iChanAbs240]->Draw();
-			} else {
-				histos[iChanAbs240]->Draw("same");
-			}
-			cout << "iChanAbs240: " << iChanAbs240 ;
-			TF1* fitfunc = 0;
-			if(histos[iChanAbs240]->GetEntries() > 0) {
-				fitfunc = Fit(ampl, histos[iChanAbs240]);
-				if(fitfunc) {
-					Double_t mean = fitfunc->GetParameter(1);
-					Double_t sigma = fitfunc->GetParameter(2);
-					Double_t meanErr = fitfunc->GetParError(1);
-					cout << " ->  " << mean << "  " << meanErr << "  " << sigma << "  " << sigma/mean*100*2.35 << "%" ;
-					if(sigma < 500 && meanErr < 0.20*mean) {
-						of << iChanAbs240 << " " << mean << " " << meanErr << endl;
-					} else {
-						cout << " <=== Warning !!" ;
-					}
-					cout << endl;
+			if(histos[iChanAbs240]->Integral() != 0) {
+				int color;
+				if(iC == 0)
+					color = kRed;
+				else if(iC == 1)
+					color = kGreen+2;
+				else if(iC == 2)
+					color = kBlue;
+				else if(iC == 3)
+					color = kMagenta;
+				histos[iChanAbs240]->Scale(1/histos[iChanAbs240]->Integral());
+				histos[iChanAbs240]->SetLineColor(color);
+				histos[iChanAbs240]->SetLineWidth(1);
+				histos[iChanAbs240]->SetFillStyle(3001);
+				histos[iChanAbs240]->SetFillColor(color);
+				histos[iChanAbs240]->GetXaxis()->SetLabelSize(0.055);
+				histos[iChanAbs240]->GetYaxis()->SetLabelSize(0.055);
+				if(iC == 0) {
+					histos[iChanAbs240]->Draw();
+				} else {
+					histos[iChanAbs240]->Draw("same");
 				}
-			} else {
-				of << iChanAbs240 << " 0 0" << endl;
+				cout << "iChanAbs240: " << iChanAbs240 ;
+				if(histos[iChanAbs240]->GetEntries() > 0) {
+					TF1* fitfunc = 0;
+					fitfunc = Fit(ampl, histos[iChanAbs240]);
+					if(fitfunc) {
+						Double_t mean = fitfunc->GetParameter(1);
+						Double_t sigma = fitfunc->GetParameter(2);
+						Double_t meanErr = fitfunc->GetParError(1);
+						cout << " ->  " << mean << "  " << meanErr << "  " << sigma << "  " << sigma/mean*100*2.35 << "%" ;
+						if(sigma < 500 && meanErr < 0.20*mean) {
+							of << iChanAbs240 << " " << mean << " " << meanErr << endl;
+						} else {
+							cout << " <=== Warning !!" ;
+						}
+						cout << endl;
+					}
+				} else {
+					cout << endl;
+					of << iChanAbs240 << " 0 0" << endl;
+				}
+				leg->AddEntry(histos[iChanAbs240], Form("iChanAbs240=%i", iChanAbs240), "f");
 			}
-			leg->AddEntry(histos[iChanAbs240], Form("iChanAbs240=%i", iChanAbs240), "f");
 		}
 		leg->SetLineWidth(0);
 		leg->Draw();
