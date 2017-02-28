@@ -205,10 +205,10 @@ func MakeDPGAMixture(ti, tf float64, factor float64) *Mixture {
 
 	///////////////////////////////////////////////////////////////////////////////
 	// for tests
-	na22_2MBq := &Source{Isotope: na22, Name: "Na22_2MBq", Activity0: 0.2 * factor, T0: 0}
-	na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 0.02 * factor, T0: 0}
+	na22_2MBq := &Source{Isotope: na22, Name: "Na22_2MBq", Activity0: 0.15 * factor, T0: 0}
+	na22_16kBq := &Source{Isotope: na22, Name: "Na22_16kBq", Activity0: 0.2 * factor, T0: 0}
 	lyso := Isotope{Name: "lyso", T: 1e9}
-	lyso_1kBq := &Source{Isotope: lyso, Name: "LYSO", Activity0: 0.1 * factor, T0: 0}
+	lyso_1kBq := &Source{Isotope: lyso, Name: "LYSO", Activity0: 0.3 * factor, T0: 0}
 	///////////////////////////////////////////////////////////////////////////////
 
 	fmt.Printf("activities=%v, %v, %v\n", na22_2MBq.Activity(ti), na22_16kBq.Activity(ti), lyso_1kBq.Activity(ti))
@@ -346,7 +346,7 @@ func mVsrDPGAMixture(dt, ti, tf float64) {
 	var mVsrRes [4]XYResults
 	var ratioVsrRes [3]XYResults
 
-	for i := 1; i < 200; i += 1 {
+	for i := 1; i < 100; i += 1 {
 		if i%1 == 0 {
 			fmt.Printf("i=%v\n", i)
 		}
@@ -428,7 +428,7 @@ func main() {
 	// Set initial and final run time
 	const ti = 0    // seconds
 	const tf = 2000 // seconds
-	const dt = 4    // seconds
+	const dt = 0.5   // seconds
 
 	// 	mVsr(dt)
 	mVsrDPGAMixture(dt, ti, tf)
