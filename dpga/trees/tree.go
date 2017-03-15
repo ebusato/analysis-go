@@ -15,6 +15,7 @@ const NoPulsesMax = 240
 type ROOTData struct {
 	Run         uint32
 	Evt         uint32
+	T0          uint64
 	TimeStamp   uint64
 	RateBoard1  float64
 	RateBoard2  float64
@@ -100,6 +101,7 @@ func NewTree(outrootfileName string) *Tree {
 
 	_, err = t.tree.Branch2("Run", &t.data.Run, "Run/i", bufsiz)
 	_, err = t.tree.Branch2("Evt", &t.data.Evt, "Evt/i", bufsiz)
+	_, err = t.tree.Branch2("T0", &t.data.T0, "T0/l", bufsiz)
 	_, err = t.tree.Branch2("TimeStamp", &t.data.TimeStamp, "TimeStamp/l", bufsiz)
 	_, err = t.tree.Branch2("RateBoard1", &t.data.RateBoard1, "RateBoard1/D", bufsiz)
 	_, err = t.tree.Branch2("RateBoard2", &t.data.RateBoard2, "RateBoard2/D", bufsiz)
@@ -206,6 +208,33 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		t.data.RateLvsL6 = float64(event.Counters[28]) * 64e6 / float64(event.Counters[0])
 		t.data.RateLvsL7 = float64(event.Counters[29]) * 64e6 / float64(event.Counters[0])
 	}
+	///////////////////////////////////////////
+	// TRF calculation
+	/*
+		for i := range event.ClustersWoData {
+			cluster := event.ClustersWoData[i]
+			fmt.Println(i, "   ", len(cluster.PulsesWithSignal()))
+		}*/
+	sineRF := make([]float64, len(event.ClustersWoData[11].Pulses[3].Samples))
+	var min float64 = 1e6
+	var max float64 = 0
+	for i := range sineRF {
+		sineRF[i] = event.ClustersWoData[11].Pulses[3].Samples[i].Amplitude
+		if sineRF[i] < min {
+			min = sineRF[i]
+		}
+		if sineRF[i] > max {
+			max = sineRF[i]
+		}
+		// 		fmt.Print(i, " ", sineWave[i])
+		// 		for j := 0; j < int(math.Floor(sineWave[i])/10); j++ {
+		// 			fmt.Print("*")
+		// 		}
+		// 		fmt.Print("\n")
+	}
+	// 	intersections :=
+	utils.FindIntersections(sineRF, min, max)
+	///////////////////////////////////////////
 	noPulses, pulses := event.Multiplicity()
 	t.data.NoPulses = int32(noPulses)
 	for i := range pulses {
