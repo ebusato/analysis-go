@@ -4,7 +4,10 @@ import (
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/reconstruction"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
@@ -95,7 +98,7 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 
 	_, err = t.tree.Branch2("Run", &t.data.Run, "Run/i", bufsiz)
 	_, err = t.tree.Branch2("Evt", &t.data.Evt, "Evt/i", bufsiz)
-	_, err = t.tree.Branch2("T0", &t.data.T0, "T0/l", bufsiz)
+	_, err = t.tree.Branch2("T0", &t.data.T0, "T0/i", bufsiz)
 	_, err = t.tree.Branch2("TimeStamp", &t.data.TimeStamp, "TimeStamp/l", bufsiz)
 	_, err = t.tree.Branch2("RateBoard1", &t.data.RateBoard1, "RateBoard1/D", bufsiz)
 	_, err = t.tree.Branch2("RateBoard2", &t.data.RateBoard2, "RateBoard2/D", bufsiz)
@@ -161,44 +164,45 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 	return &t
 }
 
-func (t *TreeMult2) Fill(run uint32, ievent uint32, counters []uint32, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse, Xmaa, Ymaa, Zmaa float64) {
+func (t *TreeMult2) Fill(run uint32, hdr *rw.Header, event *event.Event, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse) {
 	t.data.Run = run
-	t.data.Evt = ievent
-	t.data.TimeStamp = uint64(counters[3])<<32 | uint64(counters[2])
-	if counters[0] != 0 {
-		t.data.RateBoard1 = float64(counters[4]) * 64e6 / float64(counters[0])
-		t.data.RateBoard2 = float64(counters[5]) * 64e6 / float64(counters[0])
-		t.data.RateBoard3 = float64(counters[6]) * 64e6 / float64(counters[0])
-		t.data.RateBoard4 = float64(counters[7]) * 64e6 / float64(counters[0])
-		t.data.RateBoard5 = float64(counters[8]) * 64e6 / float64(counters[0])
-		t.data.RateBoard6 = float64(counters[9]) * 64e6 / float64(counters[0])
-		t.data.RateBoard7 = float64(counters[10]) * 64e6 / float64(counters[0])
-		t.data.RateBoard8 = float64(counters[11]) * 64e6 / float64(counters[0])
-		t.data.RateBoard9 = float64(counters[12]) * 64e6 / float64(counters[0])
-		t.data.RateBoard10 = float64(counters[13]) * 64e6 / float64(counters[0])
-		t.data.RateBoard11 = float64(counters[14]) * 64e6 / float64(counters[0])
-		t.data.RateBoard12 = float64(counters[15]) * 64e6 / float64(counters[0])
-		t.data.RateLvsR1 = float64(counters[16]) * 64e6 / float64(counters[0])
-		t.data.RateLvsR2 = float64(counters[17]) * 64e6 / float64(counters[0])
-		t.data.RateLvsR3 = float64(counters[18]) * 64e6 / float64(counters[0])
-		t.data.RateLvsR4 = float64(counters[19]) * 64e6 / float64(counters[0])
-		t.data.RateLvsR5 = float64(counters[20]) * 64e6 / float64(counters[0])
-		t.data.RateLvsR6 = float64(counters[21]) * 64e6 / float64(counters[0])
-		t.data.RateLvsR7 = float64(counters[22]) * 64e6 / float64(counters[0])
-		t.data.RateLvs3L1 = float64(counters[30]) * 64e6 / float64(counters[0])
-		t.data.RateLvs3L2 = float64(counters[31]) * 64e6 / float64(counters[0])
-		t.data.RateLvs3L3 = float64(counters[32]) * 64e6 / float64(counters[0])
-		t.data.RateLvs3L4 = float64(counters[33]) * 64e6 / float64(counters[0])
-		t.data.RateLvs3L5 = float64(counters[34]) * 64e6 / float64(counters[0])
-		t.data.RateLvs3L6 = float64(counters[35]) * 64e6 / float64(counters[0])
-		t.data.RateLvs3L7 = float64(counters[36]) * 64e6 / float64(counters[0])
-		t.data.RateLvsL1 = float64(counters[23]) * 64e6 / float64(counters[0])
-		t.data.RateLvsL2 = float64(counters[24]) * 64e6 / float64(counters[0])
-		t.data.RateLvsL3 = float64(counters[25]) * 64e6 / float64(counters[0])
-		t.data.RateLvsL4 = float64(counters[26]) * 64e6 / float64(counters[0])
-		t.data.RateLvsL5 = float64(counters[27]) * 64e6 / float64(counters[0])
-		t.data.RateLvsL6 = float64(counters[28]) * 64e6 / float64(counters[0])
-		t.data.RateLvsL7 = float64(counters[29]) * 64e6 / float64(counters[0])
+	t.data.Evt = uint32(event.ID)
+	t.data.TimeStamp = uint64(event.Counters[3])<<32 | uint64(event.Counters[2])
+	t.data.T0 = hdr.TimeStart
+	if event.Counters[0] != 0 {
+		t.data.RateBoard1 = float64(event.Counters[4]) * 64e6 / float64(event.Counters[0])
+		t.data.RateBoard2 = float64(event.Counters[5]) * 64e6 / float64(event.Counters[0])
+		t.data.RateBoard3 = float64(event.Counters[6]) * 64e6 / float64(event.Counters[0])
+		t.data.RateBoard4 = float64(event.Counters[7]) * 64e6 / float64(event.Counters[0])
+		t.data.RateBoard5 = float64(event.Counters[8]) * 64e6 / float64(event.Counters[0])
+		t.data.RateBoard6 = float64(event.Counters[9]) * 64e6 / float64(event.Counters[0])
+		t.data.RateBoard7 = float64(event.Counters[10]) * 64e6 / float64(event.Counters[0])
+		t.data.RateBoard8 = float64(event.Counters[11]) * 64e6 / float64(event.Counters[0])
+		t.data.RateBoard9 = float64(event.Counters[12]) * 64e6 / float64(event.Counters[0])
+		t.data.RateBoard10 = float64(event.Counters[13]) * 64e6 / float64(event.Counters[0])
+		t.data.RateBoard11 = float64(event.Counters[14]) * 64e6 / float64(event.Counters[0])
+		t.data.RateBoard12 = float64(event.Counters[15]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsR1 = float64(event.Counters[16]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsR2 = float64(event.Counters[17]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsR3 = float64(event.Counters[18]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsR4 = float64(event.Counters[19]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsR5 = float64(event.Counters[20]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsR6 = float64(event.Counters[21]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsR7 = float64(event.Counters[22]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvs3L1 = float64(event.Counters[30]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvs3L2 = float64(event.Counters[31]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvs3L3 = float64(event.Counters[32]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvs3L4 = float64(event.Counters[33]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvs3L5 = float64(event.Counters[34]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvs3L6 = float64(event.Counters[35]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvs3L7 = float64(event.Counters[36]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsL1 = float64(event.Counters[23]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsL2 = float64(event.Counters[24]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsL3 = float64(event.Counters[25]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsL4 = float64(event.Counters[26]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsL5 = float64(event.Counters[27]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsL6 = float64(event.Counters[28]) * 64e6 / float64(event.Counters[0])
+		t.data.RateLvsL7 = float64(event.Counters[29]) * 64e6 / float64(event.Counters[0])
 	}
 	t.data.NoPulses = 2
 	t.data.IChanAbs240[0] = uint16(pulse0.Channel.AbsID240())
@@ -215,6 +219,10 @@ func (t *TreeMult2) Fill(run uint32, ievent uint32, counters []uint32, pulse0 *p
 	t.data.Sat[1] = utils.BoolToUint8(pulse1.HasSatSignal)
 	t.data.Charge[0] = pulse0.Charg
 	t.data.Charge[1] = pulse1.Charg
+	pulse0.CalcRisingFront(true)
+	pulse0.CalcFallingFront(false)
+	pulse1.CalcRisingFront(true)
+	pulse1.CalcFallingFront(false)
 	t.data.T10[0] = pulse0.Time10
 	t.data.T10[1] = pulse1.Time10
 	t.data.T20[0] = pulse0.Time20
@@ -240,9 +248,26 @@ func (t *TreeMult2) Fill(run uint32, ievent uint32, counters []uint32, pulse0 *p
 	t.data.X[1] = pulse1.Channel.X
 	t.data.Y[1] = pulse1.Channel.Y
 	t.data.Z[1] = pulse1.Channel.Z
-	t.data.Xmaa = Xmaa
-	t.data.Ymaa = Ymaa
-	t.data.Zmaa = Zmaa
+
+	doMinRec := true
+	if hdr.TriggerEq == 3 {
+		// In case TriggerEq = 3 (pulser), one has to check that the two pulses are
+		// on different hemispheres, otherwise the minimal reconstruction is not well
+		// defined
+		if pulse.SameHemi(pulse0, pulse1) {
+			doMinRec = false
+		}
+	}
+	if doMinRec {
+		xbeam, ybeam := 0., 0.
+		ch0 := pulse0.Channel
+		ch1 := pulse1.Channel
+		x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
+		t.data.Xmaa = x
+		t.data.Ymaa = y
+		t.data.Zmaa = z
+	}
+
 	_, err := t.tree.Fill()
 	if err != nil {
 		panic(err)

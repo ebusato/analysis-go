@@ -6,6 +6,7 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/reconstruction"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
@@ -15,7 +16,7 @@ const NoPulsesMax = 240
 type ROOTData struct {
 	Run         uint32
 	Evt         uint32
-	T0          uint64
+	T0          uint32
 	TimeStamp   uint64
 	RateBoard1  float64
 	RateBoard2  float64
@@ -101,7 +102,7 @@ func NewTree(outrootfileName string) *Tree {
 
 	_, err = t.tree.Branch2("Run", &t.data.Run, "Run/i", bufsiz)
 	_, err = t.tree.Branch2("Evt", &t.data.Evt, "Evt/i", bufsiz)
-	_, err = t.tree.Branch2("T0", &t.data.T0, "T0/l", bufsiz)
+	_, err = t.tree.Branch2("T0", &t.data.T0, "T0/i", bufsiz)
 	_, err = t.tree.Branch2("TimeStamp", &t.data.TimeStamp, "TimeStamp/l", bufsiz)
 	_, err = t.tree.Branch2("RateBoard1", &t.data.RateBoard1, "RateBoard1/D", bufsiz)
 	_, err = t.tree.Branch2("RateBoard2", &t.data.RateBoard2, "RateBoard2/D", bufsiz)
@@ -173,6 +174,7 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 	t.data.Run = run
 	t.data.Evt = uint32(event.ID)
 	t.data.TimeStamp = uint64(event.Counters[3])<<32 | uint64(event.Counters[2])
+	t.data.T0 = hdr.TimeStart
 	if event.Counters[0] != 0 {
 		t.data.RateBoard1 = float64(event.Counters[4]) * 64e6 / float64(event.Counters[0])
 		t.data.RateBoard2 = float64(event.Counters[5]) * 64e6 / float64(event.Counters[0])
@@ -251,27 +253,19 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		if len(pulses) != 2 {
 			panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
 		}
-		ch0 := pulses[0].Channel
-		ch1 := pulses[1].Channel
 		doMinRec := true
 		if hdr.TriggerEq == 3 {
 			// In case TriggerEq = 3 (pulser), one has to check that the two pulses are
 			// on different hemispheres, otherwise the minimal reconstruction is not well
 			// defined
-			hemi0, ok := ch0.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
-			if !ok {
-				panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
-			}
-			hemi1, ok := ch1.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
-			if !ok {
-				panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
-			}
-			if hemi0.Which() == hemi1.Which() {
+			if pulse.SameHemi(pulses[0], pulses[1]) {
 				doMinRec = false
 			}
 		}
 		if doMinRec {
 			xbeam, ybeam := 0., 0.
+			ch0 := pulses[0].Channel
+			ch1 := pulses[1].Channel
 			x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
 			t.data.Xmaa = x
 			t.data.Ymaa = y

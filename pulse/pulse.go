@@ -13,6 +13,7 @@ import (
 	"github.com/gonum/plot/vg"
 	"github.com/gonum/stat"
 	"gitlab.in2p3.fr/avirm/analysis-go/detector"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 )
 
 // Sample describes the signal recorded by a DRS capacitor
@@ -126,6 +127,23 @@ func (p *Pulse) Print(detailed bool) {
 		}
 		fmt.Println("\n")
 	}
+}
+
+// Hemi returns the hemisphere type
+func (p *Pulse) Hemi() dpgadetector.HemisphereType {
+	hemi, ok := p.Channel.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
+	if !ok {
+		panic("p.Channel.Quartet.DRS.ASMCard.UpStr type assertion failed")
+	}
+	return hemi.Which()
+}
+
+// SameHemi returns true in the two pulses are on the same hemisphere
+func SameHemi(pulse1 *Pulse, pulse2 *Pulse) bool {
+	if pulse1.Hemi() == pulse2.Hemi() {
+		return true
+	}
+	return false
 }
 
 // NoSamples return the number of samples the pulse is made of

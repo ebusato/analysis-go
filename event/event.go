@@ -208,6 +208,23 @@ func (e *Event) PushTimeDepOffsetSamples() {
 	}
 }
 
+// center is the center of the intervall
+// sig is the energy resolution
+// n is the number of standard deviations considered
+func (e *Event) PulsesInEnergyWindow(center, n, sig float64) []*pulse.Pulse {
+	var selectedPulses []*pulse.Pulse
+	for c := range e.Clusters {
+		cluster := &e.Clusters[c]
+		for p := range cluster.Pulses {
+			pulse := &cluster.Pulses[p]
+			if pulse.E > center-n*sig && pulse.E < center+n*sig {
+				selectedPulses = append(selectedPulses, pulse)
+			}
+		}
+	}
+	return selectedPulses
+}
+
 // type Trigger int
 //
 // const (
