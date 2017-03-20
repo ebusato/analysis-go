@@ -453,6 +453,15 @@ func (p *Pulse) MakeAmpSlice() []float64 {
 	return amps
 }
 
+// MakeTimeSlice makes a slice containing times of all samples
+func (p *Pulse) MakeTimeSlice() []float64 {
+	var times []float64
+	for _, samp := range p.Samples {
+		times = append(times, samp.Time)
+	}
+	return times
+}
+
 // Correlation computes the correlation between two pulses
 func (p *Pulse) Correlation(pu *Pulse) float64 {
 	amplitudes1 := p.MakeAmpSlice()

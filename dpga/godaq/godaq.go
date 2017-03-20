@@ -692,7 +692,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 									pulsesWithSignal[0].CalcFallingFront(false)
 									pulsesWithSignal[1].CalcFallingFront(false)
 									if treeMult2 != nil {
-										treeMult2.Fill(run, uint32(event.ID), event.Counters, pulsesWithSignal[0], pulsesWithSignal[1], x, y, z)
+										treeMult2.Fill(run, r.Header(), event, pulsesWithSignal[0], pulsesWithSignal[1])
 									}
 								}
 								dqplots.AmplCorrelation.Fill(pulsesWithSignal[0].Ampl, pulsesWithSignal[1].Ampl, 1)

@@ -212,12 +212,6 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 	}
 	///////////////////////////////////////////
 	// TRF calculation
-	/*
-		for i := range event.ClustersWoData {
-			cluster := event.ClustersWoData[i]
-			fmt.Println(i, "   ", len(cluster.PulsesWithSignal()))
-		}*/
-	//sineRF := make([]float64, len(event.ClustersWoData[11].Pulses[3].Samples))
 	//utils.FindIntersections(event.ClustersWoData[11].Pulses[3], min, max)
 	///////////////////////////////////////////
 	noPulses, pulses := event.Multiplicity()

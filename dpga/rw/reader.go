@@ -349,12 +349,12 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 
 			i := fifoID144 % 12
 			if i == 10 || i == 11 {
-				iChannelWoData := i-10
-				iChannelWoData+=2*(fifoID144/12)
-				iClusterWoData := iChannelWoData/2
+				iChannelWoData := i - 10
+				iChannelWoData += 2 * (fifoID144 / 12)
+				iClusterWoData := iChannelWoData / 2
 				//fmt.Println(fifoID144, iChannelWoData, iClusterWoData)
 				event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
-				
+
 				////////////////////////////////////////////////////////
 				// Put pulses in event
 				switch frame.typeOfFrame {
