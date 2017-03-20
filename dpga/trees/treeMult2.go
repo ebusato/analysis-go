@@ -9,42 +9,45 @@ import (
 )
 
 type ROOTDataMult2 struct {
-	Run                 uint32
-	Evt                 uint32
-	TimeStamp           uint64
-	RateBoard1          float64
-	RateBoard2          float64
-	RateBoard3          float64
-	RateBoard4          float64
-	RateBoard5          float64
-	RateBoard6          float64
-	RateBoard7          float64
-	RateBoard8          float64
-	RateBoard9          float64
-	RateBoard10         float64
-	RateBoard11         float64
-	RateBoard12         float64
-	RateLvsR1           float64
-	RateLvsR2           float64
-	RateLvsR3           float64
-	RateLvsR4           float64
-	RateLvsR5           float64
-	RateLvsR6           float64
-	RateLvsR7           float64
-	RateLvs3L1          float64
-	RateLvs3L2          float64
-	RateLvs3L3          float64
-	RateLvs3L4          float64
-	RateLvs3L5          float64
-	RateLvs3L6          float64
-	RateLvs3L7          float64
-	RateLvsL1           float64
-	RateLvsL2           float64
-	RateLvsL3           float64
-	RateLvsL4           float64
-	RateLvsL5           float64
-	RateLvsL6           float64
-	RateLvsL7           float64
+	Run         uint32
+	Evt         uint32
+	T0          uint32
+	TimeStamp   uint64
+	RateBoard1  float64
+	RateBoard2  float64
+	RateBoard3  float64
+	RateBoard4  float64
+	RateBoard5  float64
+	RateBoard6  float64
+	RateBoard7  float64
+	RateBoard8  float64
+	RateBoard9  float64
+	RateBoard10 float64
+	RateBoard11 float64
+	RateBoard12 float64
+	RateLvsR1   float64
+	RateLvsR2   float64
+	RateLvsR3   float64
+	RateLvsR4   float64
+	RateLvsR5   float64
+	RateLvsR6   float64
+	RateLvsR7   float64
+	RateLvs3L1  float64
+	RateLvs3L2  float64
+	RateLvs3L3  float64
+	RateLvs3L4  float64
+	RateLvs3L5  float64
+	RateLvs3L6  float64
+	RateLvs3L7  float64
+	RateLvsL1   float64
+	RateLvsL2   float64
+	RateLvsL3   float64
+	RateLvsL4   float64
+	RateLvsL5   float64
+	RateLvsL6   float64
+	RateLvsL7   float64
+
+	NoPulses            int32
 	IChanAbs240         [2]uint16
 	IQuartetAbs60       [2]uint8
 	ILineAbs12          [2]uint8
@@ -92,6 +95,7 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 
 	_, err = t.tree.Branch2("Run", &t.data.Run, "Run/i", bufsiz)
 	_, err = t.tree.Branch2("Evt", &t.data.Evt, "Evt/i", bufsiz)
+	_, err = t.tree.Branch2("T0", &t.data.T0, "T0/l", bufsiz)
 	_, err = t.tree.Branch2("TimeStamp", &t.data.TimeStamp, "TimeStamp/l", bufsiz)
 	_, err = t.tree.Branch2("RateBoard1", &t.data.RateBoard1, "RateBoard1/D", bufsiz)
 	_, err = t.tree.Branch2("RateBoard2", &t.data.RateBoard2, "RateBoard2/D", bufsiz)
@@ -126,6 +130,8 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 	_, err = t.tree.Branch2("RateLvsL5", &t.data.RateLvsL5, "RateLvsL5/D", bufsiz)
 	_, err = t.tree.Branch2("RateLvsL6", &t.data.RateLvsL6, "RateLvsL6/D", bufsiz)
 	_, err = t.tree.Branch2("RateLvsL7", &t.data.RateLvsL7, "RateLvsL7/D", bufsiz)
+
+	_, err = t.tree.Branch2("NoPulses", &t.data.NoPulses, "NoPulses/I", bufsiz)
 	_, err = t.tree.Branch2("IChanAbs240", &t.data.IChanAbs240, "IChanAbs240[2]/s", bufsiz)
 	_, err = t.tree.Branch2("IQuartetAbs60", &t.data.IQuartetAbs60, "IQuartetAbs60[2]/b", bufsiz)
 	_, err = t.tree.Branch2("ILineAbs12", &t.data.ILineAbs12, "ILineAbs12[2]/b", bufsiz)
@@ -194,6 +200,7 @@ func (t *TreeMult2) Fill(run uint32, ievent uint32, counters []uint32, pulse0 *p
 		t.data.RateLvsL6 = float64(counters[28]) * 64e6 / float64(counters[0])
 		t.data.RateLvsL7 = float64(counters[29]) * 64e6 / float64(counters[0])
 	}
+	t.data.NoPulses = 2
 	t.data.IChanAbs240[0] = uint16(pulse0.Channel.AbsID240())
 	t.data.IChanAbs240[1] = uint16(pulse1.Channel.AbsID240())
 	t.data.IQuartetAbs60[0] = dpgadetector.FifoID144ToQuartetAbsIdx60(pulse0.Channel.FifoID144(), true)

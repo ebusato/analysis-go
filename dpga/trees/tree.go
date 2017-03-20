@@ -215,25 +215,8 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 			cluster := event.ClustersWoData[i]
 			fmt.Println(i, "   ", len(cluster.PulsesWithSignal()))
 		}*/
-	sineRF := make([]float64, len(event.ClustersWoData[11].Pulses[3].Samples))
-	var min float64 = 1e6
-	var max float64 = 0
-	for i := range sineRF {
-		sineRF[i] = event.ClustersWoData[11].Pulses[3].Samples[i].Amplitude
-		if sineRF[i] < min {
-			min = sineRF[i]
-		}
-		if sineRF[i] > max {
-			max = sineRF[i]
-		}
-		// 		fmt.Print(i, " ", sineWave[i])
-		// 		for j := 0; j < int(math.Floor(sineWave[i])/10); j++ {
-		// 			fmt.Print("*")
-		// 		}
-		// 		fmt.Print("\n")
-	}
-	// 	intersections :=
-	utils.FindIntersections(sineRF, min, max)
+	//sineRF := make([]float64, len(event.ClustersWoData[11].Pulses[3].Samples))
+	//utils.FindIntersections(event.ClustersWoData[11].Pulses[3], min, max)
 	///////////////////////////////////////////
 	noPulses, pulses := event.Multiplicity()
 	t.data.NoPulses = int32(noPulses)
