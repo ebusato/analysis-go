@@ -9,10 +9,10 @@ import (
 
 func correctCluster(cluster *pulse.Cluster, doPedestal bool, doTimeDepOffset bool, doEnergyCalib bool) {
 	for j := range cluster.Pulses {
+		//fmt.Println("Correcting pulse", j)
 		if doPedestal {
 			cluster.Pulses[j].SubtractPedestal()
 			if doTimeDepOffset {
-				//fmt.Println("toto")
 				cluster.Pulses[j].SubtractTimeDepOffsets()
 				if doEnergyCalib {
 					//fmt.Println("pointer", j, cluster.Pulses[j].Channel)
@@ -41,6 +41,7 @@ func CorrectEvent(e *event.Event, doPedestal bool, doTimeDepOffset bool, doEnerg
 		correctCluster(cluster, doPedestal, doTimeDepOffset, doEnergyCalib)
 	}
 	for i := range newevent.ClustersWoData {
+		//fmt.Println("Correcting cluster wo data", i)
 		cluster := &newevent.ClustersWoData[i]
 		correctCluster(cluster, doPedestal, doTimeDepOffset, doEnergyCalib)
 	}

@@ -122,6 +122,7 @@ func (e *Event) pushPedestalCluster(cluster *pulse.Cluster) {
 		if pulse.HasSignal {
 			continue
 		}
+		//fmt.Println("pushing pedestal sample for pulse", iPulse)
 		for iSample := range pulse.Samples {
 			sample := &pulse.Samples[iSample]
 			capacitor := sample.Capacitor
@@ -131,6 +132,8 @@ func (e *Event) pushPedestalCluster(cluster *pulse.Cluster) {
 					log.Fatal("noSamples != 0!")
 				}
 				capacitor.AddPedestalSample(sample.Amplitude)
+			} else {
+				log.Fatalf("no capacitor\n")
 			}
 		}
 	}
@@ -159,6 +162,7 @@ func (e *Event) PushPedestalSamples() {
 		// 		}
 	}
 	for iCluster := range e.ClustersWoData {
+		//fmt.Println("pushing pedestal sample for clusterWoData", iCluster)
 		cluster := &e.ClustersWoData[iCluster]
 		e.pushPedestalCluster(cluster)
 	}

@@ -64,6 +64,7 @@ func (s *Sample) SubtractPedestal() {
 	if s.Capacitor == nil {
 		log.Print("warning ! no capacitor associated to this sample")
 	} else {
+		//fmt.Println(s.Capacitor.PedestalMean())
 		s.Amplitude -= s.Capacitor.PedestalMean()
 	}
 }

@@ -1,6 +1,9 @@
 package trees
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
@@ -277,8 +280,31 @@ func (t *TreeMult2) Fill(run uint32, hdr *rw.Header, event *event.Event, pulse0 
 	// 			fmt.Println(i, j, len(pulse.Samples))
 	// 		}
 	// 	}
-	//times :=
-	utils.FindIntersections(event.ClustersWoData[0].Pulses[0].MakeAmpSlice(), event.ClustersWoData[0].Pulses[0].MakeTimeSlice())
+	ampSlice := event.ClustersWoData[0].Pulses[0].MakeAmpSlice()
+	if len(ampSlice) != 0 { // can compute TRF
+		timesRF := utils.FindIntersections(event.ClustersWoData[0].Pulses[0].MakeAmpSlice(), event.ClustersWoData[0].Pulses[0].MakeTimeSlice())
+		tMean := (pulse0.Time30 + pulse1.Time30) / 2.
+		if tMean < timesRF[0] {
+			t.data.TRF = timesRF[0] - 1/24.85e6*1e9 // 24.85 MHz is the HF frequency
+		} else if tMean > timesRF[len(timesRF)-1] {
+			t.data.TRF = timesRF[len(timesRF)-1]
+		} else {
+			for i := range timesRF {
+				if i < len(timesRF)-1 {
+					if tMean > timesRF[i] && tMean < timesRF[i+1] {
+						t.data.TRF = timesRF[i]
+						break
+					}
+				} else {
+					fmt.Println(timesRF)
+					log.Fatalf("This should not happen, tMean=%v\n", tMean)
+				}
+			}
+		}
+		if tMean-t.data.TRF > 1/24.85e6*1e9+3 {
+			log.Fatalf("ERROR\n")
+		}
+	}
 	///////////////////////////////////////////
 
 	_, err := t.tree.Fill()
