@@ -1,8 +1,6 @@
 package trees
 
 import (
-	"fmt"
-
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
@@ -279,8 +277,8 @@ func (t *TreeMult2) Fill(run uint32, hdr *rw.Header, event *event.Event, pulse0 
 	// 			fmt.Println(i, j, len(pulse.Samples))
 	// 		}
 	// 	}
-	times := utils.FindIntersections(event.ClustersWoData[0].Pulses[0].MakeAmpSlice(), event.ClustersWoData[0].Pulses[0].MakeTimeSlice())
-	fmt.Println(len(times))
+	//times :=
+	utils.FindIntersections(event.ClustersWoData[0].Pulses[0].MakeAmpSlice(), event.ClustersWoData[0].Pulses[0].MakeTimeSlice())
 	///////////////////////////////////////////
 
 	_, err := t.tree.Fill()
