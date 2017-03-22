@@ -77,7 +77,7 @@ func CheckAndFix(intersectionTimes []float64) []float64 {
 			fmt.Println(intersectionTimes)
 			log.Fatalf("Elapsed time since last intersection too large\n")
 		} else if timeWrtPrevious < 1/24.85e6*1e9-5 {
-			if timeWrtPrevious < 3 {
+			if timeWrtPrevious < 5 {
 				continue
 			} else {
 				fmt.Println(intersectionTimes)
@@ -90,7 +90,7 @@ func CheckAndFix(intersectionTimes []float64) []float64 {
 	// 	fmt.Println(times)
 
 	if len(times) > 5 {
-		if times[len(times)-1]-times[0] > 195 {
+		if times[len(times)-1]-times[0] > 194 {
 			//fmt.Println("here", times)
 			times = times[:len(times)-1]
 		} else {
