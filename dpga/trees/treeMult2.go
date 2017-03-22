@@ -1,6 +1,8 @@
 package trees
 
 import (
+	"fmt"
+
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
@@ -243,6 +245,9 @@ func (t *TreeMult2) Fill(run uint32, hdr *rw.Header, event *event.Event, pulse0 
 		t.data.SampleTimes[i] = pulse0.Samples[i].Time
 		t.data.Pulse[0][i] = pulse0.Samples[i].Amplitude
 		t.data.Pulse[1][i] = pulse1.Samples[i].Amplitude
+		if i > 998 {
+			fmt.Println(event.ID, i, len(event.ClustersWoData[0].Pulses[0].Samples))
+		}
 		t.data.PulseRF[i] = event.ClustersWoData[0].Pulses[0].Samples[i].Amplitude
 	}
 	t.data.X[0] = pulse0.Channel.X
