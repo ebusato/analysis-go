@@ -90,7 +90,7 @@ func CheckAndFix(intersectionTimes []float64) []float64 {
 	// 	fmt.Println(times)
 
 	if len(times) > 5 {
-		if times[len(times)-1]-times[0] > 197 {
+		if times[len(times)-1]-times[0] > 195 {
 			//fmt.Println("here", times)
 			times = times[:len(times)-1]
 		} else {
