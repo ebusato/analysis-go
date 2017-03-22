@@ -251,6 +251,7 @@ func (t *TreeMult2) Fill(run uint32, hdr *rw.Header, event *event.Event, pulse0 
 	t.data.X[1] = pulse1.Channel.X
 	t.data.Y[1] = pulse1.Channel.Y
 	t.data.Z[1] = pulse1.Channel.Z
+	// 	fmt.Println(pulse0.Channel.ScintCoords)
 
 	doMinRec := true
 	if hdr.TriggerEq == 3 {
