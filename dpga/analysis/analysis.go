@@ -23,6 +23,7 @@ func main() {
 	var (
 		infileName = flag.String("i", "", "Name of the input file.")
 		noEvents   = flag.Uint("n", 10000000, "Number of events to process.")
+		evtStart   = flag.Uint("evtstart", 0, "First event to process.")
 		calib      = flag.String("calib", "", "String indicating which calib to use (e.g. A1 for period A, version 1)")
 		noped      = flag.Bool("noped", false, "If specified, no pedestal correction applied")
 		notdo      = flag.Bool("notdo", false, "If specified, no time dependent offset correction applied")
@@ -91,6 +92,9 @@ func main() {
 	for event, status := r.ReadNextEvent(); status && event.ID < *noEvents; event, status = r.ReadNextEvent() {
 		if event.ID%500 == 0 {
 			fmt.Printf("Processing event %v\n", event.ID)
+		}
+		if event.ID < *evtStart {
+			continue
 		}
 		// 		if event.ID < 86000 {
 		// 			continue

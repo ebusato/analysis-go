@@ -1,9 +1,6 @@
 package trees
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
@@ -70,6 +67,7 @@ type ROOTDataMult2 struct {
 	NoLocMaxRisingFront [2]uint16
 	SampleTimes         [999]float64
 	Pulse               [2][999]float64
+	PulseRF             [999]float64
 	X                   [2]float64
 	Y                   [2]float64
 	Z                   [2]float64
@@ -154,6 +152,7 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 	_, err = t.tree.Branch2("NoLocMaxRisingFront", &t.data.NoLocMaxRisingFront, "NoLocMaxRisingFront[2]/s", bufsiz)
 	_, err = t.tree.Branch2("SampleTimes", &t.data.SampleTimes, "SampleTimes[999]/D", bufsiz)
 	_, err = t.tree.Branch2("Pulse", &t.data.Pulse, "Pulse[2][999]/D", bufsiz)
+	_, err = t.tree.Branch2("PulseRF", &t.data.PulseRF, "PulseRF[999]/D", bufsiz)
 	_, err = t.tree.Branch2("X", &t.data.X, "X[2]/D", bufsiz)
 	_, err = t.tree.Branch2("Y", &t.data.Y, "Y[2]/D", bufsiz)
 	_, err = t.tree.Branch2("Z", &t.data.Z, "Z[2]/D", bufsiz)
@@ -244,6 +243,7 @@ func (t *TreeMult2) Fill(run uint32, hdr *rw.Header, event *event.Event, pulse0 
 		t.data.SampleTimes[i] = pulse0.Samples[i].Time
 		t.data.Pulse[0][i] = pulse0.Samples[i].Amplitude
 		t.data.Pulse[1][i] = pulse1.Samples[i].Amplitude
+		t.data.PulseRF[i] = event.ClustersWoData[0].Pulses[0].Samples[i].Amplitude
 	}
 	t.data.X[0] = pulse0.Channel.X
 	t.data.Y[0] = pulse0.Channel.Y
@@ -281,31 +281,33 @@ func (t *TreeMult2) Fill(run uint32, hdr *rw.Header, event *event.Event, pulse0 
 	// 			fmt.Println(i, j, len(pulse.Samples))
 	// 		}
 	// 	}
-	ampSlice := event.ClustersWoData[0].Pulses[0].MakeAmpSlice()
-	if len(ampSlice) != 0 { // can compute TRF
-		timesRF := utils.FindIntersections(event.ClustersWoData[0].Pulses[0].MakeAmpSlice(), event.ClustersWoData[0].Pulses[0].MakeTimeSlice())
-		tMean := (pulse0.Time30 + pulse1.Time30) / 2.
-		if tMean < timesRF[0] {
-			t.data.TRF = timesRF[0] - 1/24.85e6*1e9 // 24.85 MHz is the HF frequency
-		} else if tMean > timesRF[len(timesRF)-1] {
-			t.data.TRF = timesRF[len(timesRF)-1]
-		} else {
-			for i := range timesRF {
-				if i < len(timesRF)-1 {
-					if tMean > timesRF[i] && tMean < timesRF[i+1] {
-						t.data.TRF = timesRF[i]
-						break
+	/*
+		ampSlice := event.ClustersWoData[0].Pulses[0].MakeAmpSlice()
+		if len(ampSlice) != 0 { // can compute TRF
+			timesRF := utils.FindIntersections(event.ID, event.ClustersWoData[0].Pulses[0].MakeAmpSlice(), event.ClustersWoData[0].Pulses[0].MakeTimeSlice())
+			tMean := (pulse0.Time30 + pulse1.Time30) / 2.
+			if tMean < timesRF[0] {
+				t.data.TRF = timesRF[0] - 1/24.85e6*1e9 // 24.85 MHz is the HF frequency
+			} else if tMean > timesRF[len(timesRF)-1] {
+				t.data.TRF = timesRF[len(timesRF)-1]
+			} else {
+				for i := range timesRF {
+					if i < len(timesRF)-1 {
+						if tMean > timesRF[i] && tMean < timesRF[i+1] {
+							t.data.TRF = timesRF[i]
+							break
+						}
+					} else {
+						fmt.Println(timesRF)
+						log.Fatalf("This should not happen, tMean=%v\n", tMean)
 					}
-				} else {
-					fmt.Println(timesRF)
-					log.Fatalf("This should not happen, tMean=%v\n", tMean)
 				}
 			}
+			if tMean-t.data.TRF > 1/24.85e6*1e9+3 {
+				log.Fatalf("ERROR\n")
+			}
 		}
-		if tMean-t.data.TRF > 1/24.85e6*1e9+3 {
-			log.Fatalf("ERROR\n")
-		}
-	}
+	*/
 	///////////////////////////////////////////
 
 	_, err := t.tree.Fill()

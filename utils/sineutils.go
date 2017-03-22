@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func FindIntersections(sine []float64, times []float64) []float64 {
+func FindIntersections(evtID uint, sine []float64, times []float64) []float64 {
 	if len(sine) != len(times) {
 		log.Fatalf("len(sine) != len(times)\n")
 	}
@@ -61,11 +61,11 @@ func FindIntersections(sine []float64, times []float64) []float64 {
 		amplPrev = ampl
 	}
 
-	t := CheckAndFix(intersectionTimes)
+	t := CheckAndFix(evtID, intersectionTimes)
 	return t
 }
 
-func CheckAndFix(intersectionTimes []float64) []float64 {
+func CheckAndFix(evtID uint, intersectionTimes []float64) []float64 {
 	// 	fmt.Println(len(intersectionTimes))
 	// 	fmt.Println(intersectionTimes)
 
@@ -75,13 +75,13 @@ func CheckAndFix(intersectionTimes []float64) []float64 {
 		timeWrtPrevious := intersectionTimes[i] - intersectionTimes[i-1]
 		if timeWrtPrevious > 1/24.85e6*1e9+5 { // 24.85 MHz is the HF frequency
 			fmt.Println(intersectionTimes)
-			log.Fatalf("Elapsed time since last intersection too large\n")
+			log.Fatalf("Elapsed time since last intersection too large (evtID=%v)\n", evtID)
 		} else if timeWrtPrevious < 1/24.85e6*1e9-5 {
 			if timeWrtPrevious < 5 {
 				continue
 			} else {
 				fmt.Println(intersectionTimes)
-				log.Fatalf("Elapsed time since last intersection too small (ti, ti-1) = (%v, %v)\n", intersectionTimes[i], intersectionTimes[i-1])
+				log.Fatalf("Elapsed time since last intersection too small (ti, ti-1) = (%v, %v), (evtID=%v)\n", intersectionTimes[i], intersectionTimes[i-1], evtID)
 			}
 		} else {
 			times = append(times, intersectionTimes[i])
@@ -95,13 +95,13 @@ func CheckAndFix(intersectionTimes []float64) []float64 {
 			times = times[:len(times)-1]
 		} else {
 			fmt.Println(times)
-			log.Fatalf("len(times) > 5\n")
+			log.Fatalf("len(times) > 5 (evtID=%v)\n", evtID)
 		}
 	}
 	if len(times) < 5 {
 		if len(times) <= 3 {
 			fmt.Println(times)
-			log.Fatalf("Warning: len(times) = %v\n", len(times))
+			log.Fatalf("Warning: len(times) = %v (evtID=%v)\n", len(times), evtID)
 		} else if len(times) == 4 {
 			times = append([]float64{0}, times...)
 			//fmt.Println(times)
