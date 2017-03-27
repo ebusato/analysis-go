@@ -128,10 +128,10 @@ func (e *Event) Print(printClusters bool, printClusterDetails bool) {
 func (e *Event) Multiplicity() (uint8, []*pulse.Pulse, int) {
 	var mult uint8 = 0
 	var pulsesWSig []*pulse.Pulse
-	var idxFirstPulseLeftSide int = -1
+	var idxFirstPulseLeftSide int
 	for i := range e.Clusters {
 		pulsesWSigInCluster := e.Clusters[i].PulsesWithSignal()
-		if i >= 30 && idxFirstPulseLeftSide == -1 { // start processing clusters on left side of DPGA
+		if i == 30 { // start processing clusters on left side of DPGA
 			idxFirstPulseLeftSide = len(pulsesWSig)
 		}
 		pulsesWSig = append(pulsesWSig, pulsesWSigInCluster...)

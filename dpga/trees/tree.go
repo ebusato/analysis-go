@@ -3,20 +3,17 @@ package trees
 import (
 	"fmt"
 	"log"
-	"math"
 
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
-	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
-	"gitlab.in2p3.fr/avirm/analysis-go/reconstruction"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
 const NoPulsesMax = 240
-const NoLORsMax = 5
+const NoLORsMax = 40
 
 type ROOTData struct {
 	Run         uint32
@@ -91,10 +88,6 @@ type ROOTData struct {
 	LORYmar             [NoLORsMax]float64
 	LORZmar             [NoLORsMax]float64
 	LORRmar             [NoLORsMax]float64
-	Xmar                float64
-	Ymar                float64
-	Zmar                float64
-	Rmar                float64
 	TRF                 float64
 }
 
@@ -190,10 +183,6 @@ func NewTree(outrootfileName string) *Tree {
 	_, err = t.tree.Branch2("LORYmar", &t.data.LORYmar, "LORYmar[NoLORs]/D", bufsiz)
 	_, err = t.tree.Branch2("LORZmar", &t.data.LORZmar, "LORZmar[NoLORs]/D", bufsiz)
 	_, err = t.tree.Branch2("LORRmar", &t.data.LORRmar, "LORRmar[NoLORs]/D", bufsiz)
-	_, err = t.tree.Branch2("Xmar", &t.data.Xmar, "Xmar/D", bufsiz)
-	_, err = t.tree.Branch2("Ymar", &t.data.Ymar, "Ymar/D", bufsiz)
-	_, err = t.tree.Branch2("Zmar", &t.data.Zmar, "Zmar/D", bufsiz)
-	_, err = t.tree.Branch2("Rmar", &t.data.Rmar, "Rmar/D", bufsiz)
 	_, err = t.tree.Branch2("TRF", &t.data.TRF, "TRF/D", bufsiz)
 
 	//t.data.Pulse[0] = make([]float64, dpgadetector.Det.NoSamples())
@@ -271,7 +260,7 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 			t.data.SampleTimes[j] = pulse.Samples[j].Time
 			t.data.Pulse[i][j] = pulse.Samples[j].Amplitude
 			if len(event.ClustersWoData[0].Pulses[0].Samples) > 0 {
-				t.data.PulseRF[i] = event.ClustersWoData[0].Pulses[0].Samples[i].Amplitude
+				t.data.PulseRF[j] = event.ClustersWoData[0].Pulses[0].Samples[j].Amplitude
 			}
 		}
 		t.data.X[i] = pulse.Channel.X
@@ -282,7 +271,7 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		t.data.Zc[i] = pulse.Channel.CrystCenter.Z
 	}
 
-	event.FindLORs(0, 0, 38., 3*1.2, 511-3*28.3, 511+3*28.3)
+	event.FindLORs(0, 0, 38., 3*1.2, 0, 511+3*28.3)
 	// 	fmt.Println("no lors: ", len(event.LORs))
 	t.data.NoLORs = int32(len(event.LORs))
 	if t.data.NoLORs < NoLORsMax {
@@ -301,30 +290,6 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		}
 	}
 
-	if noPulses == 2 {
-		if len(pulses) != 2 {
-			panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
-		}
-		doMinRec := true
-		if hdr.TriggerEq == 3 {
-			// In case TriggerEq = 3 (pulser), one has to check that the two pulses are
-			// on different hemispheres, otherwise the minimal reconstruction is not well
-			// defined
-			if pulse.SameHemi(pulses[0], pulses[1]) {
-				doMinRec = false
-			}
-		}
-		if doMinRec {
-			xbeam, ybeam := 0., 0.
-			ch0 := pulses[0].Channel
-			ch1 := pulses[1].Channel
-			x, y, z := reconstruction.Minimal(true, ch0, ch1, xbeam, ybeam)
-			t.data.Xmar = x
-			t.data.Ymar = y
-			t.data.Zmar = z
-			t.data.Rmar = math.Sqrt(x*x + y*y)
-		}
-	}
 	_, err := t.tree.Fill()
 	if err != nil {
 		panic(err)
