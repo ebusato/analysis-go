@@ -71,6 +71,7 @@ type ROOTData struct {
 	NoLocMaxRisingFront [NoPulsesMax]uint16
 	SampleTimes         [999]float64
 	Pulse               [NoPulsesMax][999]float64
+	PulseRF             [999]float64
 	X                   [NoPulsesMax]float64
 	Y                   [NoPulsesMax]float64
 	Z                   [NoPulsesMax]float64
@@ -157,6 +158,7 @@ func NewTree(outrootfileName string) *Tree {
 	_, err = t.tree.Branch2("NoLocMaxRisingFront", &t.data.NoLocMaxRisingFront, "NoLocMaxRisingFront[NoPulses]/s", bufsiz)
 	_, err = t.tree.Branch2("SampleTimes", &t.data.SampleTimes, "SampleTimes[999]/D", bufsiz)
 	_, err = t.tree.Branch2("Pulse", &t.data.Pulse, "Pulse[NoPulses][999]/D", bufsiz)
+	_, err = t.tree.Branch2("PulseRF", &t.data.PulseRF, "PulseRF[999]/D", bufsiz)
 	_, err = t.tree.Branch2("X", &t.data.X, "X[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("Y", &t.data.Y, "Y[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("Z", &t.data.Z, "Z[NoPulses]/D", bufsiz)
@@ -238,6 +240,9 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		for j := range pulse.Samples {
 			t.data.SampleTimes[j] = pulse.Samples[j].Time
 			t.data.Pulse[i][j] = pulse.Samples[j].Amplitude
+			if len(event.ClustersWoData[0].Pulses[0].Samples) > 0 {
+				t.data.PulseRF[i] = event.ClustersWoData[0].Pulses[0].Samples[i].Amplitude
+			}
 		}
 		t.data.X[i] = pulse.Channel.X
 		t.data.Y[i] = pulse.Channel.Y
@@ -260,7 +265,7 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 			xbeam, ybeam := 0., 0.
 			ch0 := pulses[0].Channel
 			ch1 := pulses[1].Channel
-			x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
+			x, y, z := reconstruction.Minimal(true, ch0, ch1, xbeam, ybeam)
 			t.data.Xmaa = x
 			t.data.Ymaa = y
 			t.data.Zmaa = z

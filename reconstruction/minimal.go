@@ -1,9 +1,10 @@
 package reconstruction
 
 import (
-	"gitlab.in2p3.fr/avirm/analysis-go/detector"
 	"fmt"
 	"math"
+
+	"gitlab.in2p3.fr/avirm/analysis-go/detector"
 )
 
 // Minimal returns the coordinates of the beta+ decay according to the "minimal approach algorithm"
@@ -24,17 +25,34 @@ import (
 // Important remark: so far, the coordinates of the scintillators front faces are used while one
 // should rather use the coordinates of the scintillators center
 //    -> THIS NEEDS TO BE CHANGED
-func Minimal(ch1, ch2 *detector.Channel, xbeam, ybeam float64) (x, y, z float64) {
-	coeff := ((ch2.CartCoord.X-ch1.CartCoord.X)*(ch1.CartCoord.X-xbeam) + (ch2.CartCoord.Y-ch1.CartCoord.Y)*(ch1.CartCoord.Y-ybeam)) / ((ch2.CartCoord.X-ch1.CartCoord.X)*(ch2.CartCoord.X-ch1.CartCoord.X) + (ch2.CartCoord.Y-ch1.CartCoord.Y)*(ch2.CartCoord.Y-ch1.CartCoord.Y))
-	x = ch1.CartCoord.X - coeff*(ch2.CartCoord.X-ch1.CartCoord.X)
-	y = ch1.CartCoord.Y - coeff*(ch2.CartCoord.Y-ch1.CartCoord.Y)
-	z = ch1.CartCoord.Z - coeff*(ch2.CartCoord.Z-ch1.CartCoord.Z)
-	
-	 if math.IsNaN(x) || math.IsNaN(y) || math.IsNaN(z) {
-		fmt.Printf("One is NaN: %v %v %v\n", math.IsNaN(x), math.IsNaN(y), math.IsNaN(z))
-		fmt.Printf("  %v %v %v\n", ch1.CartCoord.X,  ch1.CartCoord.Y, ch1.CartCoord.Z)
-		fmt.Printf("  %v %v %v\n", ch2.CartCoord.X,  ch2.CartCoord.Y, ch2.CartCoord.Z)
+func Minimal(crystCenter bool, ch1, ch2 *detector.Channel, xbeam, ybeam float64) (x, y, z float64) {
+	var x1, x2, y1, y2, z1, z2 float64
+	switch crystCenter {
+	case true:
+		x1 = ch1.CrystCenter.X
+		x2 = ch2.CrystCenter.X
+		y1 = ch1.CrystCenter.Y
+		y2 = ch2.CrystCenter.Y
+		z1 = ch1.CrystCenter.Z
+		z2 = ch2.CrystCenter.Z
+	case false:
+		x1 = ch1.CartCoord.X
+		x2 = ch2.CartCoord.X
+		y1 = ch1.CartCoord.Y
+		y2 = ch2.CartCoord.Y
+		z1 = ch1.CartCoord.Z
+		z2 = ch2.CartCoord.Z
 	}
-	
+	coeff := ((x2-x1)*(x1-xbeam) + (y2-y1)*(y1-ybeam)) / ((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1))
+	x = x1 - coeff*(x2-x1)
+	y = y1 - coeff*(y2-y1)
+	z = z1 - coeff*(z2-z1)
+
+	if math.IsNaN(x) || math.IsNaN(y) || math.IsNaN(z) {
+		fmt.Printf("One is NaN: %v %v %v\n", math.IsNaN(x), math.IsNaN(y), math.IsNaN(z))
+		fmt.Printf("  %v %v %v\n", x1, y1, z1)
+		fmt.Printf("  %v %v %v\n", x2, y2, z2)
+	}
+
 	return
 }

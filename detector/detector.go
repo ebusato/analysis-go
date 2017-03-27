@@ -136,8 +136,11 @@ type Channel struct {
 	// It is the number of ADC count corresponding to the 511 keV peak
 	EnergyCalib LinearCalib
 
-	// The coordinates are those of the center of the front face of the cristal.
+	// The coordinates are those of the center of the front face of the crystal.
 	utils.CartCoord
+
+	// These coordinates are those of the center of the crystal
+	CrystCenter utils.CartCoord
 
 	// Full coordinates of the scintillator
 	ScintCoords RectParallelepiped

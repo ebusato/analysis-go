@@ -293,6 +293,17 @@ func NewDetector() *Detector {
 								ch.ScintCoords[6].Z = ch.ScintCoords[5].Z
 								ch.ScintCoords[7].Z = ch.ScintCoords[3].Z
 							}
+							ch.CrystCenter.X = 0
+							ch.CrystCenter.Y = 0
+							ch.CrystCenter.Z = 0
+							for i := range ch.ScintCoords {
+								ch.CrystCenter.X += ch.ScintCoords[i].X
+								ch.CrystCenter.Y += ch.ScintCoords[i].Y
+								ch.CrystCenter.Z += ch.ScintCoords[i].Z
+							}
+							ch.CrystCenter.X /= float64(len(ch.ScintCoords))
+							ch.CrystCenter.Y /= float64(len(ch.ScintCoords))
+							ch.CrystCenter.Z /= float64(len(ch.ScintCoords))
 						case true: // channel not used in DPGA (one of the four channels per ASM card which is not used)
 							ch.SetAbsID240(math.MaxUint16)
 						}

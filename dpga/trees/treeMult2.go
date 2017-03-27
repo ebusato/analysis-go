@@ -268,7 +268,7 @@ func (t *TreeMult2) Fill(run uint32, hdr *rw.Header, event *event.Event, pulse0 
 		xbeam, ybeam := 0., 0.
 		ch0 := pulse0.Channel
 		ch1 := pulse1.Channel
-		x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
+		x, y, z := reconstruction.Minimal(true, ch0, ch1, xbeam, ybeam)
 		t.data.Xmaa = x
 		t.data.Ymaa = y
 		t.data.Zmaa = z
