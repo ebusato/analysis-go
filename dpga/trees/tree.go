@@ -60,6 +60,7 @@ type ROOTData struct {
 	IChanAbs240         [NoPulsesMax]uint16
 	IQuartetAbs60       [NoPulsesMax]uint8
 	ILineAbs12          [NoPulsesMax]uint8
+	IHemi               [NoPulsesMax]uint8
 	E                   [NoPulsesMax]float64
 	Ampl                [NoPulsesMax]float64
 	Sat                 [NoPulsesMax]uint8
@@ -151,6 +152,7 @@ func NewTree(outrootfileName string) *Tree {
 	_, err = t.tree.Branch2("IChanAbs240", &t.data.IChanAbs240, "IChanAbs240[NoPulses]/s", bufsiz)
 	_, err = t.tree.Branch2("IQuartetAbs60", &t.data.IQuartetAbs60, "IQuartetAbs60[NoPulses]/b", bufsiz)
 	_, err = t.tree.Branch2("ILineAbs12", &t.data.ILineAbs12, "ILineAbs12[NoPulses]/b", bufsiz)
+	_, err = t.tree.Branch2("IHemi", &t.data.IHemi, "IHemi[NoPulses]/b", bufsiz)
 	_, err = t.tree.Branch2("E", &t.data.E, "E[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("Ampl", &t.data.Ampl, "Ampl[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("Sat", &t.data.Sat, "Sat[NoPulses]/b", bufsiz)
@@ -236,6 +238,7 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		t.data.IChanAbs240[i] = uint16(pulse.Channel.AbsID240())
 		t.data.IQuartetAbs60[i] = dpgadetector.FifoID144ToQuartetAbsIdx60(pulse.Channel.FifoID144(), true)
 		t.data.ILineAbs12[i] = dpgadetector.QuartetAbsIdx60ToLineAbsIdx12(t.data.IQuartetAbs60[i])
+		t.data.IHemi[i] = uint8(pulse.Hemi())
 		t.data.E[i] = pulse.E
 		t.data.Ampl[i] = pulse.Ampl
 		t.data.Sat[i] = utils.BoolToUint8(pulse.HasSatSignal)
