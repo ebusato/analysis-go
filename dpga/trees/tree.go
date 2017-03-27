@@ -1,6 +1,8 @@
 package trees
 
 import (
+	"math"
+
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
@@ -75,9 +77,13 @@ type ROOTData struct {
 	X                   [NoPulsesMax]float64
 	Y                   [NoPulsesMax]float64
 	Z                   [NoPulsesMax]float64
-	Xmaa                float64
-	Ymaa                float64
-	Zmaa                float64
+	Xc                  [NoPulsesMax]float64
+	Yc                  [NoPulsesMax]float64
+	Zc                  [NoPulsesMax]float64
+	Xmar                float64
+	Ymar                float64
+	Zmar                float64
+	Rmar                float64
 	TRF                 float64
 }
 
@@ -162,9 +168,13 @@ func NewTree(outrootfileName string) *Tree {
 	_, err = t.tree.Branch2("X", &t.data.X, "X[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("Y", &t.data.Y, "Y[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("Z", &t.data.Z, "Z[NoPulses]/D", bufsiz)
-	_, err = t.tree.Branch2("Xmaa", &t.data.Xmaa, "Xmaa/D", bufsiz)
-	_, err = t.tree.Branch2("Ymaa", &t.data.Ymaa, "Ymaa/D", bufsiz)
-	_, err = t.tree.Branch2("Zmaa", &t.data.Zmaa, "Zmaa/D", bufsiz)
+	_, err = t.tree.Branch2("Xc", &t.data.Xc, "Xc[NoPulses]/D", bufsiz)
+	_, err = t.tree.Branch2("Yc", &t.data.Yc, "Yc[NoPulses]/D", bufsiz)
+	_, err = t.tree.Branch2("Zc", &t.data.Zc, "Zc[NoPulses]/D", bufsiz)
+	_, err = t.tree.Branch2("Xmar", &t.data.Xmar, "Xmar/D", bufsiz)
+	_, err = t.tree.Branch2("Ymar", &t.data.Ymar, "Ymar/D", bufsiz)
+	_, err = t.tree.Branch2("Zmar", &t.data.Zmar, "Zmar/D", bufsiz)
+	_, err = t.tree.Branch2("Rmar", &t.data.Rmar, "Rmar/D", bufsiz)
 	_, err = t.tree.Branch2("TRF", &t.data.TRF, "TRF/D", bufsiz)
 
 	//t.data.Pulse[0] = make([]float64, dpgadetector.Det.NoSamples())
@@ -247,6 +257,9 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		t.data.X[i] = pulse.Channel.X
 		t.data.Y[i] = pulse.Channel.Y
 		t.data.Z[i] = pulse.Channel.Z
+		t.data.Xc[i] = pulse.Channel.CrystCenter.X
+		t.data.Yc[i] = pulse.Channel.CrystCenter.Y
+		t.data.Zc[i] = pulse.Channel.CrystCenter.Z
 	}
 	if noPulses == 2 {
 		if len(pulses) != 2 {
@@ -266,9 +279,10 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 			ch0 := pulses[0].Channel
 			ch1 := pulses[1].Channel
 			x, y, z := reconstruction.Minimal(true, ch0, ch1, xbeam, ybeam)
-			t.data.Xmaa = x
-			t.data.Ymaa = y
-			t.data.Zmaa = z
+			t.data.Xmar = x
+			t.data.Ymar = y
+			t.data.Zmar = z
+			t.data.Rmar = math.Sqrt(x*x + y*y)
 		}
 	}
 	_, err := t.tree.Fill()

@@ -1,6 +1,8 @@
 package trees
 
 import (
+	"math"
+
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
@@ -71,9 +73,13 @@ type ROOTDataMult2 struct {
 	X                   [2]float64
 	Y                   [2]float64
 	Z                   [2]float64
-	Xmaa                float64
-	Ymaa                float64
-	Zmaa                float64
+	Xc                  [2]float64
+	Yc                  [2]float64
+	Zc                  [2]float64
+	Xmar                float64
+	Ymar                float64
+	Zmar                float64
+	Rmar                float64
 	TRF                 float64
 }
 
@@ -156,9 +162,13 @@ func NewTreeMult2(outrootfileName string) *TreeMult2 {
 	_, err = t.tree.Branch2("X", &t.data.X, "X[2]/D", bufsiz)
 	_, err = t.tree.Branch2("Y", &t.data.Y, "Y[2]/D", bufsiz)
 	_, err = t.tree.Branch2("Z", &t.data.Z, "Z[2]/D", bufsiz)
-	_, err = t.tree.Branch2("Xmaa", &t.data.Xmaa, "Xmaa/D", bufsiz)
-	_, err = t.tree.Branch2("Ymaa", &t.data.Ymaa, "Ymaa/D", bufsiz)
-	_, err = t.tree.Branch2("Zmaa", &t.data.Zmaa, "Zmaa/D", bufsiz)
+	_, err = t.tree.Branch2("Xc", &t.data.Xc, "Xc[2]/D", bufsiz)
+	_, err = t.tree.Branch2("Yc", &t.data.Yc, "Yc[2]/D", bufsiz)
+	_, err = t.tree.Branch2("Zc", &t.data.Zc, "Zc[2]/D", bufsiz)
+	_, err = t.tree.Branch2("Xmar", &t.data.Xmar, "Xmar/D", bufsiz)
+	_, err = t.tree.Branch2("Ymar", &t.data.Ymar, "Ymar/D", bufsiz)
+	_, err = t.tree.Branch2("Zmar", &t.data.Zmar, "Zmar/D", bufsiz)
+	_, err = t.tree.Branch2("Rmar", &t.data.Rmar, "Rmar/D", bufsiz)
 	_, err = t.tree.Branch2("TRF", &t.data.TRF, "TRF/D", bufsiz)
 
 	//t.data.Pulse[0] = make([]float64, dpgadetector.Det.NoSamples())
@@ -253,6 +263,12 @@ func (t *TreeMult2) Fill(run uint32, hdr *rw.Header, event *event.Event, pulse0 
 	t.data.X[1] = pulse1.Channel.X
 	t.data.Y[1] = pulse1.Channel.Y
 	t.data.Z[1] = pulse1.Channel.Z
+	t.data.Xc[0] = pulse0.Channel.CrystCenter.X
+	t.data.Yc[0] = pulse0.Channel.CrystCenter.Y
+	t.data.Zc[0] = pulse0.Channel.CrystCenter.Z
+	t.data.Xc[1] = pulse1.Channel.CrystCenter.X
+	t.data.Yc[1] = pulse1.Channel.CrystCenter.Y
+	t.data.Zc[1] = pulse1.Channel.CrystCenter.Z
 	// 	fmt.Println(pulse0.Channel.ScintCoords)
 
 	doMinRec := true
@@ -269,9 +285,10 @@ func (t *TreeMult2) Fill(run uint32, hdr *rw.Header, event *event.Event, pulse0 
 		ch0 := pulse0.Channel
 		ch1 := pulse1.Channel
 		x, y, z := reconstruction.Minimal(true, ch0, ch1, xbeam, ybeam)
-		t.data.Xmaa = x
-		t.data.Ymaa = y
-		t.data.Zmaa = z
+		t.data.Xmar = x
+		t.data.Ymar = y
+		t.data.Zmar = z
+		t.data.Rmar = math.Sqrt(x*x + y*y)
 	}
 
 	///////////////////////////////////////////
