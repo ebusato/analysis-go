@@ -3,9 +3,35 @@ package event
 import (
 	"fmt"
 	"log"
+	"math"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
+	"gitlab.in2p3.fr/avirm/analysis-go/reconstruction"
 )
+
+type LOR struct {
+	Pulses [2]*pulse.Pulse
+	Idx1   int
+	Idx2   int
+	Xmar   float64
+	Ymar   float64
+	Zmar   float64
+	Rmar   float64
+}
+
+func NewLOR(pulse1, pulse2 *pulse.Pulse, idx1, idx2 int, Xmar, Ymar, Zmar, Rmar float64) *LOR {
+	l := &LOR{}
+	l.Pulses[0] = pulse1
+	l.Pulses[1] = pulse2
+	l.Idx1 = idx1
+	l.Idx2 = idx2
+	l.Xmar = Xmar
+	l.Ymar = Ymar
+	l.Zmar = Zmar
+	l.Rmar = Rmar
+	return l
+}
 
 type Event struct {
 	Clusters        []pulse.Cluster
@@ -13,6 +39,7 @@ type Event struct {
 	ID              uint
 	TimeStamp       uint64
 	Counters        []uint32
+	LORs            []LOR
 	IsCorrupted     bool
 	UDPPayloadSizes []int // number of octets for each frame making this event (FrameSize has NoFrames components)
 }
@@ -96,15 +123,21 @@ func (e *Event) Print(printClusters bool, printClusterDetails bool) {
 	}
 }
 
-func (e *Event) Multiplicity() (uint8, []*pulse.Pulse) {
+// idxFirstPulseLeftSide is the index within the []*pulse.Pulse slice of the
+// first pulse on the left side of the DPGA
+func (e *Event) Multiplicity() (uint8, []*pulse.Pulse, int) {
 	var mult uint8 = 0
 	var pulsesWSig []*pulse.Pulse
+	var idxFirstPulseLeftSide int = -1
 	for i := range e.Clusters {
 		pulsesWSigInCluster := e.Clusters[i].PulsesWithSignal()
+		if i >= 30 && idxFirstPulseLeftSide == -1 { // start processing clusters on left side of DPGA
+			idxFirstPulseLeftSide = len(pulsesWSig)
+		}
 		pulsesWSig = append(pulsesWSig, pulsesWSigInCluster...)
 		mult += uint8(len(pulsesWSigInCluster))
 	}
-	return mult, pulsesWSig
+	return mult, pulsesWSig, idxFirstPulseLeftSide
 }
 
 func (e *Event) PlotPulses(x pulse.XaxisType, onlyClustersWithSig bool, yrange pulse.YRange, xRangeZoomAround500 bool) {
@@ -227,6 +260,45 @@ func (e *Event) PulsesInEnergyWindow(center, n, sig float64) []*pulse.Pulse {
 		}
 	}
 	return selectedPulses
+}
+
+// FindLORs finds LORs and adds them the the event.LORs slice
+func (e *Event) FindLORs(xbeam, ybeam, RmarMax, DeltaTMax, Emin, Emax float64) {
+	mult, pulses, idxFirstLeft := e.Multiplicity()
+	// 	fmt.Println("idxFirstLeft = ", idxFirstLeft)
+	for i := 0; i < idxFirstLeft; i++ {
+		pulseRight := pulses[i]
+		if pulseRight.Hemi() != dpgadetector.Right {
+			log.Fatalf("pulse is on wrong hemisphere -> error, should be fixed\n")
+		}
+		if pulseRight.Time30 == 0 {
+			pulseRight.CalcRisingFront(true)
+		}
+		for j := idxFirstLeft; j < int(mult); j++ {
+			pulseLeft := pulses[j]
+			if pulseLeft.Hemi() != dpgadetector.Left {
+				log.Fatalf("pulse is on wrong hemisphere -> error, should be fixed\n")
+			}
+			if pulseLeft.Time30 == 0 {
+				pulseLeft.CalcRisingFront(true)
+			}
+
+			// do MAR
+			ch0 := pulseRight.Channel
+			ch1 := pulseLeft.Channel
+			x, y, z := reconstruction.Minimal(true, ch0, ch1, xbeam, ybeam)
+			r := math.Sqrt(x*x + y*y)
+			// 			fmt.Println("times: ", pulseRight.Time30, pulseLeft.Time30)
+			if r < RmarMax &&
+				math.Abs(pulseRight.Time30-pulseLeft.Time30) < DeltaTMax &&
+				pulseRight.HasSatSignal != true && pulseLeft.HasSatSignal != true &&
+				pulseRight.E > Emin && pulseRight.E < Emax &&
+				pulseLeft.E > Emin && pulseLeft.E < Emax {
+				l := NewLOR(pulseRight, pulseLeft, i, j, x, y, z, r)
+				e.LORs = append(e.LORs, *l)
+			}
+		}
+	}
 }
 
 // type Trigger int

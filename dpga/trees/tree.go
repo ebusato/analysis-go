@@ -1,6 +1,8 @@
 package trees
 
 import (
+	"fmt"
+	"log"
 	"math"
 
 	"github.com/go-hep/croot"
@@ -14,6 +16,7 @@ import (
 )
 
 const NoPulsesMax = 240
+const NoLORsMax = 5
 
 type ROOTData struct {
 	Run         uint32
@@ -81,6 +84,13 @@ type ROOTData struct {
 	Xc                  [NoPulsesMax]float64
 	Yc                  [NoPulsesMax]float64
 	Zc                  [NoPulsesMax]float64
+	NoLORs              int32
+	LORIdx1             [NoLORsMax]int32
+	LORIdx2             [NoLORsMax]int32
+	LORXmar             [NoLORsMax]float64
+	LORYmar             [NoLORsMax]float64
+	LORZmar             [NoLORsMax]float64
+	LORRmar             [NoLORsMax]float64
 	Xmar                float64
 	Ymar                float64
 	Zmar                float64
@@ -173,6 +183,13 @@ func NewTree(outrootfileName string) *Tree {
 	_, err = t.tree.Branch2("Xc", &t.data.Xc, "Xc[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("Yc", &t.data.Yc, "Yc[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("Zc", &t.data.Zc, "Zc[NoPulses]/D", bufsiz)
+	_, err = t.tree.Branch2("NoLORs", &t.data.NoLORs, "NoLORs/I", bufsiz)
+	_, err = t.tree.Branch2("LORIdx1", &t.data.LORIdx1, "LORIdx1[NoLORs]/I", bufsiz)
+	_, err = t.tree.Branch2("LORIdx2", &t.data.LORIdx2, "LORIdx2[NoLORs]/I", bufsiz)
+	_, err = t.tree.Branch2("LORXmar", &t.data.LORXmar, "LORXmar[NoLORs]/D", bufsiz)
+	_, err = t.tree.Branch2("LORYmar", &t.data.LORYmar, "LORYmar[NoLORs]/D", bufsiz)
+	_, err = t.tree.Branch2("LORZmar", &t.data.LORZmar, "LORZmar[NoLORs]/D", bufsiz)
+	_, err = t.tree.Branch2("LORRmar", &t.data.LORRmar, "LORRmar[NoLORs]/D", bufsiz)
 	_, err = t.tree.Branch2("Xmar", &t.data.Xmar, "Xmar/D", bufsiz)
 	_, err = t.tree.Branch2("Ymar", &t.data.Ymar, "Ymar/D", bufsiz)
 	_, err = t.tree.Branch2("Zmar", &t.data.Zmar, "Zmar/D", bufsiz)
@@ -228,7 +245,7 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 	// TRF calculation
 	//utils.FindIntersections(event.ClustersWoData[11].Pulses[3], min, max)
 	///////////////////////////////////////////
-	noPulses, pulses := event.Multiplicity()
+	noPulses, pulses, _ := event.Multiplicity()
 	t.data.NoPulses = int32(noPulses)
 	for i := range pulses {
 		pulse := pulses[i]
@@ -264,6 +281,26 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		t.data.Yc[i] = pulse.Channel.CrystCenter.Y
 		t.data.Zc[i] = pulse.Channel.CrystCenter.Z
 	}
+
+	event.FindLORs(0, 0, 38., 3*1.2, 511-3*28.3, 511+3*28.3)
+	// 	fmt.Println("no lors: ", len(event.LORs))
+	t.data.NoLORs = int32(len(event.LORs))
+	if t.data.NoLORs < NoLORsMax {
+		for i := range event.LORs {
+			lor := &event.LORs[i]
+			if pulses[lor.Idx1] != lor.Pulses[0] || pulses[lor.Idx2] != lor.Pulses[1] {
+				fmt.Printf("%p %p %p %p\n", pulses[lor.Idx1], lor.Pulses[0], pulses[lor.Idx2], lor.Pulses[1])
+				log.Fatalf("pulses[lor.Idx1] != lor.Pulses[0] ||  pulses[lor.Idx2] != lor.Pulses[1]\n")
+			}
+			t.data.LORIdx1[i] = int32(lor.Idx1)
+			t.data.LORIdx2[i] = int32(lor.Idx2)
+			t.data.LORXmar[i] = lor.Xmar
+			t.data.LORYmar[i] = lor.Ymar
+			t.data.LORZmar[i] = lor.Zmar
+			t.data.LORRmar[i] = lor.Rmar
+		}
+	}
+
 	if noPulses == 2 {
 		if len(pulses) != 2 {
 			panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
