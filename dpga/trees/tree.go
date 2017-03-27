@@ -84,11 +84,12 @@ type ROOTData struct {
 	NoLORs              int32
 	LORIdx1             [NoLORsMax]int32
 	LORIdx2             [NoLORsMax]int32
+	LORTMean            [NoLORsMax]float64
+	LORTRF              [NoLORsMax]float64
 	LORXmar             [NoLORsMax]float64
 	LORYmar             [NoLORsMax]float64
 	LORZmar             [NoLORsMax]float64
 	LORRmar             [NoLORsMax]float64
-	TRF                 float64
 }
 
 type Tree struct {
@@ -179,11 +180,12 @@ func NewTree(outrootfileName string) *Tree {
 	_, err = t.tree.Branch2("NoLORs", &t.data.NoLORs, "NoLORs/I", bufsiz)
 	_, err = t.tree.Branch2("LORIdx1", &t.data.LORIdx1, "LORIdx1[NoLORs]/I", bufsiz)
 	_, err = t.tree.Branch2("LORIdx2", &t.data.LORIdx2, "LORIdx2[NoLORs]/I", bufsiz)
+	_, err = t.tree.Branch2("LORTMean", &t.data.LORTMean, "LORTMean[NoLORs]/D", bufsiz)
+	_, err = t.tree.Branch2("LORTRF", &t.data.LORTRF, "LORTRF[NoLORs]/D", bufsiz)
 	_, err = t.tree.Branch2("LORXmar", &t.data.LORXmar, "LORXmar[NoLORs]/D", bufsiz)
 	_, err = t.tree.Branch2("LORYmar", &t.data.LORYmar, "LORYmar[NoLORs]/D", bufsiz)
 	_, err = t.tree.Branch2("LORZmar", &t.data.LORZmar, "LORZmar[NoLORs]/D", bufsiz)
 	_, err = t.tree.Branch2("LORRmar", &t.data.LORRmar, "LORRmar[NoLORs]/D", bufsiz)
-	_, err = t.tree.Branch2("TRF", &t.data.TRF, "TRF/D", bufsiz)
 
 	//t.data.Pulse[0] = make([]float64, dpgadetector.Det.NoSamples())
 	//t.data.Pulse[1] = make([]float64, dpgadetector.Det.NoSamples())
@@ -283,10 +285,50 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 			}
 			t.data.LORIdx1[i] = int32(lor.Idx1)
 			t.data.LORIdx2[i] = int32(lor.Idx2)
+			t.data.LORTMean[i] = lor.TMean
 			t.data.LORXmar[i] = lor.Xmar
 			t.data.LORYmar[i] = lor.Ymar
 			t.data.LORZmar[i] = lor.Zmar
 			t.data.LORRmar[i] = lor.Rmar
+
+			///////////////////////////////////////////
+			// TRF calculation
+			// 	for i := range event.ClustersWoData {
+			// 		cluster := &event.ClustersWoData[i]
+			// 		for j := range cluster.Pulses {
+			// 			pulse := &cluster.Pulses[j]
+			// 			fmt.Println(i, j, len(pulse.Samples))
+			// 		}
+			// 	}
+
+			ampSlice := event.ClustersWoData[0].Pulses[0].MakeAmpSlice()
+			if len(ampSlice) != 0 { // can compute TRF
+				timesRF := utils.FindIntersections(event.ID, event.ClustersWoData[0].Pulses[0].MakeAmpSlice(), event.ClustersWoData[0].Pulses[0].MakeTimeSlice())
+				if t.data.LORTMean[i] <= timesRF[0] {
+					//fmt.Println("here ", t.data.LORTMean[i], timesRF[0])
+					t.data.LORTRF[i] = timesRF[0] - 1/24.85e6*1e9 // 24.85 MHz is the HF frequency
+				} else if t.data.LORTMean[i] >= timesRF[len(timesRF)-1] {
+					t.data.LORTRF[i] = timesRF[len(timesRF)-1]
+				} else {
+					for j := range timesRF {
+						if j < len(timesRF)-1 {
+							if t.data.LORTMean[i] > timesRF[j] && t.data.LORTMean[i] < timesRF[j+1] {
+								t.data.LORTRF[i] = timesRF[j]
+								break
+							}
+						} else {
+							fmt.Println(timesRF)
+							log.Fatalf("This should not happen, tMean=%v\n", t.data.LORTMean[i])
+						}
+					}
+				}
+				if t.data.LORTMean[i]-t.data.LORTRF[i] > 1/24.85e6*1e9+3 {
+					fmt.Println(timesRF)
+					fmt.Println(t.data.LORTMean[i], t.data.LORTRF[i])
+					log.Fatalf("ERROR\n")
+				}
+			}
+			///////////////////////////////////////////
 		}
 	}
 

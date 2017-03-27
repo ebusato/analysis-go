@@ -14,6 +14,7 @@ type LOR struct {
 	Pulses [2]*pulse.Pulse
 	Idx1   int
 	Idx2   int
+	TMean  float64
 	Xmar   float64
 	Ymar   float64
 	Zmar   float64
@@ -26,6 +27,7 @@ func NewLOR(pulse1, pulse2 *pulse.Pulse, idx1, idx2 int, Xmar, Ymar, Zmar, Rmar 
 	l.Pulses[1] = pulse2
 	l.Idx1 = idx1
 	l.Idx2 = idx2
+	l.TMean = (pulse1.Time30 + pulse2.Time30) / 2.
 	l.Xmar = Xmar
 	l.Ymar = Ymar
 	l.Zmar = Zmar
