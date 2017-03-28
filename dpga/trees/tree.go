@@ -273,6 +273,13 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		t.data.Zc[i] = pulse.Channel.CrystCenter.Z
 	}
 
+	// TRF stuff
+	ampSlice := event.ClustersWoData[0].Pulses[0].MakeAmpSlice()
+	var timesRF []float64
+	if len(ampSlice) != 0 { // can compute TRF
+		timesRF = utils.FindIntersections(event.ID, event.ClustersWoData[0].Pulses[0].MakeAmpSlice(), event.ClustersWoData[0].Pulses[0].MakeTimeSlice())
+	}
+
 	event.FindLORs(0, 0, 38., 3*1.2, 0, 511+3*28.3)
 	// 	fmt.Println("no lors: ", len(event.LORs))
 	t.data.NoLORs = int32(len(event.LORs))
@@ -300,10 +307,7 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 			// 			fmt.Println(i, j, len(pulse.Samples))
 			// 		}
 			// 	}
-
-			ampSlice := event.ClustersWoData[0].Pulses[0].MakeAmpSlice()
-			if len(ampSlice) != 0 { // can compute TRF
-				timesRF := utils.FindIntersections(event.ID, event.ClustersWoData[0].Pulses[0].MakeAmpSlice(), event.ClustersWoData[0].Pulses[0].MakeTimeSlice())
+			if len(timesRF) > 0 {
 				if t.data.LORTMean[i] <= timesRF[0] {
 					//fmt.Println("here ", t.data.LORTMean[i], timesRF[0])
 					t.data.LORTRF[i] = timesRF[0] - 1/24.85e6*1e9 // 24.85 MHz is the HF frequency
