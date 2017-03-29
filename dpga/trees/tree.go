@@ -280,7 +280,7 @@ func (t *Tree) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		timesRF = utils.FindIntersections(event.ID, event.ClustersWoData[0].Pulses[0].MakeAmpSlice(), event.ClustersWoData[0].Pulses[0].MakeTimeSlice())
 	}
 
-	event.FindLORs(0, 0, 38., 3*1.2, 0, 511+3*28.3)
+	event.FindLORs(0, 0, 38., 3*1.2, 0, 1000) //511+3*28.3)
 	// 	fmt.Println("no lors: ", len(event.LORs))
 	t.data.NoLORs = int32(len(event.LORs))
 	if t.data.NoLORs < NoLORsMax {
