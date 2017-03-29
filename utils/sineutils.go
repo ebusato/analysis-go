@@ -75,13 +75,13 @@ func CheckAndFix(evtID uint, intersectionTimes []float64) []float64 {
 		timeWrtPrevious := intersectionTimes[i] - intersectionTimes[i-1]
 		if timeWrtPrevious > 1/24.85e6*1e9+6 { // 24.85 MHz is the HF frequency
 			fmt.Println(intersectionTimes)
-			log.Fatalf("Elapsed time since last intersection too large (evtID=%v)\n", evtID)
+			log.Printf("Elapsed time since last intersection too large (evtID=%v)\n", evtID)
 		} else if timeWrtPrevious < 1/24.85e6*1e9-6 {
 			if timeWrtPrevious < 5 {
 				continue
 			} else {
 				fmt.Println(intersectionTimes)
-				log.Fatalf("Elapsed time since last intersection too small (ti, ti-1) = (%v, %v), (evtID=%v)\n", intersectionTimes[i], intersectionTimes[i-1], evtID)
+				log.Printf("Elapsed time since last intersection too small (ti, ti-1) = (%v, %v), (evtID=%v)\n", intersectionTimes[i], intersectionTimes[i-1], evtID)
 			}
 		} else {
 			times = append(times, intersectionTimes[i])
