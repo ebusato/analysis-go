@@ -30,6 +30,7 @@ func main() {
 		noen       = flag.Bool("noen", false, "If specified, no energy calibration applied")
 		dotree     = flag.Bool("dotree", false, "If specified, tree with all pulses is written")
 		dotree2    = flag.Bool("dotree2", false, "If specified, treeMult2 is written")
+		dotreeLOR  = flag.Bool("dotreeLOR", false, "If specified, treeLOR is written")
 		//wGob       = flag.String("wgob", "dqplots.gob", "Name of the output gob file containing dq plots. If not set, the gob file is not produced.")
 	)
 
@@ -87,6 +88,12 @@ func main() {
 		treeMult2 = trees.NewTreeMult2(outrootfileNameMult2)
 	}
 
+	outrootfileNameLOR := strings.Replace(*infileName, ".bin", "LOR.root", 1)
+	var treeLOR *trees.TreeLOR = nil
+	if *dotreeLOR {
+		treeLOR = trees.NewTreeLOR(outrootfileNameLOR)
+	}
+
 	hdr := r.Header()
 
 	for event, status := r.ReadNextEvent(); status && event.ID < *noEvents; event, status = r.ReadNextEvent() {
@@ -119,6 +126,9 @@ func main() {
 		if tree != nil {
 			tree.Fill(hdr.RunNumber, r.Header(), event)
 		}
+		if treeLOR != nil {
+			treeLOR.Fill(hdr.RunNumber, r.Header(), event)
+		}
 
 		//fmt.Println(len(pulses511keV))
 
@@ -134,6 +144,9 @@ func main() {
 	}
 	if tree != nil {
 		tree.Close()
+	}
+	if treeLOR != nil {
+		treeLOR.Close()
 	}
 	if treeMult2 != nil {
 		treeMult2.Close()

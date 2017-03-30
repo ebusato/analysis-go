@@ -265,6 +265,7 @@ func (e *Event) PulsesInEnergyWindow(center, n, sig float64) []*pulse.Pulse {
 }
 
 // FindLORs finds LORs and adds them the the event.LORs slice
+// It returns a slice of pointers to pulses associated to the selected LORs
 func (e *Event) FindLORs(xbeam, ybeam, RmarMax, DeltaTMax, Emin, Emax float64) {
 	mult, pulses, idxFirstLeft := e.Multiplicity()
 	// 	fmt.Println("idxFirstLeft = ", idxFirstLeft)
