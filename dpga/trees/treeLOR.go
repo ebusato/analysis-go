@@ -250,105 +250,109 @@ func (t *TreeLOR) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 	// 	fmt.Println("no lors: ", len(event.LORs))
 	t.data.NoLORs = int32(len(event.LORs))
 	t.data.NoLORsMax = int32(NoLORsMax)
-	if t.data.NoLORs < NoLORsMax {
-		var pulsesInLOR []*pulse.Pulse
-		for i := range event.LORs {
-			lor := &event.LORs[i]
+	if t.data.NoLORs > t.data.NoLORsMax {
+		t.data.NoLORs = t.data.NoLORsMax
+	}
+	var pulsesInLOR []*pulse.Pulse
+	for i := range event.LORs {
+		if i >= NoLORsMax {
+			break
+		}
+		lor := &event.LORs[i]
 
-			In1, Idx1 := AlreadyIn(pulsesInLOR, lor.Pulses[0])
-			In2, Idx2 := AlreadyIn(pulsesInLOR, lor.Pulses[1])
-			if !In1 {
-				pulsesInLOR = append(pulsesInLOR, lor.Pulses[0])
-				Idx1 = len(pulsesInLOR) - 1
-			}
-			if !In2 {
-				pulsesInLOR = append(pulsesInLOR, lor.Pulses[1])
-				Idx2 = len(pulsesInLOR) - 1
-			}
+		In1, Idx1 := AlreadyIn(pulsesInLOR, lor.Pulses[0])
+		In2, Idx2 := AlreadyIn(pulsesInLOR, lor.Pulses[1])
+		if !In1 {
+			pulsesInLOR = append(pulsesInLOR, lor.Pulses[0])
+			Idx1 = len(pulsesInLOR) - 1
+		}
+		if !In2 {
+			pulsesInLOR = append(pulsesInLOR, lor.Pulses[1])
+			Idx2 = len(pulsesInLOR) - 1
+		}
 
-			t.data.LORIdx1[i] = int32(Idx1)
-			t.data.LORIdx2[i] = int32(Idx2)
+		t.data.LORIdx1[i] = int32(Idx1)
+		t.data.LORIdx2[i] = int32(Idx2)
 
-// 			fmt.Println(event.ID, len(pulsesInLOR), t.data.LORIdx1[i], t.data.LORIdx2[i])
+		// 			fmt.Println(event.ID, len(pulsesInLOR), t.data.LORIdx1[i], t.data.LORIdx2[i])
 
-			t.data.LORTMean[i] = lor.TMean
-			t.data.LORXmar[i] = lor.Xmar
-			t.data.LORYmar[i] = lor.Ymar
-			t.data.LORZmar[i] = lor.Zmar
-			t.data.LORRmar[i] = lor.Rmar
+		t.data.LORTMean[i] = lor.TMean
+		t.data.LORXmar[i] = lor.Xmar
+		t.data.LORYmar[i] = lor.Ymar
+		t.data.LORZmar[i] = lor.Zmar
+		t.data.LORRmar[i] = lor.Rmar
 
-			///////////////////////////////////////////
-			// TRF calculation
-			// 	for i := range event.ClustersWoData {
-			// 		cluster := &event.ClustersWoData[i]
-			// 		for j := range cluster.Pulses {
-			// 			pulse := &cluster.Pulses[j]
-			// 			fmt.Println(i, j, len(pulse.Samples))
-			// 		}
-			// 	}
-			if len(timesRF) > 0 {
-				if t.data.LORTMean[i] <= timesRF[0] {
-					//fmt.Println("here ", t.data.LORTMean[i], timesRF[0])
-					t.data.LORTRF[i] = timesRF[0] - 1/24.85e6*1e9 // 24.85 MHz is the HF frequency
-				} else if t.data.LORTMean[i] >= timesRF[len(timesRF)-1] {
-					t.data.LORTRF[i] = timesRF[len(timesRF)-1]
-				} else {
-					for j := range timesRF {
-						if j < len(timesRF)-1 {
-							if t.data.LORTMean[i] > timesRF[j] && t.data.LORTMean[i] < timesRF[j+1] {
-								t.data.LORTRF[i] = timesRF[j]
-								break
-							}
-						} else {
-							fmt.Println(timesRF)
-							log.Fatalf("This should not happen, tMean=%v\n", t.data.LORTMean[i])
+		///////////////////////////////////////////
+		// TRF calculation
+		// 	for i := range event.ClustersWoData {
+		// 		cluster := &event.ClustersWoData[i]
+		// 		for j := range cluster.Pulses {
+		// 			pulse := &cluster.Pulses[j]
+		// 			fmt.Println(i, j, len(pulse.Samples))
+		// 		}
+		// 	}
+		if len(timesRF) > 0 {
+			if t.data.LORTMean[i] <= timesRF[0] {
+				//fmt.Println("here ", t.data.LORTMean[i], timesRF[0])
+				t.data.LORTRF[i] = timesRF[0] - 1/24.85e6*1e9 // 24.85 MHz is the HF frequency
+			} else if t.data.LORTMean[i] >= timesRF[len(timesRF)-1] {
+				t.data.LORTRF[i] = timesRF[len(timesRF)-1]
+			} else {
+				for j := range timesRF {
+					if j < len(timesRF)-1 {
+						if t.data.LORTMean[i] > timesRF[j] && t.data.LORTMean[i] < timesRF[j+1] {
+							t.data.LORTRF[i] = timesRF[j]
+							break
 						}
+					} else {
+						fmt.Println(timesRF)
+						log.Fatalf("This should not happen, tMean=%v\n", t.data.LORTMean[i])
 					}
 				}
-				if t.data.LORTMean[i]-t.data.LORTRF[i] > 1/24.85e6*1e9+3 {
-					fmt.Println(timesRF)
-					fmt.Println(t.data.LORTMean[i], t.data.LORTRF[i])
-					log.Fatalf("ERROR\n")
-				}
 			}
-			///////////////////////////////////////////
+			if t.data.LORTMean[i]-t.data.LORTRF[i] > 1/24.85e6*1e9+3 {
+				fmt.Println(timesRF)
+				fmt.Println(t.data.LORTMean[i], t.data.LORTRF[i])
+				log.Fatalf("ERROR\n")
+			}
 		}
+		///////////////////////////////////////////
+	}
 
-		t.data.NoPulses = int32(len(pulsesInLOR))
-		for i := range pulsesInLOR {
-			pulse := pulsesInLOR[i]
-			pulse.CalcRisingFront(true)
-			pulse.CalcFallingFront(false)
-			// 		fmt.Println("i=", i)
-			t.data.IChanAbs240[i] = uint16(pulse.Channel.AbsID240())
-			t.data.IQuartetAbs60[i] = dpgadetector.FifoID144ToQuartetAbsIdx60(pulse.Channel.FifoID144(), true)
-			t.data.ILineAbs12[i] = dpgadetector.QuartetAbsIdx60ToLineAbsIdx12(t.data.IQuartetAbs60[i])
-			t.data.IHemi[i] = uint8(pulse.Hemi())
-			t.data.E[i] = pulse.E
-			t.data.Ampl[i] = pulse.Ampl
-			t.data.Sat[i] = utils.BoolToUint8(pulse.HasSatSignal)
-			t.data.Charge[i] = pulse.Charg
-			t.data.T10[i] = pulse.Time10
-			t.data.T20[i] = pulse.Time20
-			t.data.T30[i] = pulse.Time30
-			t.data.T80[i] = pulse.Time80
-			t.data.T90[i] = pulse.Time90
-			t.data.Tf20[i] = pulse.TimeFall20
-			t.data.NoLocMaxRisingFront[i] = uint16(pulse.NoLocMaxRisingFront)
-			for j := range pulse.Samples {
-				t.data.SampleTimes[j] = pulse.Samples[j].Time
-				t.data.Pulse[i][j] = pulse.Samples[j].Amplitude
-				if len(event.ClustersWoData[0].Pulses[0].Samples) > 0 {
-					t.data.PulseRF[j] = event.ClustersWoData[0].Pulses[0].Samples[j].Amplitude
-				}
+	t.data.NoPulses = int32(len(pulsesInLOR))
+	for i := range pulsesInLOR {
+		pulse := pulsesInLOR[i]
+		pulse.CalcRisingFront(true)
+		pulse.CalcFallingFront(false)
+		// 		fmt.Println("i=", i)
+		t.data.IChanAbs240[i] = uint16(pulse.Channel.AbsID240())
+		t.data.IQuartetAbs60[i] = dpgadetector.FifoID144ToQuartetAbsIdx60(pulse.Channel.FifoID144(), true)
+		t.data.ILineAbs12[i] = dpgadetector.QuartetAbsIdx60ToLineAbsIdx12(t.data.IQuartetAbs60[i])
+		t.data.IHemi[i] = uint8(pulse.Hemi())
+		t.data.E[i] = pulse.E
+		t.data.Ampl[i] = pulse.Ampl
+		t.data.Sat[i] = utils.BoolToUint8(pulse.HasSatSignal)
+		t.data.Charge[i] = pulse.Charg
+		t.data.T10[i] = pulse.Time10
+		t.data.T20[i] = pulse.Time20
+		t.data.T30[i] = pulse.Time30
+		t.data.T80[i] = pulse.Time80
+		t.data.T90[i] = pulse.Time90
+		t.data.Tf20[i] = pulse.TimeFall20
+		t.data.NoLocMaxRisingFront[i] = uint16(pulse.NoLocMaxRisingFront)
+		for j := range pulse.Samples {
+			t.data.SampleTimes[j] = pulse.Samples[j].Time
+			t.data.Pulse[i][j] = pulse.Samples[j].Amplitude
+			if len(event.ClustersWoData[0].Pulses[0].Samples) > 0 {
+				t.data.PulseRF[j] = event.ClustersWoData[0].Pulses[0].Samples[j].Amplitude
 			}
-			t.data.X[i] = pulse.Channel.X
-			t.data.Y[i] = pulse.Channel.Y
-			t.data.Z[i] = pulse.Channel.Z
-			t.data.Xc[i] = pulse.Channel.CrystCenter.X
-			t.data.Yc[i] = pulse.Channel.CrystCenter.Y
-			t.data.Zc[i] = pulse.Channel.CrystCenter.Z
 		}
+		t.data.X[i] = pulse.Channel.X
+		t.data.Y[i] = pulse.Channel.Y
+		t.data.Z[i] = pulse.Channel.Z
+		t.data.Xc[i] = pulse.Channel.CrystCenter.X
+		t.data.Yc[i] = pulse.Channel.CrystCenter.Y
+		t.data.Zc[i] = pulse.Channel.CrystCenter.Z
 	}
 
 	_, err := t.tree.Fill()
