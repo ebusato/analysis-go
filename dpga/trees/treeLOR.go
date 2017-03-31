@@ -81,6 +81,7 @@ type ROOTDataLOR struct {
 	Yc                  [NoPulsesInLORMax]float64
 	Zc                  [NoPulsesInLORMax]float64
 	NoLORs              int32
+	NoLORsMax           int32
 	LORIdx1             [NoLORsMax]int32
 	LORIdx2             [NoLORsMax]int32
 	LORTMean            [NoLORsMax]float64
@@ -175,6 +176,7 @@ func NewTreeLOR(outrootfileName string) *TreeLOR {
 	_, err = t.tree.Branch2("Yc", &t.data.Yc, "Yc[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("Zc", &t.data.Zc, "Zc[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("NoLORs", &t.data.NoLORs, "NoLORs/I", bufsiz)
+	_, err = t.tree.Branch2("NoLORsMax", &t.data.NoLORsMax, "NoLORsMax/I", bufsiz)
 	_, err = t.tree.Branch2("LORIdx1", &t.data.LORIdx1, "LORIdx1[NoLORs]/I", bufsiz)
 	_, err = t.tree.Branch2("LORIdx2", &t.data.LORIdx2, "LORIdx2[NoLORs]/I", bufsiz)
 	_, err = t.tree.Branch2("LORTMean", &t.data.LORTMean, "LORTMean[NoLORs]/D", bufsiz)
@@ -247,6 +249,7 @@ func (t *TreeLOR) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 	event.FindLORs(0, 0, 38., 3*1.2, 0, 1000) //511+3*28.3)
 	// 	fmt.Println("no lors: ", len(event.LORs))
 	t.data.NoLORs = int32(len(event.LORs))
+	t.data.NoLORsMax = int32(NoLORsMax)
 	if t.data.NoLORs < NoLORsMax {
 		var pulsesInLOR []*pulse.Pulse
 		for i := range event.LORs {
@@ -265,6 +268,9 @@ func (t *TreeLOR) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 
 			t.data.LORIdx1[i] = int32(Idx1)
 			t.data.LORIdx2[i] = int32(Idx2)
+
+// 			fmt.Println(event.ID, len(pulsesInLOR), t.data.LORIdx1[i], t.data.LORIdx2[i])
+
 			t.data.LORTMean[i] = lor.TMean
 			t.data.LORXmar[i] = lor.Xmar
 			t.data.LORYmar[i] = lor.Ymar
