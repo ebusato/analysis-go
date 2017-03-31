@@ -280,9 +280,9 @@ func (e *Event) FindLORs(xbeam, ybeam, RmarMax, DeltaTMax, Emin, Emax float64) {
 		if pulseRight.Time30 == 0 {
 			pulseRight.CalcRisingFront(true)
 		}
-		if pulseRight.Time30 < 20 || pulseRight.Time30 > 50 {
-			continue
-		}
+		//if pulseRight.Time30 < 20 || pulseRight.Time30 > 50 {
+		//	continue
+		//}
 		for j := idxFirstLeft; j < int(mult); j++ {
 			pulseLeft := pulses[j]
 			if pulseLeft.Hemi() != dpgadetector.Left {
@@ -294,9 +294,9 @@ func (e *Event) FindLORs(xbeam, ybeam, RmarMax, DeltaTMax, Emin, Emax float64) {
 			if pulseLeft.Time30 == 0 {
 				pulseLeft.CalcRisingFront(true)
 			}
-			if pulseLeft.Time30 < 20 || pulseLeft.Time30 > 50 {
-				continue
-			}
+			//if pulseLeft.Time30 < 20 || pulseLeft.Time30 > 50 {
+			//	continue
+			//}
 			// do MAR
 			ch0 := pulseRight.Channel
 			ch1 := pulseLeft.Channel
