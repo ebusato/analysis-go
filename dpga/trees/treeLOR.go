@@ -187,13 +187,13 @@ func NewTreeLOR(outrootfileName string) *TreeLOR {
 	return &t
 }
 
-func AlreadyIn(pulses []*pulse.Pulse, p *pulse.Pulse) bool {
+func AlreadyIn(pulses []*pulse.Pulse, p *pulse.Pulse) (bool, int) {
 	for i := range pulses {
 		if pulses[i] == p {
-			return true
+			return true, i
 		}
 	}
-	return false
+	return false, -1
 }
 
 func (t *TreeLOR) Fill(run uint32, hdr *rw.Header, event *event.Event) {
@@ -252,15 +252,19 @@ func (t *TreeLOR) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		for i := range event.LORs {
 			lor := &event.LORs[i]
 
-			if !AlreadyIn(pulsesInLOR, lor.Pulses[0]) {
+			In1, Idx1 := AlreadyIn(pulsesInLOR, lor.Pulses[0])
+			In2, Idx2 := AlreadyIn(pulsesInLOR, lor.Pulses[1])
+			if !In1 {
 				pulsesInLOR = append(pulsesInLOR, lor.Pulses[0])
+				Idx1 = len(pulsesInLOR) - 1
 			}
-			if !AlreadyIn(pulsesInLOR, lor.Pulses[1]) {
+			if !In2 {
 				pulsesInLOR = append(pulsesInLOR, lor.Pulses[1])
+				Idx2 = len(pulsesInLOR) - 1
 			}
 
-			t.data.LORIdx1[i] = int32(lor.Idx1)
-			t.data.LORIdx2[i] = int32(lor.Idx2)
+			t.data.LORIdx1[i] = int32(Idx1)
+			t.data.LORIdx2[i] = int32(Idx2)
 			t.data.LORTMean[i] = lor.TMean
 			t.data.LORXmar[i] = lor.Xmar
 			t.data.LORYmar[i] = lor.Ymar
