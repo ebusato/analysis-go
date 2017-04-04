@@ -80,6 +80,7 @@ type ROOTDataLOR struct {
 	Xc                  [NoPulsesInLORMax]float64
 	Yc                  [NoPulsesInLORMax]float64
 	Zc                  [NoPulsesInLORMax]float64
+	TRF                 float64
 	NoLORs              int32
 	NoLORsMax           int32
 	LORIdx1             [NoLORsMax]int32
@@ -175,6 +176,7 @@ func NewTreeLOR(outrootfileName string) *TreeLOR {
 	_, err = t.tree.Branch2("Xc", &t.data.Xc, "Xc[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("Yc", &t.data.Yc, "Yc[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("Zc", &t.data.Zc, "Zc[NoPulses]/D", bufsiz)
+	_, err = t.tree.Branch2("TRF", &t.data.TRF, "TRF/D", bufsiz)
 	_, err = t.tree.Branch2("NoLORs", &t.data.NoLORs, "NoLORs/I", bufsiz)
 	_, err = t.tree.Branch2("NoLORsMax", &t.data.NoLORsMax, "NoLORsMax/I", bufsiz)
 	_, err = t.tree.Branch2("LORIdx1", &t.data.LORIdx1, "LORIdx1[NoLORs]/I", bufsiz)
@@ -244,6 +246,10 @@ func (t *TreeLOR) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 	var timesRF []float64
 	if len(ampSlice) != 0 { // can compute TRF
 		timesRF = utils.FindIntersections(event.ID, event.ClustersWoData[0].Pulses[0].MakeAmpSlice(), event.ClustersWoData[0].Pulses[0].MakeTimeSlice())
+	}
+
+	if len(timesRF) > 0 {
+		t.data.TRF = timesRF[0]
 	}
 
 	event.FindLORs(0, 0, 38., 3*1.2, 0, 1000) //511+3*28.3)
