@@ -252,7 +252,7 @@ func (t *TreeLOR) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		t.data.TRF = timesRF[0]
 	}
 
-	event.FindLORs(0, 0, 38., 3*1.2, 0, 1000) //511+3*28.3)
+	event.FindLORs(0, 0, 25., 3*1.2, 0, 1000) //511+3*28.3)
 	// 	fmt.Println("no lors: ", len(event.LORs))
 	t.data.NoLORs = int32(len(event.LORs))
 	t.data.NoLORsMax = int32(NoLORsMax)
