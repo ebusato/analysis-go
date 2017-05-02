@@ -8,24 +8,24 @@ void display(bool showChannelIndex = false, TString fileNameCenters="../geom/dpg
   TEveRGBAPalette* pal = new TEveRGBAPalette(0, 130);
   
   // Draw coordinate system
-  TEveArrow* xAxis = new TEveArrow(100., 0., 0., 0., 0., 0.);
-  TEveArrow* yAxis = new TEveArrow(0., 100., 0., 0., 0., 0.);
-  TEveArrow* zAxis = new TEveArrow(0., 0., 100., 0., 0., 0.);
-  xAxis->SetMainColor(kBlue); xAxis->SetTubeR(0.02); xAxis->SetPickable(kTRUE);
-  yAxis->SetMainColor(kBlue); yAxis->SetTubeR(0.02); yAxis->SetPickable(kTRUE);
-  zAxis->SetMainColor(kBlue); zAxis->SetTubeR(0.02); zAxis->SetPickable(kTRUE);
+  TEveArrow* xAxis = new TEveArrow(150., 0., 0., 0., 0., 0.);
+  TEveArrow* yAxis = new TEveArrow(0., 150., 0., 0., 0., 0.);
+  TEveArrow* zAxis = new TEveArrow(0., 0., 150., 0., 0., 0.);
+  xAxis->SetMainColor(15); xAxis->SetTubeR(0.042); xAxis->SetConeR(0.077); xAxis->SetConeL(0.245); xAxis->SetPickable(kTRUE);
+  yAxis->SetMainColor(15); yAxis->SetTubeR(0.042); yAxis->SetConeR(0.077); yAxis->SetConeL(0.245); yAxis->SetPickable(kTRUE);
+  zAxis->SetMainColor(15); zAxis->SetTubeR(0.042); zAxis->SetConeR(0.077); zAxis->SetConeL(0.245); zAxis->SetPickable(kTRUE);
   gEve->AddElement(xAxis);
   gEve->AddElement(yAxis);
   gEve->AddElement(zAxis);
   TEveText* tx = new TEveText("x"); tx->SetFontSize(20);
   TEveVector tvx = xAxis->GetVector()*1.1+xAxis->GetOrigin(); tx->RefMainTrans().SetPos(tvx.Arr());
-  xAxis->AddElement(tx);
+  //xAxis->AddElement(tx);
   TEveText* ty = new TEveText("y"); ty->SetFontSize(20);
   TEveVector tvy = yAxis->GetVector()*1.1+yAxis->GetOrigin(); ty->RefMainTrans().SetPos(tvy.Arr());
-  yAxis->AddElement(ty);
+  //yAxis->AddElement(ty);
   TEveText* tz = new TEveText("z"); tz->SetFontSize(20);
   TEveVector tvz = zAxis->GetVector()*1.1+zAxis->GetOrigin(); tz->RefMainTrans().SetPos(tvz.Arr());
-  zAxis->AddElement(tz);
+  //zAxis->AddElement(tz);
   
   // Read full coordinates of scintillators and put them in a box set
   TEveBoxSet* bsright = new TEveBoxSet("BoxSetRight");
@@ -92,6 +92,7 @@ void display(bool showChannelIndex = false, TString fileNameCenters="../geom/dpg
   bsright->RefitPlex();
   bsleft->RefitPlex();
 
+  /*
   // Read centers of scintillators' front faces and put them in a point set
   TEvePointSet* ps = new TEvePointSet();
   ps->SetOwnIds(kTRUE);
@@ -133,12 +134,12 @@ void display(bool showChannelIndex = false, TString fileNameCenters="../geom/dpg
   ps->SetMarkerColor(kRed);
   ps->SetMarkerSize(1);
   ps->SetMarkerStyle(8);
-
+  */
   if (register)
     {
       gEve->AddElement(bsright);
       gEve->AddElement(bsleft);
-      gEve->AddElement(ps);
+      //gEve->AddElement(ps);
       gEve->Redraw3D(kTRUE);
     }
 }
