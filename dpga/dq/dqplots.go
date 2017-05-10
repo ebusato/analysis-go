@@ -305,7 +305,7 @@ func (d *DQPlot) MakeMinRecZDistr() *plot.Plot {
 		panic(err)
 	}
 	hplotZ.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
-// 	hplotZ.Color = plotutil.Color(3)
+	// 	hplotZ.Color = plotutil.Color(3)
 	p.Add(hplotZ)
 	p.Add(hplot.NewGrid())
 	if err != nil {
@@ -656,7 +656,7 @@ func (d *DQPlot) MakeDeltaT30Plot() *hplot.Plot {
 	p.Y.Label.Text = "No entries"
 	p.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
 	hp, err := hplot.NewH1D(d.DeltaT30)
-	hp.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
+	hp.FillColor = color.RGBA{R: 102, G: 102, B: 255, A: 255}
 	if err != nil {
 		panic(err)
 	}
@@ -674,6 +674,7 @@ func (d *DQPlot) MakeLORMultPlot() *hplot.Plot {
 	p.Y.Label.Text = "No entries"
 	p.X.Tick.Marker = &hplot.FreqTicks{N: 21, Freq: 2}
 	hp, err := hplot.NewH1D(d.HLORMult)
+	hp.FillColor = color.RGBA{R: 255, G: 255, B: 51, A: 255}
 	if err != nil {
 		panic(err)
 	}
@@ -692,6 +693,7 @@ func (d *DQPlot) MakeEnergyPlot() *hplot.Plot {
 	p.X.Tick.Marker = &hplot.FreqTicks{N: 9, Freq: 1}
 	var hp *hplot.H1D
 	hp, err = hplot.NewH1D(d.HEnergyAll)
+	hp.FillColor = color.RGBA{R: 77, G: 255, B: 136, A: 255}
 	if err != nil {
 		panic(err)
 	}
