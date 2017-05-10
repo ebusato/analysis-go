@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"math"
 	"os"
 	"strconv"
 
@@ -28,6 +29,7 @@ type DQPlot struct {
 	HSatFrequency       *hbook.H1D
 	HMultiplicity       *hbook.H1D
 	HSatMultiplicity    *hbook.H1D
+	HLORMult            *hbook.H1D
 	HCharge             [][]hbook.H1D
 	HAmplitude          [][]hbook.H1D
 	HEnergy             [][]hbook.H1D
@@ -54,6 +56,7 @@ func NewDQPlot() *DQPlot {
 		HSatFrequency:    hbook.NewH1D(240, 0, 240),
 		HMultiplicity:    hbook.NewH1D(8, -0.5, 7.5),
 		HSatMultiplicity: hbook.NewH1D(8, -0.5, 7.5),
+		HLORMult:         hbook.NewH1D(20, 0, 20),
 		HCharge:          make([][]hbook.H1D, NoClusters),
 		HAmplitude:       make([][]hbook.H1D, NoClusters),
 		HEnergy:          make([][]hbook.H1D, NoClusters),
@@ -105,7 +108,7 @@ func NewDQPlotFromGob(fileName string) *DQPlot {
 	return dqplot
 }
 
-func (d *DQPlot) FillHistos(event *event.Event) {
+func (d *DQPlot) FillHistos(event *event.Event, RFcutMean, RFcutWidth float64) {
 	d.Nevents++
 
 	var mult uint8 = 0
@@ -138,19 +141,26 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 	d.HMultiplicity.Fill(float64(mult), 1)
 	d.HSatMultiplicity.Fill(float64(satmult), 1)
 
+	d.HLORMult.Fill(float64(len(event.LORs)), 1)
 	// 						fmt.Println(len(event.LORs))
 	if len(event.LORs) == 1 {
 		lor := &event.LORs[0]
-		d.HMinRecX.Fill(lor.Xmar, 1)
-		d.HMinRecY.Fill(lor.Ymar, 1)
-		d.HMinRecZ.Fill(lor.Zmar, 1)
 		d.AmplCorrelation.Fill(lor.Pulses[0].Ampl, lor.Pulses[1].Ampl, 1)
 		d.EnergyCorrelation.Fill(lor.Pulses[0].E, lor.Pulses[1].E, 1)
 		quartet0 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(lor.Pulses[0].Channel.FifoID144(), true))
 		quartet1 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(lor.Pulses[1].Channel.FifoID144(), true))
 		d.HitQuartets.Fill(quartet0, quartet1, 1)
-		d.HEnergyVsDeltaTggRF.Fill(lor.TMean-lor.TRF, lor.Pulses[0].E, 1)
-		d.HEnergyVsDeltaTggRF.Fill(lor.TMean-lor.TRF, lor.Pulses[1].E, 1)
+
+		timeDiff := lor.TMean - lor.TRF
+
+		d.HEnergyVsDeltaTggRF.Fill(timeDiff, lor.Pulses[0].E, 1)
+		d.HEnergyVsDeltaTggRF.Fill(timeDiff, lor.Pulses[1].E, 1)
+
+		if math.Abs(timeDiff-RFcutMean) > RFcutWidth {
+			d.HMinRecX.Fill(lor.Xmar, 1)
+			d.HMinRecY.Fill(lor.Ymar, 1)
+			d.HMinRecZ.Fill(lor.Zmar, 1)
+		}
 	}
 
 	lors := event.FindLORsLose(0, 0)
@@ -170,6 +180,7 @@ func (d *DQPlot) Finalize() {
 	d.HFrequency.Scale(1 / float64(d.Nevents))
 	d.HSatFrequency.Scale(1 / float64(d.Nevents))
 	d.HMultiplicity.Scale(1 / d.HMultiplicity.Integral())
+	d.HLORMult.Scale(1 / d.HLORMult.Integral())
 	d.HSatMultiplicity.Scale(1 / d.HSatMultiplicity.Integral())
 	// Take len of HCharge and HCharge[0] as it should be the same for all other
 	// objects used here
@@ -637,6 +648,23 @@ func (d *DQPlot) MakeDeltaT30Plot() *hplot.Plot {
 	p.Y.Label.Text = "No entries"
 	p.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
 	hp, err := hplot.NewH1D(d.DeltaT30)
+	if err != nil {
+		panic(err)
+	}
+	p.Add(hp)
+	p.Add(hplot.NewGrid())
+	return p
+}
+
+func (d *DQPlot) MakeLORMultPlot() *hplot.Plot {
+	p, err := hplot.New()
+	if err != nil {
+		panic(err)
+	}
+	p.X.Label.Text = "Number of LORs"
+	p.Y.Label.Text = "No entries"
+	p.X.Tick.Marker = &hplot.FreqTicks{N: 21, Freq: 2}
+	hp, err := hplot.NewH1D(d.HLORMult)
 	if err != nil {
 		panic(err)
 	}

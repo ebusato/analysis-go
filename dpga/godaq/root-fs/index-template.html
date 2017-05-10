@@ -72,6 +72,7 @@
 		var chargerhplot = ""
 		var hvplot = ""
 		var minrec1Ddistr = ""
+		var lormultplot = ""
 		var deltat30plot = ""
 		var energyallplot = ""
 		var amplenergyCorrelationplot = ""
@@ -183,6 +184,8 @@
 			p4.innerHTML = hvplot;
 			var p5 = document.getElementById("my-minrec1Ddistr-plot");
 			p5.innerHTML = minrec1Ddistr;
+			var p50 = document.getElementById("my-lormult-plot");
+			p50.innerHTML = lormultplot;
 			var p6 = document.getElementById("my-deltat30-plot");
 			p6.innerHTML = deltat30plot;
 			var p60 = document.getElementById("my-energyall-plot");
@@ -308,6 +311,7 @@
 				chargerhplot = data.charger;
 				hvplot = data.hv;
 				minrec1Ddistr = data.minrec1Ddistrs
+				lormultplot = data.lormult
 				deltat30plot = data.deltat30
 				energyallplot = data.energyall
 				amplenergyCorrelationplot = data.amplenergycorrelation
@@ -430,6 +434,9 @@
 		</td>
 		</tr>
 		<tr>
+		<td>
+			<div id="my-lormult-plot"></div>
+		</td>
 		<td width="600" colspan="2" align="center">
 			<div id="my-deltat30-plot"></div>
 		</td>

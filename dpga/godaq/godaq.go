@@ -71,6 +71,8 @@ var (
 	noped       = flag.Bool("noped", false, "If specified, no pedestal correction applied")
 	notdo       = flag.Bool("notdo", false, "If specified, no time dependent offset correction applied")
 	noen        = flag.Bool("noen", false, "If specified, no energy calibration applied.")
+	rfcutmean   = flag.Float64("rfcutmean", 7, "Mean used to apply RF selection cut.")
+	rfcutwidth  = flag.Float64("rfcutwidth", 5, "Width used to apply RF selection cut.")
 )
 
 // XY is a struct used to store a couple of values
@@ -230,6 +232,7 @@ type Data struct {
 	AmplEnergyCorrelation string         `json:"amplenergycorrelation"` // amplitude or energy correlation for events with multiplicity=2
 	HitQuartets           string         `json:"hitquartets"`           // 2D plot displaying quartets that are hit for events with multiplicity=2
 	RFplotALaArnaud       string         `json:"rfplotalaarnaud"`       // 2D RF plot "a la Arnaud"
+	LORMult               string         `json:"lormult"`               // LOR multiplicity
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -655,7 +658,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							treeLOR.Fill(run, r.Header(), event, timesRF)
 						}
 						// 						fmt.Println(" \nlength middle: ", len(event.LORs))
-						dqplots.FillHistos(event)
+						dqplots.FillHistos(event, *rfcutmean, *rfcutwidth)
 						// 						fmt.Println(" length after: ", len(event.LORs))
 						/*
 							if mult == 2 {
@@ -796,6 +799,10 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							pEnergyAll := dqplots.MakeEnergyPlot()
 							EnergyAllsvg := utils.RenderSVG(pEnergyAll, 10, 7)
 
+							// Make LOR multiplicity plot
+							pLORMult := dqplots.MakeLORMultPlot()
+							LORMultsvg := utils.RenderSVG(pLORMult, 10, 7)
+
 							// Make ampl correlation plot
 							pAmplCorrelation := dqplots.MakeAmplCorrelationPlot()
 							AmplCorrelationsvg := ""
@@ -859,6 +866,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								AmplEnergyCorrelation: Correlationsvg,
 								HitQuartets:           HitQuartetssvg,
 								RFplotALaArnaud:       RFplotALaArnaudsvg,
+								LORMult:               LORMultsvg,
 							}
 							noEventsForMon = 0
 							minrec = nil
