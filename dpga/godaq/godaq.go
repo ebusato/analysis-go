@@ -781,7 +781,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								hvsvg = utils.RenderSVG(hvTiled, 45, 30)
 
 								tpMinRecXY := dqplots.MakeMinRecXYDistrs()
-								minrecXYsvg = utils.RenderSVG(tpMinRecXY, 15, 12)
+								minrecXYsvg = utils.RenderSVG(tpMinRecXY, 13, 9)
 							}
 
 							tpMinRecZ := dqplots.MakeMinRecZDistr()
@@ -798,42 +798,42 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 
 							// Make DeltaT30 plot
 							pDeltaT30 := dqplots.MakeDeltaT30Plot()
-							DeltaT30svg := utils.RenderSVG(pDeltaT30, 12, 7)
+							DeltaT30svg := utils.RenderSVG(pDeltaT30, 12, 7.5)
 
 							// Make inclusive energy plots
 							pEnergyAll := dqplots.MakeEnergyPlot()
-							EnergyAllsvg := utils.RenderSVG(pEnergyAll, 10, 7)
+							EnergyAllsvg := utils.RenderSVG(pEnergyAll, 10, 7.5)
 
 							// Make LOR multiplicity plot
 							pLORMult := dqplots.MakeLORMultPlot()
-							LORMultsvg := utils.RenderSVG(pLORMult, 10, 7)
+							LORMultsvg := utils.RenderSVG(pLORMult, 10, 7.5)
 
 							// Make ampl correlation plot
 							pAmplCorrelation := dqplots.MakeAmplCorrelationPlot()
 							AmplCorrelationsvg := ""
 							if *iEvent > 0 && dqplots.AmplCorrelation.Entries() > 0 {
-								AmplCorrelationsvg = utils.RenderSVG(pAmplCorrelation, 12, 12)
+								AmplCorrelationsvg = utils.RenderSVG(pAmplCorrelation, 9, 9)
 							}
 
 							// Make energy correlation plot
 							pEnergyCorrelation := dqplots.MakeEnergyCorrelationPlot()
 							EnergyCorrelationsvg := ""
 							if *iEvent > 0 && dqplots.EnergyCorrelation.Entries() > 0 {
-								EnergyCorrelationsvg = utils.RenderSVG(pEnergyCorrelation, 12, 12)
+								EnergyCorrelationsvg = utils.RenderSVG(pEnergyCorrelation, 9, 9)
 							}
 
 							// Make RF plot "a la arnaud"
 							pRFplotALaArnaud := dqplots.MakeRFPlotALaArnaud()
 							RFplotALaArnaudsvg := ""
 							if *iEvent > 0 && dqplots.HEnergyVsDeltaTggRF.Entries() > 0 {
-								RFplotALaArnaudsvg = utils.RenderSVG(pRFplotALaArnaud, 12, 12)
+								RFplotALaArnaudsvg = utils.RenderSVG(pRFplotALaArnaud, 9, 9)
 							}
 
 							// Make HitQuartets plot
 							pHitQuartets := dqplots.MakeHitQuartetsPlot()
 							HitQuartetssvg := ""
 							if *iEvent > 0 && dqplots.HitQuartets.Entries() > 0 {
-								HitQuartetssvg = utils.RenderSVG(pHitQuartets, 12, 12)
+								HitQuartetssvg = utils.RenderSVG(pHitQuartets, 9, 9)
 							}
 
 							// send to channel
@@ -911,7 +911,7 @@ func dataHandler(ws *websocket.Conn) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("len(marshaled data) = %v bytes = %v bits\n", len(sb), len(sb)*8)
+		fmt.Printf("len(marshaled data) = %v bytes = %v Mbits\n", len(sb), len(sb)*8/1.e6)
 
 		/////////////////////////////////////////////////
 		err = websocket.JSON.Send(ws, data)

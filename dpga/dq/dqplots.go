@@ -61,7 +61,7 @@ func NewDQPlot() *DQPlot {
 		HAmplitude:       make([][]hbook.H1D, NoClusters),
 		HEnergy:          make([][]hbook.H1D, NoClusters),
 		HMinRecX:         hbook.NewH1D(200, -50, 50),
-		HMinRecY:         hbook.NewH1D(240, -60, 60),
+		HMinRecY:         hbook.NewH1D(200, -50, 50),
 		// 		HMinRecZ:         hbook.NewH1D(1000, -150, 150),
 		HMinRecZ:   hbook.NewH1D(61, -97.5-3.25/2., 97.5+3.25/2.),
 		DeltaT30:   hbook.NewH1D(300, -30, 30),
@@ -70,7 +70,7 @@ func NewDQPlot() *DQPlot {
 		AmplCorrelation:     hbook.NewH2D(50, 0, 4095, 50, 0, 4095),
 		EnergyCorrelation:   hbook.NewH2D(50, 0, 1000, 50, 0, 1000),
 		HitQuartets:         hbook.NewH2D(30, 0, 30, 30, 30, 60),
-		HEnergyVsDeltaTggRF: hbook.NewH2D(100, 0, 40, 200, 0, 1050),
+		HEnergyVsDeltaTggRF: hbook.NewH2D(50, 0, 40, 50, 0, 1050),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
@@ -261,17 +261,18 @@ func (d *DQPlot) MakeMinRecXYDistrs() *hplot.TiledPlot {
 	hplotX.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
 	hplotX.Color = plotutil.Color(3)
 	p1.Add(hplotX)
+	p1.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
 	if err != nil {
 		panic(err)
 	}
 	//p1.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction X (mm)\n")
 
 	p2 := tp.Plot(1, 0)
-	p2.X.Min = -60
-	p2.X.Max = 60
+	p2.X.Min = -50
+	p2.X.Max = 50
 	p2.X.Label.Text = "Y (mm)"
 	p2.Y.Label.Text = "No entries"
-	p2.X.Tick.Marker = &hplot.FreqTicks{N: 121, Freq: 5}
+	p2.X.Tick.Marker = &hplot.FreqTicks{N: 101, Freq: 5}
 	p2.Add(hplot.NewGrid())
 	hplotY, err := hplot.NewH1D(d.HMinRecY)
 	if err != nil {
@@ -280,6 +281,7 @@ func (d *DQPlot) MakeMinRecXYDistrs() *hplot.TiledPlot {
 	hplotY.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
 	hplotY.Color = plotutil.Color(3)
 	p2.Add(hplotY)
+	p2.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
 	if err != nil {
 		log.Fatalf("error creating histogram \n")
 	}
@@ -298,7 +300,8 @@ func (d *DQPlot) MakeMinRecZDistr() *plot.Plot {
 	}
 	p.X.Label.Text = "Z (mm)"
 	p.Y.Label.Text = "No entries"
-	p.X.Tick.Marker = &hplot.FreqTicks{N: 62, Freq: 5}
+	p.X.Tick.Marker = &hplot.FreqTicks{N: 124, Freq: 6}
+	p.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
 
 	hplotZ, err := hplot.NewH1D(d.HMinRecZ)
 	if err != nil {
@@ -607,6 +610,7 @@ func (d *DQPlot) MakeEnergyCorrelationPlot() *plot.Plot {
 	pCorrelation.Y.Max = d.EnergyCorrelation.YMax()
 	pCorrelation.Add(hplot.NewH2D(d.EnergyCorrelation, nil))
 	//pCorrelation.Add(plotter.NewGrid())
+	pCorrelation.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
 	return pCorrelation
 }
 
@@ -624,6 +628,7 @@ func (d *DQPlot) MakeRFPlotALaArnaud() *plot.Plot {
 	pRF.X.Max = d.HEnergyVsDeltaTggRF.XMax()
 	pRF.Y.Max = d.HEnergyVsDeltaTggRF.YMax()
 	pRF.Add(hplot.NewH2D(d.HEnergyVsDeltaTggRF, nil))
+	pRF.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
 	//pRF.Add(plotter.NewGrid())
 	return pRF
 }
@@ -635,8 +640,8 @@ func (d *DQPlot) MakeHitQuartetsPlot() *plot.Plot {
 	}
 	pHitQuartets.X.Label.Text = "Quartet Id (right hemisphere)"
 	pHitQuartets.Y.Label.Text = "Quartet Id (left hemisphere)"
-	pHitQuartets.X.Tick.Marker = &hplot.FreqTicks{N: 31, Freq: 1}
-	pHitQuartets.Y.Tick.Marker = &hplot.FreqTicks{N: 31, Freq: 1}
+	pHitQuartets.X.Tick.Marker = &hplot.FreqTicks{N: 31, Freq: 2}
+	pHitQuartets.Y.Tick.Marker = &hplot.FreqTicks{N: 31, Freq: 2}
 	pHitQuartets.X.Min = d.HitQuartets.XMin()
 	pHitQuartets.Y.Min = d.HitQuartets.YMin()
 	pHitQuartets.X.Max = d.HitQuartets.XMax()
@@ -644,6 +649,7 @@ func (d *DQPlot) MakeHitQuartetsPlot() *plot.Plot {
 	p, _ := brewer.GetPalette(brewer.TypeAny, "RdYlBu", 11)
 	pHitQuartets.Add(hplot.NewH2D(d.HitQuartets, p))
 	//pHitQuartets.Add(plotter.NewGrid())
+	pHitQuartets.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
 	return pHitQuartets
 }
 
@@ -662,6 +668,7 @@ func (d *DQPlot) MakeDeltaT30Plot() *hplot.Plot {
 	}
 	p.Add(hp)
 	p.Add(hplot.NewGrid())
+	p.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
 	return p
 }
 
@@ -680,6 +687,7 @@ func (d *DQPlot) MakeLORMultPlot() *hplot.Plot {
 	}
 	p.Add(hp)
 	p.Add(hplot.NewGrid())
+	p.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
 	return p
 }
 
@@ -699,6 +707,7 @@ func (d *DQPlot) MakeEnergyPlot() *hplot.Plot {
 	}
 	p.Add(hp)
 	p.Add(hplot.NewGrid())
+	p.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
 	return p
 }
 

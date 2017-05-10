@@ -330,8 +330,10 @@
 				}
 				for (var iq = 0; iq < NquartetsWoData; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
+						if(!(iq == 0 && ip == 1)) {
 						for (var is = 0; is < data.quartetswodata[iq][ip].length; is += 1) {
 							quartetWoDataplots[iq][ip].data.push([data.quartetswodata[iq][ip][is].X, data.quartetswodata[iq][ip][is].Y]);
+						}
 						}
 					}
 				}
@@ -387,39 +389,47 @@
 <body>
 	<header class="site-header-wrap">
 		<div class="site-header">
-			<h2>LAPD monitoring</h2>
+			<h2>LAPD monitoring - <font color="green">Run {{.RunNumber}} - {{.TimeStart}}</font></h2>
+			<font color="green"><b><p id="timestampfield"></p></b></font>
 			
-			<table cellspacing="15">
-			<tr> 
-			<td valign="top">
-				<b>Run number:</b> {{.RunNumber}} <br>
-				<b>Start time:</b> {{.TimeStart}} <br>
-				<p id="timestampfield"></p>
-				<b>Number of ASM Cards:</b> {{.NoASMCards}}<br>
-				<b>Number of samples:</b> {{.NoSamples}}<br>
-				<b>Data read:</b> {{.DataToRead}}<br>
-			</td>
-			<td valign="top">
-				<b>Trigger equation:</b> {{.TriggerEq}}<br>
-				<b>Trigger delay:</b> {{.TriggerDelay}}<br>
-				<b>Channels used for trigger:</b> {{.ChanUsedForTrig}}<br>
-				<b>Threshold:</b> {{.Threshold}}<br>
-				<b>Low and high thresholds:</b> {{.LowHighThres}}<br>
-				<b>Trigger signal sample shaping for high threshold:</b> {{.TrigSigShapingHighThres}} <br>
-				<b>Trigger signal sample shaping for low threshold:</b> {{.TrigSigShapingLowThres}} <br>
-			</td>
-			</tr>
-			</table>
-			
-		</div>
-		
 		<table>
 		<tr>
-		<td  width="2000" align="center">
+		<td  width="1900" align="center">
 		<div id="my-minreczdistr-plot"></div>
 		</td>
 		</tr>
 		</table>
+			<hr>
+			<table cellspacing="15" align="center">
+			<tr> 
+			<td>
+			<b>Detector configuration:</b>
+			</td>
+			<td valign="top">
+				<b>Number of ASM Cards:</b> {{.NoASMCards}}<br>
+				<b>Number of samples:</b> {{.NoSamples}}<br>
+			</td>
+			<td valign="top">
+				<b>Data read:</b> {{.DataToRead}}<br>
+				<b>Trigger equation:</b> {{.TriggerEq}}<br>
+			</td>
+			<td valign="top">
+				<b>Trigger delay:</b> {{.TriggerDelay}}<br>
+				<b>Channels used for trigger:</b> {{.ChanUsedForTrig}}<br>
+			</td>
+			<td valign="top">
+				<b>Threshold:</b> {{.Threshold}}<br>
+				<b>Low and high thresholds:</b> {{.LowHighThres}}<br>
+			</td>
+			<td valign="top">
+				<b>Trigger signal shaping (high threshold):</b> {{.TrigSigShapingHighThres}} <br>
+				<b>Trigger signal shaping (low threshold):</b> {{.TrigSigShapingLowThres}} <br>
+			</td>
+			</tr>
+			</table>
+			<hr>
+			
+		</div>
 		
 		<table cellspacing="15">
 		<tr>
@@ -444,13 +454,13 @@
 		</table>
 		<table>
 		<tr>		
-		<td>
+		<td valign="center">
 			<div id="my-freq-plot" class="my-plot-stylefreq"></div>
 		</td>
-		<td>
+		<td valign="center">
 			<div id="my-monbufsize-plot" class="my-plot-stylefreq"></div>
 		</td>
-		<td>
+		<td valign="center">
 			<div id="my-lormult-plot"></div>
 		</td>
 		<td width="400" colspan="2" align="center">
@@ -466,7 +476,10 @@
 		<tr>
 		<!--td valign="top">
 			<div id="graph3DMinReco"></div>
-		</td-->		
+		</td-->	
+		<td>
+			<div id="my-qWoData0-plot" class="my-plot-stylefreq"></div>
+		</td>
 		<td>
 			<div id="my-amplenergyCorrelation-plot"></div>
 		</td>
@@ -587,7 +600,7 @@
 				</table>
 				<table>
 					<tr>
-						<td><div id="my-qWoData0-plot" class="my-plot-style2"></div></td>
+						<!--td><div id="my-qWoData0-plot" class="my-plot-style2"></div></td-->
 						<td><div id="my-qWoData1-plot" class="my-plot-style2"></div></td>
 						<td><div id="my-qWoData2-plot" class="my-plot-style2"></div></td>
 						<td><div id="my-qWoData3-plot" class="my-plot-style2"></div></td>
