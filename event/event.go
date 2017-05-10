@@ -8,6 +8,7 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/reconstruction"
+	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
 type LOR struct {
@@ -15,6 +16,7 @@ type LOR struct {
 	Idx1   int
 	Idx2   int
 	TMean  float64
+	TRF    float64
 	Xmar   float64
 	Ymar   float64
 	Zmar   float64
@@ -28,6 +30,7 @@ func NewLOR(pulse1, pulse2 *pulse.Pulse, idx1, idx2 int, Xmar, Ymar, Zmar, Rmar 
 	l.Idx1 = idx1
 	l.Idx2 = idx2
 	l.TMean = (pulse1.Time30 + pulse2.Time30) / 2.
+	l.TRF = -1
 	l.Xmar = Xmar
 	l.Ymar = Ymar
 	l.Zmar = Zmar
@@ -37,6 +40,35 @@ func NewLOR(pulse1, pulse2 *pulse.Pulse, idx1, idx2 int, Xmar, Ymar, Zmar, Rmar 
 
 func (l *LOR) Copy() *LOR {
 	return NewLOR(l.Pulses[0], l.Pulses[1], l.Idx1, l.Idx2, l.Xmar, l.Ymar, l.Zmar, l.Rmar)
+}
+
+func (l *LOR) CalcTRF(timesRF []float64) {
+	if len(timesRF) == 0 {
+		log.Fatalf("len(timesRF) == 0\n")
+	}
+	if l.TMean <= timesRF[0] {
+		//fmt.Println("here ", t.data.LORTMean[i], timesRF[0])
+		l.TRF = timesRF[0] - 1/24.85e6*1e9 // 24.85 MHz is the HF frequency
+	} else if l.TMean >= timesRF[len(timesRF)-1] {
+		l.TRF = timesRF[len(timesRF)-1]
+	} else {
+		for j := range timesRF {
+			if j < len(timesRF)-1 {
+				if l.TMean > timesRF[j] && l.TMean < timesRF[j+1] {
+					l.TRF = timesRF[j]
+					break
+				}
+			} else {
+				fmt.Println(timesRF)
+				log.Fatalf("This should not happen, tMean=%v\n", l.TMean)
+			}
+		}
+	}
+	if l.TMean-l.TRF > 1/24.85e6*1e9+3 {
+		fmt.Println(timesRF)
+		fmt.Println(l.TMean, l.TRF)
+		log.Fatalf("ERROR\n")
+	}
 }
 
 type Event struct {
@@ -350,6 +382,23 @@ func (e *Event) FindLORsLose(xbeam, ybeam float64) []LOR {
 
 	e.LORs = origLORs
 	return lors
+}
+
+func (e *Event) FindTimesRF() []float64 {
+	// 	for i := range event.ClustersWoData {
+	// 		cluster := &event.ClustersWoData[i]
+	// 		for j := range cluster.Pulses {
+	// 			pulse := &cluster.Pulses[j]
+	// 			fmt.Println(i, j, len(pulse.Samples))
+	// 		}
+	// 	}
+	pulse := e.ClustersWoData[0].Pulses[0]
+	ampSlice := pulse.MakeAmpSlice()
+	var timesRF []float64
+	if len(ampSlice) != 0 { // can compute TRF
+		timesRF = utils.FindIntersections(e.ID, ampSlice, pulse.MakeTimeSlice())
+	}
+	return timesRF
 }
 
 // type Trigger int

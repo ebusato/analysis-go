@@ -650,8 +650,9 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 						// 						dqplots.FillHistos(event)
 						// mult, pulsesWithSignal, _ := event.Multiplicity()
 
+						timesRF := event.FindTimesRF()
 						if treeLOR != nil {
-							treeLOR.Fill(run, r.Header(), event)
+							treeLOR.Fill(run, r.Header(), event, timesRF)
 						}
 						// 						fmt.Println(" \nlength middle: ", len(event.LORs))
 						dqplots.FillHistos(event)

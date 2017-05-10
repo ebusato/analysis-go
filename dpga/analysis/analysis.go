@@ -127,7 +127,8 @@ func main() {
 			tree.Fill(hdr.RunNumber, r.Header(), event)
 		}
 		if treeLOR != nil {
-			treeLOR.Fill(hdr.RunNumber, r.Header(), event)
+			timesRF := event.FindTimesRF()
+			treeLOR.Fill(hdr.RunNumber, r.Header(), event, timesRF)
 		}
 
 		//fmt.Println(len(pulses511keV))

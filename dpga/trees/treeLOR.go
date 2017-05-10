@@ -1,9 +1,6 @@
 package trees
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
@@ -200,7 +197,7 @@ func AlreadyIn(pulses []*pulse.Pulse, p *pulse.Pulse) (bool, int) {
 	return false, -1
 }
 
-func (t *TreeLOR) Fill(run uint32, hdr *rw.Header, event *event.Event) {
+func (t *TreeLOR) Fill(run uint32, hdr *rw.Header, event *event.Event, timesRF []float64) {
 	t.data.Run = run
 	t.data.Evt = uint32(event.ID)
 	t.data.TimeStamp = uint64(event.Counters[3])<<32 | uint64(event.Counters[2])
@@ -242,13 +239,16 @@ func (t *TreeLOR) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 	}
 
 	// TRF stuff
-	ampSlice := event.ClustersWoData[0].Pulses[0].MakeAmpSlice()
-	var timesRF []float64
-	if len(ampSlice) != 0 { // can compute TRF
-		timesRF = utils.FindIntersections(event.ID, event.ClustersWoData[0].Pulses[0].MakeAmpSlice(), event.ClustersWoData[0].Pulses[0].MakeTimeSlice())
-	}
+	// 	ampSlice := event.ClustersWoData[0].Pulses[0].MakeAmpSlice()
+	// 	var timesRF []float64
+	// 	if len(ampSlice) != 0 { // can compute TRF
+	// 		timesRF = utils.FindIntersections(event.ID, ampSlice, event.ClustersWoData[0].Pulses[0].MakeTimeSlice())
+	// 	}
+	//
 
-	if len(timesRF) > 0 {
+	if len(timesRF) == 0 {
+		timesRF = event.FindTimesRF()
+	} else {
 		t.data.TRF = timesRF[0]
 	}
 
@@ -287,42 +287,8 @@ func (t *TreeLOR) Fill(run uint32, hdr *rw.Header, event *event.Event) {
 		t.data.LORYmar[i] = lor.Ymar
 		t.data.LORZmar[i] = lor.Zmar
 		t.data.LORRmar[i] = lor.Rmar
-
-		///////////////////////////////////////////
-		// TRF calculation
-		// 	for i := range event.ClustersWoData {
-		// 		cluster := &event.ClustersWoData[i]
-		// 		for j := range cluster.Pulses {
-		// 			pulse := &cluster.Pulses[j]
-		// 			fmt.Println(i, j, len(pulse.Samples))
-		// 		}
-		// 	}
-		if len(timesRF) > 0 {
-			if t.data.LORTMean[i] <= timesRF[0] {
-				//fmt.Println("here ", t.data.LORTMean[i], timesRF[0])
-				t.data.LORTRF[i] = timesRF[0] - 1/24.85e6*1e9 // 24.85 MHz is the HF frequency
-			} else if t.data.LORTMean[i] >= timesRF[len(timesRF)-1] {
-				t.data.LORTRF[i] = timesRF[len(timesRF)-1]
-			} else {
-				for j := range timesRF {
-					if j < len(timesRF)-1 {
-						if t.data.LORTMean[i] > timesRF[j] && t.data.LORTMean[i] < timesRF[j+1] {
-							t.data.LORTRF[i] = timesRF[j]
-							break
-						}
-					} else {
-						fmt.Println(timesRF)
-						log.Fatalf("This should not happen, tMean=%v\n", t.data.LORTMean[i])
-					}
-				}
-			}
-			if t.data.LORTMean[i]-t.data.LORTRF[i] > 1/24.85e6*1e9+3 {
-				fmt.Println(timesRF)
-				fmt.Println(t.data.LORTMean[i], t.data.LORTRF[i])
-				log.Fatalf("ERROR\n")
-			}
-		}
-		///////////////////////////////////////////
+		lor.CalcTRF(timesRF)
+		t.data.LORTRF[i] = lor.TRF
 	}
 
 	t.data.NoPulses = int32(len(pulsesInLOR))

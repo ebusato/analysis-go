@@ -23,23 +23,23 @@ import (
 )
 
 type DQPlot struct {
-	Nevents            uint
-	HFrequency         *hbook.H1D
-	HSatFrequency      *hbook.H1D
-	HMultiplicity      *hbook.H1D
-	HSatMultiplicity   *hbook.H1D
-	HCharge            [][]hbook.H1D
-	HAmplitude         [][]hbook.H1D
-	HEnergy            [][]hbook.H1D
-	HMinRecX           *hbook.H1D
-	HMinRecY           *hbook.H1D
-	HMinRecZ           *hbook.H1D
-	DeltaT30           *hbook.H1D
-	HEnergyAll         *hbook.H1D
-	AmplCorrelation    *hbook.H2D
-	EnergyCorrelation  *hbook.H2D
-	HitQuartets        *hbook.H2D
-	HEnergyVsDeltaggRF *hbook.H2D
+	Nevents             uint
+	HFrequency          *hbook.H1D
+	HSatFrequency       *hbook.H1D
+	HMultiplicity       *hbook.H1D
+	HSatMultiplicity    *hbook.H1D
+	HCharge             [][]hbook.H1D
+	HAmplitude          [][]hbook.H1D
+	HEnergy             [][]hbook.H1D
+	HMinRecX            *hbook.H1D
+	HMinRecY            *hbook.H1D
+	HMinRecZ            *hbook.H1D
+	DeltaT30            *hbook.H1D
+	HEnergyAll          *hbook.H1D
+	AmplCorrelation     *hbook.H2D
+	EnergyCorrelation   *hbook.H2D
+	HitQuartets         *hbook.H2D
+	HEnergyVsDeltaTggRF *hbook.H2D
 
 	HV [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
 
@@ -63,10 +63,10 @@ func NewDQPlot() *DQPlot {
 		DeltaT30:         hbook.NewH1D(300, -30, 30),
 		HEnergyAll:       hbook.NewH1D(200, 0, 1022),
 		// 		AmplCorrelation: hbook.NewH2D(50, 0, 0.5, 50, 0, 0.5),
-		AmplCorrelation:    hbook.NewH2D(50, 0, 4095, 50, 0, 4095),
-		EnergyCorrelation:  hbook.NewH2D(50, 0, 1000, 50, 0, 1000),
-		HitQuartets:        hbook.NewH2D(30, 0, 30, 30, 30, 60),
-		HEnergyVsDeltaggRF: hbook.NewH2D(50, 0, 1000, 40, 0, 40),
+		AmplCorrelation:     hbook.NewH2D(50, 0, 4095, 50, 0, 4095),
+		EnergyCorrelation:   hbook.NewH2D(50, 0, 1000, 50, 0, 1000),
+		HitQuartets:         hbook.NewH2D(30, 0, 30, 30, 30, 60),
+		HEnergyVsDeltaTggRF: hbook.NewH2D(100, 0, 40, 200, 0, 1050),
 	}
 	for i := uint8(0); i < NoClusters; i++ {
 		dqp.HCharge[i] = make([]hbook.H1D, N)
@@ -149,6 +149,8 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 		quartet0 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(lor.Pulses[0].Channel.FifoID144(), true))
 		quartet1 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(lor.Pulses[1].Channel.FifoID144(), true))
 		d.HitQuartets.Fill(quartet0, quartet1, 1)
+		d.HEnergyVsDeltaTggRF.Fill(lor.TMean-lor.TRF, lor.Pulses[0].E, 1)
+		d.HEnergyVsDeltaTggRF.Fill(lor.TMean-lor.TRF, lor.Pulses[1].E, 1)
 	}
 
 	lors := event.FindLORsLose(0, 0)
