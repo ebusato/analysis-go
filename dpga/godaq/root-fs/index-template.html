@@ -71,7 +71,8 @@
 		var chargelhplot = ""
 		var chargerhplot = ""
 		var hvplot = ""
-		var minrec1Ddistr = ""
+		var minrecxydistr = ""
+		var minreczdistr = ""
 		var lormultplot = ""
 		var deltat30plot = ""
 		var energyallplot = ""
@@ -182,8 +183,10 @@
 			p3.innerHTML = chargerhplot;
 			var p4 = document.getElementById("my-hv-plot");
 			p4.innerHTML = hvplot;
-			var p5 = document.getElementById("my-minrec1Ddistr-plot");
-			p5.innerHTML = minrec1Ddistr;
+			var p5 = document.getElementById("my-minrecxydistr-plot");
+			p5.innerHTML = minrecxydistr;
+			var p51 = document.getElementById("my-minreczdistr-plot");
+			p51.innerHTML = minreczdistr;
 			var p50 = document.getElementById("my-lormult-plot");
 			p50.innerHTML = lormultplot;
 			var p6 = document.getElementById("my-deltat30-plot");
@@ -310,7 +313,8 @@
 				chargelhplot = data.chargel;
 				chargerhplot = data.charger;
 				hvplot = data.hv;
-				minrec1Ddistr = data.minrec1Ddistrs
+				minrecxydistr = data.minrecxydistrs
+				minreczdistr = data.minreczdistrs
 				lormultplot = data.lormult
 				deltat30plot = data.deltat30
 				energyallplot = data.energyall
@@ -337,9 +341,9 @@
 				//for (var iminrec = 0; iminrec < data.minrec.length; iminrec += 1) {
 					//dataMinReco3d.add({x:data.minrec[iminrec].X,y:data.minrec[iminrec].Y,z:data.minrec[iminrec].Z});
 				//}
-				if ( data.minrec.length >= 1) {
-					dataMinReco3D.add({x:data.minrec[0].X,y:data.minrec[0].Y,z:data.minrec[0].Z});
-				}
+// 				if ( data.minrec.length >= 1) {
+// 					dataMinReco3D.add({x:data.minrec[0].X,y:data.minrec[0].Y,z:data.minrec[0].Z});
+// 				}
 				var containerMinReco3D = document.getElementById('graph3DMinReco');
 				graphMinReco3D = new vis.Graph3d(containerMinReco3D, dataMinReco3D, optionsMinReco3D);
 			};
@@ -349,8 +353,8 @@
 	
 	<style>
 		.my-plot-stylefreq {
-			width: 250px;
-			height: 200px;
+			width: 310px;
+			height: 280px;
 			font-size: 14px;
 			line-height: 1.2em;
 		}
@@ -384,6 +388,7 @@
 	<header class="site-header-wrap">
 		<div class="site-header">
 			<h2>LAPD monitoring</h2>
+			
 			<table cellspacing="15">
 			<tr> 
 			<td valign="top">
@@ -403,16 +408,19 @@
 				<b>Trigger signal sample shaping for high threshold:</b> {{.TrigSigShapingHighThres}} <br>
 				<b>Trigger signal sample shaping for low threshold:</b> {{.TrigSigShapingLowThres}} <br>
 			</td>
-			<td>
-				<div id="my-freq-plot" class="my-plot-stylefreq"></div>
-			</td>
-			<td>
-				<div id="my-monbufsize-plot" class="my-plot-stylefreq"></div>
-			</td>
 			</tr>
 			</table>
 			
 		</div>
+		
+		<table>
+		<tr>
+		<td  width="2000" align="center">
+		<div id="my-minreczdistr-plot"></div>
+		</td>
+		</tr>
+		</table>
+		
 		<table cellspacing="15">
 		<tr>
 		<td>
@@ -433,18 +441,23 @@
 			<div id="my-counterslinevsline-plot" class="my-plot-stylecounter"></div>
 		</td>
 		</tr>
-		<tr>
+		</table>
+		<table>
+		<tr>		
+		<td>
+			<div id="my-freq-plot" class="my-plot-stylefreq"></div>
+		</td>
+		<td>
+			<div id="my-monbufsize-plot" class="my-plot-stylefreq"></div>
+		</td>
 		<td>
 			<div id="my-lormult-plot"></div>
 		</td>
-		<td width="600" colspan="2" align="center">
+		<td width="400" colspan="2" align="center">
 			<div id="my-deltat30-plot"></div>
 		</td>
 		<td>
 			<div id="my-energyall-plot"></div>
-		</td>
-		<td>
-			<div id="my-rfplotalaarnaud-plot"></div>
 		</td>
 		</tr>
 		</table>
@@ -455,13 +468,16 @@
 			<div id="graph3DMinReco"></div>
 		</td-->		
 		<td>
-			<div id="my-minrec1Ddistr-plot"></div>
-		</td>
-		<td>
 			<div id="my-amplenergyCorrelation-plot"></div>
 		</td>
 		<td>
 			<div id="my-hitQuartets-plot"></div>
+		</td>
+		<td>
+			<div id="my-rfplotalaarnaud-plot"></div>
+		</td>
+		<td>
+			<div id="my-minrecxydistr-plot"></div>
 		</td>
 		</tr>
 		<tr>

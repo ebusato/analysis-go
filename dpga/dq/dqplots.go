@@ -62,9 +62,10 @@ func NewDQPlot() *DQPlot {
 		HEnergy:          make([][]hbook.H1D, NoClusters),
 		HMinRecX:         hbook.NewH1D(200, -50, 50),
 		HMinRecY:         hbook.NewH1D(240, -60, 60),
-		HMinRecZ:         hbook.NewH1D(300, -150, 150),
-		DeltaT30:         hbook.NewH1D(300, -30, 30),
-		HEnergyAll:       hbook.NewH1D(200, 0, 1022),
+		// 		HMinRecZ:         hbook.NewH1D(1000, -150, 150),
+		HMinRecZ:   hbook.NewH1D(61, -97.5-3.25/2., 97.5+3.25/2.),
+		DeltaT30:   hbook.NewH1D(300, -30, 30),
+		HEnergyAll: hbook.NewH1D(200, 0, 1022),
 		// 		AmplCorrelation: hbook.NewH2D(50, 0, 0.5, 50, 0, 0.5),
 		AmplCorrelation:     hbook.NewH2D(50, 0, 4095, 50, 0, 4095),
 		EnergyCorrelation:   hbook.NewH2D(50, 0, 1000, 50, 0, 1000),
@@ -240,8 +241,8 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 	return tp
 }
 
-func (d *DQPlot) MakeMinRec1DTiledPlot() *hplot.TiledPlot {
-	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 3, PadY: 0.2 * vg.Centimeter})
+func (d *DQPlot) MakeMinRecXYDistrs() *hplot.TiledPlot {
+	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 2, PadY: 0.2 * vg.Centimeter})
 	if err != nil {
 		panic(err)
 	}
@@ -284,26 +285,33 @@ func (d *DQPlot) MakeMinRec1DTiledPlot() *hplot.TiledPlot {
 	}
 	//p2.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction Y (mm)\n")
 
-	p3 := tp.Plot(2, 0)
-	p3.X.Min = -150
-	p3.X.Max = 150
-	p3.X.Label.Text = "Z (mm)"
-	p3.Y.Label.Text = "No entries"
-	p3.X.Tick.Marker = &hplot.FreqTicks{N: 151, Freq: 10}
-	p3.Add(hplot.NewGrid())
+	return tp
+}
+
+func (d *DQPlot) MakeMinRecZDistr() *plot.Plot {
+	p, err := plot.New()
+
+	p.X.Min = -10
+	p.X.Max = 10
+	if err != nil {
+		panic(err)
+	}
+	p.X.Label.Text = "Z (mm)"
+	p.Y.Label.Text = "No entries"
+	p.X.Tick.Marker = &hplot.FreqTicks{N: 62, Freq: 5}
+
 	hplotZ, err := hplot.NewH1D(d.HMinRecZ)
 	if err != nil {
 		panic(err)
 	}
 	hplotZ.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
-	hplotZ.Color = plotutil.Color(3)
-	p3.Add(hplotZ)
+// 	hplotZ.Color = plotutil.Color(3)
+	p.Add(hplotZ)
+	p.Add(hplot.NewGrid())
 	if err != nil {
 		log.Fatalf("error creating histogram \n")
 	}
-	//p3.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction Z (mm)\n")
-
-	return tp
+	return p
 }
 
 type WhichVar byte
@@ -648,6 +656,7 @@ func (d *DQPlot) MakeDeltaT30Plot() *hplot.Plot {
 	p.Y.Label.Text = "No entries"
 	p.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
 	hp, err := hplot.NewH1D(d.DeltaT30)
+	hp.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
 	if err != nil {
 		panic(err)
 	}

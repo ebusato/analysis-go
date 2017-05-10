@@ -226,7 +226,8 @@ type Data struct {
 	ChargeR               string         `json:"charger"`               // charge histograms for right hemisphere
 	HVvals                string         `json:"hv"`                    // hv values
 	MinRec                []XYZ          `json:"minrec"`                // outcome of the minimal reconstruction algorithm
-	MinRec1DDistrs        string         `json:"minrec1Ddistrs"`        // minimal reconstruction X, Y, Z distributions
+	MinRecXYDistrs        string         `json:"minrecxydistrs"`        // minimal reconstruction X, Y distributions
+	MinRecZDistr          string         `json:"minreczdistrs"`         // minimal reconstruction Z distribution
 	DeltaT30              string         `json:"deltat30"`              // distribution of the difference of T30
 	EnergyAll             string         `json:"energyall"`             // distribution of energy (inclusive)
 	AmplEnergyCorrelation string         `json:"amplenergycorrelation"` // amplitude or energy correlation for events with multiplicity=2
@@ -616,7 +617,8 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 		}
 	}
 	var minrec []XYZ
-	minrec1Dsvg := ""
+	minrecXYsvg := ""
+	minrecZsvg := ""
 	start := time.Now()
 	startabs := start
 	for {
@@ -778,9 +780,12 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								hvTiled := dqplots.MakeHVTiledPlot()
 								hvsvg = utils.RenderSVG(hvTiled, 45, 30)
 
-								tpMinRec1D := dqplots.MakeMinRec1DTiledPlot()
-								minrec1Dsvg = utils.RenderSVG(tpMinRec1D, 25, 12)
+								tpMinRecXY := dqplots.MakeMinRecXYDistrs()
+								minrecXYsvg = utils.RenderSVG(tpMinRecXY, 15, 12)
 							}
+
+							tpMinRecZ := dqplots.MakeMinRecZDistr()
+							minrecZsvg = utils.RenderSVG(tpMinRecZ, 25, 7)
 
 							stop := time.Now()
 							duration := stop.Sub(start).Seconds()
@@ -793,7 +798,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 
 							// Make DeltaT30 plot
 							pDeltaT30 := dqplots.MakeDeltaT30Plot()
-							DeltaT30svg := utils.RenderSVG(pDeltaT30, 15, 7)
+							DeltaT30svg := utils.RenderSVG(pDeltaT30, 12, 7)
 
 							// Make inclusive energy plots
 							pEnergyAll := dqplots.MakeEnergyPlot()
@@ -860,7 +865,8 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								ChargeR:               chargeRsvg,
 								HVvals:                hvsvg,
 								MinRec:                minrec,
-								MinRec1DDistrs:        minrec1Dsvg,
+								MinRecXYDistrs:        minrecXYsvg,
+								MinRecZDistr:          minrecZsvg,
 								DeltaT30:              DeltaT30svg,
 								EnergyAll:             EnergyAllsvg,
 								AmplEnergyCorrelation: Correlationsvg,
