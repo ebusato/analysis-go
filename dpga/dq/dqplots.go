@@ -591,6 +591,24 @@ func (d *DQPlot) MakeEnergyCorrelationPlot() *plot.Plot {
 	return pCorrelation
 }
 
+func (d *DQPlot) MakeRFPlotALaArnaud() *plot.Plot {
+	pRF, err := plot.New()
+	if err != nil {
+		panic(err)
+	}
+	pRF.X.Label.Text = "tgg - trf (ns)"
+	pRF.Y.Label.Text = "Energy (keV)"
+	pRF.X.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
+	pRF.Y.Tick.Marker = &hplot.FreqTicks{N: 11, Freq: 2}
+	pRF.X.Min = d.HEnergyVsDeltaTggRF.XMin()
+	pRF.Y.Min = d.HEnergyVsDeltaTggRF.YMin()
+	pRF.X.Max = d.HEnergyVsDeltaTggRF.XMax()
+	pRF.Y.Max = d.HEnergyVsDeltaTggRF.YMax()
+	pRF.Add(hplot.NewH2D(d.HEnergyVsDeltaTggRF, nil))
+	//pRF.Add(plotter.NewGrid())
+	return pRF
+}
+
 func (d *DQPlot) MakeHitQuartetsPlot() *plot.Plot {
 	pHitQuartets, err := plot.New()
 	if err != nil {

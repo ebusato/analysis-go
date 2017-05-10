@@ -63,10 +63,7 @@
 		var counterslinevs3lines4plot = new plot("Line vs 3 Lines 4 (Hz)", [], 'magenta') 
 		var counterslinevs3lines5plot = new plot("Line vs 3 Lines 5 (Hz)", [], 'yellow') 
 		var counterslinevs3lines6plot = new plot("Line vs 3 Lines 6 (Hz)", [], 'orange') 
-		var counterslinevs3lines7plot = new plot("Line vs 3 Lines 7 (Hz)", [], 'black') 
-		
-		var multplot = new plot("Pulse multiplicity", [], 'orange')
-		multplot.bars = { show: true }
+		var counterslinevs3lines7plot = new plot("Line vs 3 Lines 7 (Hz)", [], 'black')
 		
 		var monbufsizeplot = new plot("Monitoring buffer size", [], 'blue')
 		
@@ -78,6 +75,7 @@
 		var deltat30plot = ""
 		var energyallplot = ""
 		var amplenergyCorrelationplot = ""
+		var RFplotalaarnaud = ""
 		var hitQuartetsplot = ""
 		
 		// colors are red, green, blue, pink
@@ -132,7 +130,6 @@
 		}
 		
 		function clearplots() {
-			multplot.data = []
 			for (var iq = 0; iq < Nquartets; iq += 1) {
 				for (var ip = 0; ip < Nplots; ip += 1) {
 					quartetplots[iq][ip].data = []
@@ -176,11 +173,6 @@
 										counterssingleplot11, counterssingleplot12], opts);
 			counterssingle2.setupGrid(); // needed as x-axis changes
 			counterssingle2.draw();
-			var multopts = $.extend(true, {}, opts); // deep copy of options
-			multopts.xaxis = {ticks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}
-			var mult = $.plot("#my-mult-plot", [multplot], multopts);
-			mult.setupGrid(); 
-			mult.draw();
 			var p1 = document.getElementById("my-freqh-plot");
 			p1.innerHTML = freqhplot;
 			var p2 = document.getElementById("my-chargelh-plot");
@@ -199,6 +191,8 @@
 			p7.innerHTML = amplenergyCorrelationplot;
 			var p8 = document.getElementById("my-hitQuartets-plot");
 			p8.innerHTML = hitQuartetsplot;
+			var p9 = document.getElementById("my-rfplotalaarnaud-plot");
+			p9.innerHTML = RFplotalaarnaud;
 			for (var i = 0; i < Nquartets; i++) {
 				if (i < Nquartets/2) {
 					optsR = new options('#FFFF00') // yellow
@@ -309,9 +303,6 @@
 					document.getElementById("timestampfield").innerHTML = "Duration since start of run: "+elapsedtimefixed+" seconds";  
 					
 				}
-				for (var i = 0; i < 8; i += 1) {
-					multplot.data.push([data.mult[i].X, data.mult[i].Y])
-				}
 				freqhplot = data.freqh;
 				chargelhplot = data.chargel;
 				chargerhplot = data.charger;
@@ -321,6 +312,7 @@
 				energyallplot = data.energyall
 				amplenergyCorrelationplot = data.amplenergycorrelation
 				hitQuartetsplot = data.hitquartets
+				RFplotalaarnaud = data.rfplotalaarnaud
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < data.quartets[iq][ip].length; is += 1) {
@@ -438,14 +430,14 @@
 		</td>
 		</tr>
 		<tr>
-		<td>
-			<div id="my-mult-plot" class="my-plot-stylecounter"></div>
-		</td>
 		<td width="600" colspan="2" align="center">
 			<div id="my-deltat30-plot"></div>
 		</td>
 		<td>
 			<div id="my-energyall-plot"></div>
+		</td>
+		<td>
+			<div id="my-rfplotalaarnaud-plot"></div>
 		</td>
 		</tr>
 		</table>

@@ -219,7 +219,6 @@ type Data struct {
 	Freq                  float64        `json:"freq"`                  // number of events processed per second (64 bits)
 	Qs                    Quartets       `json:"quartets"`              // quartets (30689280 bits)
 	QsWoData              QuartetsWoData `json:"quartetswodata"`        // quartets without data
-	Mult                  H1D            `json:"mult"`                  // multiplicity of pulses (1024 bits)
 	FreqH                 string         `json:"freqh"`                 // frequency histogram
 	ChargeL               string         `json:"chargel"`               // charge histograms for left hemisphere
 	ChargeR               string         `json:"charger"`               // charge histograms for right hemisphere
@@ -230,6 +229,7 @@ type Data struct {
 	EnergyAll             string         `json:"energyall"`             // distribution of energy (inclusive)
 	AmplEnergyCorrelation string         `json:"amplenergycorrelation"` // amplitude or energy correlation for events with multiplicity=2
 	HitQuartets           string         `json:"hitquartets"`           // 2D plot displaying quartets that are hit for events with multiplicity=2
+	RFplotALaArnaud       string         `json:"rfplotalaarnaud"`       // 2D RF plot "a la Arnaud"
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -810,6 +810,13 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								EnergyCorrelationsvg = utils.RenderSVG(pEnergyCorrelation, 12, 12)
 							}
 
+							// Make RF plot "a la arnaud"
+							pRFplotALaArnaud := dqplots.MakeRFPlotALaArnaud()
+							RFplotALaArnaudsvg := ""
+							if *iEvent > 0 && dqplots.HEnergyVsDeltaTggRF.Entries() > 0 {
+								RFplotALaArnaudsvg = utils.RenderSVG(pRFplotALaArnaud, 12, 12)
+							}
+
 							// Make HitQuartets plot
 							pHitQuartets := dqplots.MakeHitQuartetsPlot()
 							HitQuartetssvg := ""
@@ -841,7 +848,6 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								Freq:                  freq,
 								Qs:                    qs,
 								QsWoData:              qsWoData,
-								Mult:                  NewH1D(dqplots.HMultiplicity),
 								FreqH:                 freqhsvg,
 								ChargeL:               chargeLsvg,
 								ChargeR:               chargeRsvg,
@@ -852,6 +858,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								EnergyAll:             EnergyAllsvg,
 								AmplEnergyCorrelation: Correlationsvg,
 								HitQuartets:           HitQuartetssvg,
+								RFplotALaArnaud:       RFplotALaArnaudsvg,
 							}
 							noEventsForMon = 0
 							minrec = nil
