@@ -35,6 +35,10 @@ func NewLOR(pulse1, pulse2 *pulse.Pulse, idx1, idx2 int, Xmar, Ymar, Zmar, Rmar 
 	return l
 }
 
+func (l *LOR) Copy() *LOR {
+	return NewLOR(l.Pulses[0], l.Pulses[1], l.Idx1, l.Idx2, l.Xmar, l.Ymar, l.Zmar, l.Rmar)
+}
+
 type Event struct {
 	Clusters        []pulse.Cluster
 	ClustersWoData  [12]pulse.Cluster // These are the 12 clusters corresponding to the 12*4 channels unused for data at the end of each ASM board
@@ -266,7 +270,12 @@ func (e *Event) PulsesInEnergyWindow(center, n, sig float64) []*pulse.Pulse {
 
 // FindLORs finds LORs and adds them the the event.LORs slice
 // It returns a slice of pointers to pulses associated to the selected LORs
-func (e *Event) FindLORs(xbeam, ybeam, RmarMax, DeltaTMax, Emin, Emax float64) {
+func (e *Event) FindLORs(xbeam, ybeam, RmarMax, DeltaTMax, Emin, Emax float64, earlyTimePulses bool) {
+	if len(e.LORs) > 0 {
+		// 		log.Fatalf("LORs have already been found. This should not happen.\n")
+		e.LORs = nil
+	}
+
 	mult, pulses, idxFirstLeft := e.Multiplicity()
 	// 	fmt.Println("idxFirstLeft = ", idxFirstLeft)
 	for i := 0; i < idxFirstLeft; i++ {
@@ -280,8 +289,10 @@ func (e *Event) FindLORs(xbeam, ybeam, RmarMax, DeltaTMax, Emin, Emax float64) {
 		if pulseRight.Time30 == 0 {
 			pulseRight.CalcRisingFront(true)
 		}
-		if pulseRight.Time30 < 20 || pulseRight.Time30 > 50 {
-			continue
+		if earlyTimePulses {
+			if pulseRight.Time30 < 20 || pulseRight.Time30 > 50 {
+				continue
+			}
 		}
 		// 		if pulseRight.Time30 == 0 || pulseRight.Time30 > 170 {
 		// 			continue
@@ -297,8 +308,10 @@ func (e *Event) FindLORs(xbeam, ybeam, RmarMax, DeltaTMax, Emin, Emax float64) {
 			if pulseLeft.Time30 == 0 {
 				pulseLeft.CalcRisingFront(true)
 			}
-			if pulseLeft.Time30 < 20 || pulseLeft.Time30 > 50 {
-				continue
+			if earlyTimePulses {
+				if pulseLeft.Time30 < 20 || pulseLeft.Time30 > 50 {
+					continue
+				}
 			}
 			// 			if pulseLeft.Time30 == 0 || pulseLeft.Time30 > 170 {
 			// 				continue
@@ -319,6 +332,24 @@ func (e *Event) FindLORs(xbeam, ybeam, RmarMax, DeltaTMax, Emin, Emax float64) {
 			}
 		}
 	}
+}
+
+func (e *Event) FindLORsLose(xbeam, ybeam float64) []LOR {
+	var origLORs []LOR
+	if len(e.LORs) > 0 {
+		origLORs = make([]LOR, len(e.LORs))
+		for i := range e.LORs {
+			origLORs[i] = *(e.LORs[i].Copy())
+		}
+	}
+
+	e.FindLORs(xbeam, ybeam, 1e6, 1e6, 0, 1e3, true)
+	lors := e.LORs
+
+	// 	fmt.Println("lengths: ", len(origLORs), len(lors))
+
+	e.LORs = origLORs
+	return lors
 }
 
 // type Trigger int

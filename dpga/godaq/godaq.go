@@ -32,7 +32,6 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/trees"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
-	"gitlab.in2p3.fr/avirm/analysis-go/reconstruction"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
@@ -229,7 +228,6 @@ type Data struct {
 	MinRec1DDistrs        string         `json:"minrec1Ddistrs"`        // minimal reconstruction X, Y, Z distributions
 	DeltaT30              string         `json:"deltat30"`              // distribution of the difference of T30
 	EnergyAll             string         `json:"energyall"`             // distribution of energy (inclusive)
-	EnergyAllMult2        string         `json:"energyallmult2"`        // distribution of energy of pulses in events with multiplicity=2
 	AmplEnergyCorrelation string         `json:"amplenergycorrelation"` // amplitude or energy correlation for events with multiplicity=2
 	HitQuartets           string         `json:"hitquartets"`           // 2D plot displaying quartets that are hit for events with multiplicity=2
 }
@@ -603,15 +601,15 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
 	}
 	hvexec := NewHVexec(os.Getenv("HOME")+"/Acquisition/hv/ht-caen", os.Getenv("HOME")+"/Acquisition/hv/Coeff")
-	outrootfileName := strings.Replace(*outfileName, ".bin", ".root", 1)
-	var treeMult2 *trees.TreeMult2
+	outrootfileName := strings.Replace(*outfileName, ".bin", "LOR.root", 1)
+	var treeLOR *trees.TreeLOR
 	if !*notree {
 		path, _ := os.Getwd()
 		//fmt.Println(path)
 		if strings.Contains(path, "analysis-go") {
-			treeMult2 = trees.NewTreeMult2(outrootfileName)
+			treeLOR = trees.NewTreeLOR(outrootfileName)
 		} else {
-			treeMult2 = trees.NewTreeMult2(os.Getenv("HOME") + "/godaq_rootfiles/" + outrootfileName)
+			treeLOR = trees.NewTreeLOR(os.Getenv("HOME") + "/godaq_rootfiles/" + outrootfileName)
 		}
 	}
 	var minrec []XYZ
@@ -649,65 +647,73 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 						// Corrections
 						event = applyCorrCalib.CorrectEvent(event, doPedestal, doTimeDepOffset, doEnergyCalib)
 						//////////////////////////////////////////////////////
-						dqplots.FillHistos(event)
-						mult, pulsesWithSignal := event.Multiplicity()
-						if mult == 2 {
-							//dqplots.FillHistos(event)
-							if len(pulsesWithSignal) != 2 {
-								panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
-							}
-							ch0 := pulsesWithSignal[0].Channel
-							ch1 := pulsesWithSignal[1].Channel
-							doMinRec := true
-							if r.Header().TriggerEq == 3 {
-								// In case TriggerEq = 3 (pulser), one has to check that the two pulses are
-								// on different hemispheres, otherwise the minimal reconstruction is not well
-								// defined
-								hemi0, ok := ch0.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
-								if !ok {
-									panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
-								}
-								hemi1, ok := ch1.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
-								if !ok {
-									panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
-								}
-								if hemi0.Which() == hemi1.Which() {
-									doMinRec = false
-								}
-							}
-							if doMinRec {
-								xbeam, ybeam := 0., 0.
-								x, y, z := reconstruction.Minimal(ch0, ch1, xbeam, ybeam)
-								minrec = append(minrec, XYZ{X: x, Y: y, Z: z})
-								dqplots.HMinRecX.Fill(x, 1)
-								dqplots.HMinRecY.Fill(y, 1)
-								dqplots.HMinRecZ.Fill(z, 1)
+						// 						dqplots.FillHistos(event)
+						// mult, pulsesWithSignal, _ := event.Multiplicity()
 
-								if doPedestal {
-									_, _, T30_0, _, _, _ := pulsesWithSignal[0].CalcRisingFront(true)
-									_, _, T30_1, _, _, _ := pulsesWithSignal[1].CalcRisingFront(true)
-									if T30_0 != 0 && T30_1 != 0 {
-										dqplots.DeltaT30.Fill(T30_0-T30_1, 1)
-									}
-									pulsesWithSignal[0].CalcFallingFront(false)
-									pulsesWithSignal[1].CalcFallingFront(false)
-									if treeMult2 != nil {
-										treeMult2.Fill(run, r.Header(), event, pulsesWithSignal[0], pulsesWithSignal[1])
-									}
-								}
-								dqplots.AmplCorrelation.Fill(pulsesWithSignal[0].Ampl, pulsesWithSignal[1].Ampl, 1)
-								if *distr == "energy" {
-									dqplots.EnergyCorrelation.Fill(pulsesWithSignal[0].E, pulsesWithSignal[1].E, 1)
-								}
-
-								dqplots.HEnergyAllMult2.Fill(pulsesWithSignal[0].E, 1)
-								dqplots.HEnergyAllMult2.Fill(pulsesWithSignal[1].E, 1)
-								quartet0 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(pulsesWithSignal[0].Channel.FifoID144(), true))
-								quartet1 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(pulsesWithSignal[1].Channel.FifoID144(), true))
-								//fmt.Println("quartet0, quartet1:", quartet0, quartet1)
-								dqplots.HitQuartets.Fill(quartet0, quartet1, 1)
-							}
+						if treeLOR != nil {
+							treeLOR.Fill(run, r.Header(), event)
 						}
+						// 						fmt.Println(" \nlength middle: ", len(event.LORs))
+						dqplots.FillHistos(event)
+						// 						fmt.Println(" length after: ", len(event.LORs))
+						/*
+							if mult == 2 {
+								if len(pulsesWithSignal) != 2 {
+									panic("mult == 2 but len(pulsesWithSignal) != 2: this should NEVER happen !")
+								}
+								ch0 := pulsesWithSignal[0].Channel
+								ch1 := pulsesWithSignal[1].Channel
+								doMinRec := true
+								if r.Header().TriggerEq == 3 {
+									// In case TriggerEq = 3 (pulser), one has to check that the two pulses are
+									// on different hemispheres, otherwise the minimal reconstruction is not well
+									// defined
+									hemi0, ok := ch0.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
+									if !ok {
+										panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
+									}
+									hemi1, ok := ch1.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
+									if !ok {
+										panic("ch0.Quartet.DRS.ASMCard.UpStr type assertion failed")
+									}
+									if hemi0.Which() == hemi1.Which() {
+										doMinRec = false
+									}
+								}
+								if doMinRec {
+									xbeam, ybeam := 0., 0.
+									x, y, z := reconstruction.Minimal(true, ch0, ch1, xbeam, ybeam)
+									minrec = append(minrec, XYZ{X: x, Y: y, Z: z})
+									dqplots.HMinRecX.Fill(x, 1)
+									dqplots.HMinRecY.Fill(y, 1)
+									dqplots.HMinRecZ.Fill(z, 1)
+
+									if doPedestal {
+										_, _, T30_0, _, _, _ := pulsesWithSignal[0].CalcRisingFront(true)
+										_, _, T30_1, _, _, _ := pulsesWithSignal[1].CalcRisingFront(true)
+										if T30_0 != 0 && T30_1 != 0 {
+											dqplots.DeltaT30.Fill(T30_0-T30_1, 1)
+										}
+										pulsesWithSignal[0].CalcFallingFront(false)
+										pulsesWithSignal[1].CalcFallingFront(false)
+										if treeLOR != nil {
+											treeLOR.Fill(run, r.Header(), event)
+										}
+									}
+									dqplots.AmplCorrelation.Fill(pulsesWithSignal[0].Ampl, pulsesWithSignal[1].Ampl, 1)
+									if *distr == "energy" {
+										dqplots.EnergyCorrelation.Fill(pulsesWithSignal[0].E, pulsesWithSignal[1].E, 1)
+									}
+
+									dqplots.HEnergyAllMult2.Fill(pulsesWithSignal[0].E, 1)
+									dqplots.HEnergyAllMult2.Fill(pulsesWithSignal[1].E, 1)
+									quartet0 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(pulsesWithSignal[0].Channel.FifoID144(), true))
+									quartet1 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(pulsesWithSignal[1].Channel.FifoID144(), true))
+									//fmt.Println("quartet0, quartet1:", quartet0, quartet1)
+									dqplots.HitQuartets.Fill(quartet0, quartet1, 1)
+								}
+							}
+						*/
 						if *iEvent%*monFreq == 0 {
 							// Webserver data
 
@@ -786,19 +792,17 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							DeltaT30svg := utils.RenderSVG(pDeltaT30, 15, 7)
 
 							// Make inclusive energy plots
-							pEnergyAll := dqplots.MakeEnergyPlot(false)
+							pEnergyAll := dqplots.MakeEnergyPlot()
 							EnergyAllsvg := utils.RenderSVG(pEnergyAll, 10, 7)
-							pEnergyAllMult2 := dqplots.MakeEnergyPlot(true)
-							EnergyAllMult2svg := utils.RenderSVG(pEnergyAllMult2, 10, 7)
 
-							// Make AmplCorrelation plot
+							// Make ampl correlation plot
 							pAmplCorrelation := dqplots.MakeAmplCorrelationPlot()
 							AmplCorrelationsvg := ""
 							if *iEvent > 0 && dqplots.AmplCorrelation.Entries() > 0 {
 								AmplCorrelationsvg = utils.RenderSVG(pAmplCorrelation, 12, 12)
 							}
 
-							// Make AmplCorrelation plot
+							// Make energy correlation plot
 							pEnergyCorrelation := dqplots.MakeEnergyCorrelationPlot()
 							EnergyCorrelationsvg := ""
 							if *iEvent > 0 && dqplots.EnergyCorrelation.Entries() > 0 {
@@ -845,7 +849,6 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 								MinRec1DDistrs:        minrec1Dsvg,
 								DeltaT30:              DeltaT30svg,
 								EnergyAll:             EnergyAllsvg,
-								EnergyAllMult2:        EnergyAllMult2svg,
 								AmplEnergyCorrelation: Correlationsvg,
 								HitQuartets:           HitQuartetssvg,
 							}
@@ -867,8 +870,8 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 				}
 			case false:
 				fmt.Println("reached specified number of events, stopping.")
-				if treeMult2 != nil {
-					treeMult2.Close()
+				if treeLOR != nil {
+					treeLOR.Close()
 				}
 				return
 			}

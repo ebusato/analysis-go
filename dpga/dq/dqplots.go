@@ -36,7 +36,6 @@ type DQPlot struct {
 	HMinRecZ           *hbook.H1D
 	DeltaT30           *hbook.H1D
 	HEnergyAll         *hbook.H1D
-	HEnergyAllMult2    *hbook.H1D
 	AmplCorrelation    *hbook.H2D
 	EnergyCorrelation  *hbook.H2D
 	HitQuartets        *hbook.H2D
@@ -63,7 +62,6 @@ func NewDQPlot() *DQPlot {
 		HMinRecZ:         hbook.NewH1D(300, -150, 150),
 		DeltaT30:         hbook.NewH1D(300, -30, 30),
 		HEnergyAll:       hbook.NewH1D(200, 0, 1022),
-		HEnergyAllMult2:  hbook.NewH1D(200, 0, 1022),
 		// 		AmplCorrelation: hbook.NewH2D(50, 0, 0.5, 50, 0, 0.5),
 		AmplCorrelation:    hbook.NewH2D(50, 0, 4095, 50, 0, 4095),
 		EnergyCorrelation:  hbook.NewH2D(50, 0, 1000, 50, 0, 1000),
@@ -139,6 +137,25 @@ func (d *DQPlot) FillHistos(event *event.Event) {
 
 	d.HMultiplicity.Fill(float64(mult), 1)
 	d.HSatMultiplicity.Fill(float64(satmult), 1)
+
+	// 						fmt.Println(len(event.LORs))
+	if len(event.LORs) == 1 {
+		lor := &event.LORs[0]
+		d.HMinRecX.Fill(lor.Xmar, 1)
+		d.HMinRecY.Fill(lor.Ymar, 1)
+		d.HMinRecZ.Fill(lor.Zmar, 1)
+		d.AmplCorrelation.Fill(lor.Pulses[0].Ampl, lor.Pulses[1].Ampl, 1)
+		d.EnergyCorrelation.Fill(lor.Pulses[0].E, lor.Pulses[1].E, 1)
+		quartet0 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(lor.Pulses[0].Channel.FifoID144(), true))
+		quartet1 := float64(dpgadetector.FifoID144ToQuartetAbsIdx60(lor.Pulses[1].Channel.FifoID144(), true))
+		d.HitQuartets.Fill(quartet0, quartet1, 1)
+	}
+
+	lors := event.FindLORsLose(0, 0)
+	for i := range lors {
+		lor := &lors[i]
+		d.DeltaT30.Fill(lor.Pulses[0].Time30-lor.Pulses[1].Time30, 1)
+	}
 }
 
 // AddHVPoint adds a point to the HV curve.
@@ -608,7 +625,7 @@ func (d *DQPlot) MakeDeltaT30Plot() *hplot.Plot {
 	return p
 }
 
-func (d *DQPlot) MakeEnergyPlot(mult2 bool) *hplot.Plot {
+func (d *DQPlot) MakeEnergyPlot() *hplot.Plot {
 	p, err := hplot.New()
 	if err != nil {
 		panic(err)
@@ -617,12 +634,7 @@ func (d *DQPlot) MakeEnergyPlot(mult2 bool) *hplot.Plot {
 	p.Y.Label.Text = "No entries"
 	p.X.Tick.Marker = &hplot.FreqTicks{N: 9, Freq: 1}
 	var hp *hplot.H1D
-	switch mult2 {
-	case false:
-		hp, err = hplot.NewH1D(d.HEnergyAll)
-	case true:
-		hp, err = hplot.NewH1D(d.HEnergyAllMult2)
-	}
+	hp, err = hplot.NewH1D(d.HEnergyAll)
 	if err != nil {
 		panic(err)
 	}

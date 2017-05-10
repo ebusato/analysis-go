@@ -21,10 +21,6 @@ import (
 //    - w0 = (x1-x0, y1-y0, z1)
 // The quantity called coeff below corresponds to the quantity called sc in the above web page
 // (multiplied by -1).
-//
-// Important remark: so far, the coordinates of the scintillators front faces are used while one
-// should rather use the coordinates of the scintillators center
-//    -> THIS NEEDS TO BE CHANGED
 func Minimal(crystCenter bool, ch1, ch2 *detector.Channel, xbeam, ybeam float64) (x, y, z float64) {
 	var x1, x2, y1, y2, z1, z2 float64
 	switch crystCenter {
