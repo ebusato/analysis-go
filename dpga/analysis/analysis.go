@@ -32,6 +32,8 @@ func main() {
 		dotree2    = flag.Bool("dotree2", false, "If specified, treeMult2 is written")
 		dotreeLOR  = flag.Bool("dotreeLOR", false, "If specified, treeLOR is written")
 		//wGob       = flag.String("wgob", "dqplots.gob", "Name of the output gob file containing dq plots. If not set, the gob file is not produced.")
+		rfcutmean  = flag.Float64("rfcutmean", 7, "Mean used to apply RF selection cut.")
+		rfcutwidth = flag.Float64("rfcutwidth", 5, "Width used to apply RF selection cut.")
 	)
 
 	flag.Parse()
@@ -118,7 +120,7 @@ func main() {
 		// 			event.PlotPulses(pulse.XaxisCapacitor, false, pulse.YRangePedestal, true)
 		// 		}
 		// dq
-		dqplots.FillHistos(event)
+		dqplots.FillHistos(event, *rfcutmean, *rfcutwidth)
 		////////////////////////////////////////////////////////////
 
 		///////////////////////////////////////////////////////////
