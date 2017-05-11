@@ -94,14 +94,14 @@ func CheckAndFix(evtID uint, intersectionTimes []float64) []float64 {
 			//fmt.Println("here", times)
 			times = times[:len(times)-1]
 		} else {
-// 			fmt.Println(times)
-// 			log.Printf("len(times) > 5 (evtID=%v)\n", evtID)
+			// 			fmt.Println(times)
+			// 			log.Printf("len(times) > 5 (evtID=%v)\n", evtID)
 		}
 	}
 	if len(times) < 5 {
 		if len(times) <= 3 {
 			fmt.Println(times)
-			log.Fatalf("Warning: len(times) = %v (evtID=%v)\n", len(times), evtID)
+			log.Printf("Warning: len(times) = %v (evtID=%v)\n", len(times), evtID)
 		} else if len(times) == 4 {
 			times = append([]float64{0}, times...)
 			//fmt.Println(times)

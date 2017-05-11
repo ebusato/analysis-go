@@ -44,7 +44,8 @@ func (l *LOR) Copy() *LOR {
 
 func (l *LOR) CalcTRF(timesRF []float64) {
 	if len(timesRF) == 0 {
-		log.Fatalf("len(timesRF) == 0\n")
+		//log.Printf("len(timesRF) == 0 -> setting TRF to 0.\n")
+		return
 	}
 	if l.TMean <= timesRF[0] {
 		//fmt.Println("here ", t.data.LORTMean[i], timesRF[0])
@@ -60,14 +61,14 @@ func (l *LOR) CalcTRF(timesRF []float64) {
 				}
 			} else {
 				fmt.Println(timesRF)
-				log.Fatalf("This should not happen, tMean=%v\n", l.TMean)
+				log.Printf("This should not happen, tMean=%v\n", l.TMean)
 			}
 		}
 	}
 	if l.TMean-l.TRF > 1/24.85e6*1e9+3 {
 		fmt.Println(timesRF)
 		fmt.Println(l.TMean, l.TRF)
-		log.Fatalf("ERROR\n")
+		log.Printf("ERROR\n")
 	}
 }
 
