@@ -785,7 +785,7 @@ func stream(run uint32, r *rw.Reader, w *rw.Writer, iEvent *uint, wg *sync.WaitG
 							}
 
 							tpMinRecZ := dqplots.MakeMinRecZDistr()
-							minrecZsvg = utils.RenderSVG(tpMinRecZ, 25, 7)
+							minrecZsvg = utils.RenderSVG(tpMinRecZ, 25, 6)
 
 							stop := time.Now()
 							duration := stop.Sub(start).Seconds()
