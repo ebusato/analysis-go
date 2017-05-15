@@ -70,6 +70,9 @@ func CheckAndFix(evtID uint, intersectionTimes []float64) []float64 {
 	// 	fmt.Println(intersectionTimes)
 
 	var times []float64
+	if len(intersectionTimes) == 0 {
+                return nil
+        }
 	times = append(times, intersectionTimes[0])
 	for i := 1; i < len(intersectionTimes); i++ {
 		timeWrtPrevious := intersectionTimes[i] - intersectionTimes[i-1]
