@@ -23,6 +23,7 @@ func main() {
 		ip       = flag.String("ip", "localhost", "IP address")
 		port     = flag.String("p", "5556", "Port number")
 		freq     = flag.Uint("freq", 100, "Event number printing frequency")
+		firstEvt = flag.Uint("firstEvt", 0, "First event")
 		sleep    = flag.Bool("s", false, "If set, sleep a bit between events")
 	)
 	flag.Var(&hdrType, "h", "Type of header: HeaderCAL or HeaderOld")
@@ -74,6 +75,9 @@ func main() {
 		if evtID != evtIDprev {
 			if math.Mod(evtID, float64(*freq)) == 0 {
 				fmt.Printf("event %v\n", evtID)
+			}
+			if evtID < float64(*firstEvt) {
+				continue
 			}
 		}
 		evtIDprev = evtID
