@@ -3,9 +3,7 @@ package rw
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
-	"strings"
 	"testing"
 )
 
@@ -16,7 +14,7 @@ func TestRW(t *testing.T) {
 	fmt.Println("starting TestRW")
 
 	inFileName := "/home/ebusato/Travail/Imaging/DPGA/Soft/FirmwareTests/ServeurUdp/datas/MyFile_eno1@0_0.bin"
-	outFileName := strings.Replace(inFileName, ".bin", "_out.bin", 1)
+	// 	outFileName := strings.Replace(inFileName, ".bin", "_out.bin", 1)
 
 	// Reader
 	f, err := os.Open(inFileName)
@@ -33,19 +31,19 @@ func TestRW(t *testing.T) {
 	r.FileHeader.Print()
 
 	// Writer
-	filew, err := os.Create(outFileName)
-	if err != nil {
-		log.Fatalf("could not create data file: %v\n", err)
-	}
-	defer filew.Close()
+	// 	filew, err := os.Create(outFileName)
+	// 	if err != nil {
+	// 		log.Fatalf("could not create data file: %v\n", err)
+	// 	}
+	// 	defer filew.Close()
+	//
+	// 	w := NewWriter(bufio.NewWriter(filew))
+	// 	if err != nil {
+	// 		log.Fatalf("could not open file: %v\n", err)
+	// 	}
+	// 	defer w.Close()
 
-	w := NewWriter(bufio.NewWriter(filew))
-	if err != nil {
-		log.Fatalf("could not open file: %v\n", err)
-	}
-	defer w.Close()
-
-	//r.Frame()
+	r.Frame()
 
 	// 	r.Frame()
 	// 	for {

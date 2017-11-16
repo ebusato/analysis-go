@@ -55,11 +55,11 @@ func (r *Reader) Err() error {
 	return r.err
 }
 
-func (r *Reader) read(v interface{}) {
+func (r *Reader) read(v interface{}, byteOrder binary.ByteOrder) {
 	if r.err != nil {
 		return
 	}
-	r.err = binary.Read(r.r, binary.LittleEndian, v)
+	r.err = binary.Read(r.r, byteOrder, v)
 	if r.Debug {
 		switch v := v.(type) {
 		case *uint32:
@@ -73,11 +73,11 @@ func (r *Reader) read(v interface{}) {
 	}
 }
 
-func (r *Reader) Read(v interface{}) {
-	r.read(v)
+func (r *Reader) Read(v interface{}, byteOrder binary.ByteOrder) {
+	r.read(v, byteOrder)
 }
 
-func (r *Reader) readU16(v *uint16) {
+func (r *Reader) readU16(v *uint16, byteOrder binary.ByteOrder) {
 	if r.err != nil {
 		return
 	}
@@ -86,60 +86,62 @@ func (r *Reader) readU16(v *uint16) {
 	if r.err != nil {
 		return
 	}
-	*v = binary.LittleEndian.Uint16(buf[:])
+	*v = byteOrder.Uint16(buf[:])
 	if r.Debug {
 		fmt.Printf("word = %x\n", *v)
 	}
 }
 
-func (r *Reader) ReadU16(v *uint16) {
-	r.readU16(v)
+func (r *Reader) ReadU16(v *uint16, byteOrder binary.ByteOrder) {
+	r.readU16(v, byteOrder)
 }
 
 func (r *Reader) readFileHeader(f *FileHeader) {
-	r.read(&f.ModeFile)
-	r.read(&f.FEId)
-	r.read(&f.NoSamples)
+	r.read(&f.ModeFile, binary.LittleEndian)
+	r.read(&f.FEId, binary.LittleEndian)
+	r.readU16(&f.NoSamples, binary.LittleEndian)
+	r.read(&f.Time, binary.LittleEndian)
+	r.read(&f.Time, binary.LittleEndian)
 }
 
 func (r *Reader) readFrameHeader(f *FrameHeader) {
-	r.readU16(&f.StartOfFrame)
-	r.readU16(&f.NbFrameAmcMsb)
-	r.readU16(&f.NbFrameAmcLsb)
-	r.readU16(&f.FEIdK30)
-	r.readU16(&f.Mode)
-	r.readU16(&f.TriggerType)
-	r.readU16(&f.NoFrameAsmMsb)
-	r.readU16(&f.NoFrameAsmOsb)
-	r.readU16(&f.NoFrameAsmUsb)
-	r.readU16(&f.NoFrameAsmLsb)
-	r.readU16(&f.Cafe)
-	r.readU16(&f.Deca)
-	r.readU16(&f.UndefinedMsb)
-	r.readU16(&f.UndefinedOsb)
-	r.readU16(&f.UndefinedUsb)
-	r.readU16(&f.UndefinedLsb)
-	r.readU16(&f.TimeStampAsmMsb)
-	r.readU16(&f.TimeStampAsmOsb)
-	r.readU16(&f.TimeStampAsmUsb)
-	r.readU16(&f.TimeStampAsmLsb)
-	r.readU16(&f.TimeStampTrigThorAsmMsb)
-	r.readU16(&f.TimeStampTrigThorAsmOsb)
-	r.readU16(&f.TimeStampTrigThorAsmUsb)
-	r.readU16(&f.TimeStampTrigThorAsmLsb)
-	r.readU16(&f.ThorTT)
-	r.readU16(&f.PatternMsb)
-	r.readU16(&f.PatternOsb)
-	r.readU16(&f.PatternLsb)
-	r.readU16(&f.Bobo)
-	r.readU16(&f.ThorTrigTimeStampMsb)
-	r.readU16(&f.ThorTrigTimeStampOsb)
-	r.readU16(&f.ThorTrigTimeStampLsb)
-	r.readU16(&f.CptTriggerThorMsb)
-	r.readU16(&f.CptTriggerThorLsb)
-	r.readU16(&f.CptTriggerAsmMsb)
-	r.readU16(&f.CptTriggerAsmLsb)
-	r.readU16(&f.NoSamples)
+	r.readU16(&f.StartOfFrame, binary.BigEndian)
+	r.readU16(&f.NbFrameAmcMsb, binary.BigEndian)
+	r.readU16(&f.NbFrameAmcLsb, binary.BigEndian)
+	r.readU16(&f.FEIdK30, binary.BigEndian)
+	r.readU16(&f.Mode, binary.BigEndian)
+	r.readU16(&f.TriggerType, binary.BigEndian)
+	r.readU16(&f.NoFrameAsmMsb, binary.BigEndian)
+	r.readU16(&f.NoFrameAsmOsb, binary.BigEndian)
+	r.readU16(&f.NoFrameAsmUsb, binary.BigEndian)
+	r.readU16(&f.NoFrameAsmLsb, binary.BigEndian)
+	r.readU16(&f.Cafe, binary.BigEndian)
+	r.readU16(&f.Deca, binary.BigEndian)
+	r.readU16(&f.UndefinedMsb, binary.BigEndian)
+	r.readU16(&f.UndefinedOsb, binary.BigEndian)
+	r.readU16(&f.UndefinedUsb, binary.BigEndian)
+	r.readU16(&f.UndefinedLsb, binary.BigEndian)
+	r.readU16(&f.TimeStampAsmMsb, binary.BigEndian)
+	r.readU16(&f.TimeStampAsmOsb, binary.BigEndian)
+	r.readU16(&f.TimeStampAsmUsb, binary.BigEndian)
+	r.readU16(&f.TimeStampAsmLsb, binary.BigEndian)
+	r.readU16(&f.TimeStampTrigThorAsmMsb, binary.BigEndian)
+	r.readU16(&f.TimeStampTrigThorAsmOsb, binary.BigEndian)
+	r.readU16(&f.TimeStampTrigThorAsmUsb, binary.BigEndian)
+	r.readU16(&f.TimeStampTrigThorAsmLsb, binary.BigEndian)
+	r.readU16(&f.ThorTT, binary.BigEndian)
+	r.readU16(&f.PatternMsb, binary.BigEndian)
+	r.readU16(&f.PatternOsb, binary.BigEndian)
+	r.readU16(&f.PatternLsb, binary.BigEndian)
+	r.readU16(&f.Bobo, binary.BigEndian)
+	r.readU16(&f.ThorTrigTimeStampMsb, binary.BigEndian)
+	r.readU16(&f.ThorTrigTimeStampOsb, binary.BigEndian)
+	r.readU16(&f.ThorTrigTimeStampLsb, binary.BigEndian)
+	r.readU16(&f.CptTriggerThorMsb, binary.BigEndian)
+	r.readU16(&f.CptTriggerThorLsb, binary.BigEndian)
+	r.readU16(&f.CptTriggerAsmMsb, binary.BigEndian)
+	r.readU16(&f.CptTriggerAsmLsb, binary.BigEndian)
+	r.readU16(&f.NoSamples, binary.BigEndian)
 
 	// 	f.AMCFrameCounter = (uint32(f.AMCFrameCounters[0]) << 16) + uint32(f.AMCFrameCounters[1])
 	// 	f.FrontEndId = (f.ParityFEIdCtrl & 0x7fff) >> 8
@@ -225,7 +227,7 @@ var (
 // readParityChanIdCtrl is a temporary fix, until we understand where the additionnal 16 bits words come from
 func (r *Reader) readParityChanIdCtrl(f *Frame, i int) bool {
 	data := &f.Data.Data[i]
-	r.readU16(&data.ParityChanIdCtrl)
+	r.readU16(&data.ParityChanIdCtrl, binary.BigEndian)
 
 	//fmt.Printf("%v, %x (noAttempts=%v)\n", i, data.ParityChanIdCtrl, noAttempts)
 	if (data.ParityChanIdCtrl & 0xff) != ctrl0xfd {
@@ -265,7 +267,7 @@ func (r *Reader) readData(f *Frame) {
 		}
 		noAttempts = 0
 		//fmt.Printf("data.ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
-		r.read(&data.Amplitudes)
+		r.read(&data.Amplitudes, binary.BigEndian)
 		// 		for j := range data.Amplitudes {
 		// 			fmt.Printf("data.Amplitudes[%v] = %x\n", j, data.Amplitudes[j])
 		// 		}
@@ -273,13 +275,13 @@ func (r *Reader) readData(f *Frame) {
 }
 
 func (r *Reader) readTrailer(f *Frame) {
-	r.readU16(&f.CRC)
+	r.readU16(&f.CRC, binary.BigEndian)
 	// Temporary fix, until we understand where these additionnal 16 bits come from
 	if f.CRC != ctrl0xCRC {
 		//fmt.Printf("CRC = %x (should be %x)\n", f.CRC, ctrl0xCRC)
-		r.readU16(&f.CRC)
+		r.readU16(&f.CRC, binary.BigEndian)
 		//fmt.Printf("new CRC = %x\n", f.CRC)
 	}
 	// End of temporary fix
-	r.readU16(&f.ParityFEIdCtrl2)
+	r.readU16(&f.ParityFEIdCtrl2, binary.BigEndian)
 }

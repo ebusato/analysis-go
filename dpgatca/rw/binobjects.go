@@ -64,6 +64,7 @@ type FileHeader struct {
 	ModeFile  uint32
 	FEId      uint16 // not clear why I must put 16 bits while Daniel has 8 bits in frame.h
 	NoSamples uint16
+	Time      uint64 // clarify what this is
 }
 
 func (f *FileHeader) Print() {
