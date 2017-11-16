@@ -1,12 +1,8 @@
 package rw
 
 import (
-	"encoding/binary"
 	"fmt"
-	"log"
 	"reflect"
-
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 )
 
 const (
@@ -19,7 +15,7 @@ const (
 	numThorTrigTimeStamps    uint8  = 3
 	numCptsTriggerThor       uint8  = 2
 	numCptsTriggerASM        uint8  = 2
-	ctrlFirstWord            uint16 = 0x1230
+	ctrlStartOfFrame         uint16 = 0x1230
 	ctrl0xfe                 uint16 = 0xfe
 	ctrl0xfd                 uint16 = 0xfd
 	ctrl0xCafe               uint16 = 0xCAFE
@@ -34,25 +30,6 @@ func print(in interface{}) {
 		fmt.Printf("  -> %v = %x (%v)\n", v.Type().Field(i).Name, v.Field(i).Interface(), v.Field(i).Interface())
 	}
 }
-
-type ChanData struct {
-	// Raw quantities
-	ParityChanIdCtrl uint16
-	Amplitudes       [1022]uint16
-
-	// Derived quantities
-	Channel uint16
-}
-
-type HalfDRSData struct {
-	Data [4]ChanData
-}
-
-// func (h *HalfDRSData) SetNoSamples(n uint16) {
-// 	for i := range h.Data {
-// 		h.Data[i].Amplitudes = make([]uint16, n)
-// 	}
-// }
 
 type ErrorCode int
 
@@ -117,10 +94,87 @@ func (f *FrameHeader) Print() {
 	print(*f)
 }
 
+func (f *FrameHeader) Integrity() error {
+	if f.StartOfFrame != ctrlStartOfFrame {
+		return fmt.Errorf("asm: missing %x magic\n", ctrlStartOfFrame)
+	}
+	// 		if (f.ParityFEIdCtrl & 0xff) != ctrl0xfe {
+	// 			return fmt.Errorf("asm: missing %x magic\n", ctrl0xfe)
+	// 		}
+	if f.Cafe != ctrl0xCafe {
+		return fmt.Errorf("asm: missing %x magic\n", ctrl0xCafe)
+	}
+	if f.Deca != ctrl0xDeca {
+		return fmt.Errorf("asm: missing %x magic\n", ctrl0xDeca)
+	}
+	return nil
+}
+
+type FrameTrailer struct {
+	Crc uint16
+	EoF uint16
+}
+
+func (f *FrameTrailer) Integrity() error {
+	if f.Crc != ctrl0xCRC {
+		return fmt.Errorf("asm: missing %x magic\n", ctrl0xCRC)
+	}
+	if (f.EoF & 0xff) != ctrl0xfb {
+		return fmt.Errorf("asm: missing %x magic\n", ctrl0xfb)
+	}
+	// 	if (f.ParityFEIdCtrl2 & 0xff) != ctrl0xfb {
+	// 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xfb)
+	// 	}
+	// 	if (f.ParityFEIdCtrl2&0x7fff)>>8 != f.FrontEndId {
+	// 		log.Fatalf("Front end ids in header and trailer don't match\n")
+	// 	}
+	return nil
+}
+
+func (f *FrameTrailer) Print() {
+	fmt.Println("Frame Trailer:")
+	print(*f)
+}
+
+type ChanData struct {
+	FirstChanWord  uint16
+	SecondChanWord uint16
+	Amplitudes     []uint16
+
+	// Derived quantities
+	Channel uint16
+}
+
+func (c *ChanData) Print() {
+	fmt.Printf("FirstChanWord = %x\n", c.FirstChanWord)
+	fmt.Printf("SecondChanWord = %x\n", c.SecondChanWord)
+	fmt.Printf("Amplitudes = ")
+	for i := range c.Amplitudes {
+		if (i+1)%16 == 0 {
+			fmt.Printf("\n")
+		}
+		fmt.Printf("%04x ", c.Amplitudes[i])
+		if i >= 80 {
+			break
+		}
+	}
+	fmt.Printf("\n")
+}
+
+type HalfDRSData struct {
+	Data [4]ChanData
+}
+
+func (h *HalfDRSData) Print() {
+	for i := range h.Data {
+		fmt.Printf("Printing ChanData %v\n", i)
+		h.Data[i].Print()
+	}
+}
+
 // Frame is a single data frame produced by AMC
 // Each frame is associated to one half DRS
 type Frame struct {
-	// Raw quantities
 	// 	FirstBlockWord        uint16                           // 0
 	// 	AMCFrameCounters      [numAMCFrameCounters]uint16      // 1 -> 2
 	// 	ParityFEIdCtrl        uint16                           // 3
@@ -139,10 +193,9 @@ type Frame struct {
 	// 	CptsTriggerThor       [numCptsTriggerThor]uint16       // 32 -> 33
 	// 	CptsTriggerASM        [numCptsTriggerASM]uint16        // 34 -> 35
 	// 	NoSamples             uint16                           // 36
-	Header          FrameHeader
-	Data            HalfDRSData
-	CRC             uint16
-	ParityFEIdCtrl2 uint16
+	Header  FrameHeader
+	Data    HalfDRSData
+	Trailer FrameTrailer
 
 	// Derived quantities
 	AMCFrameCounter      uint32
@@ -167,12 +220,20 @@ type Frame struct {
 	QuartetAbsIdx60old uint8
 }
 
-func NewFrame(udppayloadsize int) *Frame {
+func (f *Frame) SetDataSliceLen(noSamples int) {
+	for i := range f.Data.Data {
+		chandata := &f.Data.Data[i]
+		chandata.Amplitudes = make([]uint16, noSamples)
+	}
+}
+
+/*func NewFrame(udppayloadsize int) *Frame {
 	f := &Frame{}
 	f.UDPPayloadSize = udppayloadsize
 	return f
-}
+}*/
 
+/*
 func (f *Frame) FillHeader(buffer []byte) {
 	// 	buffer = buffer[:42]
 	// 	f.FirstBlockWord = binary.BigEndian.Uint16(buffer[0:2])
@@ -229,24 +290,10 @@ func (f *Frame) FillHeader(buffer []byte) {
 	///////////////////////////////////////////////////////////////////////
 
 }
-
-func (f *Frame) IntegrityHeader() error {
-	// 	if f.FirstBlockWord != ctrlFirstWord {
-	// 		return fmt.Errorf("asm: missing %x magic\n", ctrlFirstWord)
-	// 	}
-	// 	if (f.ParityFEIdCtrl & 0xff) != ctrl0xfe {
-	// 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xfe)
-	// 	}
-	// 	if f.Cafe != ctrl0xCafe {
-	// 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xCafe)
-	// 	}
-	// 	if f.Deca != ctrl0xDeca {
-	// 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xDeca)
-	// 	}
-	return nil
-}
+*/
 
 // readParityChanIdCtrl is a temporary fix, until we understand where the additionnal 16 bits words come from
+/*
 func (f *Frame) fillParityChanIdCtrl(buffer []byte, i int) (bool, int) {
 	data := &f.Data.Data[i]
 	beg := 74 + i*2*1023 + 2*f.noAttempts
@@ -272,7 +319,9 @@ func (f *Frame) fillParityChanIdCtrl(buffer []byte, i int) (bool, int) {
 	f.QuartetAbsIdx60old = f.QuartetAbsIdx60
 	return false, end
 }
+*/
 
+/*
 func (f *Frame) FillData(buffer []byte) {
 	for i := range f.Data.Data {
 		data := &f.Data.Data[i]
@@ -300,7 +349,9 @@ func (f *Frame) FillData(buffer []byte) {
 		// 		}
 	}
 }
+*/
 
+/*
 func (f *Frame) IntegrityData() error {
 	for i := range f.Data.Data {
 		if (f.Data.Data[i].ParityChanIdCtrl & 0xff) != ctrl0xfd {
@@ -320,62 +371,9 @@ func (f *Frame) FillTrailer(buffer []byte) {
 	}
 }
 
-func (f *Frame) IntegrityTrailer() error {
-	if f.CRC != ctrl0xCRC {
-		return fmt.Errorf("asm: missing %x magic\n", ctrl0xCRC)
-	}
-	if (f.ParityFEIdCtrl2 & 0xff) != ctrl0xfb {
-		return fmt.Errorf("asm: missing %x magic\n", ctrl0xfb)
-	}
-	if (f.ParityFEIdCtrl2&0x7fff)>>8 != f.FrontEndId {
-		log.Fatalf("Front end ids in header and trailer don't match\n")
-	}
-	return nil
-}
+*/
 
-func (f *Frame) Print(s string) {
-	f.Header.Print()
-
-	switch s {
-	case "short":
-	case "medium":
-		for i := range f.Data.Data {
-			data := &f.Data.Data[i]
-			fmt.Printf("   -> ParityChanIdCtrl = %x (channel = %v)\n", data.ParityChanIdCtrl, data.Channel)
-			fmt.Printf("   -> Amplitudes[0] = %x\n", data.Amplitudes[0])
-			fmt.Printf("   -> Amplitudes[1] = %x\n", data.Amplitudes[1])
-			fmt.Printf("   -> Amplitudes[2] = %x\n", data.Amplitudes[2])
-			fmt.Printf("   -> Amplitudes[3] = %x\n", data.Amplitudes[3])
-			fmt.Printf("   ->    ...\n")
-			fmt.Printf("   -> Amplitudes[1008] = %x\n", data.Amplitudes[1008])
-			fmt.Printf("   -> Amplitudes[1009] = %x\n", data.Amplitudes[1009])
-			fmt.Printf("   -> Amplitudes[1010] = %x\n", data.Amplitudes[1010])
-		}
-		/*
-			case "long":
-				fmt.Printf("  Data %v = %x\n", 0, f.Data[0])
-				fmt.Printf("  Data %v = %x\n", 1, f.Data[1])
-				fmt.Printf("  Data %v = %x\n", 2, f.Data[2])
-				fmt.Printf("  Data %v = %x\n", 3, f.Data[3])
-				fmt.Println("\t.\n\t.")
-				fmt.Printf("  Data %v = %x\n", len(f.Data)-3, f.Data[len(f.Data)-3])
-				fmt.Printf("  Data %v = %x\n", len(f.Data)-2, f.Data[len(f.Data)-2])
-				fmt.Printf("  Data %v = %x\n", len(f.Data)-1, f.Data[len(f.Data)-1])
-				fmt.Printf("  SRout = %v\n", f.SRout)
-				for i := range f.Counters {
-					fmt.Printf("  Counter %v = %v\n", i, f.Counters[i])
-				}
-		*/
-	case "full":
-		for i := range f.Data.Data {
-			data := &f.Data.Data[i]
-			fmt.Printf("   -> ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
-			fmt.Printf("   -> Amplitudes = %x\n", data.Amplitudes)
-		}
-	}
-
-}
-
+/*
 func (f *Frame) Buffer() []byte {
 	var buffer []uint16
 	// 	buffer = append(buffer, f.FirstBlockWord)
@@ -416,3 +414,4 @@ func (f *Frame) Buffer() []byte {
 	}
 	return buffer8
 }
+*/

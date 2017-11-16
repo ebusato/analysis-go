@@ -43,16 +43,11 @@ func TestRW(t *testing.T) {
 	// 	}
 	// 	defer w.Close()
 
-	r.Frame()
-
-	// 	r.Frame()
-	// 	for {
-	// 		frame, err := r.Frame()
-	// 		if err != nil {
-	// 			panic(err)
-	// 		}
-	// 		frame.Print("medium")
-	// 	}
+	for {
+		frame, _ := r.Frame()
+		frame.Header.Print()
+		frame.Data.Print()
+	}
 
 	/*
 			// Writer

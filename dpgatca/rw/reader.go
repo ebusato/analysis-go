@@ -4,9 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
-
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 )
 
 type ReadMode byte
@@ -142,7 +139,6 @@ func (r *Reader) readFrameHeader(f *FrameHeader) {
 	r.readU16(&f.CptTriggerAsmMsb, binary.BigEndian)
 	r.readU16(&f.CptTriggerAsmLsb, binary.BigEndian)
 	r.readU16(&f.NoSamples, binary.BigEndian)
-
 	// 	f.AMCFrameCounter = (uint32(f.AMCFrameCounters[0]) << 16) + uint32(f.AMCFrameCounters[1])
 	// 	f.FrontEndId = (f.ParityFEIdCtrl & 0x7fff) >> 8
 	// 	f.ASMFrameCounter = (uint64(f.ASMFrameCounters[0]) << 48) + (uint64(f.ASMFrameCounters[1]) << 32) + (uint64(f.ASMFrameCounters[2]) << 16) + uint64(f.ASMFrameCounters[3])
@@ -159,6 +155,44 @@ func (r *Reader) readFrameHeader(f *FrameHeader) {
 	///////////////////////////////////////////////////////////////////////
 }
 
+func (r *Reader) readFrameData(data *HalfDRSData) {
+	if r.err != nil {
+		return
+	}
+	//f.Print("short")
+	for i := range data.Data {
+		chanData := &data.Data[i]
+		/*
+			for r.readParityChanIdCtrl(f, i) {
+				noAttempts++
+				if noAttempts >= 4 {
+					log.Fatalf("reader.readParityChanIdCtrl: noAttempts >= 4\n")
+				}
+			}
+			if noAttempts == 1 {
+				f.Err = ErrorCode1
+			}
+			noAttempts = 0
+			//fmt.Printf("data.ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
+		*/
+		r.readU16(&chanData.FirstChanWord, binary.BigEndian)
+		r.readU16(&chanData.SecondChanWord, binary.BigEndian)
+		r.read(&chanData.Amplitudes, binary.BigEndian)
+	}
+}
+
+func (r *Reader) readFrameTrailer(f *FrameTrailer) {
+	r.readU16(&f.Crc, binary.BigEndian)
+	// Temporary fix, until we understand where these additionnal 16 bits come from
+	if f.Crc != ctrl0xCRC {
+		//fmt.Printf("CRC = %x (should be %x)\n", f.CRC, ctrl0xCRC)
+		r.readU16(&f.Crc, binary.BigEndian)
+		//fmt.Printf("new CRC = %x\n", f.CRC)
+	}
+	// End of temporary fix
+	r.readU16(&f.EoF, binary.BigEndian)
+}
+
 func (r *Reader) Frame() (*Frame, error) {
 	f := &Frame{}
 	if r.Debug {
@@ -167,14 +201,19 @@ func (r *Reader) Frame() (*Frame, error) {
 	switch r.ReadMode {
 	case Default:
 		r.readFrameHeader(&f.Header)
-		f.Header.Print()
-		// 		r.err = f.IntegrityHeader()
-		// 		if r.err != nil {
-		// 			fmt.Println("IntegrityHeader check failed")
-		// 			f.Print("short")
-		// 			return nil, nil
-		// 		}
-		// 		r.readData(f)
+		r.err = f.Header.Integrity()
+		if r.err != nil {
+			f.Header.Print()
+			panic(r.err)
+		}
+		f.SetDataSliceLen(int(f.Header.NoSamples))
+		r.readFrameData(&f.Data)
+		r.readFrameTrailer(&f.Trailer)
+		r.err = f.Trailer.Integrity()
+		if r.err != nil {
+			f.Trailer.Print()
+			panic(r.err)
+		}
 		// 		r.err = f.IntegrityData()
 		// 		if r.err != nil {
 		// 			fmt.Println("IntegrityData check failed")
@@ -188,7 +227,7 @@ func (r *Reader) Frame() (*Frame, error) {
 		// 			f.Print("medium")
 		// 			return nil, nil
 		// 		}
-	case UDPHalfDRS:
+		/*case UDPHalfDRS:
 		for i := range r.UDPHalfDRSBuffer {
 			r.UDPHalfDRSBuffer[i] = 0
 		}
@@ -215,10 +254,12 @@ func (r *Reader) Frame() (*Frame, error) {
 		// 	for i := range r.UDPHalfDRSBuffer {
 		// 		fmt.Printf(" r.UDPHalfDRSBuffer[%v] = %x \n", i, r.UDPHalfDRSBuffer[i])
 		// 	}
+		*/
 	}
 	return f, r.err
 }
 
+/*
 var (
 	noAttempts         int
 	QuartetAbsIdx60old uint8
@@ -248,40 +289,4 @@ func (r *Reader) readParityChanIdCtrl(f *Frame, i int) bool {
 	QuartetAbsIdx60old = f.QuartetAbsIdx60
 	return false
 }
-
-func (r *Reader) readData(f *Frame) {
-	if r.err != nil {
-		return
-	}
-	//f.Print("short")
-	for i := range f.Data.Data {
-		data := &f.Data.Data[i]
-		for r.readParityChanIdCtrl(f, i) {
-			noAttempts++
-			if noAttempts >= 4 {
-				log.Fatalf("reader.readParityChanIdCtrl: noAttempts >= 4\n")
-			}
-		}
-		if noAttempts == 1 {
-			f.Err = ErrorCode1
-		}
-		noAttempts = 0
-		//fmt.Printf("data.ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
-		r.read(&data.Amplitudes, binary.BigEndian)
-		// 		for j := range data.Amplitudes {
-		// 			fmt.Printf("data.Amplitudes[%v] = %x\n", j, data.Amplitudes[j])
-		// 		}
-	}
-}
-
-func (r *Reader) readTrailer(f *Frame) {
-	r.readU16(&f.CRC, binary.BigEndian)
-	// Temporary fix, until we understand where these additionnal 16 bits come from
-	if f.CRC != ctrl0xCRC {
-		//fmt.Printf("CRC = %x (should be %x)\n", f.CRC, ctrl0xCRC)
-		r.readU16(&f.CRC, binary.BigEndian)
-		//fmt.Printf("new CRC = %x\n", f.CRC)
-	}
-	// End of temporary fix
-	r.readU16(&f.ParityFEIdCtrl2, binary.BigEndian)
-}
+*/
