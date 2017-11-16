@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-hep/csvutil"
+	"go-hep.org/x/hep/csvutil"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/detector"
 )

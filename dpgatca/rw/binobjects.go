@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+	"reflect"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 )
@@ -26,6 +27,13 @@ const (
 	ctrl0xCRC                uint16 = 0x9876
 	ctrl0xfb                 uint16 = 0xfb
 )
+
+func print(in interface{}) {
+	v := reflect.ValueOf(in)
+	for i := 0; i < v.NumField(); i++ {
+		fmt.Printf("  -> %v = %x (%v)\n", v.Type().Field(i).Name, v.Field(i).Interface(), v.Field(i).Interface())
+	}
+}
 
 type ChanData struct {
 	// Raw quantities
@@ -52,31 +60,88 @@ const (
 	ErrorCode1 ErrorCode = iota + 1 // value of error code if block has 4 extra 16 bits words after each sample block
 )
 
+type FileHeader struct {
+	ModeFile  uint32
+	FEId      uint16 // not clear why I must put 16 bits while Daniel has 8 bits in frame.h
+	NoSamples uint16
+}
+
+func (f *FileHeader) Print() {
+	fmt.Println("File Header:")
+	print(*f)
+}
+
+type FrameHeader struct {
+	StartOfFrame            uint16
+	NbFrameAmcMsb           uint16
+	NbFrameAmcLsb           uint16
+	FEIdK30                 uint16
+	Mode                    uint16
+	TriggerType             uint16
+	NoFrameAsmMsb           uint16
+	NoFrameAsmOsb           uint16
+	NoFrameAsmUsb           uint16
+	NoFrameAsmLsb           uint16
+	Cafe                    uint16
+	Deca                    uint16
+	UndefinedMsb            uint16
+	UndefinedOsb            uint16
+	UndefinedUsb            uint16
+	UndefinedLsb            uint16
+	TimeStampAsmMsb         uint16
+	TimeStampAsmOsb         uint16
+	TimeStampAsmUsb         uint16
+	TimeStampAsmLsb         uint16
+	TimeStampTrigThorAsmMsb uint16
+	TimeStampTrigThorAsmOsb uint16
+	TimeStampTrigThorAsmUsb uint16
+	TimeStampTrigThorAsmLsb uint16
+	ThorTT                  uint16
+	PatternMsb              uint16
+	PatternOsb              uint16
+	PatternLsb              uint16
+	Bobo                    uint16
+	ThorTrigTimeStampMsb    uint16
+	ThorTrigTimeStampOsb    uint16
+	ThorTrigTimeStampLsb    uint16
+	CptTriggerThorMsb       uint16
+	CptTriggerThorLsb       uint16
+	CptTriggerAsmMsb        uint16
+	CptTriggerAsmLsb        uint16
+	NoSamples               uint16
+}
+
+func (f *FrameHeader) Print() {
+	fmt.Println("Frame Header:")
+	print(*f)
+}
+
 // Frame is a single data frame produced by AMC
 // Each frame is associated to one half DRS
 type Frame struct {
 	// Raw quantities
-	FirstBlockWord        uint16                           // 0
-	AMCFrameCounters      [numAMCFrameCounters]uint16      // 1 -> 2
-	ParityFEIdCtrl        uint16                           // 3
-	TriggerMode           uint16                           // 4
-	Trigger               uint16                           // 5
-	ASMFrameCounters      [numASMFrameCounters]uint16      // 6 -> 9
-	Cafe                  uint16                           // 10
-	Deca                  uint16                           // 11
-	Counters              [numCounters]uint16              // 12 -> 15
-	TimeStampsASM         [numTimeStampsASM]uint16         // 16 -> 19
-	TimeStampsTrigThorASM [numTimeStampsTrigThorASM]uint16 // 20 -> 23
-	ThorTT                uint16                           // 24
-	Patterns              [numPatterns]uint16              // 25 -> 27
-	Bobo                  uint16                           // 28
-	ThorTrigTimeStamps    [numThorTrigTimeStamps]uint16    // 29 -> 31
-	CptsTriggerThor       [numCptsTriggerThor]uint16       // 32 -> 33
-	CptsTriggerASM        [numCptsTriggerASM]uint16        // 34 -> 35
-	NoSamples             uint16                           // 36
-	Data                  HalfDRSData
-	CRC                   uint16
-	ParityFEIdCtrl2       uint16
+	// 	FirstBlockWord        uint16                           // 0
+	// 	AMCFrameCounters      [numAMCFrameCounters]uint16      // 1 -> 2
+	// 	ParityFEIdCtrl        uint16                           // 3
+	// 	TriggerMode           uint16                           // 4
+	// 	Trigger               uint16                           // 5
+	// 	ASMFrameCounters      [numASMFrameCounters]uint16      // 6 -> 9
+	// 	Cafe                  uint16                           // 10
+	// 	Deca                  uint16                           // 11
+	// 	Counters              [numCounters]uint16              // 12 -> 15
+	// 	TimeStampsASM         [numTimeStampsASM]uint16         // 16 -> 19
+	// 	TimeStampsTrigThorASM [numTimeStampsTrigThorASM]uint16 // 20 -> 23
+	// 	ThorTT                uint16                           // 24
+	// 	Patterns              [numPatterns]uint16              // 25 -> 27
+	// 	Bobo                  uint16                           // 28
+	// 	ThorTrigTimeStamps    [numThorTrigTimeStamps]uint16    // 29 -> 31
+	// 	CptsTriggerThor       [numCptsTriggerThor]uint16       // 32 -> 33
+	// 	CptsTriggerASM        [numCptsTriggerASM]uint16        // 34 -> 35
+	// 	NoSamples             uint16                           // 36
+	Header          FrameHeader
+	Data            HalfDRSData
+	CRC             uint16
+	ParityFEIdCtrl2 uint16
 
 	// Derived quantities
 	AMCFrameCounter      uint32
@@ -108,52 +173,52 @@ func NewFrame(udppayloadsize int) *Frame {
 }
 
 func (f *Frame) FillHeader(buffer []byte) {
-	buffer = buffer[:42]
-	f.FirstBlockWord = binary.BigEndian.Uint16(buffer[0:2])
-	f.AMCFrameCounters[0] = binary.BigEndian.Uint16(buffer[2:4])
-	f.AMCFrameCounters[1] = binary.BigEndian.Uint16(buffer[4:6])
-	f.ParityFEIdCtrl = binary.BigEndian.Uint16(buffer[6:8])
-	f.TriggerMode = binary.BigEndian.Uint16(buffer[8:10])
-	f.Trigger = binary.BigEndian.Uint16(buffer[10:12])
-	f.ASMFrameCounters[0] = binary.BigEndian.Uint16(buffer[12:14])
-	f.ASMFrameCounters[1] = binary.BigEndian.Uint16(buffer[14:16])
-	f.ASMFrameCounters[2] = binary.BigEndian.Uint16(buffer[16:18])
-	f.ASMFrameCounters[3] = binary.BigEndian.Uint16(buffer[18:20])
-	f.Cafe = binary.BigEndian.Uint16(buffer[20:22])
-	f.Deca = binary.BigEndian.Uint16(buffer[22:24])
-	f.Counters[0] = binary.BigEndian.Uint16(buffer[24:26])
-	f.Counters[1] = binary.BigEndian.Uint16(buffer[26:28])
-	f.Counters[2] = binary.BigEndian.Uint16(buffer[28:30])
-	f.Counters[3] = binary.BigEndian.Uint16(buffer[30:32])
-	f.TimeStampsASM[0] = binary.BigEndian.Uint16(buffer[32:34])
-	f.TimeStampsASM[1] = binary.BigEndian.Uint16(buffer[34:36])
-	f.TimeStampsASM[2] = binary.BigEndian.Uint16(buffer[36:38])
-	f.TimeStampsASM[3] = binary.BigEndian.Uint16(buffer[38:40])
-	f.TimeStampsTrigThorASM[0] = binary.BigEndian.Uint16(buffer[40:42])
-	f.TimeStampsTrigThorASM[1] = binary.BigEndian.Uint16(buffer[42:44])
-	f.TimeStampsTrigThorASM[2] = binary.BigEndian.Uint16(buffer[44:46])
-	f.TimeStampsTrigThorASM[3] = binary.BigEndian.Uint16(buffer[46:48])
-	f.ThorTT = binary.BigEndian.Uint16(buffer[48:50])
-	f.Patterns[0] = binary.BigEndian.Uint16(buffer[50:52])
-	f.Patterns[1] = binary.BigEndian.Uint16(buffer[52:54])
-	f.Patterns[2] = binary.BigEndian.Uint16(buffer[54:56])
-	f.Bobo = binary.BigEndian.Uint16(buffer[56:58])
-	f.ThorTrigTimeStamps[0] = binary.BigEndian.Uint16(buffer[58:60])
-	f.ThorTrigTimeStamps[1] = binary.BigEndian.Uint16(buffer[60:62])
-	f.ThorTrigTimeStamps[2] = binary.BigEndian.Uint16(buffer[62:64])
-	f.CptsTriggerThor[0] = binary.BigEndian.Uint16(buffer[64:66])
-	f.CptsTriggerThor[1] = binary.BigEndian.Uint16(buffer[66:68])
-	f.CptsTriggerASM[0] = binary.BigEndian.Uint16(buffer[68:70])
-	f.CptsTriggerASM[1] = binary.BigEndian.Uint16(buffer[70:72])
-	f.NoSamples = binary.BigEndian.Uint16(buffer[72:74])
-	f.AMCFrameCounter = (uint32(f.AMCFrameCounters[0]) << 16) + uint32(f.AMCFrameCounters[1])
-	f.FrontEndId = (f.ParityFEIdCtrl & 0x7fff) >> 8
-	f.ASMFrameCounter = (uint64(f.ASMFrameCounters[0]) << 48) + (uint64(f.ASMFrameCounters[1]) << 32) + (uint64(f.ASMFrameCounters[2]) << 16) + uint64(f.ASMFrameCounters[3])
-	temp := (uint64(f.TimeStampsASM[0]) << 16) | uint64(f.TimeStampsASM[1])
-	temp = (temp << 32)
-	temp1 := (uint64(f.TimeStampsASM[2]) << 16) | uint64(f.TimeStampsASM[3])
-	// 	temp |= temp1
-	f.TimeStampASM = temp | temp1
+	// 	buffer = buffer[:42]
+	// 	f.FirstBlockWord = binary.BigEndian.Uint16(buffer[0:2])
+	// 	f.AMCFrameCounters[0] = binary.BigEndian.Uint16(buffer[2:4])
+	// 	f.AMCFrameCounters[1] = binary.BigEndian.Uint16(buffer[4:6])
+	// 	f.ParityFEIdCtrl = binary.BigEndian.Uint16(buffer[6:8])
+	// 	f.TriggerMode = binary.BigEndian.Uint16(buffer[8:10])
+	// 	f.Trigger = binary.BigEndian.Uint16(buffer[10:12])
+	// 	f.ASMFrameCounters[0] = binary.BigEndian.Uint16(buffer[12:14])
+	// 	f.ASMFrameCounters[1] = binary.BigEndian.Uint16(buffer[14:16])
+	// 	f.ASMFrameCounters[2] = binary.BigEndian.Uint16(buffer[16:18])
+	// 	f.ASMFrameCounters[3] = binary.BigEndian.Uint16(buffer[18:20])
+	// 	f.Cafe = binary.BigEndian.Uint16(buffer[20:22])
+	// 	f.Deca = binary.BigEndian.Uint16(buffer[22:24])
+	// 	f.Counters[0] = binary.BigEndian.Uint16(buffer[24:26])
+	// 	f.Counters[1] = binary.BigEndian.Uint16(buffer[26:28])
+	// 	f.Counters[2] = binary.BigEndian.Uint16(buffer[28:30])
+	// 	f.Counters[3] = binary.BigEndian.Uint16(buffer[30:32])
+	// 	f.TimeStampsASM[0] = binary.BigEndian.Uint16(buffer[32:34])
+	// 	f.TimeStampsASM[1] = binary.BigEndian.Uint16(buffer[34:36])
+	// 	f.TimeStampsASM[2] = binary.BigEndian.Uint16(buffer[36:38])
+	// 	f.TimeStampsASM[3] = binary.BigEndian.Uint16(buffer[38:40])
+	// 	f.TimeStampsTrigThorASM[0] = binary.BigEndian.Uint16(buffer[40:42])
+	// 	f.TimeStampsTrigThorASM[1] = binary.BigEndian.Uint16(buffer[42:44])
+	// 	f.TimeStampsTrigThorASM[2] = binary.BigEndian.Uint16(buffer[44:46])
+	// 	f.TimeStampsTrigThorASM[3] = binary.BigEndian.Uint16(buffer[46:48])
+	// 	f.ThorTT = binary.BigEndian.Uint16(buffer[48:50])
+	// 	f.Patterns[0] = binary.BigEndian.Uint16(buffer[50:52])
+	// 	f.Patterns[1] = binary.BigEndian.Uint16(buffer[52:54])
+	// 	f.Patterns[2] = binary.BigEndian.Uint16(buffer[54:56])
+	// 	f.Bobo = binary.BigEndian.Uint16(buffer[56:58])
+	// 	f.ThorTrigTimeStamps[0] = binary.BigEndian.Uint16(buffer[58:60])
+	// 	f.ThorTrigTimeStamps[1] = binary.BigEndian.Uint16(buffer[60:62])
+	// 	f.ThorTrigTimeStamps[2] = binary.BigEndian.Uint16(buffer[62:64])
+	// 	f.CptsTriggerThor[0] = binary.BigEndian.Uint16(buffer[64:66])
+	// 	f.CptsTriggerThor[1] = binary.BigEndian.Uint16(buffer[66:68])
+	// 	f.CptsTriggerASM[0] = binary.BigEndian.Uint16(buffer[68:70])
+	// 	f.CptsTriggerASM[1] = binary.BigEndian.Uint16(buffer[70:72])
+	// 	f.NoSamples = binary.BigEndian.Uint16(buffer[72:74])
+	// 	f.AMCFrameCounter = (uint32(f.AMCFrameCounters[0]) << 16) + uint32(f.AMCFrameCounters[1])
+	// 	f.FrontEndId = (f.ParityFEIdCtrl & 0x7fff) >> 8
+	// 	f.ASMFrameCounter = (uint64(f.ASMFrameCounters[0]) << 48) + (uint64(f.ASMFrameCounters[1]) << 32) + (uint64(f.ASMFrameCounters[2]) << 16) + uint64(f.ASMFrameCounters[3])
+	// 	temp := (uint64(f.TimeStampsASM[0]) << 16) | uint64(f.TimeStampsASM[1])
+	// 	temp = (temp << 32)
+	// 	temp1 := (uint64(f.TimeStampsASM[2]) << 16) | uint64(f.TimeStampsASM[3])
+	// 	// 	temp |= temp1
+	// 	f.TimeStampASM = temp | temp1
 	///////////////////////////////////////////////////////////////////////
 	// This +11 is necessary but currently not really understood
 	// 11 clock periods are generated by "machine d'etat" in ASM firmware
@@ -165,18 +230,18 @@ func (f *Frame) FillHeader(buffer []byte) {
 }
 
 func (f *Frame) IntegrityHeader() error {
-	if f.FirstBlockWord != ctrlFirstWord {
-		return fmt.Errorf("asm: missing %x magic\n", ctrlFirstWord)
-	}
-	if (f.ParityFEIdCtrl & 0xff) != ctrl0xfe {
-		return fmt.Errorf("asm: missing %x magic\n", ctrl0xfe)
-	}
-	if f.Cafe != ctrl0xCafe {
-		return fmt.Errorf("asm: missing %x magic\n", ctrl0xCafe)
-	}
-	if f.Deca != ctrl0xDeca {
-		return fmt.Errorf("asm: missing %x magic\n", ctrl0xDeca)
-	}
+	// 	if f.FirstBlockWord != ctrlFirstWord {
+	// 		return fmt.Errorf("asm: missing %x magic\n", ctrlFirstWord)
+	// 	}
+	// 	if (f.ParityFEIdCtrl & 0xff) != ctrl0xfe {
+	// 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xfe)
+	// 	}
+	// 	if f.Cafe != ctrl0xCafe {
+	// 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xCafe)
+	// 	}
+	// 	if f.Deca != ctrl0xDeca {
+	// 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xDeca)
+	// 	}
 	return nil
 }
 
@@ -268,26 +333,7 @@ func (f *Frame) IntegrityTrailer() error {
 }
 
 func (f *Frame) Print(s string) {
-	fmt.Printf(" Printing block (UDP payload size=%v):\n", f.UDPPayloadSize)
-	fmt.Printf("   -> FirstBlockWord = %x\n", f.FirstBlockWord)
-	fmt.Printf("   -> AMCFrameCounters = %x (AMCFrameCounter = %v)\n", f.AMCFrameCounters, f.AMCFrameCounter)
-	fmt.Printf("   -> ParityFEIdCtrl = %x (FrontEndId = %x)\n", f.ParityFEIdCtrl, f.FrontEndId)
-	fmt.Printf("   -> TriggerMode = %x\n", f.TriggerMode)
-	fmt.Printf("   -> Trigger = %x\n", f.Trigger)
-	fmt.Printf("   -> ASMFrameCounters = %x (ASMFrameCounter = %v)\n", f.ASMFrameCounters, f.ASMFrameCounter)
-	fmt.Printf("   -> Cafe = %x\n", f.Cafe)
-	fmt.Printf("   -> Deca = %x\n", f.Deca)
-	fmt.Printf("   -> Counters = %x\n", f.Counters)
-	fmt.Printf("   -> TimeStampsASM = %x (TimeStampASM = %v)\n", f.TimeStampsASM, f.TimeStampASM)
-	fmt.Printf("   -> TimeStampsTrigThorASM = %x (TimeStampTrigThorASM = %v)\n", f.TimeStampsTrigThorASM, f.TimeStampTrigThorASM)
-	fmt.Printf("   -> ThorTT = %x\n", f.ThorTT)
-	fmt.Printf("   -> Patterns = %x (Pattern = %v)\n", f.Patterns, f.Pattern)
-	fmt.Printf("   -> Bobo = %x\n", f.Bobo)
-	fmt.Printf("   -> ThorTrigTimeStamps = %x (ThorTrigTimeStamp = %v)\n", f.ThorTrigTimeStamps, f.ThorTrigTimeStamp)
-	fmt.Printf("   -> CptsTriggerThor = %x (CptTriggerThor = %v)\n", f.CptsTriggerThor, f.CptTriggerThor)
-	fmt.Printf("   -> CptsTriggerASM = %x (CptTriggerASM = %v)\n", f.CptsTriggerASM, f.CptTriggerASM)
-	fmt.Printf("   -> QuartetAbsIdx60 = %x\n", f.QuartetAbsIdx60)
-	fmt.Printf("   -> NoSamples = %x\n", f.NoSamples)
+	f.Header.Print()
 
 	switch s {
 	case "short":
@@ -331,24 +377,24 @@ func (f *Frame) Print(s string) {
 
 func (f *Frame) Buffer() []byte {
 	var buffer []uint16
-	buffer = append(buffer, f.FirstBlockWord)
-	buffer = append(buffer, f.AMCFrameCounters[:]...)
-	buffer = append(buffer, f.ParityFEIdCtrl)
-	buffer = append(buffer, f.TriggerMode)
-	buffer = append(buffer, f.Trigger)
-	buffer = append(buffer, f.ASMFrameCounters[:]...)
-	buffer = append(buffer, f.Cafe)
-	buffer = append(buffer, f.Deca)
-	buffer = append(buffer, f.Counters[:]...)
-	buffer = append(buffer, f.TimeStampsASM[:]...)
-	buffer = append(buffer, f.TimeStampsTrigThorASM[:]...)
-	buffer = append(buffer, f.ThorTT)
-	buffer = append(buffer, f.Patterns[:]...)
-	buffer = append(buffer, f.Bobo)
-	buffer = append(buffer, f.ThorTrigTimeStamps[:]...)
-	buffer = append(buffer, f.CptsTriggerThor[:]...)
-	buffer = append(buffer, f.CptsTriggerASM[:]...)
-	buffer = append(buffer, f.NoSamples)
+	// 	buffer = append(buffer, f.FirstBlockWord)
+	// 	buffer = append(buffer, f.AMCFrameCounters[:]...)
+	// 	buffer = append(buffer, f.ParityFEIdCtrl)
+	// 	buffer = append(buffer, f.TriggerMode)
+	// 	buffer = append(buffer, f.Trigger)
+	// 	buffer = append(buffer, f.ASMFrameCounters[:]...)
+	// 	buffer = append(buffer, f.Cafe)
+	// 	buffer = append(buffer, f.Deca)
+	// 	buffer = append(buffer, f.Counters[:]...)
+	// 	buffer = append(buffer, f.TimeStampsASM[:]...)
+	// 	buffer = append(buffer, f.TimeStampsTrigThorASM[:]...)
+	// 	buffer = append(buffer, f.ThorTT)
+	// 	buffer = append(buffer, f.Patterns[:]...)
+	// 	buffer = append(buffer, f.Bobo)
+	// 	buffer = append(buffer, f.ThorTrigTimeStamps[:]...)
+	// 	buffer = append(buffer, f.CptsTriggerThor[:]...)
+	// 	buffer = append(buffer, f.CptsTriggerASM[:]...)
+	// 	buffer = append(buffer, f.NoSamples)
 	for i := range f.Data.Data {
 		data := &f.Data.Data[i]
 		buffer = append(buffer, data.ParityChanIdCtrl)

@@ -1,7 +1,7 @@
 package trees
 
 import (
-	"github.com/go-hep/croot"
+	"go-hep.org/x/hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/rw"

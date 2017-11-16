@@ -6,10 +6,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/go-hep/csvutil"
-	"github.com/gonum/plot"
-	"github.com/gonum/plot/plotter"
-	"github.com/gonum/plot/vg"
+	"go-hep.org/x/hep/csvutil"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/vg"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 

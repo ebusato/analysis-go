@@ -19,8 +19,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/go-hep/csvutil"
-	"github.com/go-hep/hbook"
+	"go-hep.org/x/hep/csvutil"
+	"go-hep.org/x/hep/hbook"
 	"github.com/toqueteos/webbrowser"
 
 	"golang.org/x/net/websocket"

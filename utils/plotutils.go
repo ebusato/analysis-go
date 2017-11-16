@@ -4,14 +4,14 @@ package utils
 import (
 	"bytes"
 
-	"github.com/go-hep/hbook"
-	"github.com/go-hep/hplot"
-	"github.com/gonum/plot"
-	"github.com/gonum/plot/plotter"
-	"github.com/gonum/plot/plotutil"
-	"github.com/gonum/plot/vg"
-	"github.com/gonum/plot/vg/draw"
-	"github.com/gonum/plot/vg/vgsvg"
+	"go-hep.org/x/hep/hbook"
+	"go-hep.org/x/hep/hplot"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/plotutil"
+	"gonum.org/v1/plot/vg"
+	"gonum.org/v1/plot/vg/draw"
+	"gonum.org/v1/plot/vg/vgsvg"
 )
 
 // H1DToGonum converts hbook.H1D objects to plotter.Histogram objects.
@@ -33,10 +33,7 @@ func H1DToGonum(histo ...hbook.H1D) []plotter.Histogram {
 func H1dToHplot(lineStyle draw.LineStyle, histo ...hbook.H1D) []hplot.H1D {
 	output := make([]hplot.H1D, len(histo))
 	for i := range histo {
-		hi, err := hplot.NewH1D(&histo[i])
-		if err != nil {
-			panic(err)
-		}
+		hi := hplot.NewH1D(&histo[i])
 		if len(histo) == 1 {
 			hi.Infos.Style = hplot.HInfoSummary
 		}
@@ -54,10 +51,7 @@ func H1dptrToHplot(lineStyle draw.LineStyle, histos ...*hbook.H1D) []hplot.H1D {
 	for i := range histos {
 		histo := histos[i]
 		if histo != nil {
-			hi, err := hplot.NewH1D(histo)
-			if err != nil {
-				panic(err)
-			}
+			hi := hplot.NewH1D(histo)
 			hi.Infos.Style = hplot.HInfoSummary
 
 			hi.LineStyle = lineStyle
@@ -71,10 +65,7 @@ func H1dptrToHplot(lineStyle draw.LineStyle, histos ...*hbook.H1D) []hplot.H1D {
 
 // MakeHPlot makes a hplot with hbook.H1D objects.
 func MakeHPlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D) {
-	p, err := hplot.New()
-	if err != nil {
-		panic(err)
-	}
+	p := hplot.New()
 	p.X.Label.Text = xTitle
 	p.Y.Label.Text = yTitle
 
@@ -92,10 +83,7 @@ func MakeHPlot(xTitle string, yTitle string, outFile string, histo ...hbook.H1D)
 
 // MakeHPl makes a hplot with hplot.Histogram objects.
 func MakeHPl(xTitle string, yTitle string, outFile string, hHplot ...hplot.H1D) {
-	p, err := hplot.New()
-	if err != nil {
-		panic(err)
-	}
+	p := hplot.New()
 	p.X.Label.Text = xTitle
 	p.Y.Label.Text = yTitle
 

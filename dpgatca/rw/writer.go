@@ -40,13 +40,13 @@ func (w *Writer) Close() error {
 }
 
 // Frame writes a Frame to the ASM stream.
-func (w *Writer) Frame(f *Frame) error {
-	if w.err != nil {
-		return w.err
-	}
-	w.writeFrame(f)
-	return w.err
-}
+// func (w *Writer) Frame(f *Frame) error {
+// 	if w.err != nil {
+// 		return w.err
+// 	}
+// 	w.writeFrame(f)
+// 	return w.err
+// }
 
 func (w *Writer) write(v interface{}) {
 	if w.err != nil {
@@ -77,59 +77,59 @@ func (w *Writer) WriteU16(v uint16) {
 	w.writeU16(v)
 }
 
-func (w *Writer) writeFrame(f *Frame) {
-	if w.err != nil {
-		return
-	}
-	w.writeHeader(f)
-	w.writeData(f)
-	w.writeTrailer(f)
-}
+// func (w *Writer) writeFrame(f *Frame) {
+// 	if w.err != nil {
+// 		return
+// 	}
+// 	w.writeHeader(f)
+// 	w.writeData(f)
+// 	w.writeTrailer(f)
+// }
 
-func (w *Writer) writeHeader(f *Frame) {
-	if w.err != nil {
-		return
-	}
-	//fmt.Printf("rw: writing block header: %v %v %x\n", f.Evt, f.ID, blockHeader)
-	w.writeU16(f.FirstBlockWord)
-	w.write(f.AMCFrameCounters)
-	w.writeU16(f.ParityFEIdCtrl)
-	w.writeU16(f.TriggerMode)
-	w.writeU16(f.Trigger)
-	w.write(f.ASMFrameCounters)
-	w.writeU16(f.Cafe)
-	w.writeU16(f.Deca)
-	w.write(f.Counters)
-	w.write(f.TimeStampsASM)
-	w.write(&f.TimeStampsTrigThorASM)
-	w.writeU16(f.ThorTT)
-	w.write(&f.Patterns)
-	w.writeU16(f.Bobo)
-	w.write(&f.ThorTrigTimeStamps)
-	w.write(&f.CptsTriggerThor)
-	w.write(&f.CptsTriggerASM)
-	w.writeU16(f.NoSamples)
-}
-
-func (w *Writer) writeData(f *Frame) {
-	if w.err != nil {
-		return
-	}
-	for i := range f.Data.Data {
-		data := &f.Data.Data[i]
-		w.writeU16(data.ParityChanIdCtrl)
-		w.write(data.Amplitudes)
-		if f.Err == ErrorCode1 {
-			//fmt.Println("ErrorCode1, add extra word")
-			w.writeU16(uint16(0))
-		}
-	}
-}
-
-func (w *Writer) writeTrailer(f *Frame) {
-	w.writeU16(f.CRC)
-	w.writeU16(f.ParityFEIdCtrl2)
-}
+// func (w *Writer) writeHeader(f *Frame) {
+// 	if w.err != nil {
+// 		return
+// 	}
+// 	//fmt.Printf("rw: writing block header: %v %v %x\n", f.Evt, f.ID, blockHeader)
+// 	w.writeU16(f.FirstBlockWord)
+// 	w.write(f.AMCFrameCounters)
+// 	w.writeU16(f.ParityFEIdCtrl)
+// 	w.writeU16(f.TriggerMode)
+// 	w.writeU16(f.Trigger)
+// 	w.write(f.ASMFrameCounters)
+// 	w.writeU16(f.Cafe)
+// 	w.writeU16(f.Deca)
+// 	w.write(f.Counters)
+// 	w.write(f.TimeStampsASM)
+// 	w.write(&f.TimeStampsTrigThorASM)
+// 	w.writeU16(f.ThorTT)
+// 	w.write(&f.Patterns)
+// 	w.writeU16(f.Bobo)
+// 	w.write(&f.ThorTrigTimeStamps)
+// 	w.write(&f.CptsTriggerThor)
+// 	w.write(&f.CptsTriggerASM)
+// 	w.writeU16(f.NoSamples)
+// }
+//
+// func (w *Writer) writeData(f *Frame) {
+// 	if w.err != nil {
+// 		return
+// 	}
+// 	for i := range f.Data.Data {
+// 		data := &f.Data.Data[i]
+// 		w.writeU16(data.ParityChanIdCtrl)
+// 		w.write(data.Amplitudes)
+// 		if f.Err == ErrorCode1 {
+// 			//fmt.Println("ErrorCode1, add extra word")
+// 			w.writeU16(uint16(0))
+// 		}
+// 	}
+// }
+//
+// func (w *Writer) writeTrailer(f *Frame) {
+// 	w.writeU16(f.CRC)
+// 	w.writeU16(f.ParityFEIdCtrl2)
+// }
 
 /*
 func (w *Writer) MakeFrame(iCluster int, evtID uint32, pulse0 *pulse.Pulse, pulse1 *pulse.Pulse) *Frame {

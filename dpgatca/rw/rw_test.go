@@ -6,24 +6,17 @@ import (
 	"log"
 	"os"
 	"strings"
-	"sync"
 	"testing"
-
-	"gitlab.in2p3.fr/avirm/analysis-go/event"
 )
 
 //var rhdr *Header
 //var revents []event.Event
 
-var (
-	evtChan = make(chan *event.Event)
-)
-
 func TestRW(t *testing.T) {
 	fmt.Println("starting TestRW")
 
-	inFileName := "../data/run0011/MyFile1e.bin"
-	outFileName := strings.Replace(inFileName, "MyFile1e", "MyFile1e_out", 1)
+	inFileName := "/home/ebusato/Travail/Imaging/DPGA/Soft/FirmwareTests/ServeurUdp/datas/MyFile_eno1@0_0.bin"
+	outFileName := strings.Replace(inFileName, ".bin", "_out.bin", 1)
 
 	// Reader
 	f, err := os.Open(inFileName)
@@ -37,6 +30,8 @@ func TestRW(t *testing.T) {
 		t.Fatalf("could not open asm file: %v\n", err)
 	}
 	r.ReadMode = Default
+	r.FileHeader.Print()
+
 	// Writer
 	filew, err := os.Create(outFileName)
 	if err != nil {
@@ -50,16 +45,16 @@ func TestRW(t *testing.T) {
 	}
 	defer w.Close()
 
-	const N = 1
-	var wg sync.WaitGroup
-	wg.Add(N)
+	//r.Frame()
 
-	go r.ReadFrames(evtChan, w, &wg)
-	for {
-		<-evtChan
-	}
-
-	wg.Wait()
+	// 	r.Frame()
+	// 	for {
+	// 		frame, err := r.Frame()
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+	// 		frame.Print("medium")
+	// 	}
 
 	/*
 			// Writer

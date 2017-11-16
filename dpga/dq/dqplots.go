@@ -5,22 +5,21 @@ import (
 	"encoding/gob"
 	"fmt"
 	"image/color"
-	"log"
 	"math"
 	"os"
 	"strconv"
 
-	"github.com/go-hep/hbook"
-	"github.com/go-hep/hplot"
-	"github.com/gonum/plot"
-	"github.com/gonum/plot/palette/brewer"
-	"github.com/gonum/plot/plotter"
-	"github.com/gonum/plot/plotutil"
-	"github.com/gonum/plot/vg"
-	"github.com/gonum/plot/vg/draw"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
+	"go-hep.org/x/hep/hbook"
+	"go-hep.org/x/hep/hplot"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/palette/brewer"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/plotutil"
+	"gonum.org/v1/plot/vg"
+	"gonum.org/v1/plot/vg/draw"
 )
 
 type DQPlot struct {
@@ -194,10 +193,7 @@ func (d *DQPlot) Finalize() {
 }
 
 func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
-	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 2, PadY: 1 * vg.Centimeter})
-	if err != nil {
-		panic(err)
-	}
+	tp := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 2, PadY: 1 * vg.Centimeter})
 
 	p1 := tp.Plot(0, 0)
 	p1.X.Min = 0
@@ -207,16 +203,10 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 	p1.Y.Label.Text = "No pulses"
 	p1.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
 	p1.Add(hplot.NewGrid())
-	hplotfreq, err := hplot.NewH1D(d.HFrequency)
-	if err != nil {
-		panic(err)
-	}
+	hplotfreq := hplot.NewH1D(d.HFrequency)
 	hplotfreq.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
 	hplotfreq.Color = plotutil.Color(3)
 	p1.Add(hplotfreq)
-	if err != nil {
-		panic(err)
-	}
 	//p1.Title.Text = fmt.Sprintf("Number of pulses vs channel\n")
 
 	p2 := tp.Plot(1, 0)
@@ -227,26 +217,16 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 	p2.Y.Label.Text = "No sat. pulses"
 	p2.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
 	p2.Add(hplot.NewGrid())
-	hplotsatfreq, err := hplot.NewH1D(d.HSatFrequency)
-	if err != nil {
-		panic(err)
-	}
+	hplotsatfreq := hplot.NewH1D(d.HSatFrequency)
 	hplotsatfreq.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
 	hplotsatfreq.Color = plotutil.Color(3)
 	p2.Add(hplotsatfreq)
-	if err != nil {
-		log.Fatalf("error creating histogram \n")
-	}
 	//p2.Title.Text = fmt.Sprintf("Number of saturating pulses vs channel\n")
 	return tp
 }
 
 func (d *DQPlot) MakeMinRecXYDistrs() *hplot.TiledPlot {
-	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 2, PadY: 0.2 * vg.Centimeter})
-	if err != nil {
-		panic(err)
-	}
-
+	tp := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 2, PadY: 0.2 * vg.Centimeter})
 	p1 := tp.Plot(0, 0)
 	p1.X.Min = -50
 	p1.X.Max = 50
@@ -254,17 +234,11 @@ func (d *DQPlot) MakeMinRecXYDistrs() *hplot.TiledPlot {
 	p1.Y.Label.Text = "No entries"
 	p1.X.Tick.Marker = &hplot.FreqTicks{N: 101, Freq: 5}
 	p1.Add(hplot.NewGrid())
-	hplotX, err := hplot.NewH1D(d.HMinRecX)
-	if err != nil {
-		panic(err)
-	}
+	hplotX := hplot.NewH1D(d.HMinRecX)
 	hplotX.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
 	hplotX.Color = plotutil.Color(3)
 	p1.Add(hplotX)
 	p1.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
-	if err != nil {
-		panic(err)
-	}
 	//p1.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction X (mm)\n")
 
 	p2 := tp.Plot(1, 0)
@@ -274,17 +248,11 @@ func (d *DQPlot) MakeMinRecXYDistrs() *hplot.TiledPlot {
 	p2.Y.Label.Text = "No entries"
 	p2.X.Tick.Marker = &hplot.FreqTicks{N: 101, Freq: 5}
 	p2.Add(hplot.NewGrid())
-	hplotY, err := hplot.NewH1D(d.HMinRecY)
-	if err != nil {
-		panic(err)
-	}
+	hplotY := hplot.NewH1D(d.HMinRecY)
 	hplotY.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
 	hplotY.Color = plotutil.Color(3)
 	p2.Add(hplotY)
 	p2.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
-	if err != nil {
-		log.Fatalf("error creating histogram \n")
-	}
 	//p2.Title.Text = fmt.Sprintf("Distribution of minimal reconstruction Y (mm)\n")
 
 	return tp
@@ -303,17 +271,11 @@ func (d *DQPlot) MakeMinRecZDistr() *plot.Plot {
 	p.X.Tick.Marker = &hplot.FreqTicks{N: 124, Freq: 6}
 	p.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
 
-	hplotZ, err := hplot.NewH1D(d.HMinRecZ)
-	if err != nil {
-		panic(err)
-	}
+	hplotZ := hplot.NewH1D(d.HMinRecZ)
 	hplotZ.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
 	// 	hplotZ.Color = plotutil.Color(3)
 	p.Add(hplotZ)
 	p.Add(hplot.NewGrid())
-	if err != nil {
-		log.Fatalf("error creating histogram \n")
-	}
 	return p
 }
 
@@ -326,11 +288,7 @@ const (
 )
 
 func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.HemisphereType) *hplot.TiledPlot {
-	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 5, Rows: 6, PadY: 0.5 * vg.Centimeter})
-	if err != nil {
-		panic(err)
-	}
-
+	tp := hplot.NewTiledPlot(draw.Tiles{Cols: 5, Rows: 6, PadY: 0.5 * vg.Centimeter})
 	histos := make([]hbook.H1D, len(d.HCharge[0]))
 	var histosref []hbook.H1D
 	if d.DQPlotRef != nil {
@@ -385,22 +343,10 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 			p.Plot.Y.LineStyle.Width = 2
 			p.Plot.X.Tick.LineStyle.Width = 2
 			p.Plot.Y.Tick.LineStyle.Width = 2
-			hplot0, err := hplot.NewH1D(&histos[0])
-			if err != nil {
-				panic(err)
-			}
-			hplot1, err := hplot.NewH1D(&histos[1])
-			if err != nil {
-				panic(err)
-			}
-			hplot2, err := hplot.NewH1D(&histos[2])
-			if err != nil {
-				panic(err)
-			}
-			hplot3, err := hplot.NewH1D(&histos[3])
-			if err != nil {
-				panic(err)
-			}
+			hplot0 := hplot.NewH1D(&histos[0])
+			hplot1 := hplot.NewH1D(&histos[1])
+			hplot2 := hplot.NewH1D(&histos[2])
+			hplot3 := hplot.NewH1D(&histos[3])
 			hplot0.Color = color.RGBA{R: 238, G: 46, B: 47, A: 255}  // red
 			hplot1.Color = color.RGBA{R: 0, G: 140, B: 72, A: 255}   // green
 			hplot2.Color = color.RGBA{R: 24, G: 90, B: 169, A: 255}  // blue
@@ -430,22 +376,10 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 					histosref[3].Scale(histos[3].Integral() / histosref[3].Integral())
 				}
 
-				hplot0ref, err := hplot.NewH1D(&histosref[0])
-				if err != nil {
-					panic(err)
-				}
-				hplot1ref, err := hplot.NewH1D(&histosref[1])
-				if err != nil {
-					panic(err)
-				}
-				hplot2ref, err := hplot.NewH1D(&histosref[2])
-				if err != nil {
-					panic(err)
-				}
-				hplot3ref, err := hplot.NewH1D(&histosref[3])
-				if err != nil {
-					panic(err)
-				}
+				hplot0ref := hplot.NewH1D(&histosref[0])
+				hplot1ref := hplot.NewH1D(&histosref[1])
+				hplot2ref := hplot.NewH1D(&histosref[2])
+				hplot3ref := hplot.NewH1D(&histosref[3])
 				hplot0ref.Color = color.RGBA{R: 238, G: 46, B: 47, A: 255}  // red
 				hplot1ref.Color = color.RGBA{R: 0, G: 140, B: 72, A: 255}   // green
 				hplot2ref.Color = color.RGBA{R: 24, G: 90, B: 169, A: 255}  // blue
@@ -485,10 +419,7 @@ func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar, whichH dpgadetector.He
 }
 
 func (d *DQPlot) MakeHVTiledPlot() *hplot.TiledPlot {
-	tp, err := hplot.NewTiledPlot(draw.Tiles{Cols: 2, Rows: 6, PadX: 3.5 * vg.Centimeter, PadY: 1 * vg.Centimeter})
-	if err != nil {
-		panic(err)
-	}
+	tp := hplot.NewTiledPlot(draw.Tiles{Cols: 2, Rows: 6, PadX: 3.5 * vg.Centimeter, PadY: 1 * vg.Centimeter})
 	//var TextsAndXYs []interface{}
 
 	//color := color.RGBA{R: 224, G: 242, B: 247, A: 255}
@@ -654,18 +585,12 @@ func (d *DQPlot) MakeHitQuartetsPlot() *plot.Plot {
 }
 
 func (d *DQPlot) MakeDeltaT30Plot() *hplot.Plot {
-	p, err := hplot.New()
-	if err != nil {
-		panic(err)
-	}
+	p := hplot.New()
 	p.X.Label.Text = "Delta T30 (ns)"
 	p.Y.Label.Text = "No entries"
 	p.X.Tick.Marker = &hplot.FreqTicks{N: 61, Freq: 5}
-	hp, err := hplot.NewH1D(d.DeltaT30)
+	hp := hplot.NewH1D(d.DeltaT30)
 	hp.FillColor = color.RGBA{R: 102, G: 102, B: 255, A: 255}
-	if err != nil {
-		panic(err)
-	}
 	p.Add(hp)
 	p.Add(hplot.NewGrid())
 	p.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
@@ -673,18 +598,12 @@ func (d *DQPlot) MakeDeltaT30Plot() *hplot.Plot {
 }
 
 func (d *DQPlot) MakeLORMultPlot() *hplot.Plot {
-	p, err := hplot.New()
-	if err != nil {
-		panic(err)
-	}
+	p := hplot.New()
 	p.X.Label.Text = "Number of LORs"
 	p.Y.Label.Text = "No entries"
 	p.X.Tick.Marker = &hplot.FreqTicks{N: 21, Freq: 2}
-	hp, err := hplot.NewH1D(d.HLORMult)
+	hp := hplot.NewH1D(d.HLORMult)
 	hp.FillColor = color.RGBA{R: 255, G: 255, B: 51, A: 255}
-	if err != nil {
-		panic(err)
-	}
 	p.Add(hp)
 	p.Add(hplot.NewGrid())
 	p.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}
@@ -692,19 +611,13 @@ func (d *DQPlot) MakeLORMultPlot() *hplot.Plot {
 }
 
 func (d *DQPlot) MakeEnergyPlot() *hplot.Plot {
-	p, err := hplot.New()
-	if err != nil {
-		panic(err)
-	}
+	p := hplot.New()
 	p.X.Label.Text = "Energy (keV)"
 	p.Y.Label.Text = "No entries"
 	p.X.Tick.Marker = &hplot.FreqTicks{N: 9, Freq: 1}
 	var hp *hplot.H1D
-	hp, err = hplot.NewH1D(d.HEnergyAll)
+	hp = hplot.NewH1D(d.HEnergyAll)
 	hp.FillColor = color.RGBA{R: 77, G: 255, B: 136, A: 255}
-	if err != nil {
-		panic(err)
-	}
 	p.Add(hp)
 	p.Add(hplot.NewGrid())
 	p.BackgroundColor = color.RGBA{R: 230, G: 247, B: 255, A: 255}

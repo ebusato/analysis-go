@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
@@ -57,15 +56,15 @@ func main() {
 			if nFrames%1 == 0 {
 				fmt.Printf("frame %v\n", nFrames)
 			}
-			frame, err := r.Frame()
-			if err != nil {
-				if err != io.EOF {
-					log.Fatalf("error loading frame: %v\n", err)
-				}
-				break
-			}
+			// 			frame, err := r.Frame()
+			// 			if err != nil {
+			// 				if err != io.EOF {
+			// 					log.Fatalf("error loading frame: %v\n", err)
+			// 				}
+			// 				break
+			// 			}
 
-			err = w.Frame(frame)
+			// 			err = w.Frame(frame)
 			if err != nil {
 				log.Fatalf("error writing frame: %v\n", err)
 			}
@@ -80,8 +79,8 @@ func main() {
 		}
 		defer conn.Close()
 
-		AMCFrameCounterPrev := uint32(0)
-		ASMFrameCounterPrev := uint64(0)
+		// 		AMCFrameCounterPrev := uint32(0)
+		// 		ASMFrameCounterPrev := uint64(0)
 
 		go readIncomingMessages(conn)
 
@@ -94,32 +93,32 @@ func main() {
 				if nFrames%1000 == 0 {
 					fmt.Printf("frame %v\n", nFrames)
 				}
-				frame, err := r.Frame()
-				if nFrames > 0 {
-					if frame.AMCFrameCounter != AMCFrameCounterPrev+1 {
-						fmt.Printf("frame.Block.AMCFrameCounter != AMCFrameCounterPrev + 1\n")
-					}
-					if frame.ASMFrameCounter != ASMFrameCounterPrev+1 {
-						fmt.Printf("frame.Block.ASMFrameCounter != ASMFrameCounterPrev + 1\n")
-					}
-				}
-				AMCFrameCounterPrev = frame.AMCFrameCounter
-				ASMFrameCounterPrev = frame.ASMFrameCounter
-				nFrames++
-				// 			fmt.Println("AMCFrameCounter =", frame.Block.AMCFrameCounter)
-				// 			fmt.Println("ASMFrameCounter =", frame.Block.ASMFrameCounter)
-
-				if err != nil {
-					if err != io.EOF {
-						log.Fatalf("error loading frame: %v\n", err)
-					}
-					break
-				}
-
-				// These two lines are slower than the TCP equivalent
-				//    -> try to understand why
-				udpBuf := frame.Buffer()
-				conn.Write(udpBuf)
+				// 				frame, err := r.Frame()
+				// 				if nFrames > 0 {
+				// 					if frame.AMCFrameCounter != AMCFrameCounterPrev+1 {
+				// 						fmt.Printf("frame.Block.AMCFrameCounter != AMCFrameCounterPrev + 1\n")
+				// 					}
+				// 					if frame.ASMFrameCounter != ASMFrameCounterPrev+1 {
+				// 						fmt.Printf("frame.Block.ASMFrameCounter != ASMFrameCounterPrev + 1\n")
+				// 					}
+				// 				}
+				// 				AMCFrameCounterPrev = frame.AMCFrameCounter
+				// 				ASMFrameCounterPrev = frame.ASMFrameCounter
+				// 				nFrames++
+				// 				// 			fmt.Println("AMCFrameCounter =", frame.Block.AMCFrameCounter)
+				// 				// 			fmt.Println("ASMFrameCounter =", frame.Block.ASMFrameCounter)
+				//
+				// 				if err != nil {
+				// 					if err != io.EOF {
+				// 						log.Fatalf("error loading frame: %v\n", err)
+				// 					}
+				// 					break
+				// 				}
+				//
+				// 				// These two lines are slower than the TCP equivalent
+				// 				//    -> try to understand why
+				// 				udpBuf := frame.Buffer()
+				// 				conn.Write(udpBuf)
 
 				//time.Sleep(100000 * time.Microsecond)
 			}

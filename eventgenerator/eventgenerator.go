@@ -6,12 +6,12 @@ import (
 	"math"
 	"sort"
 
-	"github.com/go-hep/hbook"
-	"github.com/go-hep/hplot"
-	"github.com/gonum/plot"
-	"github.com/gonum/plot/plotter"
-	"github.com/gonum/plot/plotutil"
-	"github.com/gonum/plot/vg"
+	"go-hep.org/x/hep/hbook"
+	"go-hep.org/x/hep/hplot"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/plotutil"
+	"gonum.org/v1/plot/vg"
 	"github.com/gonum/stat/distuv"
 )
 
