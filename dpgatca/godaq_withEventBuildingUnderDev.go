@@ -1,3 +1,4 @@
+
 // Remains to be done:
 //   - manage runs.csv and runs_test.csv
 //   - add header to binary files and code that fills and updates it properly on godaq side
@@ -5,8 +6,9 @@
 //   - reintroduce in a proper way user commands to pause/resume/stop run and monitoring
 //   - add creation of root tree, as in dpga/godaq
 
+/*
 package main
-
+ 
 import (
 	"bufio"
 	"encoding/binary"
@@ -821,3 +823,4 @@ func reconstructEvent(r *rw.Reader) {
 		}{frameSlice.float64, evt}
 	}
 }
+*/
