@@ -231,10 +231,7 @@ func main() {
 	}
 
 	iEvent := uint(0)
-	// 	go control(terminateStream, terminateRun)
-	// 	go stream(terminateStream, r, w, &iEvent, &wg)
-	// 	go command(terminateRun, pauseRun)
-	//go control()
+
 	var currentRunNumber uint32
 	go stream(currentRunNumber, r, &iEvent, &wg)
 	go command()
@@ -256,13 +253,6 @@ func webserver() {
 		log.Fatal(err)
 	}
 }
-
-// func control(terminateStream chan bool, terminateRun chan bool) {
-// func control() {
-// 	<-terminateRun
-// 	fmt.Printf("command is ended, terminating stream.\n")
-// 	terminateStream <- true
-// }
 
 // func command(terminateRun, pauseRun chan bool) {
 func command() {
@@ -294,6 +284,7 @@ func command() {
 
 func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 	noSamplesPulse := int(pulse.NoSamples())
+	fmt.Println("Nosamples = ", noSamplesPulse)
 	data := make([]XY, noSamplesPulse/sampFreq+1)
 	if noSamplesPulse == 0 {
 		return data
@@ -363,6 +354,7 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 					fmt.Printf("event %v\n", *iEvent)
 				}
 				event, status := r.ReadNextEvent()
+				event.Print(true, true)
 				//fmt.Println("counters:", event.Counters)
 				if status == false {
 					panic("error: status is false\n")
@@ -505,7 +497,7 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 								EvtID:                 event.ID,
 								Time:                  time,
 								Counters:              event.Counters,
-								TimeStamp:             uint64(event.Counters[3])<<32 | uint64(event.Counters[2]),
+								TimeStamp:             0,
 								MonBufSize:            len(datac),
 								Freq:                  freq,
 								Qs:                    qs,

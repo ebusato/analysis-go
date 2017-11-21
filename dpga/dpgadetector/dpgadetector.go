@@ -393,6 +393,28 @@ func FEIdAndChanIdToQuartetAbsIdx60(FEId uint16, ChanId uint16, throwErr bool) u
 	switch FEId {
 	case 0x10:
 		FEIdNew = 0
+	case 0x11:
+		FEIdNew = 1
+	case 0x12:
+		FEIdNew = 2
+	case 0x13:
+		FEIdNew = 3
+	case 0x14:
+		FEIdNew = 4
+	case 0x15:
+		FEIdNew = 5
+	case 0x16:
+		FEIdNew = 6
+	case 0x17:
+		FEIdNew = 7
+	case 0x18:
+		FEIdNew = 8
+	case 0x19:
+		FEIdNew = 9
+	case 0x1a:
+		FEIdNew = 10
+	case 0x1b:
+		FEIdNew = 11
 	case 0x1e:
 		FEIdNew = 0
 	default:

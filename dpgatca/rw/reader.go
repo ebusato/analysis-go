@@ -4,8 +4,11 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 )
 
 type ReadMode byte
@@ -25,15 +28,15 @@ type Reader struct {
 	ReadMode         ReadMode
 	UDPHalfDRSBuffer []byte // relevant only when reading from UDP with packet = half DRS
 
-	evtIDPrevFrame    uint32
+	IDPrevFrame       uint32
 	firstFrameOfEvent *Frame
 }
 
 // NewReader returns a new ASM stream in read mode
 func NewReader(r io.Reader) (*Reader, error) {
 	rr := &Reader{
-		r: r,
-		//evtIDPrevFrame: 0,
+		r:                r,
+		IDPrevFrame:      0,
 		SigThreshold:     800,
 		ReadMode:         Default,
 		UDPHalfDRSBuffer: make([]byte, 8270), //8238),
@@ -160,6 +163,7 @@ func (r *Reader) readFrameHeader(f *FrameHeader) {
 	///////////////////////////////////////////////////////////////////////
 
 	f.FEId = f.FEIdK30 & 0x7f
+	f.CptTriggerThor = (uint32(f.CptTriggerThorMsb) << 16) | uint32(f.CptTriggerThorLsb)
 }
 
 func (r *Reader) readFrameData(data *HalfDRSData) {
@@ -187,6 +191,7 @@ func (r *Reader) readFrameData(data *HalfDRSData) {
 		r.read(&chanData.Amplitudes, binary.BigEndian)
 
 		chanData.Channel = chanData.FirstChanWord & 0x7f
+		chanData.SRout = chanData.SecondChanWord
 	}
 }
 
@@ -217,6 +222,8 @@ func (r *Reader) Frame() (*Frame, error) {
 		}
 		f.SetDataSliceLen(int(f.Header.NoSamples))
 		r.readFrameData(&f.Data)
+		f.QuartetAbsIdx72 = uint8(f.Data.Data[0].Channel / 4) // to be changed (add FEId into calculation)
+		f.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(f.Header.FEId, f.Data.Data[0].Channel/4, true)
 		r.readFrameTrailer(&f.Trailer)
 		r.err = f.Trailer.Integrity()
 		if r.err != nil {
@@ -268,94 +275,111 @@ func (r *Reader) Frame() (*Frame, error) {
 	return f, r.err
 }
 
-func (r *Reader) ReadNextEvent() (*event.Event, bool) {
-	/*
-		event := event.NewEvent(dpgadetector.Det.NoClusters())
-		firstPass := true
-		for {
-			var frame *Frame = nil
-			if r.firstFrameOfEvent != nil { // enter here only for first frame of event
-				frame = r.firstFrameOfEvent
-				if r.err != nil {
-					log.Println("error not nil", r.err)
-					if r.err == io.EOF {
-						return nil, false
-					}
-				}
-				r.firstFrameOfEvent = nil
-			} else { // enter here for all frames but the first one of the event
-				frametemp, err := r.Frame()
-				if err != nil && err != io.EOF {
-					log.Fatal("error not nil", err)
-				}
-				frame = frametemp
-			}
-			var evtID uint32 = (uint32(frame.Header.CptTriggerThorMsb) << 16) | uint32(frame.Header.CptTriggerThorLsb)
-			//fmt.Println("evtID =", evtID)
-			if firstPass || evtID == r.evtIDPrevFrame { // fill event
-				if firstPass {
-					event.ID = uint(evtID)
-				}
-				firstPass = false
-				fifoID144 := uint16(frame.Block.ID)
+func MakePulse(c *ChanData, quartetAbsIdx72 uint8, sigThreshold uint) *pulse.Pulse {
+	iChannelAbs288 := uint16(c.Channel) // to be changed (add FEId into calculation)
+	if iChannelAbs288 >= 288 {
+		panic("reader: iChannelAbs288 >= 288")
+	}
+	detChannel := dpgadetector.Det.ChannelFromIdAbs288(iChannelAbs288)
+	mypulse := pulse.NewPulse(detChannel)
+	mypulse.SRout = uint16(c.SRout)
+	iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx72ToRelIdx(quartetAbsIdx72)
+	iChannel := uint8(c.Channel % 4)
+	for i := range c.Amplitudes {
+		ampl := float64(c.Amplitudes[i])
+		sample := pulse.NewSample(ampl, uint16(i), float64(i)*dpgadetector.Det.SamplingFreq())
+		mypulse.AddSample(sample, dpgadetector.Det.Capacitor(iHemi, iASM, iDRS, iQuartet, iChannel, sample.CapaIndex(mypulse.SRout)), float64(sigThreshold))
+	}
+	return mypulse
+}
 
-				////////////////////////////////////////////////////////
-				// determine typeOfFrame
+func MakePulses(f *Frame, sigThreshold uint) []*pulse.Pulse {
+	var pulses []*pulse.Pulse
+	for i := range f.Data.Data {
+		data := &f.Data.Data[i]
+		pulses = append(pulses, MakePulse(data, f.QuartetAbsIdx72, sigThreshold))
+	}
+	return pulses
+}
+
+func (r *Reader) ReadNextEvent() (*event.Event, bool) {
+	event := event.NewEvent(dpgadetector.Det.NoClusters())
+	firstPass := true
+	for {
+		var frame *Frame = nil
+		if r.firstFrameOfEvent != nil { // enter here only for first frame of event
+			frame = r.firstFrameOfEvent
+			if r.err != nil {
+				log.Println("error not nil", r.err)
+				if r.err == io.EOF {
+					return nil, false
+				}
+			}
+			r.firstFrameOfEvent = nil
+		} else { // enter here for all frames but the first one of the event
+			frametemp, err := r.Frame()
+			if err != nil && err != io.EOF {
+				log.Fatal("error not nil", err)
+			}
+			frame = frametemp
+		}
+		var ID uint32 = frame.Header.CptTriggerThor
+		fmt.Println("ID =", ID)
+		if firstPass || ID == r.IDPrevFrame { // fill event
+			if firstPass {
+				event.ID = uint(ID)
+			}
+			firstPass = false
+
+			////////////////////////////////////////////////////////
+			// determine typeOfFrame
+			/*
 				switch fifoID144 % 2 {
 				case 0:
 					frame.typeOfFrame = FirstFrameOfCluster
 				case 1:
 					frame.typeOfFrame = SecondFrameOfCluster
 				}
+			*/
+			////////////////////////////////////////////////////////
+
+			pulses := MakePulses(frame, r.SigThreshold)
+
+			if frame.QuartetAbsIdx72%6 == 5 {
+				iClusterWoData := 0 // to be changed to accept mainy ASMs
+				//fmt.Println(iClusterWoData)
+				event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
+
 				////////////////////////////////////////////////////////
-
-				pulse0, pulse1 := MakePulses(frame, r.SigThreshold)
-
-				i := fifoID144 % 12
-				if i == 10 || i == 11 {
-					iChannelWoData := i - 10
-					iChannelWoData += 2 * (fifoID144 / 12)
-					iClusterWoData := iChannelWoData / 2
-					//fmt.Println(fifoID144, iChannelWoData, iClusterWoData)
-					event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
-
-					////////////////////////////////////////////////////////
-					// Put pulses in event
-					switch frame.typeOfFrame {
-					case FirstFrameOfCluster:
-						event.ClustersWoData[iClusterWoData].Pulses[0] = *pulse0
-						event.ClustersWoData[iClusterWoData].Pulses[1] = *pulse1
-					case SecondFrameOfCluster:
-						event.ClustersWoData[iClusterWoData].Pulses[2] = *pulse0
-						event.ClustersWoData[iClusterWoData].Pulses[3] = *pulse1
-					}
-					////////////////////////////////////////////////////////
-				} else {
-					iCluster := dpgadetector.FifoID144ToQuartetAbsIdx60(fifoID144, true)
-					if iCluster >= 60 {
-						log.Fatalf("error ! iCluster=%v (>= 60)\n", iCluster)
-					}
-					//fmt.Printf("fifoID144=%v, iCluster = %v\n", fifoID144, iCluster)
-					event.Clusters[iCluster].ID = iCluster
-
-					////////////////////////////////////////////////////////
-					// Put pulses in event
-					switch frame.typeOfFrame {
-					case FirstFrameOfCluster:
-						event.Clusters[iCluster].Pulses[0] = *pulse0
-						event.Clusters[iCluster].Pulses[1] = *pulse1
-					case SecondFrameOfCluster:
-						event.Clusters[iCluster].Pulses[2] = *pulse0
-						event.Clusters[iCluster].Pulses[3] = *pulse1
-					}
-					////////////////////////////////////////////////////////
+				// Put pulses in event
+				event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]
+				event.ClustersWoData[iClusterWoData].Pulses[1] = *pulses[1]
+				event.ClustersWoData[iClusterWoData].Pulses[2] = *pulses[2]
+				event.ClustersWoData[iClusterWoData].Pulses[3] = *pulses[3]
+				////////////////////////////////////////////////////////
+			} else {
+				iCluster := frame.QuartetAbsIdx60
+				if iCluster >= 60 {
+					log.Fatalf("error ! iCluster=%v (>= 60)\n", iCluster)
 				}
-			} else { // switched to next event
-				r.firstFrameOfEvent = frame
-				return event, true
+				fmt.Printf("iCluster = %v\n", iCluster)
+				event.Clusters[iCluster].ID = iCluster
+
+				////////////////////////////////////////////////////////
+				// Put pulses in event
+				event.Clusters[iCluster].Pulses[0] = *pulses[0]
+				event.Clusters[iCluster].Pulses[1] = *pulses[1]
+				event.Clusters[iCluster].Pulses[2] = *pulses[2]
+				event.Clusters[iCluster].Pulses[3] = *pulses[3]
+				////////////////////////////////////////////////////////
 			}
-			r.evtIDPrevFrame = evtID
-		}*/
+		} else { // switched to next event
+			r.firstFrameOfEvent = frame
+			return event, true
+		}
+		r.IDPrevFrame = ID
+	}
+	log.Fatalf("error ! you should never end up here")
 	return nil, false
 }
 

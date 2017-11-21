@@ -146,7 +146,7 @@ func (e *Event) NoClusters() int {
 
 func (e *Event) Print(printClusters bool, printClusterDetails bool) {
 	fmt.Println("\n-> Printing event", e.ID)
-	fmt.Println("    o number of clusters =", len(e.Clusters))
+	fmt.Println("    o Number of clusters =", len(e.Clusters))
 	fmt.Println("    o ID =", e.ID)
 	fmt.Println("    o TimeStamp =", e.TimeStamp)
 	fmt.Println("    o UDPPayloadSizes =", e.UDPPayloadSizes)

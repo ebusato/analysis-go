@@ -89,7 +89,8 @@ type FrameHeader struct {
 	NoSamples               uint16
 
 	// derived quantities
-	FEId uint16
+	FEId           uint16
+	CptTriggerThor uint32
 }
 
 func (f *FrameHeader) Print() {
@@ -146,6 +147,7 @@ type ChanData struct {
 
 	// Derived quantities
 	Channel uint16
+	SRout   uint16
 }
 
 func (c *ChanData) Print() {
@@ -209,7 +211,8 @@ type Frame struct {
 	ThorTrigTimeStamp    uint64
 	CptTriggerThor       uint32
 	CptTriggerASM        uint32
-	QuartetAbsIdx60      uint8
+	QuartetAbsIdx60      uint8 // one-to-one correspondance between frames and quartets in xTCA
+	QuartetAbsIdx72      uint8 // one-to-one correspondance between frames and quartets in xTCA
 
 	// Error handling
 	Err ErrorCode
