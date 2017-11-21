@@ -87,6 +87,9 @@ type FrameHeader struct {
 	CptTriggerAsmMsb        uint16
 	CptTriggerAsmLsb        uint16
 	NoSamples               uint16
+
+	// derived quantities
+	FEId uint16
 }
 
 func (f *FrameHeader) Print() {
@@ -146,7 +149,7 @@ type ChanData struct {
 }
 
 func (c *ChanData) Print() {
-	fmt.Printf("FirstChanWord = %x\n", c.FirstChanWord)
+	fmt.Printf("FirstChanWord = %x (channel = %v)\n", c.FirstChanWord, c.Channel)
 	fmt.Printf("SecondChanWord = %x\n", c.SecondChanWord)
 	fmt.Printf("Amplitudes = ")
 	for i := range c.Amplitudes {
@@ -199,7 +202,6 @@ type Frame struct {
 
 	// Derived quantities
 	AMCFrameCounter      uint32
-	FrontEndId           uint16
 	ASMFrameCounter      uint64
 	TimeStampASM         uint64
 	TimeStampTrigThorASM uint64
