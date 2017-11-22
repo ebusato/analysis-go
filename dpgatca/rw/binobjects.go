@@ -146,7 +146,7 @@ type ChanData struct {
 	Amplitudes     []uint16
 
 	// Derived quantities
-	Channel uint16
+	Channel uint16 // 0 -> 23
 	SRout   uint16
 }
 

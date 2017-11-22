@@ -222,8 +222,9 @@ func (r *Reader) Frame() (*Frame, error) {
 		}
 		f.SetDataSliceLen(int(f.Header.NoSamples))
 		r.readFrameData(&f.Data)
-		f.QuartetAbsIdx72 = uint8(f.Data.Data[0].Channel / 4) // to be changed (add FEId into calculation)
-		f.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(f.Header.FEId, f.Data.Data[0].Channel/4, true)
+		fmt.Println("Channels = ", f.Data.Data[0].Channel, f.Data.Data[1].Channel, f.Data.Data[2].Channel, f.Data.Data[3].Channel)
+		f.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(f.Header.FEId, f.Data.Data[0].Channel, false)
+		f.QuartetAbsIdx72 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx72(f.Header.FEId, f.Data.Data[0].Channel)
 		r.readFrameTrailer(&f.Trailer)
 		r.err = f.Trailer.Integrity()
 		if r.err != nil {
@@ -324,7 +325,8 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			frame = frametemp
 		}
 		var ID uint32 = frame.Header.CptTriggerThor
-		fmt.Println("ID =", ID)
+		fmt.Println("CptTriggerThor =", ID)
+		fmt.Println("frame.QuartetAbsIdx72 =", frame.QuartetAbsIdx72)
 		if firstPass || ID == r.IDPrevFrame { // fill event
 			if firstPass {
 				event.ID = uint(ID)
@@ -347,9 +349,8 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 
 			if frame.QuartetAbsIdx72%6 == 5 {
 				iClusterWoData := 0 // to be changed to accept mainy ASMs
-				//fmt.Println(iClusterWoData)
+				fmt.Printf("iClusterWoData = %v\n", iClusterWoData)
 				event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
-
 				////////////////////////////////////////////////////////
 				// Put pulses in event
 				event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]

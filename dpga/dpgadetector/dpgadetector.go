@@ -425,6 +425,46 @@ func FEIdAndChanIdToQuartetAbsIdx60(FEId uint16, ChanId uint16, throwErr bool) u
 	return FifoID144ToQuartetAbsIdx60(FifoId144, throwErr)
 }
 
+// FEIdAndChanIdToQuartetAbsIdx72 return the quartet absolute Id (0->71)
+// from an input front end (ASM) board id and a channel Id (0 -> 23)
+// There is much in common with FEIdAndChanIdToQuartetAbsIdx60 -> merge at some point
+func FEIdAndChanIdToQuartetAbsIdx72(FEId uint16, ChanId uint16) uint8 {
+	var FEIdNew uint16
+	switch FEId {
+	case 0x10:
+		FEIdNew = 0
+	case 0x11:
+		FEIdNew = 1
+	case 0x12:
+		FEIdNew = 2
+	case 0x13:
+		FEIdNew = 3
+	case 0x14:
+		FEIdNew = 4
+	case 0x15:
+		FEIdNew = 5
+	case 0x16:
+		FEIdNew = 6
+	case 0x17:
+		FEIdNew = 7
+	case 0x18:
+		FEIdNew = 8
+	case 0x19:
+		FEIdNew = 9
+	case 0x1a:
+		FEIdNew = 10
+	case 0x1b:
+		FEIdNew = 11
+	case 0x1e:
+		FEIdNew = 0
+	default:
+		panic("dpgadetector.FEIdAndChanIdToQuartetAbsIdx60: FEId not know")
+	}
+	ChanAbsIdx288 := FEIdNew*24 + ChanId
+	FifoId144 := ChannelAbsIdx288ToFifoID144(ChanAbsIdx288)
+	return FifoID144ToQuartetAbsIdx72(FifoId144)
+}
+
 func RelIdxToAbsIdx240(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {
 	// 	if iDRS == 2 && iQuartet == 1 {
 	// 		panic("dpgadetector: iDRS == 2 && iQuartet == 1")
