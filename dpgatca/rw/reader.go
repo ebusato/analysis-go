@@ -92,9 +92,9 @@ func (r *Reader) readU16(v *uint16, byteOrder binary.ByteOrder) {
 		return
 	}
 	*v = byteOrder.Uint16(buf[:])
-	if r.Debug {
-		fmt.Printf("word = %x\n", *v)
-	}
+	// 	if r.Debug {
+	// 		fmt.Printf("word = %x\n", *v)
+	// 	}
 }
 
 func (r *Reader) ReadU16(v *uint16, byteOrder binary.ByteOrder) {
@@ -210,7 +210,7 @@ func (r *Reader) readFrameTrailer(f *FrameTrailer) {
 func (r *Reader) Frame() (*Frame, error) {
 	f := &Frame{}
 	if r.Debug {
-		fmt.Printf("rw: start reading frame\n")
+		fmt.Printf("\nrw: start reading frame\n")
 	}
 	switch r.ReadMode {
 	case Default:
@@ -222,7 +222,7 @@ func (r *Reader) Frame() (*Frame, error) {
 		}
 		f.SetDataSliceLen(int(f.Header.NoSamples))
 		r.readFrameData(&f.Data)
-		fmt.Println("Channels = ", f.Data.Data[0].Channel, f.Data.Data[1].Channel, f.Data.Data[2].Channel, f.Data.Data[3].Channel)
+		// 		fmt.Println("Channels = ", f.Data.Data[0].Channel, f.Data.Data[1].Channel, f.Data.Data[2].Channel, f.Data.Data[3].Channel)
 		f.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(f.Header.FEId, f.Data.Data[0].Channel, false)
 		f.QuartetAbsIdx72 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx72(f.Header.FEId, f.Data.Data[0].Channel)
 		r.readFrameTrailer(&f.Trailer)
@@ -277,14 +277,15 @@ func (r *Reader) Frame() (*Frame, error) {
 }
 
 func MakePulse(c *ChanData, quartetAbsIdx72 uint8, sigThreshold uint) *pulse.Pulse {
-	iChannelAbs288 := uint16(c.Channel) // to be changed (add FEId into calculation)
+	iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx72ToRelIdx(quartetAbsIdx72)
+	_, iChannelAbs288 := dpgadetector.RelIdxToAbsIdx288(iHemi, iASM, iDRS, iQuartet, uint8(c.Channel)%4)
+	// 	fmt.Println("iChannelAbs288 =", iChannelAbs288)
 	if iChannelAbs288 >= 288 {
 		panic("reader: iChannelAbs288 >= 288")
 	}
 	detChannel := dpgadetector.Det.ChannelFromIdAbs288(iChannelAbs288)
 	mypulse := pulse.NewPulse(detChannel)
 	mypulse.SRout = uint16(c.SRout)
-	iHemi, iASM, iDRS, iQuartet := dpgadetector.QuartetAbsIdx72ToRelIdx(quartetAbsIdx72)
 	iChannel := uint8(c.Channel % 4)
 	for i := range c.Amplitudes {
 		ampl := float64(c.Amplitudes[i])
@@ -325,8 +326,8 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			frame = frametemp
 		}
 		var ID uint32 = frame.Header.CptTriggerThor
-		fmt.Println("CptTriggerThor =", ID)
-		fmt.Println("frame.QuartetAbsIdx72 =", frame.QuartetAbsIdx72)
+		// 		fmt.Println("CptTriggerThor =", ID)
+		// 		fmt.Println("frame.QuartetAbsIdx72 =", frame.QuartetAbsIdx72)
 		if firstPass || ID == r.IDPrevFrame { // fill event
 			if firstPass {
 				event.ID = uint(ID)
@@ -347,23 +348,12 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 
 			pulses := MakePulses(frame, r.SigThreshold)
 
-			if frame.QuartetAbsIdx72%6 == 5 {
-				iClusterWoData := 0 // to be changed to accept mainy ASMs
-				fmt.Printf("iClusterWoData = %v\n", iClusterWoData)
-				event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
-				////////////////////////////////////////////////////////
-				// Put pulses in event
-				event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]
-				event.ClustersWoData[iClusterWoData].Pulses[1] = *pulses[1]
-				event.ClustersWoData[iClusterWoData].Pulses[2] = *pulses[2]
-				event.ClustersWoData[iClusterWoData].Pulses[3] = *pulses[3]
-				////////////////////////////////////////////////////////
-			} else {
+			if frame.QuartetAbsIdx72%6 != 5 {
 				iCluster := frame.QuartetAbsIdx60
 				if iCluster >= 60 {
 					log.Fatalf("error ! iCluster=%v (>= 60)\n", iCluster)
 				}
-				fmt.Printf("iCluster = %v\n", iCluster)
+				// 				fmt.Printf("iCluster = %v\n", iCluster)
 				event.Clusters[iCluster].ID = iCluster
 
 				////////////////////////////////////////////////////////
@@ -372,6 +362,17 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 				event.Clusters[iCluster].Pulses[1] = *pulses[1]
 				event.Clusters[iCluster].Pulses[2] = *pulses[2]
 				event.Clusters[iCluster].Pulses[3] = *pulses[3]
+				////////////////////////////////////////////////////////
+			} else {
+				iClusterWoData := frame.QuartetAbsIdx72 / 6
+				// 				fmt.Printf("iClusterWoData = %v\n", iClusterWoData)
+				event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
+				////////////////////////////////////////////////////////
+				// Put pulses in event
+				event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]
+				event.ClustersWoData[iClusterWoData].Pulses[1] = *pulses[1]
+				event.ClustersWoData[iClusterWoData].Pulses[2] = *pulses[2]
+				event.ClustersWoData[iClusterWoData].Pulses[3] = *pulses[3]
 				////////////////////////////////////////////////////////
 			}
 		} else { // switched to next event

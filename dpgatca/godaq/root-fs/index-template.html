@@ -127,33 +127,6 @@
 			}
 		};
 
-		var dataMinReco3D = new vis.DataSet();
-		var optionsMinReco3D = {
-			width:  '600px',
-			height: '600px',
-			xLabel: "x (mm)",
-			yLabel: "y (mm)",
-			zLabel: "z (mm)",
-			xMin: -150,
-			xMax: 150,
-			yMin: -100,
-			yMax: 100,
-			zMin: -150,
-			zMax: 150,
-			dotSizeRatio: 0.005,
-			style: 'dot',
-			showPerspective: false,
-			showGrid: true,
-			keepAspectRatio: false,
-			legendLabel:'value',
-			verticalRatio: 0.8,
-			cameraPosition: {
-			horizontal: +0.54,
-			vertical: 0.5,
-			distance: 2
-			}
-		};
-		
 		window.onload = function() {
 			sock = new WebSocket("ws://{{.WebAd}}/data");
 			sock.onmessage = function(event) {

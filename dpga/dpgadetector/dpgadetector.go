@@ -386,6 +386,24 @@ func QuartetAbsIdx60ToLineAbsIdx12(iQuartet uint8) uint8 {
 	return iQuartet / 5
 }
 
+func RelIdxToAbsIdx240(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {
+	// 	if iDRS == 2 && iQuartet == 1 {
+	// 		panic("dpgadetector: iDRS == 2 && iQuartet == 1")
+	// 	}
+	iQuartetAbs = iQuartet + iHemi*30 + iASM*5 + iDRS*2
+	iChannelAbs = uint16(iQuartetAbs)*4 + uint16(iChannel)
+	return
+}
+
+func RelIdxToAbsIdx288(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {
+	// 	if iDRS == 2 && iQuartet == 1 {
+	// 		panic("dpgadetector: iDRS == 2 && iQuartet == 1")
+	// 	}
+	iQuartetAbs = iQuartet + iHemi*36 + iASM*6 + iDRS*2
+	iChannelAbs = uint16(iQuartetAbs)*4 + uint16(iChannel)
+	return
+}
+
 // FEIdAndChanIdToQuartetAbsIdx60 return the quartet absolute Id (0->59)
 // from an input front end (ASM) board id and a channel Id (0 -> 23)
 func FEIdAndChanIdToQuartetAbsIdx60(FEId uint16, ChanId uint16, throwErr bool) uint8 {
@@ -463,24 +481,6 @@ func FEIdAndChanIdToQuartetAbsIdx72(FEId uint16, ChanId uint16) uint8 {
 	ChanAbsIdx288 := FEIdNew*24 + ChanId
 	FifoId144 := ChannelAbsIdx288ToFifoID144(ChanAbsIdx288)
 	return FifoID144ToQuartetAbsIdx72(FifoId144)
-}
-
-func RelIdxToAbsIdx240(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {
-	// 	if iDRS == 2 && iQuartet == 1 {
-	// 		panic("dpgadetector: iDRS == 2 && iQuartet == 1")
-	// 	}
-	iQuartetAbs = iQuartet + iHemi*30 + iASM*5 + iDRS*2
-	iChannelAbs = uint16(iQuartetAbs)*4 + uint16(iChannel)
-	return
-}
-
-func RelIdxToAbsIdx288(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {
-	// 	if iDRS == 2 && iQuartet == 1 {
-	// 		panic("dpgadetector: iDRS == 2 && iQuartet == 1")
-	// 	}
-	iQuartetAbs = iQuartet + iHemi*36 + iASM*6 + iDRS*2
-	iChannelAbs = uint16(iQuartetAbs)*4 + uint16(iChannel)
-	return
 }
 
 type GeomCSV struct {

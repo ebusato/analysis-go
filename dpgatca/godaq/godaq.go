@@ -100,6 +100,7 @@ type Data struct {
 	TimeStamp             uint64         `json:"timestamp"`             // absolute timestamp from 64 MHz clock on Thor
 	MonBufSize            int            `json:"monbufsize"`            // monitoring channel buffer size
 	Freq                  float64        `json:"freq"`                  // number of events processed per second (64 bits)
+	UDPPayloadSizes       []int          `json:"udppayloadsizes"`       // UDP frame payload sizes in octets for all frames making events
 	Qs                    Quartets       `json:"quartets"`              // quartets (30689280 bits)
 	QsWoData              QuartetsWoData `json:"quartetswodata"`        // quartets without data
 	FreqH                 string         `json:"freqh"`                 // frequency histogram
@@ -113,6 +114,15 @@ type Data struct {
 	HitQuartets           string         `json:"hitquartets"`           // 2D plot displaying quartets that are hit for events with multiplicity=2
 	RFplotALaArnaud       string         `json:"rfplotalaarnaud"`       // 2D RF plot "a la Arnaud"
 	LORMult               string         `json:"lormult"`               // LOR multiplicity
+}
+
+func (d *Data) Print() {
+	fmt.Println("\n-> Printing monitoring data:")
+	fmt.Println("   o EvtID =", d.EvtID)
+	fmt.Println("   o Time =", d.Time)
+	fmt.Println("   o TimeStamp =", d.TimeStamp)
+	fmt.Println("   o Freq =", d.Freq)
+	fmt.Println("   o MonBufSize =", d.MonBufSize)
 }
 
 func TCPConn(p *string) *net.TCPConn {
@@ -284,7 +294,6 @@ func command() {
 
 func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 	noSamplesPulse := int(pulse.NoSamples())
-	fmt.Println("Nosamples = ", noSamplesPulse)
 	data := make([]XY, noSamplesPulse/sampFreq+1)
 	if noSamplesPulse == 0 {
 		return data
@@ -353,15 +362,14 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 				if *iEvent%*evtFreq == 0 {
 					fmt.Printf("event %v\n", *iEvent)
 				}
+				// 				r.Debug = true
 				event, status := r.ReadNextEvent()
-				event.Print(true, true)
-				//fmt.Println("counters:", event.Counters)
 				if status == false {
 					panic("error: status is false\n")
 				}
 				switch event.IsCorrupted {
 				case false:
-					//event.Print(true, false)
+					// 					event.Print(true, false)
 					noEventsForMon++
 					////////////////////////////////////////////////////////////////////////////////////////////
 					// Monitoring
@@ -493,13 +501,14 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 							// 							if event.Counters[0] != 0 {
 							// 								fmt.Println(event.Counters[4], event.Counters[0], uint64(event.Counters[4])*uint64(64000000)/uint64(event.Counters[0]))
 							// 							}
-							datac <- Data{
+							dataToMonitor := Data{
 								EvtID:                 event.ID,
 								Time:                  time,
 								Counters:              event.Counters,
 								TimeStamp:             0,
 								MonBufSize:            len(datac),
 								Freq:                  freq,
+								UDPPayloadSizes:       make([]int, 0),
 								Qs:                    qs,
 								QsWoData:              qsWoData,
 								FreqH:                 freqhsvg,
@@ -513,6 +522,8 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 								RFplotALaArnaud:       RFplotALaArnaudsvg,
 								LORMult:               LORMultsvg,
 							}
+							dataToMonitor.Print()
+							datac <- dataToMonitor
 							noEventsForMon = 0
 						}
 					}
