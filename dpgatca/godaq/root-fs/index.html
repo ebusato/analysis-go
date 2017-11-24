@@ -30,9 +30,7 @@
 		
 		var monbufsizeplot = new plot("Monitoring buffer size", [], 'blue')
 		
-		var noframesplot = new plot("No frames", [], 'green')
-		
-		var udppayloadsizesplot = new plot("UDP payload (octets)", [], 'green')
+		var nopacketspereventplot = new plot("No packets per event", [], 'green')
 		
 		var multplot = ""
 		var freqhplot = ""
@@ -89,12 +87,9 @@
 			var bufsize = $.plot("#my-monbufsize-plot", [monbufsizeplot], opts);
 			bufsize.setupGrid(); // needed as x-axis changes
 			bufsize.draw();
-			var noframes = $.plot("#my-noframes-plot", [noframesplot], opts);
-			noframes.setupGrid(); // needed as x-axis changes
-			noframes.draw();
-			var udppayloadsizes = $.plot("#my-udppayloadsizes-plot", [udppayloadsizesplot], opts);
-			udppayloadsizes.setupGrid(); // needed as x-axis changes
-			udppayloadsizes.draw();
+			var nopacketsperevent = $.plot("#my-nopacketsperevent-plot", [nopacketspereventplot], opts);
+			nopacketsperevent.setupGrid(); // needed as x-axis changes
+			nopacketsperevent.draw();
 			var p0 = document.getElementById("my-mult-plot");
 			p0.innerHTML = multplot;
 			var p1 = document.getElementById("my-freqh-plot");
@@ -135,10 +130,7 @@
 				if (data.freq != 0) {
 					freqplot.data.push([data.evt, data.freq])
 					monbufsizeplot.data.push([data.evt, data.monbufsize])
-					noframesplot.data.push([data.evt, data.udppayloadsizes.length])
-					for (var iframe = 0; iframe < data.udppayloadsizes.length; iframe += 1) {
-						udppayloadsizesplot.data.push([data.evt + iframe/data.udppayloadsizes.length, data.udppayloadsizes[iframe]])
-					}
+					nopacketspereventplot.data.push([data.evt, data.nopacketsperevent])
 				}
 				multplot = data.mult
 				freqhplot = data.freqh;
@@ -210,10 +202,7 @@
 				<div id="my-monbufsize-plot" class="my-plot-stylefreq"></div>
 			</td>
 			<td>
-				<div id="my-noframes-plot" class="my-plot-stylefreq"></div>
-			</td>
-			<td>
-				<div id="my-udppayloadsizes-plot" class="my-plot-stylefreq"></div>
+				<div id="my-nopacketsperevent-plot" class="my-plot-stylefreq"></div>
 			</td>
 			</tr>
 			</table>

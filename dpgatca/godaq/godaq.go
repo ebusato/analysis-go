@@ -100,7 +100,7 @@ type Data struct {
 	TimeStamp             uint64         `json:"timestamp"`             // absolute timestamp from 64 MHz clock on Thor
 	MonBufSize            int            `json:"monbufsize"`            // monitoring channel buffer size
 	Freq                  float64        `json:"freq"`                  // number of events processed per second (64 bits)
-	UDPPayloadSizes       []int          `json:"udppayloadsizes"`       // UDP frame payload sizes in octets for all frames making events
+	NoPacketsPerEvent     int            `json:"nopacketsperevent"`     // number of packets per event
 	Qs                    Quartets       `json:"quartets"`              // quartets (30689280 bits)
 	QsWoData              QuartetsWoData `json:"quartetswodata"`        // quartets without data
 	FreqH                 string         `json:"freqh"`                 // frequency histogram
@@ -173,7 +173,7 @@ func main() {
 		//for i := 0; i < 4; i++ {
 		//r, err := rw.NewReader(bufio.NewReader(tcp))
 	*/
-	inFileName := "/home/ebusato/Travail/Imaging/DPGA/Soft/FirmwareTests/ServeurUdp/datas/MyFile_eno1@0_0.bin"
+	inFileName := "/home/ebusato/Travail/Imaging/DPGA/Soft/FirmwareTests/datas/MyFile_eno1@2_0.bin"
 	// 	outFileName := strings.Replace(inFileName, ".bin", "_out.bin", 1)
 
 	// Reader
@@ -508,7 +508,7 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 								TimeStamp:             0,
 								MonBufSize:            len(datac),
 								Freq:                  freq,
-								UDPPayloadSizes:       make([]int, 0),
+								NoPacketsPerEvent:     int(event.NoFrames),
 								Qs:                    qs,
 								QsWoData:              qsWoData,
 								FreqH:                 freqhsvg,
@@ -522,7 +522,7 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 								RFplotALaArnaud:       RFplotALaArnaudsvg,
 								LORMult:               LORMultsvg,
 							}
-							dataToMonitor.Print()
+							//dataToMonitor.Print()
 							datac <- dataToMonitor
 							noEventsForMon = 0
 						}

@@ -215,6 +215,7 @@ func (r *Reader) Frame() (*Frame, error) {
 	switch r.ReadMode {
 	case Default:
 		r.readFrameHeader(&f.Header)
+		f.Header.Print()
 		r.err = f.Header.Integrity()
 		if r.err != nil {
 			f.Header.Print()
@@ -231,19 +232,6 @@ func (r *Reader) Frame() (*Frame, error) {
 			f.Trailer.Print()
 			panic(r.err)
 		}
-		// 		r.err = f.IntegrityData()
-		// 		if r.err != nil {
-		// 			fmt.Println("IntegrityData check failed")
-		// 			f.Print("short")
-		// 			return nil, nil
-		// 		}
-		// 		r.readTrailer(f)
-		// 		r.err = f.IntegrityTrailer()
-		// 		if r.err != nil {
-		// 			fmt.Println("IntegrityTrailer check failed")
-		// 			f.Print("medium")
-		// 			return nil, nil
-		// 		}
 		/*case UDPHalfDRS:
 		for i := range r.UDPHalfDRSBuffer {
 			r.UDPHalfDRSBuffer[i] = 0
@@ -333,7 +321,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 				event.ID = uint(ID)
 			}
 			firstPass = false
-
+			event.NoFrames++
 			////////////////////////////////////////////////////////
 			// determine typeOfFrame
 			/*

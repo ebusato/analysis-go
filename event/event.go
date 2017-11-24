@@ -73,14 +73,14 @@ func (l *LOR) CalcTRF(timesRF []float64) {
 }
 
 type Event struct {
-	Clusters        []pulse.Cluster
-	ClustersWoData  [12]pulse.Cluster // These are the 12 clusters corresponding to the 12*4 channels unused for data at the end of each ASM board
-	ID              uint
-	TimeStamp       uint64
-	Counters        []uint32
-	LORs            []LOR
-	IsCorrupted     bool
-	UDPPayloadSizes []int // number of octets for each frame making this event (FrameSize has NoFrames components)
+	Clusters       []pulse.Cluster
+	ClustersWoData [12]pulse.Cluster // These are the 12 clusters corresponding to the 12*4 channels unused for data at the end of each ASM board
+	ID             uint
+	TimeStamp      uint64
+	NoFrames       uint8
+	Counters       []uint32
+	LORs           []LOR
+	IsCorrupted    bool
 }
 
 func NewEvent(noClusters uint8) *Event {
@@ -88,6 +88,7 @@ func NewEvent(noClusters uint8) *Event {
 		Clusters:    make([]pulse.Cluster, noClusters),
 		ID:          0,
 		TimeStamp:   0,
+		NoFrames:    0,
 		IsCorrupted: false,
 	}
 }
@@ -96,7 +97,7 @@ func (e *Event) Copy() *Event {
 	newevent := NewEvent(uint8(e.NoClusters()))
 	newevent.ID = e.ID
 	newevent.TimeStamp = e.TimeStamp
-	newevent.UDPPayloadSizes = e.UDPPayloadSizes
+	newevent.NoFrames = e.NoFrames
 	newevent.Counters = make([]uint32, len(e.Counters))
 	for i := range e.Counters {
 		newevent.Counters[i] = e.Counters[i]
@@ -150,7 +151,7 @@ func (e *Event) Print(printClusters bool, printClusterDetails bool) {
 	fmt.Println("    o Number of clusters w/o data=", len(e.ClustersWoData))
 	fmt.Println("    o ID =", e.ID)
 	fmt.Println("    o TimeStamp =", e.TimeStamp)
-	fmt.Println("    o UDPPayloadSizes =", e.UDPPayloadSizes)
+	fmt.Println("    o NoFrames =", e.NoFrames)
 	if printClusters {
 		for i := range e.Clusters {
 			fmt.Printf("-> Printing cluster %v/%v\n", i, len(e.Clusters))
