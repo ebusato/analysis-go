@@ -148,6 +148,14 @@
 					p.draw();
 				}	
 			}
+			for (var i = 0; i < NquartetsWoData; i++) {
+				//optsWoData = new options('#FFFF00') // yellow
+				//optsR.zoom = {interactive: true}
+				//optsR.pan = {interactive: true}
+				var p = $.plot("#my-qWoData"+i+"-plot", quartetWoDataplots[i]); //, optsWoData); 
+				p.setupGrid();
+				p.draw();
+			}
 		};
 
 		window.onload = function() {
@@ -173,6 +181,13 @@
 						}
 					}
 				}
+				for (var iq = 0; iq < NquartetsWoData; iq += 1) {
+					for (var ip = 0; ip < Nplots; ip += 1) {
+						for (var is = 0; is < data.quartetswodata[iq][ip].length; is += 1) {
+							quartetWoDataplots[iq][ip].data.push([data.quartetswodata[iq][ip][is].X, data.quartetswodata[iq][ip][is].Y]);
+						}
+					}
+				}
 				update();
 				clearplots();
 			};
@@ -195,6 +210,12 @@
 		}
 		.my-plot-style {
 			width: 180px;
+			height: 130px;
+			font-size: 14px;
+			line-height: 1.2em;
+		}
+		.my-plot-style2 {
+			width: 150px;
 			height: 130px;
 			font-size: 14px;
 			line-height: 1.2em;
@@ -349,7 +370,7 @@
 				</table>
 				<table>
 					<tr>
-						<!--td><div id="my-qWoData0-plot" class="my-plot-style2"></div></td-->
+						<td><div id="my-qWoData0-plot" class="my-plot-style2"></div></td-->
 						<td><div id="my-qWoData1-plot" class="my-plot-style2"></div></td>
 						<td><div id="my-qWoData2-plot" class="my-plot-style2"></div></td>
 						<td><div id="my-qWoData3-plot" class="my-plot-style2"></div></td>
