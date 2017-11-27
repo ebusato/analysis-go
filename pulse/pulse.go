@@ -7,13 +7,13 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/gonum/stat"
+	"gitlab.in2p3.fr/avirm/analysis-go/detector"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
-	"github.com/gonum/stat"
-	"gitlab.in2p3.fr/avirm/analysis-go/detector"
-	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 )
 
 // Sample describes the signal recorded by a DRS capacitor
@@ -463,6 +463,15 @@ func (p *Pulse) MakeTimeSlice() []float64 {
 	return times
 }
 
+// AverageAmp computes the average amplitude of the samples of this pulse
+func (p *Pulse) AverageAmp() float64 {
+	var aveAmp float64
+	for _, samp := range p.Samples {
+		aveAmp += samp.Amplitude
+	}
+	return aveAmp / float64(len(p.Samples))
+}
+
 // Correlation computes the correlation between two pulses
 func (p *Pulse) Correlation(pu *Pulse) float64 {
 	amplitudes1 := p.MakeAmpSlice()
@@ -573,6 +582,13 @@ func (c *Cluster) Charge(recalcPulsesCharges bool) float64 {
 		charge += pulseCharge
 	}
 	return charge
+}
+
+// CalcPulsesAverageAmp calls the pulse.AverageAmp() method for each pulse in the cluster
+func (c *Cluster) CalcPulsesAverageAmp() {
+	for i := range c.Pulses {
+		c.Pulses[i].AverageAmp()
+	}
 }
 
 // XY return the X and Y coordinates of the incoming particle

@@ -45,6 +45,8 @@
 		
 		var Nquartets = 60
 		var quartetplots = []
+		var NquartetsWoData = 12
+		var quartetWoDataplots = []
 		var Nplots = 4
 			
 		for (var iq = 0; iq < Nquartets; iq += 1) {
@@ -68,10 +70,36 @@
 			quartetplots.push(pulseplots)
 		}
 		
+		for (var iq = 0; iq < NquartetsWoData; iq += 1) {
+			var pulseplots = []
+			for (var ip = 0; ip < Nplots; ip += 1) {
+				//pulseplots.push(new plot("q"+iq+"c"+ip, [], colors[ip]))
+				// hack, for the moment put plot info in legend, it's not simplest option
+				// though not the best one
+				legend = ""
+				if (ip == 0) {
+					// hack, 0 not printing if not a string
+					if (iq == 0) {
+						legend = "board 0"
+					}
+					else {
+						legend = "board "+iq 
+					}
+				}
+				pulseplots.push(new plot(legend, [], colors[ip]))
+			}
+			quartetWoDataplots.push(pulseplots)
+		}
+		
 		function clearplots() {
 			for (var iq = 0; iq < Nquartets; iq += 1) {
 				for (var ip = 0; ip < Nplots; ip += 1) {
 					quartetplots[iq][ip].data = []
+				}
+			}
+			for (var iq = 0; iq < NquartetsWoData; iq += 1) {
+				for (var ip = 0; ip < Nplots; ip += 1) {
+					quartetWoDataplots[iq][ip].data = []
 				}
 			}
 		}
@@ -317,6 +345,22 @@
 						<td><div id="my-q27-plot" class="my-plot-style"></div></td>
 						<td><div id="my-q26-plot" class="my-plot-style"></div></td>
 						<td><div id="my-q25-plot" class="my-plot-style"></div></td>
+					</tr>
+				</table>
+				<table>
+					<tr>
+						<!--td><div id="my-qWoData0-plot" class="my-plot-style2"></div></td-->
+						<td><div id="my-qWoData1-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData2-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData3-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData4-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData5-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData6-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData7-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData8-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData9-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData10-plot" class="my-plot-style2"></div></td>
+						<td><div id="my-qWoData11-plot" class="my-plot-style2"></div></td>
 					</tr>
 				</table>
 				</div> <!-- tab 1 content -->

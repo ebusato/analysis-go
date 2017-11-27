@@ -173,7 +173,7 @@ func main() {
 		//for i := 0; i < 4; i++ {
 		//r, err := rw.NewReader(bufio.NewReader(tcp))
 	*/
-	inFileName := "/home/ebusato/Travail/Imaging/DPGA/Soft/FirmwareTests/datas/MyFile_eno1@2_0.bin"
+	inFileName := "/home/ebusato/Travail/Imaging/DPGA/Soft/FirmwareTests/datas/MyFile_eno2@1_0.bin"
 	// 	outFileName := strings.Replace(inFileName, ".bin", "_out.bin", 1)
 
 	// Reader
