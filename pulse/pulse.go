@@ -80,6 +80,7 @@ type Pulse struct {
 	Ampl                float64
 	AmplIndex           int
 	Charg               float64 // Charge, removed the final "e" because the name "Charge" is already used by the method
+	AvAmp               float64 // Average amplitude (average is performed over samples)
 	E                   float64 // Energy (equal to 0 until energy calibration is performed)
 	Time10              float64 // time at 10% on rising front of the pulse
 	Time20              float64 // time at 20% on rising front of the pulse
@@ -465,11 +466,14 @@ func (p *Pulse) MakeTimeSlice() []float64 {
 
 // AverageAmp computes the average amplitude of the samples of this pulse
 func (p *Pulse) AverageAmp() float64 {
-	var aveAmp float64
+	var sumAmps float64
 	for _, samp := range p.Samples {
-		aveAmp += samp.Amplitude
+		sumAmps += samp.Amplitude
 	}
-	return aveAmp / float64(len(p.Samples))
+	if len(p.Samples) != 0 {
+		p.AvAmp = sumAmps / float64(len(p.Samples))
+	}
+	return p.AvAmp
 }
 
 // Correlation computes the correlation between two pulses

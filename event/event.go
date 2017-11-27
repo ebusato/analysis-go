@@ -406,8 +406,29 @@ func (e *Event) FindTimesRF() []float64 {
 	return timesRF
 }
 
-func (e *Event) AmplitudesChannelAveraged() []float64 {
-
+func (e *Event) AmpsPerChannel() []float64 {
+	amps := make([]float64, 4*(len(e.Clusters)+len(e.ClustersWoData)))
+	for i := range e.Clusters {
+		e.Clusters[i].CalcPulsesAverageAmp()
+		for j := range e.Clusters[i].Pulses {
+			pulse := &e.Clusters[i].Pulses[j]
+			// 			if pulse.Channel != nil {
+			// 				fmt.Println(pulse.Channel.AbsID240(), pulse.AvAmp)
+			// 			}
+			amps = append(amps, pulse.AvAmp)
+		}
+	}
+	for i := range e.ClustersWoData {
+		e.ClustersWoData[i].CalcPulsesAverageAmp()
+		for j := range e.ClustersWoData[i].Pulses {
+			pulse := &e.ClustersWoData[i].Pulses[j]
+			// 			if pulse.Channel != nil {
+			// 				fmt.Println(pulse.Channel.AbsID240(), pulse.Channel.AbsID288(), pulse.AvAmp)
+			// 			}
+			amps = append(amps, pulse.AvAmp)
+		}
+	}
+	return amps
 }
 
 // type Trigger int

@@ -215,7 +215,7 @@ func (r *Reader) Frame() (*Frame, error) {
 	switch r.ReadMode {
 	case Default:
 		r.readFrameHeader(&f.Header)
-		f.Header.Print()
+		//f.Header.Print()
 		r.err = f.Header.Integrity()
 		if r.err != nil {
 			f.Header.Print()
