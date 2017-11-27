@@ -406,6 +406,10 @@ func (e *Event) FindTimesRF() []float64 {
 	return timesRF
 }
 
+func (e *Event) AmplitudesChannelAveraged() []float64 {
+
+}
+
 // type Trigger int
 //
 // const (
