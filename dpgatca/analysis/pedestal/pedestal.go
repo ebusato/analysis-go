@@ -77,6 +77,11 @@ func main() {
 			panic("error: status is false\n")
 		}
 		// 		event.Print(false, false)
+		// 		fmt.Println(event.HasSignal())
+		sigInClusters, sigInClustersWoData := event.HasSignal()
+		if sigInClusters == true || sigInClustersWoData == true {
+			continue
+		}
 		amps := event.AmpsPerChannel()
 		stamps := strings.Fields(strings.Trim(fmt.Sprint(amps), "[]"))
 		err := tbl.Writer.Write(stamps)

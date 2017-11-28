@@ -80,6 +80,7 @@ type Event struct {
 	NoFrames       uint8
 	Counters       []uint32
 	LORs           []LOR
+	HasSig         bool
 	IsCorrupted    bool
 }
 
@@ -89,6 +90,7 @@ func NewEvent(noClusters uint8) *Event {
 		ID:          0,
 		TimeStamp:   0,
 		NoFrames:    0,
+		HasSig:      false,
 		IsCorrupted: false,
 	}
 }
@@ -98,6 +100,7 @@ func (e *Event) Copy() *Event {
 	newevent.ID = e.ID
 	newevent.TimeStamp = e.TimeStamp
 	newevent.NoFrames = e.NoFrames
+	newevent.HasSig = e.HasSig
 	newevent.Counters = make([]uint32, len(e.Counters))
 	for i := range e.Counters {
 		newevent.Counters[i] = e.Counters[i]
@@ -143,6 +146,24 @@ func (e *Event) CheckIntegrity() {
 
 func (e *Event) NoClusters() int {
 	return len(e.Clusters)
+}
+
+func (e *Event) HasSignal() (bool, bool) {
+	HasSigInClusters := false
+	for i := range e.Clusters {
+		pulses := e.Clusters[i].PulsesWithSignal()
+		if len(pulses) > 0 {
+			HasSigInClusters = true
+		}
+	}
+	HasSigInClustersWoData := false
+	for i := range e.ClustersWoData {
+		pulses := e.ClustersWoData[i].PulsesWithSignal()
+		if len(pulses) > 0 {
+			HasSigInClustersWoData = true
+		}
+	}
+	return HasSigInClusters, HasSigInClustersWoData
 }
 
 func (e *Event) Print(printClusters bool, printClusterDetails bool) {
