@@ -40,7 +40,8 @@ var (
 	pauseMonBool bool
 	cpuprof      = flag.String("cpuprof", "", "Name of file for CPU profiling")
 	noEvents     = flag.Uint("n", 100000, "Number of events")
-	outfileName  = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
+	inFileName   = flag.String("i", "", "Name of input file (if non empty, use it rather than input stream from DAQ")
+	outFileName  = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
 	ip           = flag.String("ip", "192.168.100.11", "IP address")
 	port         = flag.String("p", "1024", "Port number")
 	monFreq      = flag.Uint("mf", 100, "Monitoring frequency")
@@ -173,11 +174,9 @@ func main() {
 		//for i := 0; i < 4; i++ {
 		//r, err := rw.NewReader(bufio.NewReader(tcp))
 	*/
-	inFileName := "/home/ebusato/Travail/Imaging/DPGA/Soft/FirmwareTests/datas/MyFile_eno1@2_0.bin"
-	// 	outFileName := strings.Replace(inFileName, ".bin", "_out.bin", 1)
 
 	// Reader
-	f, err := os.Open(inFileName)
+	f, err := os.Open(*inFileName)
 	if err != nil {
 		log.Fatalf("could not open data file: %v\n", err)
 	}

@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rw"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rwi"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rwvme"
-	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"go-hep.org/x/hep/csvutil"
 )
 
@@ -21,10 +21,6 @@ var (
 	evtFreq  = flag.Uint("ef", 100, "Event printing frequency")
 	vme      = flag.Bool("vme", false, "If set, uses VME reader")
 )
-
-type Reader interface {
-	ReadNextEvent() (*event.Event, bool)
-}
 
 func main() {
 	flag.Parse()
@@ -40,7 +36,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
 	}*/
-	var r Reader
+	var r rwi.Reader
 	if !*vme {
 		r, _ = rw.NewReader(bufio.NewReader(f))
 	} else {
