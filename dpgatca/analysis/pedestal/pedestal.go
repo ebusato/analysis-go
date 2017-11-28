@@ -7,9 +7,10 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rw"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rwvme"
+	"gitlab.in2p3.fr/avirm/analysis-go/event"
 	"go-hep.org/x/hep/csvutil"
 )
 
@@ -18,7 +19,12 @@ var (
 	outFile  = flag.String("o", "", "Name of the output csv file")
 	noEvents = flag.Uint("n", 100000, "Number of events")
 	evtFreq  = flag.Uint("ef", 100, "Event printing frequency")
+	vme      = flag.Bool("vme", false, "If set, uses VME reader")
 )
+
+type Reader interface {
+	ReadNextEvent() (*event.Event, bool)
+}
 
 func main() {
 	flag.Parse()
@@ -29,9 +35,16 @@ func main() {
 		log.Fatalf("could not open data file: %v\n", err)
 	}
 	defer f.Close()
-	r, err := rw.NewReader(bufio.NewReader(f))
+
+	/*r, err := rw.NewReader(bufio.NewReader(f))
 	if err != nil {
 		log.Fatalf("could not open stream: %v\n", err)
+	}*/
+	var r Reader
+	if !*vme {
+		r, _ = rw.NewReader(bufio.NewReader(f))
+	} else {
+		r, _ = rwvme.NewReader(bufio.NewReader(f), rwvme.HeaderCAL)
 	}
 
 	// csv file containing output of pedestal analysis
@@ -42,13 +55,18 @@ func main() {
 	defer tbl.Close()
 	tbl.Writer.Comma = ','
 
-	err = tbl.WriteHeader(fmt.Sprintf("# Output of pedestal analysis (creation date: %v).\n", time.Now()))
-	ss := "# "
+	//err = tbl.WriteHeader(fmt.Sprintf("# Output of pedestal analysis (creation date: %v).\n", time.Now()))
+	//ss := "# "
+	ss := ""
 	for i := 0; i < 240; i++ {
-		ss += fmt.Sprintf("%v ", i)
+		ss += fmt.Sprintf("ChanWithData240_%v,", i)
 	}
-	for i := 0; i < 12; i++ {
-		ss += fmt.Sprintf("%v ", i)
+	for i := 0; i < 48; i++ {
+		if i < 47 {
+			ss += fmt.Sprintf("ChanWoData48_%v,", i)
+		} else {
+			ss += fmt.Sprintf("ChanWoData48_%v", i)
+		}
 	}
 	err = tbl.WriteHeader(ss)
 

@@ -407,7 +407,7 @@ func (e *Event) FindTimesRF() []float64 {
 }
 
 func (e *Event) AmpsPerChannel() []float64 {
-	amps := make([]float64, 4*(len(e.Clusters)+len(e.ClustersWoData)))
+	var amps []float64
 	for i := range e.Clusters {
 		e.Clusters[i].CalcPulsesAverageAmp()
 		for j := range e.Clusters[i].Pulses {
