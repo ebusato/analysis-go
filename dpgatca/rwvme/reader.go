@@ -29,6 +29,11 @@ func (r *Reader) NoSamples() uint16 {
 	return r.noSamples
 }
 
+// SetDebug() sets debug mode
+func (r *Reader) SetDebug() {
+	r.Debug = true
+}
+
 // Err return the reader error
 func (r *Reader) Err() error {
 	return r.err
@@ -49,6 +54,11 @@ func NewReader(r io.Reader, ht HeaderType) (*Reader, error) {
 	rr.hdr.HdrType = ht
 	rr.readHeader(&rr.hdr)
 	return rr, rr.err
+}
+
+// SetSigThreshold sets the signal SetSigThreshold
+func (r *Reader) SetSigThreshold(val uint) {
+	r.SigThreshold = val
 }
 
 // Read implements io.Reader

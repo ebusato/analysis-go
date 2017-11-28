@@ -45,6 +45,16 @@ func NewReader(r io.Reader) (*Reader, error) {
 	return rr, rr.err
 }
 
+// SetDebug() sets debug mode
+func (r *Reader) SetDebug() {
+	r.Debug = true
+}
+
+// SetSigThreshold sets the signal SetSigThreshold
+func (r *Reader) SetSigThreshold(val uint) {
+	r.SigThreshold = val
+}
+
 // Read implements io.Reader
 // func (r *Reader) Read(data []byte) (int, error) {
 // 	return r.r.Read(data)

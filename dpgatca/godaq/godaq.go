@@ -26,6 +26,8 @@ import (
 	// 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/trees"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rw"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rwi"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rwvme"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
@@ -68,6 +70,7 @@ var (
 	noen        = flag.Bool("noen", false, "If specified, no energy calibration applied.")
 	rfcutmean   = flag.Float64("rfcutmean", 7, "Mean used to apply RF selection cut.")
 	rfcutwidth  = flag.Float64("rfcutwidth", 5, "Width used to apply RF selection cut.")
+	vme         = flag.Bool("vme", false, "If set, uses VME reader")
 )
 
 // XY is a struct used to store a couple of values
@@ -182,15 +185,21 @@ func main() {
 	}
 	defer f.Close()
 
-	r, err := rw.NewReader(bufio.NewReader(f))
-	if err != nil {
-		log.Fatalf("could not open stream: %v\n", err)
+	var r rwi.Reader
+	if !*vme {
+		r, _ = rw.NewReader(bufio.NewReader(f))
+	} else {
+		r, _ = rwvme.NewReader(bufio.NewReader(f), rwvme.HeaderCAL)
 	}
-	r.SigThreshold = *sigthres
+	// 	r, err := rw.NewReader(bufio.NewReader(f))
+	// 	if err != nil {
+	// 		log.Fatalf("could not open stream: %v\n", err)
+	// 	}
+	r.SetSigThreshold(*sigthres)
 
 	// Start reading TCP stream
-	hdr := r.FileHeader
-	hdr.Print()
+	// 	hdr := r.Header()
+	// 	hdr.Print()
 
 	// web address handling
 	webadSlice := strings.Split(*webad, ":")
@@ -224,7 +233,7 @@ func main() {
 		"TimeStop":   0,
 		"NoEvents":   0,
 		"NoASMCards": 12,
-		"NoSamples":  strconv.FormatUint(uint64(r.FileHeader.NoSamples), 10),
+		"NoSamples":  strconv.FormatUint(uint64(r.NoSamples()), 10),
 	})
 	if err != nil {
 		panic(err)
@@ -236,7 +245,7 @@ func main() {
 	wg.Add(N)
 
 	if *debug {
-		r.Debug = true
+		r.SetDebug()
 	}
 
 	iEvent := uint(0)
@@ -311,7 +320,7 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 	return data
 }
 
-func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
+func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 	defer wg.Done()
 	doPedestal := false
 	doTimeDepOffset := false
