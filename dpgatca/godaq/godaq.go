@@ -375,6 +375,10 @@ func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 				if status == false {
 					panic("error: status is false\n")
 				}
+				if event == nil && status == true { // EOF
+					fmt.Printf("Reached EOF for iEvent = %v\n", *iEvent)
+					return
+				}
 				switch event.IsCorrupted {
 				case false:
 					// 					event.Print(true, false)

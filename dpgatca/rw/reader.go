@@ -121,6 +121,11 @@ func (r *Reader) readFileHeader(f *FileHeader) {
 
 func (r *Reader) readFrameHeader(f *FrameHeader) {
 	r.readU16(&f.StartOfFrame, binary.BigEndian)
+	if r.err != nil { // true for EOF
+		return
+	}
+
+	//fmt.Printf("Start of frame = %x\n", f.StartOfFrame)
 	r.readU16(&f.NbFrameAmcMsb, binary.BigEndian)
 	r.readU16(&f.NbFrameAmcLsb, binary.BigEndian)
 	r.readU16(&f.FEIdK30, binary.LittleEndian)
@@ -217,7 +222,7 @@ func (r *Reader) readFrameTrailer(f *FrameTrailer) {
 	r.readU16(&f.EoF, binary.BigEndian)
 }
 
-func (r *Reader) Frame() (*Frame, error) {
+func (r *Reader) Frame() *Frame {
 	f := &Frame{}
 	if r.Debug {
 		fmt.Printf("\nrw: start reading frame\n")
@@ -225,6 +230,9 @@ func (r *Reader) Frame() (*Frame, error) {
 	switch r.ReadMode {
 	case Default:
 		r.readFrameHeader(&f.Header)
+		if r.err == io.EOF {
+			return nil
+		}
 		//f.Header.Print()
 		r.err = f.Header.Integrity()
 		if r.err != nil {
@@ -271,7 +279,7 @@ func (r *Reader) Frame() (*Frame, error) {
 		// 	}
 		*/
 	}
-	return f, r.err
+	return f
 }
 
 func MakePulse(c *ChanData, quartetAbsIdx72 uint8, sigThreshold uint) *pulse.Pulse {
@@ -302,9 +310,12 @@ func MakePulses(f *Frame, sigThreshold uint) []*pulse.Pulse {
 	return pulses
 }
 
+var ID uint32
+
 func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 	event := event.NewEvent(dpgadetector.Det.NoClusters())
 	firstPass := true
+	i := 0
 	for {
 		var frame *Frame = nil
 		if r.firstFrameOfEvent != nil { // enter here only for first frame of event
@@ -317,13 +328,22 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			}
 			r.firstFrameOfEvent = nil
 		} else { // enter here for all frames but the first one of the event
-			frametemp, err := r.Frame()
-			if err != nil && err != io.EOF {
-				log.Fatal("error not nil", err)
+			frametemp := r.Frame()
+			if r.err != nil {
+				if r.err != io.EOF {
+					log.Fatal("error not nil", r.err)
+				} else {
+					return nil, true
+				}
 			}
 			frame = frametemp
 		}
-		var ID uint32 = frame.Header.CptTriggerThor
+		// For RCT test bench
+		if i%2 == 0 {
+			ID += 1
+		}
+		// For tca
+		//var ID uint32 = frame.Header.CptTriggerThor
 		// 		fmt.Println("CptTriggerThor =", ID)
 		// 		fmt.Println("frame.QuartetAbsIdx72 =", frame.QuartetAbsIdx72)
 		if firstPass || ID == r.IDPrevFrame { // fill event
@@ -378,6 +398,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			return event, true
 		}
 		r.IDPrevFrame = ID
+		i++
 	}
 	log.Fatalf("error ! you should never end up here")
 	return nil, false
