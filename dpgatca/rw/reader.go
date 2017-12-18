@@ -202,11 +202,12 @@ func (r *Reader) readFrameData(data *HalfDRSData) {
 			//fmt.Printf("data.ParityChanIdCtrl = %x\n", data.ParityChanIdCtrl)
 		*/
 		r.readU16(&chanData.FirstChanWord, binary.LittleEndian)
-		r.readU16(&chanData.SecondChanWord, binary.LittleEndian)
+		r.readU16(&chanData.SecondChanWord, binary.BigEndian)
 		r.read(&chanData.Amplitudes, binary.BigEndian)
 
 		chanData.Channel = chanData.FirstChanWord & 0x7f
-		chanData.SRout = chanData.SecondChanWord
+		chanData.SRout = chanData.SecondChanWord & 0x3ff
+		fmt.Println("SRout =", chanData.SRout)
 	}
 }
 
