@@ -206,6 +206,7 @@ func (r *Reader) readFrameData(data *HalfDRSData) {
 		r.read(&chanData.Amplitudes, binary.BigEndian)
 
 		chanData.Channel = chanData.FirstChanWord & 0x7f
+		fmt.Printf("SecondChanWord = %x\n", chanData.SecondChanWord)
 		chanData.SRout = chanData.SecondChanWord & 0x3ff
 		fmt.Println("SRout =", chanData.SRout)
 	}
@@ -344,7 +345,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			ID += 1
 		}
 		// For tca
-		//var ID uint32 = frame.Header.CptTriggerThor
+		// 		var ID uint32 = frame.Header.CptTriggerThor
 		// 		fmt.Println("CptTriggerThor =", ID)
 		// 		fmt.Println("frame.QuartetAbsIdx72 =", frame.QuartetAbsIdx72)
 		if firstPass || ID == r.IDPrevFrame { // fill event
