@@ -2,15 +2,11 @@ package event
 
 import (
 	"fmt"
-	"image/color"
 	"log"
 	"time"
 
-	"go-hep.org/x/hep/csvutil"
-	"gonum.org/v1/plot"
-	"gonum.org/v1/plot/plotter"
-	"gonum.org/v1/plot/vg"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
+	"go-hep.org/x/hep/csvutil"
 )
 
 type Data struct {
@@ -133,6 +129,7 @@ func (d *Data) PrintGlobalVarsToFile(outFileName string) {
 	}
 }
 
+/*
 func (d *Data) PlotAmplitudeCorrelationWithinCluster() {
 	var data plotter.XYZs
 	for i := range d.Events {
@@ -171,6 +168,7 @@ func (d *Data) PlotAmplitudeCorrelationWithinCluster() {
 		panic(err)
 	}
 }
+*/
 
 func (d *Data) PlotPulses(xaxis pulse.XaxisType, onlyClustersWithSig bool, yrange pulse.YRange, xRangeZoomAround500 bool) {
 	for i := range d.Events {

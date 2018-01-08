@@ -191,6 +191,7 @@ func main() {
 	} else {
 		r, _ = rwvme.NewReader(bufio.NewReader(f), rwvme.HeaderCAL)
 	}
+	r.SetDebug()
 	// 	r, err := rw.NewReader(bufio.NewReader(f))
 	// 	if err != nil {
 	// 		log.Fatalf("could not open stream: %v\n", err)
@@ -373,11 +374,10 @@ func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 		default:
 			switch *iEvent < *noEvents {
 			case true:
-				if *iEvent%*evtFreq == 0 {
-					fmt.Printf("event %v\n", *iEvent)
-				}
-				// 				r.Debug = true
 				event, status := r.ReadNextEvent()
+				if *iEvent%*evtFreq == 0 {
+					fmt.Printf("event %v (event.ID = %v)\n", *iEvent, event.ID)
+				}
 				if status == false {
 					panic("error: status is false\n")
 				}
