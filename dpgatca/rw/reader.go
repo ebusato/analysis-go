@@ -315,7 +315,7 @@ func MakePulses(f *Frame, sigThreshold uint) []*pulse.Pulse {
 }
 
 // for tca
-// func (r *Reader) ReadNextEvent() (*event.Event, bool) {
+// func (r *Reader) ReadNextEvent() (*event.Event, error) {
 // 	event := event.NewEvent(dpgadetector.Det.NoClusters())
 // 	firstPass := true
 // 	i := 0
@@ -326,7 +326,7 @@ func MakePulses(f *Frame, sigThreshold uint) []*pulse.Pulse {
 // 			if r.err != nil {
 // 				log.Println("error not nil", r.err)
 // 				if r.err == io.EOF {
-// 					return nil, false
+// 					return nil, r.err
 // 				}
 // 			}
 // 			r.firstFrameOfEvent = nil
@@ -336,7 +336,7 @@ func MakePulses(f *Frame, sigThreshold uint) []*pulse.Pulse {
 // 				if r.err != io.EOF {
 // 					log.Fatal("error not nil", r.err)
 // 				} else {
-// 					return nil, true
+// 					return nil, r.err
 // 				}
 // 			}
 // 			frame = frametemp
@@ -371,7 +371,7 @@ func MakePulses(f *Frame, sigThreshold uint) []*pulse.Pulse {
 // 				}
 // 				// 				fmt.Printf("iCluster = %v\n", iCluster)
 // 				event.Clusters[iCluster].ID = iCluster
-//
+// 			event.Clusters[iCluster].SetSRout()
 // 				////////////////////////////////////////////////////////
 // 				// Put pulses in event
 // 				event.Clusters[iCluster].Pulses[0] = *pulses[0]
@@ -383,6 +383,7 @@ func MakePulses(f *Frame, sigThreshold uint) []*pulse.Pulse {
 // 				iClusterWoData := frame.QuartetAbsIdx72 / 6
 // 				// 				fmt.Printf("iClusterWoData = %v\n", iClusterWoData)
 // 				event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
+// 			event.Clusters[iClusterWoData].SetSRout()
 // 				////////////////////////////////////////////////////////
 // 				// Put pulses in event
 // 				event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]
@@ -393,7 +394,8 @@ func MakePulses(f *Frame, sigThreshold uint) []*pulse.Pulse {
 // 			}
 // 		} else { // switched to next event
 // 			r.firstFrameOfEvent = frame
-// 			return event, true
+// err := event.Errors() // check for example SRout here
+// 			return event, err
 // 		}
 // 		r.IDPrevFrame = ID
 // 		i++
@@ -436,7 +438,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			}
 			// 				fmt.Printf("iCluster = %v\n", iCluster)
 			event.Clusters[iCluster].ID = iCluster
-
+			event.Clusters[iCluster].SetSRout()
 			////////////////////////////////////////////////////////
 			// Put pulses in event
 			event.Clusters[iCluster].Pulses[0] = *pulses[0]
@@ -448,6 +450,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			iClusterWoData := frame.QuartetAbsIdx72 / 6
 			// 				fmt.Printf("iClusterWoData = %v\n", iClusterWoData)
 			event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
+			event.Clusters[iClusterWoData].SetSRout()
 			////////////////////////////////////////////////////////
 			// Put pulses in event
 			event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]

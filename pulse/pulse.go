@@ -488,6 +488,7 @@ func (p *Pulse) Correlation(pu *Pulse) float64 {
 type Cluster struct {
 	Pulses [4]Pulse
 	ID     uint8
+	SRout  uint16
 }
 
 // NewClusterFromID constructs a new cluster from ID only
@@ -526,7 +527,7 @@ func (c *Cluster) NoSamples() uint16 {
 }
 
 // SRout returns the srout (common to all pulses in the cluster)
-func (c *Cluster) SRout() uint16 {
+func (c *Cluster) SetSRout() uint16 {
 	srout := c.Pulses[0].SRout
 	for i := 1; i < len(c.Pulses); i++ {
 		if srout != c.Pulses[i].SRout {
@@ -534,6 +535,7 @@ func (c *Cluster) SRout() uint16 {
 			log.Fatalf(" -> quitting")
 		}
 	}
+	c.SRout = srout
 	return srout
 }
 

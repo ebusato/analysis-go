@@ -42,7 +42,9 @@ type DQPlot struct {
 	HitQuartets         *hbook.H2D
 	HEnergyVsDeltaTggRF *hbook.H2D
 
-	HV [4][16]plotter.XYs // first index refers to HV card (there are 4 cards), second index refers to channels (there are 16 channels per card)
+	HV [4][16]plotter.XYs // first index refers to HV board (there are 4 boards), second index refers to channels (there are 16 channels per board)
+
+	SRout [12][3]hbook.H1D // first index: ASM board, second index: DRS
 
 	DQPlotRef *DQPlot
 }
@@ -79,6 +81,11 @@ func NewDQPlot() *DQPlot {
 			dqp.HCharge[i][j] = *hbook.NewH1D(100, 0, 0.5)
 			dqp.HAmplitude[i][j] = *hbook.NewH1D(150, 0, 4095)
 			dqp.HEnergy[i][j] = *hbook.NewH1D(200, 0, 1022)
+		}
+	}
+	for i := 0; i < 12; i++ {
+		for j := 0; j < 3; j++ {
+			dqp.SRout[i][j] = *hbook.NewH1D(1024, 0, 1024)
 		}
 	}
 	return dqp
