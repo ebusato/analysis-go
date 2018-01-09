@@ -44,7 +44,7 @@ type DQPlot struct {
 
 	HV [4][16]plotter.XYs // first index refers to HV board (there are 4 boards), second index refers to channels (there are 16 channels per board)
 
-	SRout [12][3]hbook.H1D // first index: ASM board, second index: DRS
+	SRout [2][6][3]hbook.H1D // first index: ASM board, second index: DRS
 
 	DQPlotRef *DQPlot
 }
@@ -83,9 +83,11 @@ func NewDQPlot() *DQPlot {
 			dqp.HEnergy[i][j] = *hbook.NewH1D(200, 0, 1022)
 		}
 	}
-	for i := 0; i < 12; i++ {
-		for j := 0; j < 3; j++ {
-			dqp.SRout[i][j] = *hbook.NewH1D(1024, 0, 1024)
+	for i := 0; i < 2; i++ {
+		for j := 0; j < 6; j++ {
+			for k := 0; k < 3; k++ {
+				dqp.SRout[i][j][k] = *hbook.NewH1D(1024, 0, 1024)
+			}
 		}
 	}
 	return dqp
@@ -122,6 +124,9 @@ func (d *DQPlot) FillHistos(event *event.Event, RFcutMean, RFcutWidth float64) {
 	var satmult uint8 = 0
 	var counter float64 = 0
 
+	// Used to make sure one fills only once the SRout histograms
+	var SRoutBool [2][6][3]bool
+
 	for i := range event.Clusters {
 		cluster := &event.Clusters[i]
 		mult += uint8(len(cluster.PulsesWithSignal()))
@@ -142,6 +147,19 @@ func (d *DQPlot) FillHistos(event *event.Event, RFcutMean, RFcutWidth float64) {
 				d.HEnergyAll.Fill(pulse.E, 1)
 			}
 			counter++
+		}
+
+		if cluster.Quartet != nil { // for rct, this selects only cluster for which one has data
+			fmt.Printf("Quartet %p\n", cluster.Quartet)
+			fmt.Printf("DRS %p\n", cluster.Quartet.DRS)
+			iDRS := cluster.Quartet.DRS.ID()
+			iASM := cluster.Quartet.DRS.ASMCard.ID()
+			hemi := cluster.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
+			fmt.Println("LALA: ", iDRS, iASM, hemi.Which())
+			if SRoutBool[hemi.Which()][iASM][iDRS] == false {
+				d.SRout[hemi.Which()][iASM][iDRS].Fill(float64(cluster.SRout), 1)
+				SRoutBool[hemi.Which()][iASM][iDRS] = true
+			}
 		}
 	}
 

@@ -491,6 +491,11 @@ type ASMCard struct {
 	UpStr UpperStruct
 }
 
+// ID() return the id field
+func (a *ASMCard) ID() uint8 {
+	return a.id
+}
+
 // Print prints the ASMCard informations.
 func (a *ASMCard) Print() {
 	fmt.Printf("+ ASM: id = %v (address=%p)\n", a.id, a)

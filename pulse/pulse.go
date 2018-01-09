@@ -486,9 +486,10 @@ func (p *Pulse) Correlation(pu *Pulse) float64 {
 
 // Cluster describes a quartet.
 type Cluster struct {
-	Pulses [4]Pulse
-	ID     uint8
-	SRout  uint16
+	Pulses  [4]Pulse
+	ID      uint8
+	SRout   uint16
+	Quartet *detector.Quartet
 }
 
 // NewClusterFromID constructs a new cluster from ID only

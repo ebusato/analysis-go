@@ -726,6 +726,11 @@ func (d *Detector) Quartet(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8) 
 	return d.hemispheres[int(iHemi)].asm[int(iASM)].DRS(iDRS).Quartet(iQuartet)
 }
 
+func (d *Detector) QuartetFromIdAbs60(iQuartetAbs60 uint8) *detector.Quartet {
+	iHemi, iASM, iDRS, iQuartet := QuartetAbsIdx60ToRelIdx(iQuartetAbs60)
+	return d.Quartet(iHemi, iASM, iDRS, iQuartet)
+}
+
 type PedestalFile struct {
 	IHemi      uint8
 	IASM       uint8

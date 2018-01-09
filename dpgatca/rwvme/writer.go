@@ -251,7 +251,7 @@ func (w *Writer) EventFull(event *event.Event) {
 		block1.ID = uint32(pulses[0].Channel.FifoID144())
 		block2.ID = uint32(pulses[2].Channel.FifoID144())
 
-		block1.SRout = uint32(cluster.SRout())
+		block1.SRout = uint32(cluster.SetSRout())
 		block2.SRout = block1.SRout
 
 		for j := uint16(0); j < cluster.NoSamples(); j++ {

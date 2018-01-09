@@ -438,7 +438,8 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			}
 			// 				fmt.Printf("iCluster = %v\n", iCluster)
 			event.Clusters[iCluster].ID = iCluster
-			event.Clusters[iCluster].SetSRout()
+			event.Clusters[iCluster].Quartet = dpgadetector.Det.QuartetFromIdAbs60(iCluster)
+			fmt.Printf("Quartet in reader %p\n", event.Clusters[iCluster].Quartet)
 			////////////////////////////////////////////////////////
 			// Put pulses in event
 			event.Clusters[iCluster].Pulses[0] = *pulses[0]
@@ -446,11 +447,11 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			event.Clusters[iCluster].Pulses[2] = *pulses[2]
 			event.Clusters[iCluster].Pulses[3] = *pulses[3]
 			////////////////////////////////////////////////////////
+			event.Clusters[iCluster].SetSRout()
 		} else {
 			iClusterWoData := frame.QuartetAbsIdx72 / 6
 			// 				fmt.Printf("iClusterWoData = %v\n", iClusterWoData)
 			event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
-			event.Clusters[iClusterWoData].SetSRout()
 			////////////////////////////////////////////////////////
 			// Put pulses in event
 			event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]
@@ -458,6 +459,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			event.ClustersWoData[iClusterWoData].Pulses[2] = *pulses[2]
 			event.ClustersWoData[iClusterWoData].Pulses[3] = *pulses[3]
 			////////////////////////////////////////////////////////
+			event.ClustersWoData[iClusterWoData].SetSRout()
 		}
 	}
 
