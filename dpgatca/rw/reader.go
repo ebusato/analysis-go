@@ -2,6 +2,7 @@ package rw
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -404,7 +405,7 @@ func MakePulses(f *Frame, sigThreshold uint) []*pulse.Pulse {
 var ID uint
 
 // for rct
-func (r *Reader) ReadNextEvent() (*event.Event, bool) {
+func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	//////////////////////////////////////////////////////
 	// Temporary fix:
 	// Read first frame and do nothing with it (remove it)
@@ -456,11 +457,15 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			////////////////////////////////////////////////////////
 		}
 	}
+
+	var err error
+
 	if SRout1 != SRout2 {
-		log.Fatalf("SRout1 (%v) != SRout2 (%v)\n", SRout1, SRout2)
+		fmt.Printf("SRout1 (%v) != SRout2 (%v)\n", SRout1, SRout2)
+		err = errors.New("SRout1 != SRout2")
 	}
 	ID += 1
-	return event, true
+	return event, err
 }
 
 /*

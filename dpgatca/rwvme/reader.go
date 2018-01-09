@@ -311,7 +311,7 @@ func MakePulses(f *Frame, sigThreshold uint) (*pulse.Pulse, *pulse.Pulse) {
 	return pulse1, pulse2
 }
 
-func (r *Reader) ReadNextEvent() (*event.Event, bool) {
+func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	event := event.NewEvent(dpgadetector.Det.NoClusters())
 	event.Counters = make([]uint32, NumCounters)
 	for i := range event.Counters {
@@ -325,7 +325,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			if r.err != nil {
 				log.Println("error not nil", r.err)
 				if r.err == io.EOF {
-					return nil, false
+					return nil, r.err
 				}
 			}
 			r.firstFrameOfEvent = nil
@@ -398,12 +398,12 @@ func (r *Reader) ReadNextEvent() (*event.Event, bool) {
 			}
 		} else { // switched to next event
 			r.firstFrameOfEvent = frame
-			return event, true
+			return event, nil
 		}
 		r.evtIDPrevFrame = evtID
 	} // end of loop over frames
 	log.Fatalf("error ! you should never end up here")
-	return nil, false
+	return nil, nil
 }
 
 func (r *Reader) ReadNextEventFull() (*event.Event, bool) {

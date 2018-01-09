@@ -81,17 +81,15 @@ type Event struct {
 	Counters       []uint32
 	LORs           []LOR
 	HasSig         bool
-	IsCorrupted    bool
 }
 
 func NewEvent(noClusters uint8) *Event {
 	return &Event{
-		Clusters:    make([]pulse.Cluster, noClusters),
-		ID:          0,
-		TimeStamp:   0,
-		NoFrames:    0,
-		HasSig:      false,
-		IsCorrupted: false,
+		Clusters:  make([]pulse.Cluster, noClusters),
+		ID:        0,
+		TimeStamp: 0,
+		NoFrames:  0,
+		HasSig:    false,
 	}
 }
 
@@ -105,7 +103,6 @@ func (e *Event) Copy() *Event {
 	for i := range e.Counters {
 		newevent.Counters[i] = e.Counters[i]
 	}
-	newevent.IsCorrupted = e.IsCorrupted
 	for i := range e.Clusters {
 		oldPulses := e.Clusters[i].Pulses
 		newevent.Clusters[i].Pulses = [4]pulse.Pulse{

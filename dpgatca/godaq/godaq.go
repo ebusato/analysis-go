@@ -374,189 +374,184 @@ func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 		default:
 			switch *iEvent < *noEvents {
 			case true:
-				event, status := r.ReadNextEvent()
+				event, err := r.ReadNextEvent()
 				if *iEvent%*evtFreq == 0 {
 					fmt.Printf("event %v (event.ID = %v)\n", *iEvent, event.ID)
 				}
-				if status == false {
-					panic("error: status is false\n")
+				if err != nil {
+					panic(err)
 				}
-				if event == nil && status == true { // EOF
+				if event == nil && err != nil { // EOF
 					fmt.Printf("Reached EOF for iEvent = %v\n", *iEvent)
 					return
 				}
-				switch event.IsCorrupted {
-				case false:
-					// 					event.Print(true, false)
-					noEventsForMon++
-					////////////////////////////////////////////////////////////////////////////////////////////
-					// Monitoring
-					if !pauseMonBool {
-						//////////////////////////////////////////////////////
-						// Corrections
-						event = applyCorrCalib.CorrectEvent(event, doPedestal, doTimeDepOffset, doEnergyCalib)
-						//////////////////////////////////////////////////////
-						// 						dqplots.FillHistos(event)
-						// mult, pulsesWithSignal, _ := event.Multiplicity()
 
-						// 						if treeLOR != nil {
-						// 							treeLOR.Fill(run, r.Header(), event, timesRF)
-						// 						}
-						// 						fmt.Println(" \nlength middle: ", len(event.LORs))
-						dqplots.FillHistos(event, *rfcutmean, *rfcutwidth)
-						// 						fmt.Println(" length after: ", len(event.LORs))
-						if *iEvent%*monFreq == 0 {
-							// Webserver data
+				// 					event.Print(true, false)
+				noEventsForMon++
+				////////////////////////////////////////////////////////////////////////////////////////////
+				// Monitoring
+				if !pauseMonBool {
+					//////////////////////////////////////////////////////
+					// Corrections
+					event = applyCorrCalib.CorrectEvent(event, doPedestal, doTimeDepOffset, doEnergyCalib)
+					//////////////////////////////////////////////////////
+					// 						dqplots.FillHistos(event)
+					// mult, pulsesWithSignal, _ := event.Multiplicity()
 
-							var qs Quartets
-							var qsWoData QuartetsWoData
-							// 							sampFreq := 5
-							sampFreq := 1
-							if *monLight {
-								sampFreq = 20
-							}
-							for iq := 0; iq < len(qs); iq++ {
-								qs[iq][0] = GetMonData(sampFreq, event.Clusters[iq].Pulses[0])
-								qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])
-								qs[iq][2] = GetMonData(sampFreq, event.Clusters[iq].Pulses[2])
-								qs[iq][3] = GetMonData(sampFreq, event.Clusters[iq].Pulses[3])
-							}
-							for iq := 0; iq < len(qsWoData); iq++ {
-								qsWoData[iq][0] = GetMonData(sampFreq, event.ClustersWoData[iq].Pulses[0])
-								qsWoData[iq][1] = GetMonData(sampFreq, event.ClustersWoData[iq].Pulses[1])
-								qsWoData[iq][2] = GetMonData(sampFreq, event.ClustersWoData[iq].Pulses[2])
-								qsWoData[iq][3] = GetMonData(sampFreq, event.ClustersWoData[iq].Pulses[3])
-							}
+					// 						if treeLOR != nil {
+					// 							treeLOR.Fill(run, r.Header(), event, timesRF)
+					// 						}
+					// 						fmt.Println(" \nlength middle: ", len(event.LORs))
+					dqplots.FillHistos(event, *rfcutmean, *rfcutwidth)
+					// 						fmt.Println(" length after: ", len(event.LORs))
+					if *iEvent%*monFreq == 0 {
+						// Webserver data
 
-							// Make frequency histo plot
-							tpfreq := dqplots.MakeFreqTiledPlot()
-							freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
-
-							chargeLsvg := ""
-							chargeRsvg := ""
-							if !*monLight {
-								// Make charge (or amplitude) distrib histo plot
-								var whichVar dq.WhichVar
-								switch *distr {
-								case "charge":
-									whichVar = dq.Charge
-								case "ampl":
-									whichVar = dq.Amplitude
-								case "energy":
-									whichVar = dq.Energy
-								default:
-									panic("String passed to option -distr not recognized (see godaq -h)")
-								}
-								tpchargeL := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Left)
-								tpchargeR := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Right)
-								chargeLsvg = utils.RenderSVG(tpchargeL, 45, 30)
-								chargeRsvg = utils.RenderSVG(tpchargeR, 45, 30)
-							}
-
-							tpMinRecZ := dqplots.MakeMinRecZDistr()
-							minrecZsvg = utils.RenderSVG(tpMinRecZ, 25, 6)
-
-							stop := time.Now()
-							duration := stop.Sub(start).Seconds()
-							start = stop
-							time := stop.Sub(startabs).Seconds()
-							freq := float64(noEventsForMon) / duration
-							if *iEvent == 0 {
-								freq = 0
-							}
-
-							// Make DeltaT30 plot
-							pDeltaT30 := dqplots.MakeDeltaT30Plot()
-							DeltaT30svg := utils.RenderSVG(pDeltaT30, 12, 7.5)
-
-							// Make inclusive energy plots
-							pEnergyAll := dqplots.MakeEnergyPlot()
-							EnergyAllsvg := utils.RenderSVG(pEnergyAll, 10, 7.5)
-
-							// Make LOR multiplicity plot
-							pLORMult := dqplots.MakeLORMultPlot()
-							LORMultsvg := utils.RenderSVG(pLORMult, 10, 7.5)
-
-							// Make ampl correlation plot
-							pAmplCorrelation := dqplots.MakeAmplCorrelationPlot()
-							AmplCorrelationsvg := ""
-							if *iEvent > 0 && dqplots.AmplCorrelation.Entries() > 0 {
-								AmplCorrelationsvg = utils.RenderSVG(pAmplCorrelation, 9, 9)
-							}
-
-							// Make energy correlation plot
-							pEnergyCorrelation := dqplots.MakeEnergyCorrelationPlot()
-							EnergyCorrelationsvg := ""
-							if *iEvent > 0 && dqplots.EnergyCorrelation.Entries() > 0 {
-								EnergyCorrelationsvg = utils.RenderSVG(pEnergyCorrelation, 9, 9)
-							}
-
-							// Make RF plot "a la arnaud"
-							pRFplotALaArnaud := dqplots.MakeRFPlotALaArnaud()
-							RFplotALaArnaudsvg := ""
-							if *iEvent > 0 && dqplots.HEnergyVsDeltaTggRF.Entries() > 0 {
-								RFplotALaArnaudsvg = utils.RenderSVG(pRFplotALaArnaud, 9, 9)
-							}
-
-							// Make HitQuartets plot
-							pHitQuartets := dqplots.MakeHitQuartetsPlot()
-							HitQuartetssvg := ""
-							if *iEvent > 0 && dqplots.HitQuartets.Entries() > 0 {
-								HitQuartetssvg = utils.RenderSVG(pHitQuartets, 9, 9)
-							}
-
-							// send to channel
-							if float64(len(datac)) >= 0.6*float64(datacsize) {
-								fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
-							}
-							//fmt.Println(event.Counters)
-							// 							var tstamp uint64 = uint64(event.Counters[3]) << 32 | uint64(event.Counters[2])
-							// 							fmt.Println("tstamp = ", tstamp)
-
-							Correlationsvg := AmplCorrelationsvg
-							if *distr == "energy" {
-								Correlationsvg = EnergyCorrelationsvg
-							}
-							// 							if event.Counters[0] != 0 {
-							// 								fmt.Println(event.Counters[4], event.Counters[0], uint64(event.Counters[4])*uint64(64000000)/uint64(event.Counters[0]))
-							// 							}
-							dataToMonitor := Data{
-								EvtID:                 event.ID,
-								Time:                  time,
-								Counters:              event.Counters,
-								TimeStamp:             0,
-								MonBufSize:            len(datac),
-								Freq:                  freq,
-								NoPacketsPerEvent:     int(event.NoFrames),
-								Qs:                    qs,
-								QsWoData:              qsWoData,
-								FreqH:                 freqhsvg,
-								ChargeL:               chargeLsvg,
-								ChargeR:               chargeRsvg,
-								MinRecZDistr:          minrecZsvg,
-								DeltaT30:              DeltaT30svg,
-								EnergyAll:             EnergyAllsvg,
-								AmplEnergyCorrelation: Correlationsvg,
-								HitQuartets:           HitQuartetssvg,
-								RFplotALaArnaud:       RFplotALaArnaudsvg,
-								LORMult:               LORMultsvg,
-							}
-							//dataToMonitor.Print()
-							datac <- dataToMonitor
-							noEventsForMon = 0
+						var qs Quartets
+						var qsWoData QuartetsWoData
+						// 							sampFreq := 5
+						sampFreq := 1
+						if *monLight {
+							sampFreq = 20
 						}
+						for iq := 0; iq < len(qs); iq++ {
+							qs[iq][0] = GetMonData(sampFreq, event.Clusters[iq].Pulses[0])
+							qs[iq][1] = GetMonData(sampFreq, event.Clusters[iq].Pulses[1])
+							qs[iq][2] = GetMonData(sampFreq, event.Clusters[iq].Pulses[2])
+							qs[iq][3] = GetMonData(sampFreq, event.Clusters[iq].Pulses[3])
+						}
+						for iq := 0; iq < len(qsWoData); iq++ {
+							qsWoData[iq][0] = GetMonData(sampFreq, event.ClustersWoData[iq].Pulses[0])
+							qsWoData[iq][1] = GetMonData(sampFreq, event.ClustersWoData[iq].Pulses[1])
+							qsWoData[iq][2] = GetMonData(sampFreq, event.ClustersWoData[iq].Pulses[2])
+							qsWoData[iq][3] = GetMonData(sampFreq, event.ClustersWoData[iq].Pulses[3])
+						}
+
+						// Make frequency histo plot
+						tpfreq := dqplots.MakeFreqTiledPlot()
+						freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
+
+						chargeLsvg := ""
+						chargeRsvg := ""
+						if !*monLight {
+							// Make charge (or amplitude) distrib histo plot
+							var whichVar dq.WhichVar
+							switch *distr {
+							case "charge":
+								whichVar = dq.Charge
+							case "ampl":
+								whichVar = dq.Amplitude
+							case "energy":
+								whichVar = dq.Energy
+							default:
+								panic("String passed to option -distr not recognized (see godaq -h)")
+							}
+							tpchargeL := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Left)
+							tpchargeR := dqplots.MakeChargeAmplTiledPlot(whichVar, dpgadetector.Right)
+							chargeLsvg = utils.RenderSVG(tpchargeL, 45, 30)
+							chargeRsvg = utils.RenderSVG(tpchargeR, 45, 30)
+						}
+
+						tpMinRecZ := dqplots.MakeMinRecZDistr()
+						minrecZsvg = utils.RenderSVG(tpMinRecZ, 25, 6)
+
+						stop := time.Now()
+						duration := stop.Sub(start).Seconds()
+						start = stop
+						time := stop.Sub(startabs).Seconds()
+						freq := float64(noEventsForMon) / duration
+						if *iEvent == 0 {
+							freq = 0
+						}
+
+						// Make DeltaT30 plot
+						pDeltaT30 := dqplots.MakeDeltaT30Plot()
+						DeltaT30svg := utils.RenderSVG(pDeltaT30, 12, 7.5)
+
+						// Make inclusive energy plots
+						pEnergyAll := dqplots.MakeEnergyPlot()
+						EnergyAllsvg := utils.RenderSVG(pEnergyAll, 10, 7.5)
+
+						// Make LOR multiplicity plot
+						pLORMult := dqplots.MakeLORMultPlot()
+						LORMultsvg := utils.RenderSVG(pLORMult, 10, 7.5)
+
+						// Make ampl correlation plot
+						pAmplCorrelation := dqplots.MakeAmplCorrelationPlot()
+						AmplCorrelationsvg := ""
+						if *iEvent > 0 && dqplots.AmplCorrelation.Entries() > 0 {
+							AmplCorrelationsvg = utils.RenderSVG(pAmplCorrelation, 9, 9)
+						}
+
+						// Make energy correlation plot
+						pEnergyCorrelation := dqplots.MakeEnergyCorrelationPlot()
+						EnergyCorrelationsvg := ""
+						if *iEvent > 0 && dqplots.EnergyCorrelation.Entries() > 0 {
+							EnergyCorrelationsvg = utils.RenderSVG(pEnergyCorrelation, 9, 9)
+						}
+
+						// Make RF plot "a la arnaud"
+						pRFplotALaArnaud := dqplots.MakeRFPlotALaArnaud()
+						RFplotALaArnaudsvg := ""
+						if *iEvent > 0 && dqplots.HEnergyVsDeltaTggRF.Entries() > 0 {
+							RFplotALaArnaudsvg = utils.RenderSVG(pRFplotALaArnaud, 9, 9)
+						}
+
+						// Make HitQuartets plot
+						pHitQuartets := dqplots.MakeHitQuartetsPlot()
+						HitQuartetssvg := ""
+						if *iEvent > 0 && dqplots.HitQuartets.Entries() > 0 {
+							HitQuartetssvg = utils.RenderSVG(pHitQuartets, 9, 9)
+						}
+
+						// send to channel
+						if float64(len(datac)) >= 0.6*float64(datacsize) {
+							fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
+						}
+						//fmt.Println(event.Counters)
+						// 							var tstamp uint64 = uint64(event.Counters[3]) << 32 | uint64(event.Counters[2])
+						// 							fmt.Println("tstamp = ", tstamp)
+
+						Correlationsvg := AmplCorrelationsvg
+						if *distr == "energy" {
+							Correlationsvg = EnergyCorrelationsvg
+						}
+						// 							if event.Counters[0] != 0 {
+						// 								fmt.Println(event.Counters[4], event.Counters[0], uint64(event.Counters[4])*uint64(64000000)/uint64(event.Counters[0]))
+						// 							}
+						dataToMonitor := Data{
+							EvtID:                 event.ID,
+							Time:                  time,
+							Counters:              event.Counters,
+							TimeStamp:             0,
+							MonBufSize:            len(datac),
+							Freq:                  freq,
+							NoPacketsPerEvent:     int(event.NoFrames),
+							Qs:                    qs,
+							QsWoData:              qsWoData,
+							FreqH:                 freqhsvg,
+							ChargeL:               chargeLsvg,
+							ChargeR:               chargeRsvg,
+							MinRecZDistr:          minrecZsvg,
+							DeltaT30:              DeltaT30svg,
+							EnergyAll:             EnergyAllsvg,
+							AmplEnergyCorrelation: Correlationsvg,
+							HitQuartets:           HitQuartetssvg,
+							RFplotALaArnaud:       RFplotALaArnaudsvg,
+							LORMult:               LORMultsvg,
+						}
+						//dataToMonitor.Print()
+						datac <- dataToMonitor
+						noEventsForMon = 0
 					}
-					// End of monitoring
-					////////////////////////////////////////////////////////////////////////////////////////////
-					*iEvent++
-					//noEventsForMon++
-					if *sleep {
-						fmt.Println("Warning: sleeping for 1 second")
-						time.Sleep(1 * time.Second)
-					}
-				case true:
-					fmt.Println("warning, event is corrupted and therefore not written to output file.")
-					log.Fatalf(" -> quitting")
+				}
+				// End of monitoring
+				////////////////////////////////////////////////////////////////////////////////////////////
+				*iEvent++
+				//noEventsForMon++
+				if *sleep {
+					fmt.Println("Warning: sleeping for 1 second")
+					time.Sleep(1 * time.Second)
 				}
 			case false:
 				fmt.Println("reached specified number of events, stopping.")
