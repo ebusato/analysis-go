@@ -117,7 +117,8 @@ type Data struct {
 	AmplEnergyCorrelation string         `json:"amplenergycorrelation"` // amplitude or energy correlation for events with multiplicity=2
 	HitQuartets           string         `json:"hitquartets"`           // 2D plot displaying quartets that are hit for events with multiplicity=2
 	RFplotALaArnaud       string         `json:"rfplotalaarnaud"`       // 2D RF plot "a la Arnaud"
-	LORMult               string         `json:"lormult"`               // LOR multiplicity
+	//SRoutTiled            string         `json:"srouttiled"`            // SRout tiled plot
+	LORMult string `json:"lormult"` // LOR multiplicity
 }
 
 func (d *Data) Print() {
@@ -504,6 +505,13 @@ func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 							HitQuartetssvg = utils.RenderSVG(pHitQuartets, 9, 9)
 						}
 
+						// Make SRout plot
+						// 						pSRout := dqplots.MakeSRoutTiledPlot()
+						// 						SRoutsvg := ""
+						// 						if *iEvent > 0 {
+						// 							SRoutsvg = utils.RenderSVG(pSRout, 9, 9)
+						// 						}
+
 						// send to channel
 						if float64(len(datac)) >= 0.6*float64(datacsize) {
 							fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
@@ -539,6 +547,7 @@ func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 							HitQuartets:           HitQuartetssvg,
 							RFplotALaArnaud:       RFplotALaArnaudsvg,
 							LORMult:               LORMultsvg,
+							//SRoutTiled:            SRoutsvg,
 						}
 						//dataToMonitor.Print()
 						datac <- dataToMonitor

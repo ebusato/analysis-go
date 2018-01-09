@@ -109,7 +109,7 @@
 		opts.pan = {interactive: true}
 		
 		function update() {
-			var freq = $.plot("#my-freq-plot", [freqplot], opts);
+// 			var freq = $.plot("#my-freq-plot", [freqplot], opts);
 			freq.setupGrid(); // needed as x-axis changes
 			freq.draw();
 			var bufsize = $.plot("#my-monbufsize-plot", [monbufsizeplot], opts);
@@ -257,10 +257,7 @@
 			</table>
 		</div>
 		<table cellspacing="15">
-		<tr>
-		<!--td valign="top">
-			<div id="graph3DMinReco"></div>
-		</td-->		
+		<tr>	
 		<td width="600">
 			<div id="my-mult-plot" class="my-plot-stylefreq"></div>
 		</td>
@@ -277,7 +274,7 @@
 			<ul class="tab-links">
 			<li class="active"><a href="#tab1">Occupancy and pulses</a></li>
 			<li><a href="#tab2">Charge/Amplitude/Energy distribution</a></li>
-			<li><a href="#tab3">SRout</a></li>
+			<li><a href="#tab3">HV</a></li>
 			<img border="0" src="DPGAmapping.png" style="width:304px;" align="right">
 			</ul>
 			<div class="tab-content">

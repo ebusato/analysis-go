@@ -250,6 +250,42 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 	return tp
 }
 
+func (d *DQPlot) MakeSRoutTiledPlot() *hplot.TiledPlot {
+	tp := hplot.NewTiledPlot(draw.Tiles{Cols: 6, Rows: 6, PadY: 1 * vg.Centimeter})
+
+	for i := 0; i < 2; i++ {
+		for j := 0; j < 6; j++ {
+			for k := 0; k < 3; k++ {
+				icol := 0
+				irow := 0
+				if i == 0 { // right hemisphere
+					icol = 5
+					icol -= k
+					irow = j
+				} else { // left hemisphere
+					icol += k
+					irow = 5 - j
+				}
+
+				p1 := tp.Plot(irow, icol)
+				p1.X.Min = 0
+				p1.X.Max = 240
+				p1.Y.Min = 0
+				p1.X.Label.Text = "SRout"
+				p1.Y.Label.Text = "Entries"
+				p1.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
+				p1.Add(hplot.NewGrid())
+				hplot := hplot.NewH1D(&d.SRout[i][j][k])
+				hplot.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
+				hplot.Color = plotutil.Color(3)
+				p1.Add(hplot)
+
+			}
+		}
+	}
+	return tp
+}
+
 func (d *DQPlot) MakeMinRecXYDistrs() *hplot.TiledPlot {
 	tp := hplot.NewTiledPlot(draw.Tiles{Cols: 1, Rows: 2, PadY: 0.2 * vg.Centimeter})
 	p1 := tp.Plot(0, 0)
