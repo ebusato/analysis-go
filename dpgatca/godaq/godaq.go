@@ -117,8 +117,8 @@ type Data struct {
 	AmplEnergyCorrelation string         `json:"amplenergycorrelation"` // amplitude or energy correlation for events with multiplicity=2
 	HitQuartets           string         `json:"hitquartets"`           // 2D plot displaying quartets that are hit for events with multiplicity=2
 	RFplotALaArnaud       string         `json:"rfplotalaarnaud"`       // 2D RF plot "a la Arnaud"
-	//SRoutTiled            string         `json:"srouttiled"`            // SRout tiled plot
-	LORMult string `json:"lormult"` // LOR multiplicity
+	SRoutTiled            string         `json:"srouttiled"`            // SRout distributions for the 36 DRS's
+	LORMult               string         `json:"lormult"`               // LOR multiplicity
 }
 
 func (d *Data) Print() {
@@ -506,11 +506,11 @@ func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 						}
 
 						// Make SRout plot
-						// 						pSRout := dqplots.MakeSRoutTiledPlot()
-						// 						SRoutsvg := ""
-						// 						if *iEvent > 0 {
-						// 							SRoutsvg = utils.RenderSVG(pSRout, 9, 9)
-						// 						}
+						pSRout := dqplots.MakeSRoutTiledPlot()
+						SRoutsvg := ""
+						if *iEvent > 0 {
+							SRoutsvg = utils.RenderSVG(pSRout, 50, 30)
+						}
 
 						// send to channel
 						if float64(len(datac)) >= 0.6*float64(datacsize) {
@@ -547,7 +547,7 @@ func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 							HitQuartets:           HitQuartetssvg,
 							RFplotALaArnaud:       RFplotALaArnaudsvg,
 							LORMult:               LORMultsvg,
-							//SRoutTiled:            SRoutsvg,
+							SRoutTiled:            SRoutsvg,
 						}
 						//dataToMonitor.Print()
 						datac <- dataToMonitor
