@@ -192,7 +192,6 @@ func main() {
 	} else {
 		r, _ = rwvme.NewReader(bufio.NewReader(f), rwvme.HeaderCAL)
 	}
-	r.SetDebug()
 	// 	r, err := rw.NewReader(bufio.NewReader(f))
 	// 	if err != nil {
 	// 		log.Fatalf("could not open stream: %v\n", err)
@@ -310,14 +309,14 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 	if noSamplesPulse == 0 {
 		return data
 	}
-	fmt.Println(noSamplesPulse, len(data))
+	// 	fmt.Println(noSamplesPulse, len(data))
 	counter := 0
 	for i := range pulse.Samples {
 		if i%sampFreq == 0 {
 			samp := &pulse.Samples[i]
 			var x float64
-			x = float64(samp.Index)
-			// 			x = float64(samp.Capacitor.ID())
+			// 			x = float64(samp.Index)
+			x = float64(samp.Capacitor.ID())
 
 			// 			fmt.Println("i=", i, x, samp.Amplitude, counter)
 			data[counter] = XY{X: x, Y: samp.Amplitude}

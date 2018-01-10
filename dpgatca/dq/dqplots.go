@@ -150,18 +150,20 @@ func (d *DQPlot) FillHistos(event *event.Event, RFcutMean, RFcutWidth float64) {
 		}
 
 		if cluster.Quartet != nil { // for rct, this selects only cluster for which one has data
-			fmt.Printf("Quartet %p\n", cluster.Quartet)
-			fmt.Printf("DRS %p\n", cluster.Quartet.DRS)
+			// 			fmt.Printf("Quartet %p\n", cluster.Quartet)
+			// 			fmt.Printf("DRS %p\n", cluster.Quartet.DRS)
 			iDRS := cluster.Quartet.DRS.ID()
 			iASM := cluster.Quartet.DRS.ASMCard.ID()
 			hemi := cluster.Quartet.DRS.ASMCard.UpStr.(*dpgadetector.Hemisphere)
-			fmt.Println("LALA: ", iDRS, iASM, hemi.Which())
+			// 			fmt.Println("LALA: ", iDRS, iASM, hemi.Which())
 			if SRoutBool[hemi.Which()][iASM][iDRS] == false {
 				d.SRout[hemi.Which()][iASM][iDRS].Fill(float64(cluster.SRout), 1)
 				SRoutBool[hemi.Which()][iASM][iDRS] = true
 			}
 		}
 	}
+
+	fmt.Println("SRout entries =", d.SRout[0][0][2].Entries())
 
 	d.HMultiplicity.Fill(float64(mult), 1)
 	d.HSatMultiplicity.Fill(float64(satmult), 1)
@@ -273,7 +275,7 @@ func (d *DQPlot) MakeSRoutTiledPlot() *hplot.TiledPlot {
 				p1.Y.Min = 0
 				p1.X.Label.Text = "SRout"
 				p1.Y.Label.Text = "Entries"
-				p1.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
+				p1.X.Tick.Marker = &hplot.FreqTicks{N: 21, Freq: 5}
 				p1.Add(hplot.NewGrid())
 				hplot := hplot.NewH1D(&d.SRout[i][j][k])
 				hplot.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}

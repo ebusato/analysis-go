@@ -207,20 +207,20 @@ func (r *Reader) readFrameData(data *HalfDRSData) {
 		r.read(&chanData.Amplitudes, binary.BigEndian)
 
 		chanData.Channel = chanData.FirstChanWord & 0x7f
-		fmt.Printf("SecondChanWord = %x\n", chanData.SecondChanWord)
+		// 		fmt.Printf("SecondChanWord = %x\n", chanData.SecondChanWord)
 		chanData.SRout = chanData.SecondChanWord & 0x3ff
-		fmt.Println("SRout here =", chanData.SRout)
+		// 		fmt.Println("SRout here =", chanData.SRout)
 	}
 }
 
 func (r *Reader) readFrameTrailer(f *FrameTrailer) {
 	r.readU16(&f.Crc, binary.BigEndian)
 	// Temporary fix, until we understand where these additionnal 16 bits come from
-	fmt.Printf("CRC = %x\n", f.Crc)
+	// 	fmt.Printf("CRC = %x\n", f.Crc)
 	if f.Crc != ctrl0xCRC {
 		//fmt.Printf("CRC = %x (should be %x)\n", f.CRC, ctrl0xCRC)
 		r.readU16(&f.Crc, binary.BigEndian)
-		fmt.Printf("new CRC = %x\n", f.Crc)
+		// 		fmt.Printf("new CRC = %x\n", f.Crc)
 	}
 	// End of temporary fix
 	r.readU16(&f.EoF, binary.BigEndian)
@@ -439,7 +439,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			// 				fmt.Printf("iCluster = %v\n", iCluster)
 			event.Clusters[iCluster].ID = iCluster
 			event.Clusters[iCluster].Quartet = dpgadetector.Det.QuartetFromIdAbs60(iCluster)
-			fmt.Printf("Quartet in reader %p\n", event.Clusters[iCluster].Quartet)
+			// 			fmt.Printf("Quartet in reader %p\n", event.Clusters[iCluster].Quartet)
 			////////////////////////////////////////////////////////
 			// Put pulses in event
 			event.Clusters[iCluster].Pulses[0] = *pulses[0]
