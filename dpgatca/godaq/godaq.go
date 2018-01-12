@@ -27,6 +27,7 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rwi"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rwvme"
+	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/trees"
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
@@ -348,17 +349,17 @@ func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 	if *refplots != "" {
 		dqplots.DQPlotRef = dq.NewDQPlotFromGob(*refplots)
 	}
-	/*outrootfileName := strings.Replace(*outfileName, ".bin", "LOR.root", 1)
-	var treeLOR *trees.TreeLOR
+	outRootFileName := strings.Replace(*inFileName, ".bin", ".root", 1)
+	var tree *trees.Tree
 	if !*notree {
 		path, _ := os.Getwd()
 		//fmt.Println(path)
 		if strings.Contains(path, "analysis-go") {
-			treeLOR = trees.NewTreeLOR(outrootfileName)
+			tree = trees.NewTree(outRootFileName)
 		} else {
-			treeLOR = trees.NewTreeLOR(os.Getenv("HOME") + "/godaq_rootfiles/" + outrootfileName)
+			tree = trees.NewTree(os.Getenv("HOME") + "/godaq_rootfiles/" + outRootFileName)
 		}
-	}*/
+	}
 	minrecZsvg := ""
 	start := time.Now()
 	startabs := start
@@ -397,9 +398,9 @@ func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 					// 						dqplots.FillHistos(event)
 					// mult, pulsesWithSignal, _ := event.Multiplicity()
 
-					// 						if treeLOR != nil {
-					// 							treeLOR.Fill(run, r.Header(), event, timesRF)
-					// 						}
+					if tree != nil {
+						tree.Fill(run, event)
+					}
 					// 						fmt.Println(" \nlength middle: ", len(event.LORs))
 					dqplots.FillHistos(event, *rfcutmean, *rfcutwidth)
 					// 						fmt.Println(" length after: ", len(event.LORs))
@@ -562,9 +563,9 @@ func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 				}
 			case false:
 				fmt.Println("reached specified number of events, stopping.")
-				// 				if treeLOR != nil {
-				// 					treeLOR.Close()
-				// 				}
+				if tree != nil {
+					tree.Close()
+				}
 				return
 			}
 		}
