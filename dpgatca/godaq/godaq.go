@@ -23,7 +23,6 @@ import (
 	"gitlab.in2p3.fr/avirm/analysis-go/applyCorrCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/calib/selectCalib"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
-	// 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/trees"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/dq"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpgatca/rwi"
