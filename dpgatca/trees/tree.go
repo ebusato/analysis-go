@@ -118,7 +118,9 @@ func (t *Tree) Fill(run uint32, event *event.Event) {
 		t.data.NoLocMaxRisingFront[i] = uint16(pulse.NoLocMaxRisingFront)
 
 		for j := range pulse.Samples {
-			t.data.SampleTimes[j] = pulse.Samples[j].Time
+			if i == 0 {
+				t.data.SampleTimes[j] = pulse.Samples[j].Time
+			}
 			t.data.Pulse[i][j] = pulse.Samples[j].Amplitude
 		}
 	}

@@ -44,6 +44,7 @@ var (
 	noEvents     = flag.Uint("n", 100000, "Number of events")
 	inFileName   = flag.String("i", "", "Name of input file (if non empty, use it rather than input stream from DAQ")
 	outFileName  = flag.String("o", "", "Name of the output file. If not specified, setting it automatically using the following syntax: runXXX.bin (where XXX is the run number)")
+	treeFileName = flag.String("ot", "", "Name of the TFile containing the output tree")
 	ip           = flag.String("ip", "192.168.100.11", "IP address")
 	port         = flag.String("p", "1024", "Port number")
 	monFreq      = flag.Uint("mf", 100, "Monitoring frequency")
@@ -352,12 +353,16 @@ func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 	outRootFileName := strings.Replace(*inFileName, ".bin", ".root", 1)
 	var tree *trees.Tree
 	if !*notree {
-		path, _ := os.Getwd()
-		//fmt.Println(path)
-		if strings.Contains(path, "analysis-go") {
-			tree = trees.NewTree(outRootFileName)
+		if *treeFileName != "" {
+			tree = trees.NewTree(*treeFileName)
 		} else {
-			tree = trees.NewTree(os.Getenv("HOME") + "/godaq_rootfiles/" + outRootFileName)
+			path, _ := os.Getwd()
+			//fmt.Println(path)
+			if strings.Contains(path, "analysis-go") {
+				tree = trees.NewTree(outRootFileName)
+			} else {
+				tree = trees.NewTree(os.Getenv("HOME") + "/godaq_rootfiles/" + outRootFileName)
+			}
 		}
 	}
 	minrecZsvg := ""
@@ -379,7 +384,8 @@ func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 					fmt.Printf("event %v (event.ID = %v)\n", *iEvent, event.ID)
 				}
 				if err != nil {
-					panic(err)
+					// 					panic(err)
+					fmt.Println(err)
 				}
 				if event == nil && err != nil { // EOF
 					fmt.Printf("Reached EOF for iEvent = %v\n", *iEvent)
