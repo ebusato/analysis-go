@@ -232,6 +232,12 @@ func (f *Frame) SetDataSliceLen(noSamples int) {
 	}
 }
 
+func (f *Frame) Print() {
+	f.Header.Print()
+	f.Data.Print()
+	f.Trailer.Print()
+}
+
 /*func NewFrame(udppayloadsize int) *Frame {
 	f := &Frame{}
 	f.UDPPayloadSize = udppayloadsize

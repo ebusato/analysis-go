@@ -163,7 +163,7 @@ func (d *DQPlot) FillHistos(event *event.Event, RFcutMean, RFcutWidth float64) {
 		}
 	}
 
-	fmt.Println("SRout entries =", d.SRout[0][0][2].Entries())
+	// 	fmt.Println("SRout entries =", d.SRout[0][0][2].Entries())
 
 	d.HMultiplicity.Fill(float64(mult), 1)
 	d.HSatMultiplicity.Fill(float64(satmult), 1)

@@ -1,6 +1,8 @@
 package trees
 
 import (
+	"fmt"
+
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
@@ -32,10 +34,13 @@ type ROOTData struct {
 	T90                 [NoPulsesMax]float64
 	Tf20                [NoPulsesMax]float64
 	NoLocMaxRisingFront [NoPulsesMax]uint16
+	SRout               [NoPulsesMax]uint16
 
-	NoSamples   int32
-	SampleTimes [NoSamplesMax]float64
-	Pulse       [NoPulsesMax][NoSamplesMax]float64
+	NoSamples     int32
+	SampleTimes   [NoSamplesMax]float64
+	SampleIndices [NoSamplesMax]uint16
+	Pulse         [NoPulsesMax][NoSamplesMax]float64
+	CapaId        [NoPulsesMax][NoSamplesMax]uint16
 }
 
 type Tree struct {
@@ -78,10 +83,15 @@ func NewTree(outrootfileName string) *Tree {
 	_, err = t.tree.Branch2("T90", &t.data.T90, "T90[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("Tf20", &t.data.Tf20, "Tf20[NoPulses]/D", bufsiz)
 	_, err = t.tree.Branch2("NoLocMaxRisingFront", &t.data.NoLocMaxRisingFront, "NoLocMaxRisingFront[NoPulses]/s", bufsiz)
+	_, err = t.tree.Branch2("SRout", &t.data.SRout, "SRout[NoPulses]/s", bufsiz)
 
 	_, err = t.tree.Branch2("NoSamples", &t.data.NoSamples, "NoSamples/I", bufsiz)
-	_, err = t.tree.Branch2("SampleTimes", &t.data.SampleTimes, "SampleTimes[999]/D", bufsiz)
-	_, err = t.tree.Branch2("Pulse", &t.data.Pulse, "Pulse[NoPulses][999]/D", bufsiz)
+	_, err = t.tree.Branch2("SampleTimes", &t.data.SampleTimes, "SampleTimes[NoSamples]/D", bufsiz)
+	_, err = t.tree.Branch2("SampleIndices", &t.data.SampleIndices, "SampleIndices[NoSamples]/s", bufsiz)
+	_, err = t.tree.Branch2("Pulse", &t.data.Pulse, "Pulse[NoPulses][1023]/D", bufsiz)
+	_, err = t.tree.Branch2("CapaId", &t.data.CapaId, "CapaId[NoPulses][1023]/s", bufsiz)
+	// 	_, err = t.tree.Branch2("Pulse", &t.data.Pulse, "Pulse[NoPulses][848]/D", bufsiz)
+	// 	_, err = t.tree.Branch2("CapaId", &t.data.CapaId, "CapaId[NoPulses][848]/s", bufsiz)
 
 	return &t
 }
@@ -93,8 +103,10 @@ func (t *Tree) Fill(run uint32, event *event.Event) {
 
 	noPulses, pulses, _ := event.Multiplicity()
 	t.data.NoPulses = int32(noPulses)
+	fmt.Println("noPulses=", t.data.NoPulses)
 	if noPulses > 0 {
 		t.data.NoSamples = int32(len(pulses[0].Samples))
+		fmt.Println("NoSamples=", t.data.NoSamples)
 	}
 	for i := range pulses {
 		pulse := pulses[i]
@@ -116,12 +128,15 @@ func (t *Tree) Fill(run uint32, event *event.Event) {
 		t.data.T90[i] = pulse.Time90
 		t.data.Tf20[i] = pulse.TimeFall20
 		t.data.NoLocMaxRisingFront[i] = uint16(pulse.NoLocMaxRisingFront)
+		t.data.SRout[i] = pulse.SRout
 
 		for j := range pulse.Samples {
 			if i == 0 {
 				t.data.SampleTimes[j] = pulse.Samples[j].Time
+				t.data.SampleIndices[j] = pulse.Samples[j].Index
 			}
 			t.data.Pulse[i][j] = pulse.Samples[j].Amplitude
+			t.data.CapaId[i][j] = pulse.Samples[j].Capacitor.ID()
 		}
 	}
 

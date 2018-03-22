@@ -315,95 +315,97 @@ func MakePulses(f *Frame, sigThreshold uint) []*pulse.Pulse {
 }
 
 // for tca
-// func (r *Reader) ReadNextEvent() (*event.Event, error) {
-// 	event := event.NewEvent(dpgadetector.Det.NoClusters())
-// 	firstPass := true
-// 	i := 0
-// 	for {
-// 		var frame *Frame = nil
-// 		if r.firstFrameOfEvent != nil { // enter here only for first frame of event
-// 			frame = r.firstFrameOfEvent
-// 			if r.err != nil {
-// 				log.Println("error not nil", r.err)
-// 				if r.err == io.EOF {
-// 					return nil, r.err
-// 				}
-// 			}
-// 			r.firstFrameOfEvent = nil
-// 		} else { // enter here for all frames but the first one of the event
-// 			frametemp := r.Frame()
-// 			if r.err != nil {
-// 				if r.err != io.EOF {
-// 					log.Fatal("error not nil", r.err)
-// 				} else {
-// 					return nil, r.err
-// 				}
-// 			}
-// 			frame = frametemp
-// 		}
-// 		var ID uint32 = frame.Header.CptTriggerThor
-// 		fmt.Println("CptTriggerThor =", ID)
-// 		fmt.Println("frame.QuartetAbsIdx72 =", frame.QuartetAbsIdx72)
-// 		if firstPass || ID == r.IDPrevFrame { // fill event
-// 			if firstPass {
-// 				event.ID = uint(ID)
-// 			}
-// 			firstPass = false
-// 			event.NoFrames++
-// 			////////////////////////////////////////////////////////
-// 			// determine typeOfFrame
-// 			/*
+/*
+func (r *Reader) ReadNextEvent() (*event.Event, error) {
+	event := event.NewEvent(dpgadetector.Det.NoClusters())
+	firstPass := true
+	i := 0
+	for {
+		var frame *Frame = nil
+		if r.firstFrameOfEvent != nil { // enter here only for first frame of event
+			frame = r.firstFrameOfEvent
+			if r.err != nil {
+				log.Println("error not nil", r.err)
+				if r.err == io.EOF {
+					return nil, r.err
+				}
+			}
+			r.firstFrameOfEvent = nil
+		} else { // enter here for all frames but the first one of the event
+			frametemp := r.Frame()
+			if r.err != nil {
+				if r.err != io.EOF {
+					log.Fatal("error not nil", r.err)
+				} else {
+					return nil, r.err
+				}
+			}
+			frame = frametemp
+		}
+		var ID uint32 = frame.Header.CptTriggerThor
+		// 		fmt.Println("CptTriggerThor =", ID)
+		// 		fmt.Println("frame.QuartetAbsIdx72 =", frame.QuartetAbsIdx72)
+		if firstPass || ID == r.IDPrevFrame { // fill event
+			if firstPass {
+				event.ID = uint(ID)
+			}
+			firstPass = false
+			event.NoFrames++
+			////////////////////////////////////////////////////////
+			// determine typeOfFrame
+
 // 				switch fifoID144 % 2 {
 // 				case 0:
 // 					frame.typeOfFrame = FirstFrameOfCluster
 // 				case 1:
 // 					frame.typeOfFrame = SecondFrameOfCluster
 // 				}
-// 			*/
-// 			////////////////////////////////////////////////////////
-//
-// 			pulses := MakePulses(frame, r.SigThreshold)
-//
-// 			if frame.QuartetAbsIdx72%6 != 5 {
-// 				iCluster := frame.QuartetAbsIdx60
-// 				if iCluster >= 60 {
-// 					log.Fatalf("error ! iCluster=%v (>= 60)\n", iCluster)
-// 				}
-// 				// 				fmt.Printf("iCluster = %v\n", iCluster)
-// 				event.Clusters[iCluster].ID = iCluster
-// 			event.Clusters[iCluster].SetSRout()
-// 				////////////////////////////////////////////////////////
-// 				// Put pulses in event
-// 				event.Clusters[iCluster].Pulses[0] = *pulses[0]
-// 				event.Clusters[iCluster].Pulses[1] = *pulses[1]
-// 				event.Clusters[iCluster].Pulses[2] = *pulses[2]
-// 				event.Clusters[iCluster].Pulses[3] = *pulses[3]
-// 				////////////////////////////////////////////////////////
-// 			} else {
-// 				iClusterWoData := frame.QuartetAbsIdx72 / 6
-// 				// 				fmt.Printf("iClusterWoData = %v\n", iClusterWoData)
-// 				event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
-// 			event.Clusters[iClusterWoData].SetSRout()
-// 				////////////////////////////////////////////////////////
-// 				// Put pulses in event
-// 				event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]
-// 				event.ClustersWoData[iClusterWoData].Pulses[1] = *pulses[1]
-// 				event.ClustersWoData[iClusterWoData].Pulses[2] = *pulses[2]
-// 				event.ClustersWoData[iClusterWoData].Pulses[3] = *pulses[3]
-// 				////////////////////////////////////////////////////////
-// 			}
-// 		} else { // switched to next event
-// 			r.firstFrameOfEvent = frame
-// err := event.Errors() // check for example SRout here
-// 			return event, err
-// 		}
-// 		r.IDPrevFrame = ID
-// 		i++
-// 	}
-// 	log.Fatalf("error ! you should never end up here")
-// 	return nil, false
-// }
 
+			////////////////////////////////////////////////////////
+
+			pulses := MakePulses(frame, r.SigThreshold)
+
+			if frame.QuartetAbsIdx72%6 != 5 {
+				iCluster := frame.QuartetAbsIdx60
+				if iCluster >= 60 {
+					log.Fatalf("error ! iCluster=%v (>= 60)\n", iCluster)
+				}
+				// 				fmt.Printf("iCluster = %v\n", iCluster)
+				event.Clusters[iCluster].ID = iCluster
+				event.Clusters[iCluster].SetSRout()
+				////////////////////////////////////////////////////////
+				// Put pulses in event
+				event.Clusters[iCluster].Pulses[0] = *pulses[0]
+				event.Clusters[iCluster].Pulses[1] = *pulses[1]
+				event.Clusters[iCluster].Pulses[2] = *pulses[2]
+				event.Clusters[iCluster].Pulses[3] = *pulses[3]
+				////////////////////////////////////////////////////////
+			} else {
+				iClusterWoData := frame.QuartetAbsIdx72 / 6
+				// 				fmt.Printf("iClusterWoData = %v\n", iClusterWoData)
+				event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
+				event.Clusters[iClusterWoData].SetSRout()
+				////////////////////////////////////////////////////////
+				// Put pulses in event
+				event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]
+				event.ClustersWoData[iClusterWoData].Pulses[1] = *pulses[1]
+				event.ClustersWoData[iClusterWoData].Pulses[2] = *pulses[2]
+				event.ClustersWoData[iClusterWoData].Pulses[3] = *pulses[3]
+				////////////////////////////////////////////////////////
+			}
+		} else { // switched to next event
+			r.firstFrameOfEvent = frame
+			var err error = nil
+			// 			err := event.Errors() // check for example SRout here
+			return event, err
+		}
+		r.IDPrevFrame = ID
+		i++
+	}
+	log.Fatalf("error ! you should never end up here")
+	return nil, nil
+}
+*/
 var ID uint
 
 // for rct
@@ -424,7 +426,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 
 	for i := 0; i < 2; i++ {
 		frame := r.Frame()
-
+		frame.Print()
 		pulses := MakePulses(frame, r.SigThreshold)
 		if i == 0 {
 			SRout1 = pulses[0].SRout

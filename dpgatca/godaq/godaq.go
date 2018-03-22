@@ -1,4 +1,4 @@
-package main
+package main // package main
 
 import (
 	"bufio"
@@ -316,8 +316,8 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 		if i%sampFreq == 0 {
 			samp := &pulse.Samples[i]
 			var x float64
-			// 			x = float64(samp.Index)
-			x = float64(samp.Capacitor.ID())
+			x = float64(samp.Index)
+			// 			x = float64(samp.Capacitor.ID())
 
 			// 			fmt.Println("i=", i, x, samp.Amplitude, counter)
 			data[counter] = XY{X: x, Y: samp.Amplitude}
@@ -390,6 +390,13 @@ func stream(run uint32, r rwi.Reader, iEvent *uint, wg *sync.WaitGroup) {
 				if event == nil && err != nil { // EOF
 					fmt.Printf("Reached EOF for iEvent = %v\n", *iEvent)
 					return
+				}
+
+				if event.ID%1 == 0 {
+					//fmt.Println("before")
+					//event.PlotPulses(pulse.XaxisCapacitor, true, pulse.YRangeAuto, false)
+					// 					event.PlotPulses(pulse.XaxisIndex, true, pulse.YRangeAuto, false)
+					//fmt.Println("after")
 				}
 
 				// 					event.Print(true, false)
