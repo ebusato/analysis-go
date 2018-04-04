@@ -48,8 +48,8 @@ func NewDQPlot() *DQPlot {
 	const N = 4
 	NoClusters := uint8(5)
 	dqp := &DQPlot{
-		HFrequency:       hbook.NewH1D(240, 0, 240),
-		HSatFrequency:    hbook.NewH1D(240, 0, 240),
+		HFrequency:       hbook.NewH1D(24, 0, 24),
+		HSatFrequency:    hbook.NewH1D(24, 0, 24),
 		HMultiplicity:    hbook.NewH1D(8, -0.5, 7.5),
 		HSatMultiplicity: hbook.NewH1D(8, -0.5, 7.5),
 		HLORMult:         hbook.NewH1D(20, 0, 20),
@@ -183,11 +183,11 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 
 	p1 := tp.Plot(0, 0)
 	p1.X.Min = 0
-	p1.X.Max = 240
+	p1.X.Max = 24
 	p1.Y.Min = 0
 	p1.X.Label.Text = "channel"
 	p1.Y.Label.Text = "No pulses"
-	p1.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
+	p1.X.Tick.Marker = &hplot.FreqTicks{N: 25, Freq: 4}
 	p1.Add(hplot.NewGrid())
 	hplotfreq := hplot.NewH1D(d.HFrequency)
 	hplotfreq.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
@@ -197,11 +197,11 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 
 	p2 := tp.Plot(1, 0)
 	p2.X.Min = 0
-	p2.X.Max = 240
+	p2.X.Max = 24
 	p2.Y.Min = 0
 	p2.X.Label.Text = "channel"
 	p2.Y.Label.Text = "No sat. pulses"
-	p2.X.Tick.Marker = &hplot.FreqTicks{N: 241, Freq: 4}
+	p2.X.Tick.Marker = &hplot.FreqTicks{N: 25, Freq: 4}
 	p2.Add(hplot.NewGrid())
 	hplotsatfreq := hplot.NewH1D(d.HSatFrequency)
 	hplotsatfreq.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}

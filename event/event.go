@@ -74,7 +74,7 @@ func (l *LOR) CalcTRF(timesRF []float64) {
 
 type Event struct {
 	Clusters       []pulse.Cluster
-	ClustersWoData [12]pulse.Cluster // These are the 12 clusters corresponding to the 12*4 channels unused for data at the end of each ASM board
+	ClustersWoData []pulse.Cluster // These are the 12 clusters corresponding to the 12*4 channels unused for data at the end of each ASM board
 	ID             uint
 	TimeStamp      uint64
 	NoFrames       uint8
@@ -83,18 +83,19 @@ type Event struct {
 	HasSig         bool
 }
 
-func NewEvent(noClusters uint8) *Event {
+func NewEvent(noClusters int, noClustersWoData int) *Event {
 	return &Event{
-		Clusters:  make([]pulse.Cluster, noClusters),
-		ID:        0,
-		TimeStamp: 0,
-		NoFrames:  0,
-		HasSig:    false,
+		Clusters:       make([]pulse.Cluster, noClusters),
+		ClustersWoData: make([]pulse.Cluster, noClustersWoData),
+		ID:             0,
+		TimeStamp:      0,
+		NoFrames:       0,
+		HasSig:         false,
 	}
 }
 
 func (e *Event) Copy() *Event {
-	newevent := NewEvent(uint8(e.NoClusters()))
+	newevent := NewEvent(e.NoClusters(), e.NoClustersWoData())
 	newevent.ID = e.ID
 	newevent.TimeStamp = e.TimeStamp
 	newevent.NoFrames = e.NoFrames
@@ -143,6 +144,10 @@ func (e *Event) CheckIntegrity() {
 
 func (e *Event) NoClusters() int {
 	return len(e.Clusters)
+}
+
+func (e *Event) NoClustersWoData() int {
+	return len(e.ClustersWoData)
 }
 
 func (e *Event) HasSignal() (bool, bool) {

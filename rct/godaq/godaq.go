@@ -84,12 +84,11 @@ type Pulse []XY
 // A value of type Quartet occupies 4*N*128 = 511488 bits (taking N=999)
 type Quartet [4]Pulse
 
-// Quartets is an array of 60 Quartet
-// A value of type Quartets occupies 60*4*N*128 = 30689280 bits (taking N=999)
-type Quartets [60]Quartet
+// Quartets is an array of 5 Quartet
+type Quartets [5]Quartet
 
 // QuartetsWoData is an array of 12 Quartets without data (the last ones of each ASM board)
-type QuartetsWoData [12]Quartet
+type QuartetsWoData [1]Quartet
 
 // Data is the struct that is sent via the websocket to the web client.
 type Data struct {
@@ -100,7 +99,7 @@ type Data struct {
 	MonBufSize            int            `json:"monbufsize"`            // monitoring channel buffer size
 	Freq                  float64        `json:"freq"`                  // number of events processed per second (64 bits)
 	NoPacketsPerEvent     int            `json:"nopacketsperevent"`     // number of packets per event
-	Qs                    Quartets       `json:"quartets"`              // quartets (30689280 bits)
+	Qs                    Quartets       `json:"quartets"`              // quartets
 	QsWoData              QuartetsWoData `json:"quartetswodata"`        // quartets without data
 	FreqH                 string         `json:"freqh"`                 // frequency histogram
 	Charge                string         `json:"charge"`                // charge histograms
@@ -431,7 +430,7 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 
 						// Make frequency histo plot
 						tpfreq := dqplots.MakeFreqTiledPlot()
-						freqhsvg := utils.RenderSVG(tpfreq, 50, 10)
+						freqhsvg := utils.RenderSVG(tpfreq, 30, 10)
 
 						chargesvg := ""
 						if !*monLight {
@@ -448,7 +447,7 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 								panic("String passed to option -distr not recognized (see godaq -h)")
 							}
 							tpcharge := dqplots.MakeChargeAmplTiledPlot(whichVar)
-							chargesvg = utils.RenderSVG(tpcharge, 45, 30)
+							chargesvg = utils.RenderSVG(tpcharge, 45, 7)
 						}
 
 						tpMinRecZ := dqplots.MakeMinRecZDistr()
@@ -507,7 +506,7 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 						pSRout := dqplots.MakeSRoutTiledPlot()
 						SRoutsvg := ""
 						if *iEvent > 0 {
-							SRoutsvg = utils.RenderSVG(pSRout, 50, 30)
+							SRoutsvg = utils.RenderSVG(pSRout, 30, 8)
 						}
 
 						// send to channel

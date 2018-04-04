@@ -32,10 +32,8 @@
 		
 		var nopacketspereventplot = new plot("No packets per event", [], 'green')
 		
-		var multplot = ""
 		var freqhplot = ""
-		var chargelhplot = ""
-		var chargerhplot = ""
+		var chargehplot = ""
 		var sroutplot = ""
 		var deltat30plot = ""
 		var chargeCorrelationplot = ""
@@ -43,9 +41,9 @@
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
 		
-		var Nquartets = 60
+		var Nquartets = 5
 		var quartetplots = []
-		var NquartetsWoData = 12
+		var NquartetsWoData = 1
 		var quartetWoDataplots = []
 		var Nplots = 4
 			
@@ -118,41 +116,24 @@
 			var nopacketsperevent = $.plot("#my-nopacketsperevent-plot", [nopacketspereventplot], opts);
 			nopacketsperevent.setupGrid(); // needed as x-axis changes
 			nopacketsperevent.draw();
-			var p0 = document.getElementById("my-mult-plot");
-			p0.innerHTML = multplot;
 			var p1 = document.getElementById("my-freqh-plot");
 			p1.innerHTML = freqhplot;
-			var p2 = document.getElementById("my-chargelh-plot");
-			p2.innerHTML = chargelhplot;
-			var p3 = document.getElementById("my-chargerh-plot");
-			p3.innerHTML = chargerhplot;
+			var p2 = document.getElementById("my-chargeh-plot");
+			p2.innerHTML = chargehplot;
 			var p4 = document.getElementById("my-srout-plot");
 			p4.innerHTML = sroutplot;
-			var p6 = document.getElementById("my-deltat30-plot");
-			p6.innerHTML = deltat30plot;
+			//var p6 = document.getElementById("my-deltat30-plot");
+			//p6.innerHTML = deltat30plot;
 			for (var i = 0; i < Nquartets; i++) {
-				if (i < Nquartets/2) {
-					optsR = new options('#FFFF00') // yellow
-					//optsR.zoom = {interactive: true}
-					//optsR.pan = {interactive: true}
-					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], optsR); 
-					p.setupGrid();
-					p.draw();
-				}
-				else {
-					optsL = new options('#E0F2F7') // blue
-					//optsL.zoom = {interactive: true}
-					//optsL.pan = {interactive: true}
-					var p = $.plot("#my-q"+i+"-plot", quartetplots[i], optsL); 
-					p.setupGrid();
-					p.draw();
-				}	
+				opts = new options('#E0F2F7') // blue
+				//opts.zoom = {interactive: true}
+				//opts.pan = {interactive: true}
+				var p = $.plot("#my-q"+i+"-plot", quartetplots[i], opts); 
+				p.setupGrid();
+				p.draw();
 			}
 			for (var i = 0; i < NquartetsWoData; i++) {
-				//optsWoData = new options('#FFFF00') // yellow
-				//optsR.zoom = {interactive: true}
-				//optsR.pan = {interactive: true}
-				var p = $.plot("#my-qWoData"+i+"-plot", quartetWoDataplots[i]); //, optsWoData); 
+				var p = $.plot("#my-qWoData"+i+"-plot", quartetWoDataplots[i]);
 				p.setupGrid();
 				p.draw();
 			}
@@ -168,10 +149,8 @@
 					monbufsizeplot.data.push([data.evt, data.monbufsize])
 					nopacketspereventplot.data.push([data.evt, data.nopacketsperevent])
 				}
-				multplot = data.mult
 				freqhplot = data.freqh;
-				chargelhplot = data.chargel;
-				chargerhplot = data.charger;
+				chargehplot = data.charge;
 				sroutplot = data.srouttiled;
 				deltat30plot = data.deltat30
 				for (var iq = 0; iq < Nquartets; iq += 1) {
@@ -202,21 +181,9 @@
 			font-size: 14px;
 			line-height: 1.2em;
 		}
-		.my-plot-style1 {
-			width: 250px;
-			height: 75px;
-			font-size: 14px;
-			line-height: 1.2em;
-		}
 		.my-plot-style {
-			width: 180px;
-			height: 130px;
-			font-size: 14px;
-			line-height: 1.2em;
-		}
-		.my-plot-style2 {
-			width: 150px;
-			height: 130px;
+			width: 250px;
+			height: 200px;
 			font-size: 14px;
 			line-height: 1.2em;
 		}
@@ -256,165 +223,43 @@
 			</tr>
 			</table>
 		</div>
-		<table cellspacing="15">
+		<!--table cellspacing="15">
 		<tr>
-		<td valign="top">
-		<div id="graph3DMinReco"></div>
-		</td>
-		<td width="600">
-			<div id="my-mult-plot" class="my-plot-stylefreq"></div>
-		</td>
 		<td width="600">
 			<div id="my-deltat30-plot" class="my-plot-stylefreq"></div>
 		</td>
 		</tr>
-		</table>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+		</table-->
+<!--br><br><br><br><br><br><br><br><br><br><br><br><br><br-->
 	</header>
+	
 	<div class="main">
 	<hr size="5" noshade>
-		<div class="tabs standard">
-			<ul class="tab-links">
-			<li class="active"><a href="#tab1">Occupancy and pulses</a></li>
-			<li><a href="#tab2">Charge/Amplitude/Energy distribution</a></li>
-			<li><a href="#tab3">SRout</a></li>
-			<img border="0" src="DPGAmapping.png" style="width:304px;" align="right">
-			</ul>
-			<div class="tab-content">
-				<div id="tab1" class="tab active">
-				<table cellpadding=0 cellspacing=0>
-					<tr> 
-					<td>
-					<div id="my-freqh-plot" class="my-plot-stylefreq"></div>
-					</td>
-					</tr>
-				</table>
-				<br><br><br><br><br><br><br><br><br><br>
-				<table>
-					<tr>    
-						<td colspan="5" align="center"><b>Left hemisphere</b></td> 
-						<td colspan="5" align="center"><b>Right hemisphere</b></td> 
-					</tr>
-					<tr>
-						<td><div id="my-q55-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q56-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q57-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q58-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q59-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q4-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q3-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q2-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q1-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q0-plot" class="my-plot-style"></div></td>
-					</tr>
-					<tr>
-						<td><div id="my-q50-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q51-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q52-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q53-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q54-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q9-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q8-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q7-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q6-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q5-plot" class="my-plot-style"></div></td>
-					</tr>
-					<tr>
-						<td><div id="my-q45-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q46-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q47-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q48-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q49-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q14-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q13-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q12-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q11-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q10-plot" class="my-plot-style"></div></td>
-					</tr>
-					<tr>
-						<td><div id="my-q40-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q41-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q42-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q43-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q44-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q19-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q18-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q17-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q16-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q15-plot" class="my-plot-style"></div></td>
-					</tr>
-					<tr>
-						<td><div id="my-q35-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q36-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q37-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q38-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q39-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q24-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q23-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q22-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q21-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q20-plot" class="my-plot-style"></div></td>
-					</tr>
-					<tr>
-						<td><div id="my-q30-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q31-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q32-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q33-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q34-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q29-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q28-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q27-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q26-plot" class="my-plot-style"></div></td>
-						<td><div id="my-q25-plot" class="my-plot-style"></div></td>
-					</tr>
-				</table>
-				<table>
-					<tr>
-						<td><div id="my-qWoData0-plot" class="my-plot-style2"></div></td-->
-						<td><div id="my-qWoData1-plot" class="my-plot-style2"></div></td>
-						<td><div id="my-qWoData2-plot" class="my-plot-style2"></div></td>
-						<td><div id="my-qWoData3-plot" class="my-plot-style2"></div></td>
-						<td><div id="my-qWoData4-plot" class="my-plot-style2"></div></td>
-						<td><div id="my-qWoData5-plot" class="my-plot-style2"></div></td>
-						<td><div id="my-qWoData6-plot" class="my-plot-style2"></div></td>
-						<td><div id="my-qWoData7-plot" class="my-plot-style2"></div></td>
-						<td><div id="my-qWoData8-plot" class="my-plot-style2"></div></td>
-						<td><div id="my-qWoData9-plot" class="my-plot-style2"></div></td>
-						<td><div id="my-qWoData10-plot" class="my-plot-style2"></div></td>
-						<td><div id="my-qWoData11-plot" class="my-plot-style2"></div></td>
-					</tr>
-				</table>
-				</div> <!-- tab 1 content -->
-				<div id="tab2" class="tab">
-				<div id="my-chargelh-plot" class="my-plot-stylefreq"></div>
-				<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-				<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-				<br><br><br><br><br><br><br><br>
-				<div id="my-chargerh-plot" class="my-plot-stylefreq"></div>
-				<!--table>
-					<tr>    
-						<td height="1100"><div id="my-chargelh-plot" class="my-plot-stylefreq"></div></td>
-					</tr>
-					<tr>
-						<td height="1100"><div id="my-chargerh-plot" class="my-plot-stylefreq"></div></td>
-					</tr>
-				</table-->
-				<!--table>
-					<tr>    
-						<td align="center"><b>Left hemisphere</b></td> 
-						<td align="center"><b>Right hemisphere</b></td> 
-					</tr>
-					<tr>
-						<td width="1100"><div id="my-chargelh-plot" class="my-plot-stylefreq"></div></td>
-						<td width="1100"><div id="my-chargerh-plot" class="my-plot-stylefreq"></div></td>
-					</tr>
-				</table -->
-				</div> <!-- tab 2 content -->
-				<div id="tab3" class="tab">
+	<img border="0" src="DPGAmapping.png" style="width:304px;" align="right">
+
+	<table cellpadding=0 cellspacing=0>
+	<tr> 
+	<td>
+	
+	<div id="my-freqh-plot" class="my-plot-stylefreq"></div>
+	</td>
+	</tr>
+	</table>
+	<br><br><br><br><br><br><br><br><br><br>
+	<table>
+	<tr>
+		<td><div id="my-q0-plot" class="my-plot-style"></div></td>
+		<td><div id="my-q1-plot" class="my-plot-style"></div></td>
+		<td><div id="my-q2-plot" class="my-plot-style"></div></td>
+		<td><div id="my-q3-plot" class="my-plot-style"></div></td>
+		<td><div id="my-q4-plot" class="my-plot-style"></div></td>
+		<td><div id="my-qWoData0-plot" class="my-plot-style"></div></td>
+	</tr>
+	</table>
+	<br><br><br>
+				<div id="my-chargeh-plot" class="my-plot-stylefreq"></div>
+	<br><br><br><br><br><br>
 				<div id="my-srout-plot" class="my-plot-stylefreq"></div>
-				</div>
-			</div>
-		</div>
 	</div><!--end .main-->
 </body>
 </html>

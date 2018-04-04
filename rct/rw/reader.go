@@ -326,7 +326,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	// 	}
 	/////////////////////////////////////////////////////////
 
-	event := event.NewEvent(dpgadetector.Det.NoClusters())
+	event := event.NewEvent(5, 1)
 	event.ID = ID
 	event.NoFrames = 2
 
