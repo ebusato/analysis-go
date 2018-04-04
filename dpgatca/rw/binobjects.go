@@ -153,6 +153,7 @@ type ChanData struct {
 func (c *ChanData) Print() {
 	fmt.Printf("FirstChanWord = %x (channel = %v)\n", c.FirstChanWord, c.Channel)
 	fmt.Printf("SecondChanWord = %x\n", c.SecondChanWord)
+	fmt.Printf("SRout = %v\n", c.SRout)
 	fmt.Printf("Amplitudes = ")
 	for i := range c.Amplitudes {
 		if (i+1)%16 == 0 {

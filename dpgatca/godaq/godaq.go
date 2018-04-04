@@ -317,7 +317,7 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 			samp := &pulse.Samples[i]
 			var x float64
 			x = float64(samp.Index)
-			// 			x = float64(samp.Capacitor.ID())
+			//x = float64(samp.Capacitor.ID())
 
 			// 			fmt.Println("i=", i, x, samp.Amplitude, counter)
 			data[counter] = XY{X: x, Y: samp.Amplitude}

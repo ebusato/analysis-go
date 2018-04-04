@@ -413,9 +413,9 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	//////////////////////////////////////////////////////
 	// Temporary fix:
 	// Read first frame and do nothing with it (remove it)
-	if ID == 0 {
-		r.Frame()
-	}
+	// 	if ID == 0 {
+	// 		r.Frame()
+	// 	}
 	/////////////////////////////////////////////////////////
 
 	event := event.NewEvent(dpgadetector.Det.NoClusters())
@@ -426,7 +426,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 
 	for i := 0; i < 2; i++ {
 		frame := r.Frame()
-		frame.Print()
+// 		frame.Print()
 		pulses := MakePulses(frame, r.SigThreshold)
 		if i == 0 {
 			SRout1 = pulses[0].SRout
