@@ -351,6 +351,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			// 				fmt.Printf("iCluster = %v\n", iCluster)
 			event.Clusters[iCluster].ID = iCluster
 			event.Clusters[iCluster].Quartet = dpgadetector.Det.QuartetFromIdAbs60(iCluster)
+			event.Clusters[iCluster].CptTriggerAsm = framePtr.Header.CptTriggerAsm
 			// 			fmt.Printf("Quartet in reader %p\n", event.Clusters[iCluster].Quartet)
 			////////////////////////////////////////////////////////
 			// Put pulses in event
@@ -364,6 +365,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			iClusterWoData := frame.QuartetAbsIdx72 / 6
 			// 				fmt.Printf("iClusterWoData = %v\n", iClusterWoData)
 			event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
+			event.ClustersWoData[iClusterWoData].CptTriggerAsm = framePtr.Header.CptTriggerAsm
 			////////////////////////////////////////////////////////
 			// Put pulses in event
 			event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]
@@ -445,6 +447,8 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			// 				fmt.Printf("iCluster = %v\n", iCluster)
 			event.Clusters[iCluster].ID = iCluster
 			event.Clusters[iCluster].Quartet = dpgadetector.Det.QuartetFromIdAbs60(iCluster)
+			event.Clusters[iCluster].CptTriggerAsm = framePtr.Header.CptTriggerAsm
+			event.Clusters[iCluster].NoFrameAsm = framePtr.Header.NoFrameAsm
 			// 			fmt.Printf("Quartet in reader %p\n", event.Clusters[iCluster].Quartet)
 			////////////////////////////////////////////////////////
 			// Put pulses in event
@@ -458,6 +462,8 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			iClusterWoData := framePtr.QuartetAbsIdx72 / 6
 			// 				fmt.Printf("iClusterWoData = %v\n", iClusterWoData)
 			event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
+			event.ClustersWoData[iClusterWoData].CptTriggerAsm = framePtr.Header.CptTriggerAsm
+			event.ClustersWoData[iClusterWoData].NoFrameAsm = framePtr.Header.NoFrameAsm
 			////////////////////////////////////////////////////////
 			// Put pulses in event
 			event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]
