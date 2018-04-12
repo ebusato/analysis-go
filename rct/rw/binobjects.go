@@ -20,6 +20,7 @@ const (
 	ctrl0xfd                 uint16 = 0xfd
 	ctrl0xCafe               uint16 = 0xCAFE
 	ctrl0xDeca               uint16 = 0xDECA
+	ctrl0xB0b0               uint16 = 0xb0b0
 	ctrl0xCRC                uint16 = 0x9876
 	ctrl0xfb                 uint16 = 0xfb
 )
@@ -110,6 +111,9 @@ func (f *FrameHeader) Integrity() error {
 	}
 	if f.Deca != ctrl0xDeca {
 		return fmt.Errorf("asm: missing %x magic\n", ctrl0xDeca)
+	}
+	if f.Bobo != ctrl0xB0b0 {
+		return fmt.Errorf("asm: missing %x magic\n", ctrl0xB0b0)
 	}
 	return nil
 }

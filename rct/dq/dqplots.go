@@ -46,7 +46,7 @@ type DQPlot struct {
 
 func NewDQPlot() *DQPlot {
 	const N = 4
-	NoClusters := uint8(5)
+	NoClusters := uint8(6)
 	dqp := &DQPlot{
 		HFrequency:       hbook.NewH1D(24, 0, 24),
 		HSatFrequency:    hbook.NewH1D(24, 0, 24),
@@ -125,6 +125,17 @@ func (d *DQPlot) FillHistos(event *event.Event, RFcutMean, RFcutWidth float64) {
 				d.SRout[iDRS].Fill(float64(cluster.SRout), 1)
 				SRoutBool[iDRS] = true
 			}
+		}
+	}
+
+	clusterWoData := &event.ClustersWoData[0]
+	for j := range clusterWoData.Pulses {
+		pulse := &clusterWoData.Pulses[j]
+		if pulse.HasSignal {
+			d.HCharge[5][j].Fill(float64(pulse.Charge()/1e6), 1)
+			_, ampl := pulse.Amplitude()
+			d.HAmplitude[5][j].Fill(ampl, 1)
+			d.HEnergy[5][j].Fill(pulse.E, 1)
 		}
 	}
 
@@ -296,13 +307,13 @@ const (
 )
 
 func (d *DQPlot) MakeChargeAmplTiledPlot(whichV WhichVar) *hplot.TiledPlot {
-	tp := hplot.NewTiledPlot(draw.Tiles{Cols: 5, Rows: 1, PadY: 0.5 * vg.Centimeter})
+	tp := hplot.NewTiledPlot(draw.Tiles{Cols: 6, Rows: 1, PadY: 0.5 * vg.Centimeter})
 	histos := make([]hbook.H1D, len(d.HCharge[0]))
 
 	iCluster := 0
 
 	irow := 0
-	for icol := 0; icol < 5; icol++ {
+	for icol := 0; icol < 6; icol++ {
 		switch whichV {
 		case Charge:
 			histos = d.HCharge[iCluster]

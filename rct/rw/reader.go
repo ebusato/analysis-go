@@ -332,7 +332,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 
 	var SRout1, SRout2 uint16 // for debug
 
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 4; i++ {
 		frame := r.Frame()
 		// 		frame.Print()
 		pulses := MakePulses(frame, r.SigThreshold)
