@@ -91,6 +91,7 @@ type FrameHeader struct {
 
 	// derived quantities
 	FEId           uint16
+	NoFrameAsm     uint64
 	CptTriggerThor uint32
 }
 

@@ -165,7 +165,6 @@ func (r *Reader) readFrameHeader(f *FrameHeader) {
 	r.readU16(&f.NoSamples, binary.BigEndian)
 	// 	f.AMCFrameCounter = (uint32(f.AMCFrameCounters[0]) << 16) + uint32(f.AMCFrameCounters[1])
 	// 	f.FrontEndId = (f.ParityFEIdCtrl & 0x7fff) >> 8
-	// 	f.ASMFrameCounter = (uint64(f.ASMFrameCounters[0]) << 48) + (uint64(f.ASMFrameCounters[1]) << 32) + (uint64(f.ASMFrameCounters[2]) << 16) + uint64(f.ASMFrameCounters[3])
 	// 	temp := (uint64(f.TimeStampsASM[0]) << 16) | uint64(f.TimeStampsASM[1])
 	// 	temp = (temp << 32)
 	// 	temp1 := (uint64(f.TimeStampsASM[2]) << 16) | uint64(f.TimeStampsASM[3])
@@ -179,6 +178,7 @@ func (r *Reader) readFrameHeader(f *FrameHeader) {
 	///////////////////////////////////////////////////////////////////////
 
 	f.FEId = f.FEIdK30 & 0x7f
+	f.NoFrameAsm = (uint64(f.NoFrameAsmMsb) << 48) | (uint64(f.NoFrameAsmOsb) << 32) | (uint64(f.NoFrameAsmUsb) << 16) | uint64(f.NoFrameAsmLsb)
 	f.CptTriggerThor = (uint32(f.CptTriggerThorMsb) << 16) | uint32(f.CptTriggerThorLsb)
 }
 
@@ -321,9 +321,10 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	//////////////////////////////////////////////////////
 	// Temporary fix:
 	// Read first frame and do nothing with it (remove it)
-	// 	if ID == 0 {
-	// 		r.Frame()
-	// 	}
+	if ID == 0 {
+		r.Frame()
+		r.Frame()
+	}
 	/////////////////////////////////////////////////////////
 
 	event := event.NewEvent(5, 1)
@@ -331,15 +332,22 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	event.NoFrames = 2
 
 	var SRout1, SRout2 uint16 // for debug
+	var SRout3, SRout4 uint16 // for debug
+	var noFrame [4]uint64     // for debug
 
 	for i := 0; i < 4; i++ {
 		frame := r.Frame()
 		// 		frame.Print()
+		noFrame[i] = frame.Header.NoFrameAsm
 		pulses := MakePulses(frame, r.SigThreshold)
 		if i == 0 {
 			SRout1 = pulses[0].SRout
-		} else {
+		} else if i == 1 {
 			SRout2 = pulses[0].SRout
+		} else if i == 2 {
+			SRout3 = pulses[0].SRout
+		} else if i == 3 {
+			SRout4 = pulses[0].SRout
 		}
 		if frame.QuartetAbsIdx72%6 != 5 {
 			iCluster := frame.QuartetAbsIdx60
@@ -375,9 +383,17 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 
 	var err error
 
+	if noFrame[0]+1 != noFrame[1] || noFrame[1]+1 != noFrame[2] || noFrame[2]+1 != noFrame[3] {
+		fmt.Printf("NoFrameAsmError: %v %v %v %v\n", noFrame[0], noFrame[1], noFrame[2], noFrame[3])
+	}
+
 	if SRout1 != SRout2 {
 		fmt.Printf("SRout1 (%v) != SRout2 (%v)\n", SRout1, SRout2)
 		err = errors.New("SRout1 != SRout2")
+	}
+	if SRout3 != SRout4 {
+		fmt.Printf("SRout3 (%v) != SRout4 (%v)\n", SRout3, SRout4)
+		// 		err = errors.New("SRout3 != SRout4")
 	}
 	ID += 1
 	return event, err
