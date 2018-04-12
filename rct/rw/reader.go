@@ -180,6 +180,7 @@ func (r *Reader) readFrameHeader(f *FrameHeader) {
 	f.FEId = f.FEIdK30 & 0x7f
 	f.NoFrameAsm = (uint64(f.NoFrameAsmMsb) << 48) | (uint64(f.NoFrameAsmOsb) << 32) | (uint64(f.NoFrameAsmUsb) << 16) | uint64(f.NoFrameAsmLsb)
 	f.CptTriggerThor = (uint32(f.CptTriggerThorMsb) << 16) | uint32(f.CptTriggerThorLsb)
+	f.CptTriggerAsm = (uint32(f.CptTriggerAsmMsb) << 16) | uint32(f.CptTriggerAsmLsb)
 }
 
 func (r *Reader) readFrameData(data *HalfDRSData) {
@@ -321,34 +322,28 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	//////////////////////////////////////////////////////
 	// Temporary fix:
 	// Read first frame and do nothing with it (remove it)
-	if ID == 0 {
-		r.Frame()
-		r.Frame()
-	}
+	// 	if ID == 0 {
+	// 		r.Frame()
+	// 		r.Frame()
+	// 	}
 	/////////////////////////////////////////////////////////
 
 	event := event.NewEvent(5, 1)
 	event.ID = ID
 	event.NoFrames = 2
 
-	var SRout1, SRout2 uint16 // for debug
-	var SRout3, SRout4 uint16 // for debug
-	var noFrame [4]uint64     // for debug
+	var SRout [4]uint16      // for debug
+	var noFrameAsm [4]uint64 // for debug
+	var cptTrigAsm [4]uint32 // for debug
 
 	for i := 0; i < 4; i++ {
 		frame := r.Frame()
 		// 		frame.Print()
-		noFrame[i] = frame.Header.NoFrameAsm
+		noFrameAsm[i] = frame.Header.NoFrameAsm
+		cptTrigAsm[i] = frame.Header.CptTriggerAsm
 		pulses := MakePulses(frame, r.SigThreshold)
-		if i == 0 {
-			SRout1 = pulses[0].SRout
-		} else if i == 1 {
-			SRout2 = pulses[0].SRout
-		} else if i == 2 {
-			SRout3 = pulses[0].SRout
-		} else if i == 3 {
-			SRout4 = pulses[0].SRout
-		}
+		SRout[i] = pulses[0].SRout
+
 		if frame.QuartetAbsIdx72%6 != 5 {
 			iCluster := frame.QuartetAbsIdx60
 			if iCluster >= 60 {
@@ -383,17 +378,17 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 
 	var err error
 
-	if noFrame[0]+1 != noFrame[1] || noFrame[1]+1 != noFrame[2] || noFrame[2]+1 != noFrame[3] {
-		fmt.Printf("NoFrameAsmError: %v %v %v %v\n", noFrame[0], noFrame[1], noFrame[2], noFrame[3])
+	if noFrameAsm[0]+1 != noFrameAsm[1] || noFrameAsm[1]+1 != noFrameAsm[2] || noFrameAsm[2]+1 != noFrameAsm[3] {
+		fmt.Printf(" -> NoFrameAsmError: %v %v %v %v\n", noFrameAsm[0], noFrameAsm[1], noFrameAsm[2], noFrameAsm[3])
+		err = errors.New(" => Error in NoFrameAsm")
 	}
-
-	if SRout1 != SRout2 {
-		fmt.Printf("SRout1 (%v) != SRout2 (%v)\n", SRout1, SRout2)
-		err = errors.New("SRout1 != SRout2")
+	if cptTrigAsm[0]+1 != cptTrigAsm[1] || cptTrigAsm[1]+1 != cptTrigAsm[2] || cptTrigAsm[2]+1 != cptTrigAsm[3] {
+		fmt.Printf(" -> cptTrigAsm: %v %v %v %v\n", cptTrigAsm[0], cptTrigAsm[1], cptTrigAsm[2], cptTrigAsm[3])
+		err = errors.New(" => Error in CptTriggerAsm")
 	}
-	if SRout3 != SRout4 {
-		fmt.Printf("SRout3 (%v) != SRout4 (%v)\n", SRout3, SRout4)
-		// 		err = errors.New("SRout3 != SRout4")
+	if SRout[0] != SRout[1] || SRout[2] != SRout[3] {
+		fmt.Printf(" -> SRout[0] (%v) != SRout[1] (%v) || SRout[2] (%v) != SRout[3] (%v)\n", SRout[0], SRout[1], SRout[2], SRout[3])
+		err = errors.New(" => Error in SRout")
 	}
 	ID += 1
 	return event, err

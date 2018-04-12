@@ -93,6 +93,7 @@ type FrameHeader struct {
 	FEId           uint16
 	NoFrameAsm     uint64
 	CptTriggerThor uint32
+	CptTriggerAsm  uint32
 }
 
 func (f *FrameHeader) Print() {

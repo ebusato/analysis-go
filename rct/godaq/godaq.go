@@ -368,9 +368,9 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 					fmt.Printf("event %v\n", *iEvent)
 				}
 				event, err := r.ReadNextEvent()
-				if *iEvent%*evtFreq == 0 {
-					fmt.Printf(" -> event.ID=%v\n", event.ID)
-				}
+				// 				if *iEvent%*evtFreq == 0 {
+				// 					fmt.Printf(" -> event.ID=%v\n", event.ID)
+				// 				}
 				if err != nil {
 					// 					panic(err)
 					fmt.Println(err)
