@@ -1,6 +1,7 @@
 package event
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -452,6 +453,23 @@ func (e *Event) AmpsPerChannel() []float64 {
 		}
 	}
 	return amps
+}
+
+func (e *Event) IntegrityFirstASMBoard() error {
+	var err error
+	// 	if noFrameAsm[0]+1 != noFrameAsm[1] || noFrameAsm[1]+1 != noFrameAsm[2] || noFrameAsm[2]+1 != noFrameAsm[3] {
+	// 		fmt.Printf(" -> NoFrameAsmError: %v %v %v %v\n", noFrameAsm[0], noFrameAsm[1], noFrameAsm[2], noFrameAsm[3])
+	// 		err = errors.New(" => Error in NoFrameAsm")
+	// 	}
+	// 		if cptTrigAsm[0]+1 != cptTrigAsm[1] || cptTrigAsm[1]+1 != cptTrigAsm[2] || cptTrigAsm[2]+1 != cptTrigAsm[3] {
+	// 			fmt.Printf(" -> cptTrigAsm: %v %v %v %v\n", cptTrigAsm[0], cptTrigAsm[1], cptTrigAsm[2], cptTrigAsm[3])
+	// 			err = errors.New(" => Error in CptTriggerAsm")
+	// 		}
+	if e.Clusters[0].SRout != e.Clusters[1].SRout || e.Clusters[2].SRout != e.Clusters[3].SRout {
+		fmt.Printf(" -> SRout[0] (%v) != SRout[1] (%v) || SRout[2] (%v) != SRout[3] (%v)\n", e.Clusters[0].SRout, e.Clusters[1].SRout, e.Clusters[2].SRout, e.Clusters[3].SRout)
+		err = errors.New(" => Error in SRout")
+	}
+	return err
 }
 
 // type Trigger int

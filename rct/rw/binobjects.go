@@ -217,7 +217,6 @@ type Frame struct {
 	Pattern              uint64
 	ThorTrigTimeStamp    uint64
 	CptTriggerThor       uint32
-	CptTriggerASM        uint32
 	QuartetAbsIdx60      uint8 // one-to-one correspondance between frames and quartets in xTCA
 	QuartetAbsIdx72      uint8 // one-to-one correspondance between frames and quartets in xTCA
 

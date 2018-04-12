@@ -2,7 +2,6 @@ package rw
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -27,21 +26,21 @@ type Reader struct {
 	SigThreshold     uint
 	Debug            bool
 	ReadMode         ReadMode
-	UDPHalfDRSBuffer []byte // relevant only when reading from UDP with packet = half DRS
-
-	IDPrevFrame       uint32
-	firstFrameOfEvent *Frame
+	UDPHalfDRSBuffer []byte              // relevant only when reading from UDP with packet = half DRS
+	framesMap        map[uint32][]*Frame // key: CptTriggerAsm ; value: slice of pointers to frames for corresponding CptTriggerAsm
+	framesMapKeys    []uint32            // vector of keys (book-keeping of keys in sorted way)
 }
 
 // NewReader returns a new ASM stream in read mode
 func NewReader(r io.Reader) (*Reader, error) {
 	rr := &Reader{
 		r:                r,
-		IDPrevFrame:      0,
 		SigThreshold:     800,
 		ReadMode:         Default,
 		UDPHalfDRSBuffer: make([]byte, 8270), //8238),
 	}
+	rr.framesMap = make(map[uint32][]*Frame)
+	rr.framesMapKeys = make([]uint32, 0)
 	rr.readFileHeader(&rr.FileHeader)
 	return rr, rr.err
 }
@@ -315,9 +314,9 @@ func MakePulses(f *Frame, sigThreshold uint) []*pulse.Pulse {
 	return pulses
 }
 
+// Brute force implementation (fixed number of frames per event)
+/*
 var ID uint
-
-// for rct
 func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	//////////////////////////////////////////////////////
 	// Temporary fix:
@@ -330,7 +329,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 
 	event := event.NewEvent(5, 1)
 	event.ID = ID
-	event.NoFrames = 2
+	event.NoFrames = 0
 
 	var SRout [4]uint16      // for debug
 	var noFrameAsm [4]uint64 // for debug
@@ -391,5 +390,127 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 		err = errors.New(" => Error in SRout")
 	}
 	ID += 1
+	return event, err
+}
+*/
+
+func alreadyInVec(valTest uint32, vec *[]uint32) bool {
+	for _, valIn := range *vec {
+		if valTest == valIn {
+			return true
+		}
+	}
+	return false
+}
+
+// Smart implementation (frame are grouped into events using their CptTriggerAsm value)
+func (r *Reader) ReadNextEvent() (*event.Event, error) {
+	event := event.NewEvent(5, 1)
+
+	// To be set
+	// event.NoFrames =
+	// event.ID =
+
+	// 	var SRout [4]uint16      // for debug
+	// 	var noFrameAsm [4]uint64 // for debug
+	// 	var cptTrigAsm [4]uint32 // for debug
+
+	// Read 20 consecutive frames
+	for len(r.framesMap) < 8 {
+		frame := r.Frame()
+		// 		fmt.Println(frame.Header.CptTriggerAsm)
+		if r.framesMap[frame.Header.CptTriggerAsm] == nil {
+			r.framesMap[frame.Header.CptTriggerAsm] = make([]*Frame, 0)
+			// 			fmt.Println(" -> slice in map is nil")
+		}
+		r.framesMap[frame.Header.CptTriggerAsm] = append(r.framesMap[frame.Header.CptTriggerAsm], frame)
+		if !alreadyInVec(frame.Header.CptTriggerAsm, &r.framesMapKeys) {
+			r.framesMapKeys = append(r.framesMapKeys, frame.Header.CptTriggerAsm)
+		}
+	}
+	fmt.Println(len(r.framesMapKeys), r.framesMapKeys)
+	fmt.Println(len(r.framesMap), r.framesMap)
+
+	// Make event for CptTriggerAsm = r.framesMapKeys[0]
+	for _, framePtr := range r.framesMap[r.framesMapKeys[0]] {
+		pulses := MakePulses(framePtr, r.SigThreshold)
+		if framePtr.QuartetAbsIdx72 >= 6 {
+			panic("framePtr.QuartetAbsIdx72 >= 6")
+		}
+		if framePtr.QuartetAbsIdx72%6 != 5 {
+			iCluster := framePtr.QuartetAbsIdx60
+			if iCluster >= 60 {
+				log.Fatalf("error ! iCluster=%v (>= 60)\n", iCluster)
+			}
+			// 				fmt.Printf("iCluster = %v\n", iCluster)
+			event.Clusters[iCluster].ID = iCluster
+			event.Clusters[iCluster].Quartet = dpgadetector.Det.QuartetFromIdAbs60(iCluster)
+			// 			fmt.Printf("Quartet in reader %p\n", event.Clusters[iCluster].Quartet)
+			////////////////////////////////////////////////////////
+			// Put pulses in event
+			event.Clusters[iCluster].Pulses[0] = *pulses[0]
+			event.Clusters[iCluster].Pulses[1] = *pulses[1]
+			event.Clusters[iCluster].Pulses[2] = *pulses[2]
+			event.Clusters[iCluster].Pulses[3] = *pulses[3]
+			////////////////////////////////////////////////////////
+			event.Clusters[iCluster].SetSRout()
+		} else {
+			iClusterWoData := framePtr.QuartetAbsIdx72 / 6
+			// 				fmt.Printf("iClusterWoData = %v\n", iClusterWoData)
+			event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
+			////////////////////////////////////////////////////////
+			// Put pulses in event
+			event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]
+			event.ClustersWoData[iClusterWoData].Pulses[1] = *pulses[1]
+			event.ClustersWoData[iClusterWoData].Pulses[2] = *pulses[2]
+			event.ClustersWoData[iClusterWoData].Pulses[3] = *pulses[3]
+			////////////////////////////////////////////////////////
+			event.ClustersWoData[iClusterWoData].SetSRout()
+		}
+	}
+	err := event.IntegrityFirstASMBoard()
+	/*
+		for i := 0; i < 4; i++ {
+			frame := r.Frame()
+			// 		frame.Print()
+			noFrameAsm[i] = frame.Header.NoFrameAsm
+			cptTrigAsm[i] = frame.Header.CptTriggerAsm
+			pulses := MakePulses(frame, r.SigThreshold)
+			SRout[i] = pulses[0].SRout
+
+			if frame.QuartetAbsIdx72%6 != 5 {
+				iCluster := frame.QuartetAbsIdx60
+				if iCluster >= 60 {
+					log.Fatalf("error ! iCluster=%v (>= 60)\n", iCluster)
+				}
+				// 				fmt.Printf("iCluster = %v\n", iCluster)
+				event.Clusters[iCluster].ID = iCluster
+				event.Clusters[iCluster].Quartet = dpgadetector.Det.QuartetFromIdAbs60(iCluster)
+				// 			fmt.Printf("Quartet in reader %p\n", event.Clusters[iCluster].Quartet)
+				////////////////////////////////////////////////////////
+				// Put pulses in event
+				event.Clusters[iCluster].Pulses[0] = *pulses[0]
+				event.Clusters[iCluster].Pulses[1] = *pulses[1]
+				event.Clusters[iCluster].Pulses[2] = *pulses[2]
+				event.Clusters[iCluster].Pulses[3] = *pulses[3]
+				////////////////////////////////////////////////////////
+				event.Clusters[iCluster].SetSRout()
+			} else {
+				iClusterWoData := frame.QuartetAbsIdx72 / 6
+				// 				fmt.Printf("iClusterWoData = %v\n", iClusterWoData)
+				event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
+				////////////////////////////////////////////////////////
+				// Put pulses in event
+				event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]
+				event.ClustersWoData[iClusterWoData].Pulses[1] = *pulses[1]
+				event.ClustersWoData[iClusterWoData].Pulses[2] = *pulses[2]
+				event.ClustersWoData[iClusterWoData].Pulses[3] = *pulses[3]
+				////////////////////////////////////////////////////////
+				event.ClustersWoData[iClusterWoData].SetSRout()
+			}
+		}
+
+
+	*/
 	return event, err
 }
