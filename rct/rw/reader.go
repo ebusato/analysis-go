@@ -431,8 +431,6 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			r.framesMapKeys = append(r.framesMapKeys, frame.Header.CptTriggerAsm)
 		}
 	}
-	fmt.Println(len(r.framesMapKeys), r.framesMapKeys)
-	fmt.Println(len(r.framesMap), r.framesMap)
 
 	// Make event for CptTriggerAsm = r.framesMapKeys[0]
 	for _, framePtr := range r.framesMap[r.framesMapKeys[0]] {
@@ -440,7 +438,6 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 		if framePtr.QuartetAbsIdx72 >= 6 {
 			panic("framePtr.QuartetAbsIdx72 >= 6")
 		}
-		// 		fmt.Println("frame print:", framePtr.QuartetAbsIdx60, framePtr.QuartetAbsIdx72)
 		if framePtr.QuartetAbsIdx72%6 != 5 {
 			iCluster := framePtr.QuartetAbsIdx60
 			if iCluster >= 60 {
@@ -479,6 +476,15 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 		}
 	}
 	err := event.IntegrityFirstASMBoard()
+
+	if err != nil {
+		fmt.Println(" ** Error is not nil: Printing debugging info")
+		fmt.Println("   o r.framesMapKeys: ", len(r.framesMapKeys), r.framesMapKeys)
+		fmt.Println("   o r.framesMap: ", len(r.framesMap), r.framesMap)
+		for _, framePtr := range r.framesMap[r.framesMapKeys[0]] {
+			fmt.Println("   o NoFrameAsm, QuartetAbsIdx60, QuartetAbsIdx72:", framePtr.Header.NoFrameAsm, framePtr.QuartetAbsIdx60, framePtr.QuartetAbsIdx72)
+		}
+	}
 
 	// Remove event from stack
 	delete(r.framesMap, r.framesMapKeys[0])
