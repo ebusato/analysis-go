@@ -28,6 +28,10 @@
 		
 		var freqplot = new plot("frequency (Hz)", [], 'orange')
 		
+		var evtvstimestampplot = new plot("Evt vs Timestamp", [], 'orange')
+		
+		var freqdaqplot = new plot("DAQ frequency (Hz)", [], 'orange')
+		
 		var monbufsizeplot = new plot("Monitoring buffer size", [], 'blue')
 		
 		var nopacketspereventplot = new plot("No packets per event", [], 'green')
@@ -111,6 +115,12 @@
 			var freq = $.plot("#my-freq-plot", [freqplot], opts);
 			freq.setupGrid(); // needed as x-axis changes
 			freq.draw();
+			var evtvstimestamp = $.plot("#my-evtvstimestamp-plot", [evtvstimestampplot], opts);
+			evtvstimestamp.setupGrid(); // needed as x-axis changes
+			evtvstimestamp.draw();
+			var freqdaq = $.plot("#my-freqdaq-plot", [freqdaqplot], opts);
+			freqdaq.setupGrid(); // needed as x-axis changes
+			freqdaq.draw();
 			var bufsize = $.plot("#my-monbufsize-plot", [monbufsizeplot], opts);
 			bufsize.setupGrid(); // needed as x-axis changes
 			bufsize.draw();
@@ -149,6 +159,8 @@
 				console.log("data: "+JSON.stringify(data));
 				if (data.freq != 0) {
 					freqplot.data.push([data.evt, data.freq])
+					evtvstimestampplot.data.push([data.timestamp, data.evt])
+					freqdaqplot.data.push([data.evt, data.freqdaq])
 					monbufsizeplot.data.push([data.evt, data.monbufsize])
 					nopacketspereventplot.data.push([data.evt, data.nopacketsperevent])
 				}
@@ -217,6 +229,12 @@
 			</td>
 			<td>
 				<div id="my-freq-plot" class="my-plot-stylefreq"></div>
+			</td>
+			<td>
+				<div id="my-evtvstimestamp-plot" class="my-plot-stylefreq"></div>
+			</td>
+			<td>
+				<div id="my-freqdaq-plot" class="my-plot-stylefreq"></div>
 			</td>
 			<td>
 				<div id="my-monbufsize-plot" class="my-plot-stylefreq"></div>

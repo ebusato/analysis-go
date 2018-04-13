@@ -406,7 +406,7 @@ func alreadyInVec(valTest uint32, vec *[]uint32) bool {
 }
 func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	// Fill frame stack
-	stackSize := 3
+	stackSize := 8
 	for len(r.framesMap) < stackSize {
 		frame := r.Frame()
 		// 		fmt.Println(frame.Header.CptTriggerAsm)
@@ -424,6 +424,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	event := event.NewEvent(5, 1)
 	event.NoFrames = uint8(len(r.framesMap[r.framesMapKeys[0]]))
 	event.ID = uint(r.framesMapKeys[0])
+// 	fmt.Println("event.ID=", event.ID)
 	timeStamp := uint64(0)
 	for _, framePtr := range r.framesMap[r.framesMapKeys[0]] {
 		pulses := MakePulses(framePtr, r.SigThreshold)
