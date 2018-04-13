@@ -95,23 +95,31 @@ func (d *DQPlot) FillHistos(event *event.Event, RFcutMean, RFcutWidth float64) {
 	var SRoutBool [3]bool
 
 	for i := range event.Clusters {
+		if !event.ClusterIsFilled[i] {
+			continue
+		}
 		cluster := &event.Clusters[i]
 		mult += uint8(len(cluster.PulsesWithSignal()))
 		satmult += uint8(len(cluster.PulsesWithSatSignal()))
 		for j := range cluster.Pulses {
 			pulse := &cluster.Pulses[j]
-			if pulse.HasSignal {
-				d.HFrequency.Fill(counter, 1)
+			if pulse.Channel == nil {
+				panic("pulse.Channel == nil")
 			}
-			if pulse.HasSatSignal {
-				d.HSatFrequency.Fill(counter, 1)
+			absId288 := float64(pulse.Channel.AbsID288())
+			if absId288 >= 24 {
+				panic("absId288 >= 24")
 			}
 			if pulse.HasSignal {
+				d.HFrequency.Fill(absId288, 1)
 				d.HCharge[i][j].Fill(float64(pulse.Charge()/1e6), 1)
 				_, ampl := pulse.Amplitude()
 				d.HAmplitude[i][j].Fill(ampl, 1)
 				d.HEnergy[i][j].Fill(pulse.E, 1)
 				d.HEnergyAll.Fill(pulse.E, 1)
+			}
+			if pulse.HasSatSignal {
+				d.HSatFrequency.Fill(absId288, 1)
 			}
 			counter++
 		}
@@ -128,14 +136,28 @@ func (d *DQPlot) FillHistos(event *event.Event, RFcutMean, RFcutWidth float64) {
 		}
 	}
 
-	clusterWoData := &event.ClustersWoData[0]
-	for j := range clusterWoData.Pulses {
-		pulse := &clusterWoData.Pulses[j]
-		if pulse.HasSignal {
-			d.HCharge[5][j].Fill(float64(pulse.Charge()/1e6), 1)
-			_, ampl := pulse.Amplitude()
-			d.HAmplitude[5][j].Fill(ampl, 1)
-			d.HEnergy[5][j].Fill(pulse.E, 1)
+	if event.ClusterWoDataIsFilled[0] {
+		clusterWoData := &event.ClustersWoData[0]
+		for j := range clusterWoData.Pulses {
+			pulse := &clusterWoData.Pulses[j]
+			if pulse.Channel == nil {
+				panic("pulse.Channel == nil")
+			}
+			absId288 := float64(pulse.Channel.AbsID288())
+			// 			fmt.Println("absId288 =", absId288)
+			if absId288 < 20 || absId288 >= 24 {
+				panic("absId288 < 20 || absId288 >= 24")
+			}
+			if pulse.HasSignal {
+				d.HFrequency.Fill(absId288, 1)
+				d.HCharge[5][j].Fill(float64(pulse.Charge()/1e6), 1)
+				_, ampl := pulse.Amplitude()
+				d.HAmplitude[5][j].Fill(ampl, 1)
+				d.HEnergy[5][j].Fill(pulse.E, 1)
+			}
+			if pulse.HasSatSignal {
+				d.HSatFrequency.Fill(absId288, 1)
+			}
 		}
 	}
 
