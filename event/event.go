@@ -529,7 +529,7 @@ func (e *Event) IntegrityFirstASMBoard() error {
 	if len(NoFrameAsmVec) >= 2 {
 		prevVal := NoFrameAsmVec[0]
 		for i := 1; i < len(NoFrameAsmVec); i++ {
-			if NoFrameAsmVec[i] != prevVal {
+			if NoFrameAsmVec[i] != prevVal+1 {
 				fmt.Printf(" -> NoFrameAsmError: NoFrameAsmVec[i] (%v) != prevVal (%v)\n", NoFrameAsmVec[i], prevVal)
 				err = errors.New("  -> Event integrity test failed ==> Investigate !!")
 			}
