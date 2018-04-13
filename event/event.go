@@ -74,25 +74,31 @@ func (l *LOR) CalcTRF(timesRF []float64) {
 }
 
 type Event struct {
-	Clusters       []pulse.Cluster
-	ClustersWoData []pulse.Cluster // These are the 12 clusters corresponding to the 12*4 channels unused for data at the end of each ASM board
-	ID             uint
-	TimeStamp      uint64
-	NoFrames       uint8
-	Counters       []uint32
-	LORs           []LOR
-	HasSig         bool
+	Clusters              []pulse.Cluster
+	ClusterIsFilled       []bool
+	ClustersWoData        []pulse.Cluster // These are the 12 clusters corresponding to the 12*4 channels unused for data at the end of each ASM board
+	ClusterWoDataIsFilled []bool
+	ID                    uint
+	TimeStamp             uint64
+	NoFrames              uint8
+	Counters              []uint32
+	LORs                  []LOR
+	HasSig                bool
 }
 
 func NewEvent(noClusters int, noClustersWoData int) *Event {
-	return &Event{
-		Clusters:       make([]pulse.Cluster, noClusters),
-		ClustersWoData: make([]pulse.Cluster, noClustersWoData),
-		ID:             0,
-		TimeStamp:      0,
-		NoFrames:       0,
-		HasSig:         false,
+	e := &Event{
+		Clusters:              make([]pulse.Cluster, noClusters),
+		ClusterIsFilled:       make([]bool, noClusters),
+		ClustersWoData:        make([]pulse.Cluster, noClustersWoData),
+		ClusterWoDataIsFilled: make([]bool, noClustersWoData),
+		ID:        0,
+		TimeStamp: 0,
+		NoFrames:  0,
+		HasSig:    false,
 	}
+
+	return e
 }
 
 func (e *Event) Copy() *Event {
@@ -113,6 +119,7 @@ func (e *Event) Copy() *Event {
 			*oldPulses[2].Copy(),
 			*oldPulses[3].Copy()}
 		newevent.Clusters[i].ID = e.Clusters[i].ID
+		newevent.ClusterIsFilled[i] = e.ClusterIsFilled[i]
 	}
 	for i := range e.ClustersWoData {
 		oldPulses := e.ClustersWoData[i].Pulses
@@ -122,6 +129,7 @@ func (e *Event) Copy() *Event {
 			*oldPulses[2].Copy(),
 			*oldPulses[3].Copy()}
 		newevent.ClustersWoData[i].ID = e.ClustersWoData[i].ID
+		newevent.ClusterWoDataIsFilled[i] = e.ClusterWoDataIsFilled[i]
 	}
 	return newevent
 }
@@ -458,6 +466,20 @@ func (e *Event) AmpsPerChannel() []float64 {
 func (e *Event) IntegrityFirstASMBoard() error {
 	var err error
 
+	// Check that we always have the two half DRSs from a DRS
+	if e.ClusterIsFilled[0] != e.ClusterIsFilled[1] {
+		fmt.Print("e.ClusterIsFilled[0] != e.ClusterIsFilled[1]")
+		err = errors.New(" => Error: e.ClusterIsFilled[0] != e.ClusterIsFilled[1]")
+	}
+	if e.ClusterIsFilled[2] != e.ClusterIsFilled[3] {
+		fmt.Print("e.ClusterIsFilled[2] != e.ClusterIsFilled[3]")
+		err = errors.New(" => Error: e.ClusterIsFilled[2] != e.ClusterIsFilled[3]")
+	}
+	if e.ClusterIsFilled[4] != e.ClusterWoDataIsFilled[0] {
+		fmt.Print("e.ClusterIsFilled[4] != e.ClusterWoDataIsFilled[0]")
+		err = errors.New(" => Error: e.ClusterIsFilled[4] != e.ClusterWoDataIsFilled[0]")
+	}
+
 	// SRout test
 	if e.Clusters[0].SRout != e.Clusters[1].SRout || e.Clusters[2].SRout != e.Clusters[3].SRout || e.Clusters[4].SRout != e.ClustersWoData[0].SRout {
 		fmt.Printf(" -> SRout problem: %v %v %v %v %v %v)\n", e.Clusters[0].SRout, e.Clusters[1].SRout, e.Clusters[2].SRout, e.Clusters[3].SRout, e.Clusters[4].SRout, e.ClustersWoData[0].SRout)
@@ -465,12 +487,22 @@ func (e *Event) IntegrityFirstASMBoard() error {
 	}
 
 	// CptTriggerAsm test
+	var iTest int
+	for i := range e.Clusters {
+		if e.ClusterIsFilled[i] {
+			iTest = i
+			break
+		}
+	}
 	passCptTriggerAsmTest := true
 	for i := range e.Clusters {
-		if e.ClustersWoData[0].CptTriggerAsm != e.Clusters[i].CptTriggerAsm {
+		if e.ClusterIsFilled[i] && e.Clusters[i].CptTriggerAsm != e.Clusters[iTest].CptTriggerAsm {
 			passCptTriggerAsmTest = false
 			break
 		}
+	}
+	if e.ClusterWoDataIsFilled[0] && e.ClustersWoData[0].CptTriggerAsm != e.Clusters[iTest].CptTriggerAsm {
+		passCptTriggerAsmTest = false
 	}
 	if !passCptTriggerAsmTest {
 		fmt.Printf(" -> CptTrigger problem: %v %v %v %v %v %v)\n", e.Clusters[0].CptTriggerAsm, e.Clusters[1].CptTriggerAsm, e.Clusters[2].CptTriggerAsm,
@@ -479,8 +511,11 @@ func (e *Event) IntegrityFirstASMBoard() error {
 	}
 
 	// NoFrameAsm test
-	if e.Clusters[0].NoFrameAsm+1 != e.Clusters[1].NoFrameAsm || e.Clusters[1].NoFrameAsm+1 != e.Clusters[2].NoFrameAsm || e.Clusters[2].NoFrameAsm+1 != e.Clusters[3].NoFrameAsm ||
-		e.Clusters[3].NoFrameAsm+1 != e.Clusters[4].NoFrameAsm || e.Clusters[4].NoFrameAsm+1 != e.ClustersWoData[0].NoFrameAsm {
+	if (e.ClusterIsFilled[0] && e.ClusterIsFilled[1] && e.Clusters[0].NoFrameAsm+1 != e.Clusters[1].NoFrameAsm) ||
+		(e.ClusterIsFilled[1] && e.ClusterIsFilled[2] && e.Clusters[1].NoFrameAsm+1 != e.Clusters[2].NoFrameAsm) ||
+		(e.ClusterIsFilled[2] && e.ClusterIsFilled[3] && e.Clusters[2].NoFrameAsm+1 != e.Clusters[3].NoFrameAsm) ||
+		(e.ClusterIsFilled[3] && e.ClusterIsFilled[4] && e.Clusters[3].NoFrameAsm+1 != e.Clusters[4].NoFrameAsm) ||
+		(e.ClusterIsFilled[4] && e.ClusterIsFilled[5] && e.Clusters[4].NoFrameAsm+1 != e.ClustersWoData[0].NoFrameAsm) {
 		fmt.Printf(" -> NoFrameAsmError: %v %v %v %v %v %v\n", e.Clusters[0].NoFrameAsm, e.Clusters[1].NoFrameAsm, e.Clusters[2].NoFrameAsm, e.Clusters[3].NoFrameAsm,
 			e.Clusters[4].NoFrameAsm, e.ClustersWoData[0].NoFrameAsm)
 		err = errors.New(" => Error in NoFrameAsm")

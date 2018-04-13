@@ -418,7 +418,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	// 	var cptTrigAsm [4]uint32 // for debug
 
 	// Read 20 consecutive frames
-	for len(r.framesMap) < 8 {
+	for len(r.framesMap) < 3 {
 		frame := r.Frame()
 		// 		fmt.Println(frame.Header.CptTriggerAsm)
 		if r.framesMap[frame.Header.CptTriggerAsm] == nil {
@@ -439,6 +439,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 		if framePtr.QuartetAbsIdx72 >= 6 {
 			panic("framePtr.QuartetAbsIdx72 >= 6")
 		}
+		// 		fmt.Println("frame print:", framePtr.QuartetAbsIdx60, framePtr.QuartetAbsIdx72)
 		if framePtr.QuartetAbsIdx72%6 != 5 {
 			iCluster := framePtr.QuartetAbsIdx60
 			if iCluster >= 60 {
@@ -449,6 +450,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			event.Clusters[iCluster].Quartet = dpgadetector.Det.QuartetFromIdAbs60(iCluster)
 			event.Clusters[iCluster].CptTriggerAsm = framePtr.Header.CptTriggerAsm
 			event.Clusters[iCluster].NoFrameAsm = framePtr.Header.NoFrameAsm
+			event.ClusterIsFilled[iCluster] = true
 			// 			fmt.Printf("Quartet in reader %p\n", event.Clusters[iCluster].Quartet)
 			////////////////////////////////////////////////////////
 			// Put pulses in event
@@ -464,6 +466,8 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
 			event.ClustersWoData[iClusterWoData].CptTriggerAsm = framePtr.Header.CptTriggerAsm
 			event.ClustersWoData[iClusterWoData].NoFrameAsm = framePtr.Header.NoFrameAsm
+			fmt.Println("here: ", iClusterWoData)
+			event.ClusterWoDataIsFilled[iClusterWoData] = true
 			////////////////////////////////////////////////////////
 			// Put pulses in event
 			event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]
@@ -475,48 +479,5 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 		}
 	}
 	err := event.IntegrityFirstASMBoard()
-	/*
-		for i := 0; i < 4; i++ {
-			frame := r.Frame()
-			// 		frame.Print()
-			noFrameAsm[i] = frame.Header.NoFrameAsm
-			cptTrigAsm[i] = frame.Header.CptTriggerAsm
-			pulses := MakePulses(frame, r.SigThreshold)
-			SRout[i] = pulses[0].SRout
-
-			if frame.QuartetAbsIdx72%6 != 5 {
-				iCluster := frame.QuartetAbsIdx60
-				if iCluster >= 60 {
-					log.Fatalf("error ! iCluster=%v (>= 60)\n", iCluster)
-				}
-				// 				fmt.Printf("iCluster = %v\n", iCluster)
-				event.Clusters[iCluster].ID = iCluster
-				event.Clusters[iCluster].Quartet = dpgadetector.Det.QuartetFromIdAbs60(iCluster)
-				// 			fmt.Printf("Quartet in reader %p\n", event.Clusters[iCluster].Quartet)
-				////////////////////////////////////////////////////////
-				// Put pulses in event
-				event.Clusters[iCluster].Pulses[0] = *pulses[0]
-				event.Clusters[iCluster].Pulses[1] = *pulses[1]
-				event.Clusters[iCluster].Pulses[2] = *pulses[2]
-				event.Clusters[iCluster].Pulses[3] = *pulses[3]
-				////////////////////////////////////////////////////////
-				event.Clusters[iCluster].SetSRout()
-			} else {
-				iClusterWoData := frame.QuartetAbsIdx72 / 6
-				// 				fmt.Printf("iClusterWoData = %v\n", iClusterWoData)
-				event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
-				////////////////////////////////////////////////////////
-				// Put pulses in event
-				event.ClustersWoData[iClusterWoData].Pulses[0] = *pulses[0]
-				event.ClustersWoData[iClusterWoData].Pulses[1] = *pulses[1]
-				event.ClustersWoData[iClusterWoData].Pulses[2] = *pulses[2]
-				event.ClustersWoData[iClusterWoData].Pulses[3] = *pulses[3]
-				////////////////////////////////////////////////////////
-				event.ClustersWoData[iClusterWoData].SetSRout()
-			}
-		}
-
-
-	*/
 	return event, err
 }
