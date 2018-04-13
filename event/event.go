@@ -515,7 +515,7 @@ func (e *Event) IntegrityFirstASMBoard() error {
 		(e.ClusterIsFilled[1] && e.ClusterIsFilled[2] && e.Clusters[1].NoFrameAsm+1 != e.Clusters[2].NoFrameAsm) ||
 		(e.ClusterIsFilled[2] && e.ClusterIsFilled[3] && e.Clusters[2].NoFrameAsm+1 != e.Clusters[3].NoFrameAsm) ||
 		(e.ClusterIsFilled[3] && e.ClusterIsFilled[4] && e.Clusters[3].NoFrameAsm+1 != e.Clusters[4].NoFrameAsm) ||
-		(e.ClusterIsFilled[4] && e.ClusterIsFilled[5] && e.Clusters[4].NoFrameAsm+1 != e.ClustersWoData[0].NoFrameAsm) {
+		(e.ClusterIsFilled[4] && e.ClusterWoDataIsFilled[0] && e.Clusters[4].NoFrameAsm+1 != e.ClustersWoData[0].NoFrameAsm) {
 		fmt.Printf(" -> NoFrameAsmError: %v %v %v %v %v %v\n", e.Clusters[0].NoFrameAsm, e.Clusters[1].NoFrameAsm, e.Clusters[2].NoFrameAsm, e.Clusters[3].NoFrameAsm,
 			e.Clusters[4].NoFrameAsm, e.ClustersWoData[0].NoFrameAsm)
 		err = errors.New(" => Error in NoFrameAsm")

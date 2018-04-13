@@ -417,8 +417,9 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	// 	var noFrameAsm [4]uint64 // for debug
 	// 	var cptTrigAsm [4]uint32 // for debug
 
-	// Read 20 consecutive frames
-	for len(r.framesMap) < 3 {
+	// Read frames in order to fill stack
+	stackSize := 3
+	for len(r.framesMap) < stackSize {
 		frame := r.Frame()
 		// 		fmt.Println(frame.Header.CptTriggerAsm)
 		if r.framesMap[frame.Header.CptTriggerAsm] == nil {
@@ -466,7 +467,6 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
 			event.ClustersWoData[iClusterWoData].CptTriggerAsm = framePtr.Header.CptTriggerAsm
 			event.ClustersWoData[iClusterWoData].NoFrameAsm = framePtr.Header.NoFrameAsm
-			fmt.Println("here: ", iClusterWoData)
 			event.ClusterWoDataIsFilled[iClusterWoData] = true
 			////////////////////////////////////////////////////////
 			// Put pulses in event
@@ -479,5 +479,9 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 		}
 	}
 	err := event.IntegrityFirstASMBoard()
+
+	// Remove event from stack
+	delete(r.framesMap, r.framesMapKeys[0])
+	r.framesMapKeys = r.framesMapKeys[1:]
 	return event, err
 }
