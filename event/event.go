@@ -496,7 +496,7 @@ func (e *Event) IntegrityFirstASMBoard() error {
 		prevVal := NoFrameAsmVec[0]
 		for i := 1; i < len(NoFrameAsmVec); i++ {
 			if NoFrameAsmVec[i] != prevVal+1 {
-				fmt.Printf("%s  -> NoFrameAsmError: NoFrameAsmVec[i] (%v) != prevVal (%v)%s \n", utils.CLR_R, NoFrameAsmVec[i], prevVal, utils.CLR_def)
+				fmt.Printf("%s -> NoFrameAsm problem: NoFrameAsmVec[i] (%v) != prevVal (%v) + 1%s \n", utils.CLR_R, NoFrameAsmVec[i], prevVal, utils.CLR_def)
 				err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 			}
 			prevVal = NoFrameAsmVec[i]
@@ -529,7 +529,7 @@ func (e *Event) IntegrityFirstASMBoard() error {
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
-	// CptTriggerAsm test
+	// CptTriggerAsm and TimeStamp test
 	var iTest int
 	for i := range e.Clusters {
 		if e.ClusterIsFilled[i] {
@@ -537,19 +537,35 @@ func (e *Event) IntegrityFirstASMBoard() error {
 			break
 		}
 	}
+	passTimeStampAsmTest := true
 	passCptTriggerAsmTest := true
 	for i := range e.Clusters {
-		if e.ClusterIsFilled[i] && e.Clusters[i].CptTriggerAsm != e.Clusters[iTest].CptTriggerAsm {
-			passCptTriggerAsmTest = false
-			break
+		if e.ClusterIsFilled[i] {
+			if e.Clusters[i].CptTriggerAsm != e.Clusters[iTest].CptTriggerAsm {
+				passCptTriggerAsmTest = false
+			}
+			if e.Clusters[i].TimeStampAsm != e.Clusters[iTest].TimeStampAsm {
+				passTimeStampAsmTest = false
+			}
 		}
 	}
-	if e.ClusterWoDataIsFilled[0] && e.ClustersWoData[0].CptTriggerAsm != e.Clusters[iTest].CptTriggerAsm {
-		passCptTriggerAsmTest = false
+	if e.ClusterWoDataIsFilled[0] {
+		if e.ClustersWoData[0].CptTriggerAsm != e.Clusters[iTest].CptTriggerAsm {
+			passCptTriggerAsmTest = false
+		}
+		if e.ClustersWoData[0].TimeStampAsm != e.Clusters[iTest].TimeStampAsm {
+			passTimeStampAsmTest = false
+		}
+
 	}
 	if !passCptTriggerAsmTest {
-		fmt.Printf("%s -> CptTrigger problem: %v %v %v %v %v %v)\n%s", utils.CLR_R, e.Clusters[0].CptTriggerAsm, e.Clusters[1].CptTriggerAsm, e.Clusters[2].CptTriggerAsm,
+		fmt.Printf("%s -> CptTrigger problem: %v %v %v %v %v %v\n%s", utils.CLR_R, e.Clusters[0].CptTriggerAsm, e.Clusters[1].CptTriggerAsm, e.Clusters[2].CptTriggerAsm,
 			e.Clusters[3].CptTriggerAsm, e.Clusters[4].CptTriggerAsm, e.ClustersWoData[0].CptTriggerAsm, utils.CLR_def)
+		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
+	}
+	if !passTimeStampAsmTest {
+		fmt.Printf("%s -> TimeStamp problem: %v %v %v %v %v %v\n%s", utils.CLR_R, e.Clusters[0].TimeStampAsm, e.Clusters[1].TimeStampAsm, e.Clusters[2].TimeStampAsm,
+			e.Clusters[3].TimeStampAsm, e.Clusters[4].TimeStampAsm, e.ClustersWoData[0].TimeStampAsm, utils.CLR_def)
 		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 	////////////////////////////////////////////////////////////////////////////////

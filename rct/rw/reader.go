@@ -312,6 +312,7 @@ func MakePulses(f *Frame, sigThreshold uint) []*pulse.Pulse {
 
 // Brute force implementation (fixed number of frames per event)
 /*
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 var ID uint
 func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	//////////////////////////////////////////////////////
@@ -390,8 +391,11 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	ID += 1
 	return event, err
 }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 */
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Smart implementation (frame are grouped into events using their CptTriggerAsm value)
 func alreadyInVec(valTest uint32, vec *[]uint32) bool {
 	for _, valIn := range *vec {
 		if valTest == valIn {
@@ -400,8 +404,6 @@ func alreadyInVec(valTest uint32, vec *[]uint32) bool {
 	}
 	return false
 }
-
-// Smart implementation (frame are grouped into events using their CptTriggerAsm value)
 func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	// Fill frame stack
 	stackSize := 3
@@ -422,6 +424,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	event := event.NewEvent(5, 1)
 	event.NoFrames = uint8(len(r.framesMap[r.framesMapKeys[0]]))
 	event.ID = uint(r.framesMapKeys[0])
+	timeStamp := uint64(0)
 	for _, framePtr := range r.framesMap[r.framesMapKeys[0]] {
 		pulses := MakePulses(framePtr, r.SigThreshold)
 		if framePtr.QuartetAbsIdx72 >= 6 {
@@ -437,6 +440,8 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			event.Clusters[iCluster].Quartet = dpgadetector.Det.QuartetFromIdAbs60(iCluster)
 			event.Clusters[iCluster].CptTriggerAsm = framePtr.Header.CptTriggerAsm
 			event.Clusters[iCluster].NoFrameAsm = framePtr.Header.NoFrameAsm
+			event.Clusters[iCluster].TimeStampAsm = framePtr.Header.TimeStampAsm
+			timeStamp = framePtr.Header.TimeStampAsm
 			event.ClusterIsFilled[iCluster] = true
 			// 			fmt.Printf("Quartet in reader %p\n", event.Clusters[iCluster].Quartet)
 			////////////////////////////////////////////////////////
@@ -453,6 +458,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 			event.ClustersWoData[iClusterWoData].ID = uint8(iClusterWoData)
 			event.ClustersWoData[iClusterWoData].CptTriggerAsm = framePtr.Header.CptTriggerAsm
 			event.ClustersWoData[iClusterWoData].NoFrameAsm = framePtr.Header.NoFrameAsm
+			event.ClustersWoData[iClusterWoData].TimeStampAsm = framePtr.Header.TimeStampAsm
 			event.ClusterWoDataIsFilled[iClusterWoData] = true
 			////////////////////////////////////////////////////////
 			// Put pulses in event
@@ -465,6 +471,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 		}
 	}
 	err := event.IntegrityFirstASMBoard()
+	event.TimeStamp = timeStamp
 
 	if false && err != nil {
 		fmt.Println(" ** Error is not nil: Printing debugging info")
@@ -480,3 +487,5 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	r.framesMapKeys = r.framesMapKeys[1:]
 	return event, err
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

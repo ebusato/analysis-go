@@ -491,6 +491,7 @@ type Cluster struct {
 	SRout         uint16
 	CptTriggerAsm uint32
 	NoFrameAsm    uint64
+	TimeStampAsm     uint64
 	Quartet       *detector.Quartet
 }
 
