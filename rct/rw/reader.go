@@ -477,7 +477,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	}
 	err := event.IntegrityFirstASMBoard()
 
-	if err != nil {
+	if false && err != nil {
 		fmt.Println(" ** Error is not nil: Printing debugging info")
 		fmt.Println("   o r.framesMapKeys: ", len(r.framesMapKeys), r.framesMapKeys)
 		fmt.Println("   o r.framesMap: ", len(r.framesMap), r.framesMap)

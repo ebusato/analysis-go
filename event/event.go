@@ -467,26 +467,67 @@ func (e *Event) AmpsPerChannel() []float64 {
 func (e *Event) IntegrityFirstASMBoard() error {
 	var err error
 
+	////////////////////////////////////////////////////////////////////////////////
+	// NoFrameAsm tests: 2 tests are performed
+	//   -> Check that we always have an even number of clusters (frames should always come in pairs)
+	//   -> Check that NoFrameAsm is always incremented by +1
+	//   	  - As frames are not necessarily sent by ASM in Cluster (half DRS) order, one needs to work with a sorted list of NoFrameAsm
+	//   	  - Note that we are making a slice of int (not uint64 which is the original type of NoFrameAsm) as it makes sorting easier
+	//   	  - Important: this test is actually not really relevant because frames sent by ASM do not necessarily arrive on PC with same order (UDP can change order)
+	NoFrameAsmVec := make([]int, 0)
+	for i := range e.Clusters {
+		if e.ClusterIsFilled[i] {
+			NoFrameAsmVec = append(NoFrameAsmVec, int(e.Clusters[i].NoFrameAsm))
+		}
+	}
+	if e.ClusterWoDataIsFilled[0] {
+		NoFrameAsmVec = append(NoFrameAsmVec, int(e.ClustersWoData[0].NoFrameAsm))
+	}
+
+	if len(NoFrameAsmVec)%2 != 0 {
+		fmt.Printf("\x1b[31;1m -> The number of clusters is not even\n\x1b[0m")
+		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
+		return err
+	}
+
+	sort.Ints(NoFrameAsmVec)
+	// Check that NoFrameAsm always increments by +1
+	if len(NoFrameAsmVec) >= 2 {
+		prevVal := NoFrameAsmVec[0]
+		for i := 1; i < len(NoFrameAsmVec); i++ {
+			if NoFrameAsmVec[i] != prevVal+1 {
+				fmt.Printf(" -> NoFrameAsmError: NoFrameAsmVec[i] (%v) != prevVal (%v)\n", NoFrameAsmVec[i], prevVal)
+				err = errors.New(" -> Event integrity test failed ==> Investigate !!")
+			}
+			prevVal = NoFrameAsmVec[i]
+		}
+	}
+	////////////////////////////////////////////////////////////////////////////////
+
+	////////////////////////////////////////////////////////////////////////////////
 	// Check that we always have the two half DRSs from a DRS
 	if e.ClusterIsFilled[0] != e.ClusterIsFilled[1] {
 		fmt.Println(" -> e.ClusterIsFilled[0] != e.ClusterIsFilled[1]")
-		err = errors.New("  -> Event integrity test failed ==> Investigate !!")
+		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 	if e.ClusterIsFilled[2] != e.ClusterIsFilled[3] {
 		fmt.Println(" -> e.ClusterIsFilled[2] != e.ClusterIsFilled[3]")
-		err = errors.New("  -> Event integrity test failed ==> Investigate !!")
+		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 	if e.ClusterIsFilled[4] != e.ClusterWoDataIsFilled[0] {
 		fmt.Println(" -> e.ClusterIsFilled[4] != e.ClusterWoDataIsFilled[0]")
-		err = errors.New("  -> Event integrity test failed ==> Investigate !!")
+		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
+	////////////////////////////////////////////////////////////////////////////////
 
+	////////////////////////////////////////////////////////////////////////////////
 	// SRout test
 	if e.Clusters[0].SRout != e.Clusters[1].SRout || e.Clusters[2].SRout != e.Clusters[3].SRout || e.Clusters[4].SRout != e.ClustersWoData[0].SRout {
 		fmt.Printf(" -> SRout problem: %v %v %v %v %v %v\n", e.Clusters[0].SRout, e.Clusters[1].SRout, e.Clusters[2].SRout, e.Clusters[3].SRout, e.Clusters[4].SRout, e.ClustersWoData[0].SRout)
-		err = errors.New("  -> Event integrity test failed ==> Investigate !!")
+		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 
+	////////////////////////////////////////////////////////////////////////////////
 	// CptTriggerAsm test
 	var iTest int
 	for i := range e.Clusters {
@@ -508,34 +549,10 @@ func (e *Event) IntegrityFirstASMBoard() error {
 	if !passCptTriggerAsmTest {
 		fmt.Printf(" -> CptTrigger problem: %v %v %v %v %v %v)\n", e.Clusters[0].CptTriggerAsm, e.Clusters[1].CptTriggerAsm, e.Clusters[2].CptTriggerAsm,
 			e.Clusters[3].CptTriggerAsm, e.Clusters[4].CptTriggerAsm, e.ClustersWoData[0].CptTriggerAsm)
-		err = errors.New("  -> Event integrity test failed ==> Investigate !!")
+		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
+	////////////////////////////////////////////////////////////////////////////////
 
-	// NoFrameAsm test:
-	//   -> As frames are not necessarily sent by ASM in Cluster (half DRS) order, one needs to work with a sorted list of NoFrameAsm
-	//   -> Note that we are making a slice of int (not uint64 which is the original type of NoFrameAsm) as it makes sorting easier
-	//   -> This test is actually not really relevant because frames sent by ASM do not necessarily arrive on PC with same order (UDP can change order)
-	NoFrameAsmVec := make([]int, 0)
-	for i := range e.Clusters {
-		if e.ClusterIsFilled[i] {
-			NoFrameAsmVec = append(NoFrameAsmVec, int(e.Clusters[i].NoFrameAsm))
-		}
-	}
-	if e.ClusterWoDataIsFilled[0] {
-		NoFrameAsmVec = append(NoFrameAsmVec, int(e.ClustersWoData[0].NoFrameAsm))
-	}
-	sort.Ints(NoFrameAsmVec)
-	// Check that NoFrameAsm always increments by +1
-	if len(NoFrameAsmVec) >= 2 {
-		prevVal := NoFrameAsmVec[0]
-		for i := 1; i < len(NoFrameAsmVec); i++ {
-			if NoFrameAsmVec[i] != prevVal+1 {
-				fmt.Printf(" -> NoFrameAsmError: NoFrameAsmVec[i] (%v) != prevVal (%v)\n", NoFrameAsmVec[i], prevVal)
-				err = errors.New("  -> Event integrity test failed ==> Investigate !!")
-			}
-			prevVal = NoFrameAsmVec[i]
-		}
-	}
 	return err
 }
 
