@@ -94,7 +94,6 @@ type QuartetsWoData [1]Quartet
 type Data struct {
 	EvtID                 uint           `json:"evt"`                   // event id (64 bits a priori)
 	Time                  float64        `json:"time"`                  // time at which monitoring data are taken (64 bits)
-	Counters              []uint32       `json:"counters"`              // counters provided by Thor
 	TimeStamp             uint64         `json:"timestamp"`             // absolute timestamp from 64 MHz clock on Thor
 	MonBufSize            int            `json:"monbufsize"`            // monitoring channel buffer size
 	Freq                  float64        `json:"freq"`                  // number of events processed per second (64 bits)
@@ -513,21 +512,15 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 						if float64(len(datac)) >= 0.6*float64(datacsize) {
 							fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
 						}
-						//fmt.Println(event.Counters)
-						// 							var tstamp uint64 = uint64(event.Counters[3]) << 32 | uint64(event.Counters[2])
-						// 							fmt.Println("tstamp = ", tstamp)
 
 						Correlationsvg := AmplCorrelationsvg
 						if *distr == "energy" {
 							Correlationsvg = EnergyCorrelationsvg
 						}
-						// 							if event.Counters[0] != 0 {
-						// 								fmt.Println(event.Counters[4], event.Counters[0], uint64(event.Counters[4])*uint64(64000000)/uint64(event.Counters[0]))
-						// 							}
+
 						dataToMonitor := Data{
 							EvtID:                 event.ID,
 							Time:                  time,
-							Counters:              event.Counters,
 							TimeStamp:             0,
 							MonBufSize:            len(datac),
 							Freq:                  freq,

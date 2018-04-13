@@ -407,17 +407,7 @@ func alreadyInVec(valTest uint32, vec *[]uint32) bool {
 
 // Smart implementation (frame are grouped into events using their CptTriggerAsm value)
 func (r *Reader) ReadNextEvent() (*event.Event, error) {
-	event := event.NewEvent(5, 1)
-
-	// To be set
-	// event.NoFrames =
-	// event.ID =
-
-	// 	var SRout [4]uint16      // for debug
-	// 	var noFrameAsm [4]uint64 // for debug
-	// 	var cptTrigAsm [4]uint32 // for debug
-
-	// Read frames in order to fill stack
+	// Fill frame stack
 	stackSize := 3
 	for len(r.framesMap) < stackSize {
 		frame := r.Frame()
@@ -433,6 +423,9 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	}
 
 	// Make event for CptTriggerAsm = r.framesMapKeys[0]
+	event := event.NewEvent(5, 1)
+	event.NoFrames = uint8(len(r.framesMap[r.framesMapKeys[0]]))
+	event.ID = uint(r.framesMapKeys[0])
 	for _, framePtr := range r.framesMap[r.framesMapKeys[0]] {
 		pulses := MakePulses(framePtr, r.SigThreshold)
 		if framePtr.QuartetAbsIdx72 >= 6 {
