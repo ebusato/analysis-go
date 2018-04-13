@@ -204,7 +204,6 @@ type Frame struct {
 	Trailer FrameTrailer
 
 	// Derived quantities
-	CptTriggerThor  uint32
 	QuartetAbsIdx60 uint8 // one-to-one correspondance between frames and quartets in xTCA
 	QuartetAbsIdx72 uint8 // one-to-one correspondance between frames and quartets in xTCA
 

@@ -173,6 +173,7 @@ func (r *Reader) readFrameHeader(f *FrameHeader) {
 
 	f.FEId = f.FEIdK30 & 0x7f
 	f.NoFrameAsm = (uint64(f.NoFrameAsmMsb) << 48) | (uint64(f.NoFrameAsmOsb) << 32) | (uint64(f.NoFrameAsmUsb) << 16) | uint64(f.NoFrameAsmLsb)
+	f.TimeStampAsm = (uint64(f.TimeStampAsmMsb) << 48) | (uint64(f.TimeStampAsmOsb) << 32) | (uint64(f.TimeStampAsmUsb) << 16) | uint64(f.TimeStampAsmLsb)
 	f.CptTriggerThor = (uint32(f.CptTriggerThorMsb) << 16) | uint32(f.CptTriggerThorLsb)
 	f.CptTriggerAsm = (uint32(f.CptTriggerAsmMsb) << 16) | uint32(f.CptTriggerAsmLsb)
 }
