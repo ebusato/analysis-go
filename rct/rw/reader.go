@@ -242,6 +242,9 @@ func (r *Reader) Frame() *Frame {
 		f.SetDataSliceLen(int(f.Header.NoSamples))
 		r.readFrameData(&f.Data)
 		// 		fmt.Println("Channels = ", f.Data.Data[0].Channel, f.Data.Data[1].Channel, f.Data.Data[2].Channel, f.Data.Data[3].Channel)
+
+		// We take f.Header.FEId = 10
+		f.Header.FEId = 0x10
 		f.QuartetAbsIdx60 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx60(f.Header.FEId, f.Data.Data[0].Channel, false)
 		f.QuartetAbsIdx72 = dpgadetector.FEIdAndChanIdToQuartetAbsIdx72(f.Header.FEId, f.Data.Data[0].Channel)
 		r.readFrameTrailer(&f.Trailer)
@@ -424,7 +427,7 @@ func (r *Reader) ReadNextEvent() (*event.Event, error) {
 	event := event.NewEvent(5, 1)
 	event.NoFrames = uint8(len(r.framesMap[r.framesMapKeys[0]]))
 	event.ID = uint(r.framesMapKeys[0])
-// 	fmt.Println("event.ID=", event.ID)
+	// 	fmt.Println("event.ID=", event.ID)
 	timeStamp := uint64(0)
 	for _, framePtr := range r.framesMap[r.framesMapKeys[0]] {
 		pulses := MakePulses(framePtr, r.SigThreshold)
