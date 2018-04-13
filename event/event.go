@@ -485,7 +485,7 @@ func (e *Event) IntegrityFirstASMBoard() error {
 	}
 
 	if len(NoFrameAsmVec)%2 != 0 {
-		fmt.Printf("\x1b[31;1m -> The number of clusters is not even\n\x1b[0m")
+		fmt.Printf("%s -> The number of clusters is not even\n%s", utils.CLR_R, utils.CLR_def)
 		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 		return err
 	}
@@ -496,7 +496,7 @@ func (e *Event) IntegrityFirstASMBoard() error {
 		prevVal := NoFrameAsmVec[0]
 		for i := 1; i < len(NoFrameAsmVec); i++ {
 			if NoFrameAsmVec[i] != prevVal+1 {
-				fmt.Printf(" -> NoFrameAsmError: NoFrameAsmVec[i] (%v) != prevVal (%v)\n", NoFrameAsmVec[i], prevVal)
+				fmt.Printf("%s  -> NoFrameAsmError: NoFrameAsmVec[i] (%v) != prevVal (%v)%s \n", utils.CLR_R, NoFrameAsmVec[i], prevVal, utils.CLR_def)
 				err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 			}
 			prevVal = NoFrameAsmVec[i]
@@ -507,15 +507,15 @@ func (e *Event) IntegrityFirstASMBoard() error {
 	////////////////////////////////////////////////////////////////////////////////
 	// Check that we always have the two half DRSs from a DRS
 	if e.ClusterIsFilled[0] != e.ClusterIsFilled[1] {
-		fmt.Println(" -> e.ClusterIsFilled[0] != e.ClusterIsFilled[1]")
+		fmt.Println("%s  -> e.ClusterIsFilled[0] != e.ClusterIsFilled[1]%s ", utils.CLR_R, utils.CLR_def)
 		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 	if e.ClusterIsFilled[2] != e.ClusterIsFilled[3] {
-		fmt.Println(" -> e.ClusterIsFilled[2] != e.ClusterIsFilled[3]")
+		fmt.Println("%s  -> e.ClusterIsFilled[2] != e.ClusterIsFilled[3]%s ", utils.CLR_R, utils.CLR_def)
 		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 	if e.ClusterIsFilled[4] != e.ClusterWoDataIsFilled[0] {
-		fmt.Println(" -> e.ClusterIsFilled[4] != e.ClusterWoDataIsFilled[0]")
+		fmt.Println("%s  -> e.ClusterIsFilled[4] != e.ClusterWoDataIsFilled[0]%s ", utils.CLR_R, utils.CLR_def)
 		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 	////////////////////////////////////////////////////////////////////////////////
@@ -523,7 +523,8 @@ func (e *Event) IntegrityFirstASMBoard() error {
 	////////////////////////////////////////////////////////////////////////////////
 	// SRout test
 	if e.Clusters[0].SRout != e.Clusters[1].SRout || e.Clusters[2].SRout != e.Clusters[3].SRout || e.Clusters[4].SRout != e.ClustersWoData[0].SRout {
-		fmt.Printf(" -> SRout problem: %v %v %v %v %v %v\n", e.Clusters[0].SRout, e.Clusters[1].SRout, e.Clusters[2].SRout, e.Clusters[3].SRout, e.Clusters[4].SRout, e.ClustersWoData[0].SRout)
+		fmt.Printf("%s -> SRout problem: %v %v %v %v %v %v\n%s", utils.CLR_R, e.Clusters[0].SRout, e.Clusters[1].SRout, e.Clusters[2].SRout, e.Clusters[3].SRout, e.Clusters[4].SRout,
+			e.ClustersWoData[0].SRout, utils.CLR_def)
 		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 
@@ -547,8 +548,8 @@ func (e *Event) IntegrityFirstASMBoard() error {
 		passCptTriggerAsmTest = false
 	}
 	if !passCptTriggerAsmTest {
-		fmt.Printf(" -> CptTrigger problem: %v %v %v %v %v %v)\n", e.Clusters[0].CptTriggerAsm, e.Clusters[1].CptTriggerAsm, e.Clusters[2].CptTriggerAsm,
-			e.Clusters[3].CptTriggerAsm, e.Clusters[4].CptTriggerAsm, e.ClustersWoData[0].CptTriggerAsm)
+		fmt.Printf("%s -> CptTrigger problem: %v %v %v %v %v %v)\n%s", utils.CLR_R, e.Clusters[0].CptTriggerAsm, e.Clusters[1].CptTriggerAsm, e.Clusters[2].CptTriggerAsm,
+			e.Clusters[3].CptTriggerAsm, e.Clusters[4].CptTriggerAsm, e.ClustersWoData[0].CptTriggerAsm, utils.CLR_def)
 		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 	////////////////////////////////////////////////////////////////////////////////

@@ -1,5 +1,7 @@
 package utils
 
+const CLR_def = "\x1b[0m"
+
 const CLR_0 = "\x1b[30;1m"
 
 const CLR_R = "\x1b[31;1m"
