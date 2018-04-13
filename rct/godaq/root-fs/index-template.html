@@ -2,8 +2,8 @@
 <head>
 	<title>LAPD monitoring</title>
 	<link rel="stylesheet" type="text/css" href="style.css">
-	<link rel="stylesheet" type="text/css" href="tabs.css">
-	<link rel="stylesheet" type="text/css" href="vis.min.css">
+	<!--link rel="stylesheet" type="text/css" href="tabs.css"-->
+	<!--link rel="stylesheet" type="text/css" href="vis.min.css"-->
 	<script src="static/jquery-2.2.2.min.js"></script>
 	<script src="static/jquery.flot-0.8.3.min.js"></script>
 	<script src="static/jquery.flot.navigate-0.8.3.min.js"></script>
@@ -34,6 +34,7 @@
 		
 		var freqhplot = ""
 		var chargehplot = ""
+		var pulsemultplot = ""
 		var sroutplot = ""
 		var deltat30plot = ""
 		var chargeCorrelationplot = ""
@@ -120,6 +121,8 @@
 			p1.innerHTML = freqhplot;
 			var p2 = document.getElementById("my-chargeh-plot");
 			p2.innerHTML = chargehplot;
+			var p3 = document.getElementById("my-pulsemulth-plot");
+			p3.innerHTML = pulsemulthplot;
 			var p4 = document.getElementById("my-srout-plot");
 			p4.innerHTML = sroutplot;
 			//var p6 = document.getElementById("my-deltat30-plot");
@@ -151,6 +154,7 @@
 				}
 				freqhplot = data.freqh;
 				chargehplot = data.charge;
+				pulsemulthplot = data.pulsemult;
 				sroutplot = data.srouttiled;
 				deltat30plot = data.deltat30
 				for (var iq = 0; iq < Nquartets; iq += 1) {
@@ -235,17 +239,15 @@
 	
 	<div class="main">
 	<hr size="5" noshade>
-	<img border="0" src="DPGAmapping.png" style="width:304px;" align="right">
-
-	<table cellpadding=0 cellspacing=0>
+	<table>
 	<tr> 
-	<td>
-	
-	<div id="my-freqh-plot" class="my-plot-stylefreq"></div>
-	</td>
+	<td width="700"><div id="my-pulsemulth-plot" class="my-plot-stylefreq"></div></td>
+	<td><div id="my-freqh-plot" class="my-plot-stylefreq"></div></td>
 	</tr>
 	</table>
+	
 	<br><br><br><br><br><br><br><br><br><br>
+	
 	<table>
 	<tr>
 		<td><div id="my-q0-plot" class="my-plot-style"></div></td>

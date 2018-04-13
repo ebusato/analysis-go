@@ -92,17 +92,17 @@ type QuartetsWoData [1]Quartet
 
 // Data is the struct that is sent via the websocket to the web client.
 type Data struct {
-	EvtID                 uint           `json:"evt"`                   // event id (64 bits a priori)
-	Time                  float64        `json:"time"`                  // time at which monitoring data are taken (64 bits)
-	TimeStamp             uint64         `json:"timestamp"`             // absolute timestamp from 64 MHz clock on Thor
+	EvtID                 uint           `json:"evt"`                   // event id
+	Time                  float64        `json:"time"`                  // time at which monitoring data are taken
+	TimeStamp             uint64         `json:"timestamp"`             // absolute timestamp from 120 MHz clock (8.33 ns) (currently not used)
 	MonBufSize            int            `json:"monbufsize"`            // monitoring channel buffer size
-	Freq                  float64        `json:"freq"`                  // number of events processed per second (64 bits)
+	Freq                  float64        `json:"freq"`                  // number of events processed per second
 	NoPacketsPerEvent     int            `json:"nopacketsperevent"`     // number of packets per event
 	Qs                    Quartets       `json:"quartets"`              // quartets
 	QsWoData              QuartetsWoData `json:"quartetswodata"`        // quartets without data
 	FreqH                 string         `json:"freqh"`                 // frequency histogram
 	Charge                string         `json:"charge"`                // charge histograms
-	HVvals                string         `json:"hv"`                    // hv values
+	PulseMult             string         `json:"pulsemult"`             // pulse with signal multiplicity
 	MinRecZDistr          string         `json:"minreczdistrs"`         // minimal reconstruction Z distribution
 	DeltaT30              string         `json:"deltat30"`              // distribution of the difference of T30
 	EnergyAll             string         `json:"energyall"`             // distribution of energy (inclusive)
@@ -429,7 +429,7 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 
 						// Make frequency histo plot
 						tpfreq := dqplots.MakeFreqTiledPlot()
-						freqhsvg := utils.RenderSVG(tpfreq, 30, 10)
+						freqhsvg := utils.RenderSVG(tpfreq, 25, 8)
 
 						chargesvg := ""
 						if !*monLight {
@@ -449,6 +449,11 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 							chargesvg = utils.RenderSVG(tpcharge, 45, 7)
 						}
 
+						// Make mult histo plot
+						tppulsemult := dqplots.MakePulseMultTiledPlot()
+						pulsemultsvg := utils.RenderSVG(tppulsemult, 18, 8)
+
+						// MA algo
 						tpMinRecZ := dqplots.MakeMinRecZDistr()
 						minrecZsvg = utils.RenderSVG(tpMinRecZ, 25, 6)
 
@@ -529,6 +534,7 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 							QsWoData:              qsWoData,
 							FreqH:                 freqhsvg,
 							Charge:                chargesvg,
+							PulseMult:             pulsemultsvg,
 							MinRecZDistr:          minrecZsvg,
 							DeltaT30:              DeltaT30svg,
 							EnergyAll:             EnergyAllsvg,

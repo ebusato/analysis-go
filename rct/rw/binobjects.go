@@ -51,12 +51,23 @@ func (f *FileHeader) Print() {
 }
 
 type FrameHeader struct {
-	StartOfFrame            uint16
-	NbFrameAmcMsb           uint16
-	NbFrameAmcLsb           uint16
-	FEIdK30                 uint16
-	Mode                    uint16
-	TriggerType             uint16
+	StartOfFrame  uint16
+	NbFrameAmcMsb uint16
+	NbFrameAmcLsb uint16
+	FEIdK30       uint16
+	// Mode: equation trigger
+	// - bit poids faible : decrit ce qui sort sur LVDS (OU sur les 8 voies : 0 ; ET (ou de 4 vs ou de 4): 1)
+	// - 3 bits suivant : decrit ce qui est fait sur les 3 LVDS IN
+	//   - 000: mode thor (pas d'equation)
+	//   - 001: desactive mezz2, ne tient compte que de mezz0 et mezz1
+	//   - 010:  "        mezz1
+	//   - 011:  "        mezz0
+	//   - 100: ET entre mezz0 et mezz1
+	//   - 101: ET entre mezz0 et mezz2
+	//   - 110: ET entre mezz1 et mezz2
+	//   - 111: Pieds
+	Mode                    uint16 // equation trigger sur signaux rentrant
+	TriggerType             uint16 // -> non implemente pour l'instant
 	NoFrameAsmMsb           uint16
 	NoFrameAsmOsb           uint16
 	NoFrameAsmUsb           uint16
@@ -75,15 +86,15 @@ type FrameHeader struct {
 	TimeStampTrigThorAsmOsb uint16
 	TimeStampTrigThorAsmUsb uint16
 	TimeStampTrigThorAsmLsb uint16
-	ThorTT                  uint16
-	PatternMsb              uint16
-	PatternOsb              uint16
-	PatternLsb              uint16
+	ThorTT                  uint16 // Bit 15 dit si Thor a donne des donnes
+	PatternMsb              uint16 // Vient de thor
+	PatternOsb              uint16 //      "
+	PatternLsb              uint16 //      "
 	Bobo                    uint16
 	ThorTrigTimeStampMsb    uint16
 	ThorTrigTimeStampOsb    uint16
 	ThorTrigTimeStampLsb    uint16
-	CptTriggerThorMsb       uint16
+	CptTriggerThorMsb       uint16 // Determined with a 150 MHz (6.6 ns) clock
 	CptTriggerThorLsb       uint16
 	CptTriggerAsmMsb        uint16
 	CptTriggerAsmLsb        uint16
@@ -92,6 +103,7 @@ type FrameHeader struct {
 	// derived quantities
 	FEId           uint16
 	NoFrameAsm     uint64
+	TimeStampAsm   uint64
 	CptTriggerThor uint32
 	CptTriggerAsm  uint32
 }
@@ -187,38 +199,14 @@ func (h *HalfDRSData) Print() {
 // Frame is a single data frame produced by AMC
 // Each frame is associated to one half DRS
 type Frame struct {
-	// 	FirstBlockWord        uint16                           // 0
-	// 	AMCFrameCounters      [numAMCFrameCounters]uint16      // 1 -> 2
-	// 	ParityFEIdCtrl        uint16                           // 3
-	// 	TriggerMode           uint16                           // 4
-	// 	Trigger               uint16                           // 5
-	// 	ASMFrameCounters      [numASMFrameCounters]uint16      // 6 -> 9
-	// 	Cafe                  uint16                           // 10
-	// 	Deca                  uint16                           // 11
-	// 	Counters              [numCounters]uint16              // 12 -> 15
-	// 	TimeStampsASM         [numTimeStampsASM]uint16         // 16 -> 19
-	// 	TimeStampsTrigThorASM [numTimeStampsTrigThorASM]uint16 // 20 -> 23
-	// 	ThorTT                uint16                           // 24
-	// 	Patterns              [numPatterns]uint16              // 25 -> 27
-	// 	Bobo                  uint16                           // 28
-	// 	ThorTrigTimeStamps    [numThorTrigTimeStamps]uint16    // 29 -> 31
-	// 	CptsTriggerThor       [numCptsTriggerThor]uint16       // 32 -> 33
-	// 	CptsTriggerASM        [numCptsTriggerASM]uint16        // 34 -> 35
-	// 	NoSamples             uint16                           // 36
 	Header  FrameHeader
 	Data    HalfDRSData
 	Trailer FrameTrailer
 
 	// Derived quantities
-	AMCFrameCounter      uint32
-	ASMFrameCounter      uint64
-	TimeStampASM         uint64
-	TimeStampTrigThorASM uint64
-	Pattern              uint64
-	ThorTrigTimeStamp    uint64
-	CptTriggerThor       uint32
-	QuartetAbsIdx60      uint8 // one-to-one correspondance between frames and quartets in xTCA
-	QuartetAbsIdx72      uint8 // one-to-one correspondance between frames and quartets in xTCA
+	CptTriggerThor  uint32
+	QuartetAbsIdx60 uint8 // one-to-one correspondance between frames and quartets in xTCA
+	QuartetAbsIdx72 uint8 // one-to-one correspondance between frames and quartets in xTCA
 
 	// Error handling
 	Err ErrorCode

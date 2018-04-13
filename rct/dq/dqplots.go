@@ -50,8 +50,8 @@ func NewDQPlot() *DQPlot {
 	dqp := &DQPlot{
 		HFrequency:       hbook.NewH1D(24, 0, 24),
 		HSatFrequency:    hbook.NewH1D(24, 0, 24),
-		HMultiplicity:    hbook.NewH1D(8, -0.5, 7.5),
-		HSatMultiplicity: hbook.NewH1D(8, -0.5, 7.5),
+		HMultiplicity:    hbook.NewH1D(8, 0, 8),
+		HSatMultiplicity: hbook.NewH1D(8, 0, 8),
 		HLORMult:         hbook.NewH1D(20, 0, 20),
 		HCharge:          make([][]hbook.H1D, NoClusters),
 		HAmplitude:       make([][]hbook.H1D, NoClusters),
@@ -89,7 +89,6 @@ func (d *DQPlot) FillHistos(event *event.Event, RFcutMean, RFcutWidth float64) {
 
 	var mult uint8 = 0
 	var satmult uint8 = 0
-	var counter float64 = 0
 
 	// Used to make sure one fills only once the SRout histograms
 	var SRoutBool [3]bool
@@ -121,7 +120,6 @@ func (d *DQPlot) FillHistos(event *event.Event, RFcutMean, RFcutWidth float64) {
 			if pulse.HasSatSignal {
 				d.HSatFrequency.Fill(absId288, 1)
 			}
-			counter++
 		}
 
 		if cluster.Quartet != nil { // for rct, this selects only cluster for which one has data
@@ -138,6 +136,8 @@ func (d *DQPlot) FillHistos(event *event.Event, RFcutMean, RFcutWidth float64) {
 
 	if event.ClusterWoDataIsFilled[0] {
 		clusterWoData := &event.ClustersWoData[0]
+		mult += uint8(len(clusterWoData.PulsesWithSignal()))
+		satmult += uint8(len(clusterWoData.PulsesWithSatSignal()))
 		for j := range clusterWoData.Pulses {
 			pulse := &clusterWoData.Pulses[j]
 			if pulse.Channel == nil {
@@ -237,6 +237,39 @@ func (d *DQPlot) MakeFreqTiledPlot() *hplot.TiledPlot {
 	p2.X.Tick.Marker = &hplot.FreqTicks{N: 25, Freq: 4}
 	p2.Add(hplot.NewGrid())
 	hplotsatfreq := hplot.NewH1D(d.HSatFrequency)
+	hplotsatfreq.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
+	hplotsatfreq.Color = plotutil.Color(3)
+	p2.Add(hplotsatfreq)
+	//p2.Title.Text = fmt.Sprintf("Number of saturating pulses vs channel\n")
+	return tp
+}
+
+func (d *DQPlot) MakePulseMultTiledPlot() *hplot.TiledPlot {
+	tp := hplot.NewTiledPlot(draw.Tiles{Cols: 2, Rows: 1, PadY: 1 * vg.Centimeter})
+
+	p1 := tp.Plot(0, 0)
+	p1.X.Min = 0
+	// 	p1.X.Max = 24
+	p1.Y.Min = 0
+	p1.X.Label.Text = "Mult"
+	p1.Y.Label.Text = "Entries"
+	p1.X.Tick.Marker = &hplot.FreqTicks{N: 9, Freq: 1}
+	p1.Add(hplot.NewGrid())
+	hplotfreq := hplot.NewH1D(d.HMultiplicity)
+	hplotfreq.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
+	hplotfreq.Color = plotutil.Color(3)
+	p1.Add(hplotfreq)
+	//p1.Title.Text = fmt.Sprintf("Number of pulses vs channel\n")
+
+	p2 := tp.Plot(0, 1)
+	p2.X.Min = 0
+	// 	p2.X.Max = 7.5
+	p2.Y.Min = 0
+	p2.X.Label.Text = "Sat mult"
+	p2.Y.Label.Text = "Entries"
+	p2.X.Tick.Marker = &hplot.FreqTicks{N: 9, Freq: 1}
+	p2.Add(hplot.NewGrid())
+	hplotsatfreq := hplot.NewH1D(d.HSatMultiplicity)
 	hplotsatfreq.FillColor = color.RGBA{R: 255, G: 204, B: 153, A: 255}
 	hplotsatfreq.Color = plotutil.Color(3)
 	p2.Add(hplotsatfreq)
