@@ -491,6 +491,7 @@ func (e *Event) IntegrityFirstASMBoard() error {
 	}
 
 	sort.Ints(NoFrameAsmVec)
+	// 	fmt.Println(NoFrameAsmVec)
 	// Check that NoFrameAsm always increments by +1
 	if len(NoFrameAsmVec) >= 2 {
 		prevVal := NoFrameAsmVec[0]
@@ -556,8 +557,9 @@ func (e *Event) IntegrityFirstASMBoard() error {
 		if e.ClustersWoData[0].TimeStampAsm != e.Clusters[iTest].TimeStampAsm {
 			passTimeStampAsmTest = false
 		}
-
 	}
+	// 	fmt.Printf("%s -> CptTriggerAsm: %v %v %v %v %v %v\n%s", utils.CLR_R, e.Clusters[0].CptTriggerAsm, e.Clusters[1].CptTriggerAsm, e.Clusters[2].CptTriggerAsm,
+	// 		e.Clusters[3].CptTriggerAsm, e.Clusters[4].CptTriggerAsm, e.ClustersWoData[0].CptTriggerAsm, utils.CLR_def)
 	if !passCptTriggerAsmTest {
 		fmt.Printf("%s -> CptTrigger problem: %v %v %v %v %v %v\n%s", utils.CLR_R, e.Clusters[0].CptTriggerAsm, e.Clusters[1].CptTriggerAsm, e.Clusters[2].CptTriggerAsm,
 			e.Clusters[3].CptTriggerAsm, e.Clusters[4].CptTriggerAsm, e.ClustersWoData[0].CptTriggerAsm, utils.CLR_def)
@@ -566,7 +568,7 @@ func (e *Event) IntegrityFirstASMBoard() error {
 	if !passTimeStampAsmTest {
 		fmt.Printf("%s -> TimeStamp problem: %v %v %v %v %v %v\n%s", utils.CLR_R, e.Clusters[0].TimeStampAsm, e.Clusters[1].TimeStampAsm, e.Clusters[2].TimeStampAsm,
 			e.Clusters[3].TimeStampAsm, e.Clusters[4].TimeStampAsm, e.ClustersWoData[0].TimeStampAsm, utils.CLR_def)
-		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
+		//err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 	////////////////////////////////////////////////////////////////////////////////
 

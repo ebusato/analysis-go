@@ -29,6 +29,7 @@ type Reader struct {
 	UDPHalfDRSBuffer []byte              // relevant only when reading from UDP with packet = half DRS
 	framesMap        map[uint32][]*Frame // key: CptTriggerAsm ; value: slice of pointers to frames for corresponding CptTriggerAsm
 	framesMapKeys    []uint32            // vector of keys (book-keeping of keys in sorted way)
+	NoPanic          bool
 }
 
 // NewReader returns a new ASM stream in read mode
@@ -42,6 +43,7 @@ func NewReader(r io.Reader) (*Reader, error) {
 	rr.framesMap = make(map[uint32][]*Frame)
 	rr.framesMapKeys = make([]uint32, 0)
 	rr.readFileHeader(&rr.FileHeader)
+	rr.NoPanic = false
 	return rr, rr.err
 }
 
@@ -237,7 +239,9 @@ func (r *Reader) Frame() *Frame {
 		r.err = f.Header.Integrity()
 		if r.err != nil {
 			f.Header.Print()
-			panic(r.err)
+			if !r.NoPanic {
+				panic(r.err)
+			}
 		}
 		f.SetDataSliceLen(int(f.Header.NoSamples))
 		r.readFrameData(&f.Data)
@@ -251,36 +255,10 @@ func (r *Reader) Frame() *Frame {
 		r.err = f.Trailer.Integrity()
 		if r.err != nil {
 			f.Trailer.Print()
-			panic(r.err)
+			if !r.NoPanic {
+				panic(r.err)
+			}
 		}
-		/*case UDPHalfDRS:
-		for i := range r.UDPHalfDRSBuffer {
-			r.UDPHalfDRSBuffer[i] = 0
-		}
-		n, err := r.r.Read(r.UDPHalfDRSBuffer)
-		f.UDPPayloadSize = n
-		if r.err != nil {
-			panic(err)
-		}
-		f.FillHeader(r.UDPHalfDRSBuffer)
-		err = f.IntegrityHeader()
-		if err != nil {
-			panic(err)
-		}
-		f.FillData(r.UDPHalfDRSBuffer)
-		err = f.IntegrityData()
-		if err != nil {
-			panic(err)
-		}
-		f.FillTrailer(r.UDPHalfDRSBuffer)
-		err = f.IntegrityTrailer()
-		if err != nil {
-			panic(err)
-		}
-		// 	for i := range r.UDPHalfDRSBuffer {
-		// 		fmt.Printf(" r.UDPHalfDRSBuffer[%v] = %x \n", i, r.UDPHalfDRSBuffer[i])
-		// 	}
-		*/
 	}
 	return f
 }

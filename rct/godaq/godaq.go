@@ -66,6 +66,7 @@ var (
 	noen        = flag.Bool("noen", false, "If specified, no energy calibration applied.")
 	rfcutmean   = flag.Float64("rfcutmean", 7, "Mean used to apply RF selection cut.")
 	rfcutwidth  = flag.Float64("rfcutwidth", 5, "Width used to apply RF selection cut.")
+	nopanic     = flag.Bool("nopanic", false, "If set, the program won't panic when errors are not nil")
 )
 
 // XY is a struct used to store a couple of values
@@ -186,6 +187,7 @@ func main() {
 	// 		log.Fatalf("could not open stream: %v\n", err)
 	// 	}
 	r.SetSigThreshold(*sigthres)
+	r.NoPanic = *nopanic
 
 	// Start reading TCP stream
 	// 	hdr := r.Header()
@@ -532,7 +534,7 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 						// (for an unknown reason) and thus leads to bad freqDaq value.
 						if *iEvent > 1 {
 							freqDaq = float64(120e6) * float64(event.ID-prevEvtID) / float64(event.TimeStamp-prevEvtTimeStamp) // The clock frequency is 120 MHz
-							fmt.Println("debug freqdaq: ", freqDaq, event.ID, prevEvtID, event.TimeStamp, prevEvtTimeStamp)
+							// 							fmt.Println("debug freqdaq: ", freqDaq, event.ID, prevEvtID, event.TimeStamp, prevEvtTimeStamp)
 
 						}
 						prevEvtID = event.ID
