@@ -224,7 +224,7 @@ func main() {
 		"TimeStart":  0,
 		"TimeStop":   0,
 		"NoEvents":   0,
-		"NoASMCards": 12,
+		"NoASMCards": 1,
 		"NoSamples":  strconv.FormatUint(uint64(r.NoSamples()), 10),
 	})
 	if err != nil {
