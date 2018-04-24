@@ -20,16 +20,16 @@ const (
 
 // Reader wraps an io.Reader and reads avirm data files
 type Reader struct {
-	r                io.Reader
-	err              error
-	FileHeader       FileHeader
-	SigThreshold     uint
-	Debug            bool
-	ReadMode         ReadMode
-	UDPHalfDRSBuffer []byte              // relevant only when reading from UDP with packet = half DRS
-	framesMap        map[uint32][]*Frame // key: CptTriggerAsm ; value: slice of pointers to frames for corresponding CptTriggerAsm
-	framesMapKeys    []uint32            // vector of keys (book-keeping of keys in sorted way)
-	NoPanic          bool
+	r                  io.Reader
+	err                error
+	FileHeader         FileHeader
+	SigThreshold       uint
+	Debug              bool
+	ReadMode           ReadMode
+	UDPHalfDRSBuffer   []byte              // relevant only when reading from UDP with packet = half DRS
+	framesMap          map[uint32][]*Frame // key: CptTriggerAsm ; value: slice of pointers to frames for corresponding CptTriggerAsm
+	framesMapKeys      []uint32            // vector of keys (book-keeping of keys in sorted way)
+	NoPanic bool
 }
 
 // NewReader returns a new ASM stream in read mode
@@ -126,6 +126,14 @@ func (r *Reader) readFrameHeader(f *FrameHeader) {
 	if r.err != nil { // true for EOF
 		return
 	}
+	//////////////////////////////////////////////////////////
+	// The following is to cope with ARS requests errors
+	// When ARS errors solved it can be removed
+	for f.StartOfFrame !=  ctrlStartOfFrame {
+		fmt.Println("  -> f.StartOfFrame !=  ctrlStartOfFrame")
+		r.readU16(&f.StartOfFrame, binary.BigEndian)
+	}
+	//////////////////////////////////////////////////////////
 
 	//fmt.Printf("Start of frame = %x\n", f.StartOfFrame)
 	r.readU16(&f.NbFrameAmcMsb, binary.BigEndian)
