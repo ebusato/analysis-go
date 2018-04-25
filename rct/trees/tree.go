@@ -89,10 +89,12 @@ func NewTree(outrootfileName string) *Tree {
 	_, err = t.tree.Branch2("NoSamples", &t.data.NoSamples, "NoSamples/I", bufsiz)
 	_, err = t.tree.Branch2("SampleTimes", &t.data.SampleTimes, "SampleTimes[NoSamples]/D", bufsiz)
 	_, err = t.tree.Branch2("SampleIndices", &t.data.SampleIndices, "SampleIndices[NoSamples]/s", bufsiz)
-	_, err = t.tree.Branch2("Pulse", &t.data.Pulse, "Pulse[NoPulses][1023]/D", bufsiz)
-	_, err = t.tree.Branch2("CapaId", &t.data.CapaId, "CapaId[NoPulses][1023]/s", bufsiz)
-	// 	_, err = t.tree.Branch2("Pulse", &t.data.Pulse, "Pulse[NoPulses][848]/D", bufsiz)
-	// 	_, err = t.tree.Branch2("CapaId", &t.data.CapaId, "CapaId[NoPulses][848]/s", bufsiz)
+
+	temp := fmt.Sprintf("Pulse[NoPulses][%v]/D", NoSamplesMax)
+	temp2 := fmt.Sprintf("CapaId[NoPulses][%v]/s", NoSamplesMax)
+	// 	fmt.Println(temp, temp2)
+	_, err = t.tree.Branch2("Pulse", &t.data.Pulse, temp, bufsiz)
+	_, err = t.tree.Branch2("CapaId", &t.data.CapaId, temp2, bufsiz)
 
 	return &t
 }
