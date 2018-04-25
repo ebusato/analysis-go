@@ -386,6 +386,10 @@ func QuartetAbsIdx60ToLineAbsIdx12(iQuartet uint8) uint8 {
 	return iQuartet / 5
 }
 
+func QuartetAbsIdx72ToLineAbsIdx12(iQuartet uint8) uint8 {
+	return iQuartet / 6
+}
+
 func RelIdxToAbsIdx240(iHemi uint8, iASM uint8, iDRS uint8, iQuartet uint8, iChannel uint8) (iQuartetAbs uint8, iChannelAbs uint16) {
 	// 	if iDRS == 2 && iQuartet == 1 {
 	// 		panic("dpgadetector: iDRS == 2 && iQuartet == 1")

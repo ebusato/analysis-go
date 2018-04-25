@@ -1,6 +1,8 @@
 package trees
 
 import (
+	"fmt"
+
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
@@ -18,8 +20,8 @@ type ROOTData struct {
 	T0  uint32
 
 	NoPulses            int32
-	IChanAbs240         [NoPulsesMax]uint16
-	IQuartetAbs60       [NoPulsesMax]uint8
+	IChanAbs288         [NoPulsesMax]uint16
+	IQuartetAbs72       [NoPulsesMax]uint8
 	ILineAbs12          [NoPulsesMax]uint8
 	IHemi               [NoPulsesMax]uint8
 	E                   [NoPulsesMax]float64
@@ -67,8 +69,8 @@ func NewTree(outrootfileName string) *Tree {
 	_, err = t.tree.Branch2("T0", &t.data.T0, "T0/i", bufsiz)
 
 	_, err = t.tree.Branch2("NoPulses", &t.data.NoPulses, "NoPulses/I", bufsiz)
-	_, err = t.tree.Branch2("IChanAbs240", &t.data.IChanAbs240, "IChanAbs240[NoPulses]/s", bufsiz)
-	_, err = t.tree.Branch2("IQuartetAbs60", &t.data.IQuartetAbs60, "IQuartetAbs60[NoPulses]/b", bufsiz)
+	_, err = t.tree.Branch2("IChanAbs288", &t.data.IChanAbs288, "IChanAbs288[NoPulses]/s", bufsiz)
+	_, err = t.tree.Branch2("IQuartetAbs72", &t.data.IQuartetAbs72, "IQuartetAbs72[NoPulses]/b", bufsiz)
 	_, err = t.tree.Branch2("ILineAbs12", &t.data.ILineAbs12, "ILineAbs12[NoPulses]/b", bufsiz)
 	_, err = t.tree.Branch2("IHemi", &t.data.IHemi, "IHemi[NoPulses]/b", bufsiz)
 	_, err = t.tree.Branch2("E", &t.data.E, "E[NoPulses]/D", bufsiz)
@@ -97,6 +99,7 @@ func NewTree(outrootfileName string) *Tree {
 
 func (t *Tree) Fill(run uint32, event *event.Event) {
 	t.data.Run = run
+	fmt.Println("ID = ", event.ID)
 	t.data.Evt = uint32(event.ID)
 	t.data.T0 = 0
 
@@ -119,9 +122,9 @@ func (t *Tree) Fill(run uint32, event *event.Event) {
 		pulse.CalcRisingFront(true)
 		pulse.CalcFallingFront(false)
 		// 		fmt.Println("i=", i)
-		t.data.IChanAbs240[i] = uint16(pulse.Channel.AbsID240())
-		t.data.IQuartetAbs60[i] = dpgadetector.FifoID144ToQuartetAbsIdx60(pulse.Channel.FifoID144(), true)
-		t.data.ILineAbs12[i] = dpgadetector.QuartetAbsIdx60ToLineAbsIdx12(t.data.IQuartetAbs60[i])
+		t.data.IChanAbs288[i] = uint16(pulse.Channel.AbsID288())
+		t.data.IQuartetAbs72[i] = dpgadetector.FifoID144ToQuartetAbsIdx72(pulse.Channel.FifoID144())
+		t.data.ILineAbs12[i] = dpgadetector.QuartetAbsIdx72ToLineAbsIdx12(t.data.IQuartetAbs72[i])
 		t.data.IHemi[i] = uint8(pulse.Hemi())
 		t.data.E[i] = pulse.E
 		t.data.Ampl[i] = pulse.Ampl

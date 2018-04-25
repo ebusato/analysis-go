@@ -48,6 +48,11 @@ func main() {
 
 	var iEvent uint
 
+	// Read and do nothing with first event
+	// because it is corrupted for an unknown reason
+	//  -> remove once fixed
+	r.ReadNextEvent()
+
 	for iEvent < *noEvents {
 		if iEvent%*evtFreq == 0 {
 			fmt.Printf("event %v\n", iEvent)
