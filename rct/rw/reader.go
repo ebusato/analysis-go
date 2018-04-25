@@ -127,8 +127,8 @@ func (r *Reader) readFrameHeader(f *FrameHeader) {
 		return
 	}
 	//////////////////////////////////////////////////////////
-	// The following is to cope with ARS requests errors
-	// When ARS errors solved it can be removed
+	// The following is to cope with ARP requests errors
+	// When ARP errors solved it can be removed
 	for f.StartOfFrame !=  ctrlStartOfFrame {
 		fmt.Println("  -> f.StartOfFrame !=  ctrlStartOfFrame")
 		r.readU16(&f.StartOfFrame, binary.BigEndian)

@@ -56,17 +56,16 @@ var (
 	notree       = flag.Bool("notree", false, "If set, no root tree is produced")
 	test         = flag.Bool("test", false,
 		"If set, update runs_test.csv rather than the \"official\" runs.csv file and name by default the output binary file using the following scheme: runXXX_test.bin")
-	refplots    = flag.String("ref", "", "Name of the file containing reference plots. If empty, no reference plots are overlayed")
-	hvMonDegrad = flag.Uint("hvmondeg", 100, "HV monitoring frequency degradation factor")
-	comment     = flag.String("c", "None", "Comment to be put in runs csv file")
-	distr       = flag.String("distr", "ampl", "Possible values: ampl (default), charge, energy")
-	calib       = flag.String("calib", "", "String indicating which calib to use (e.g. A1 for period A, version 1)")
-	noped       = flag.Bool("noped", false, "If specified, no pedestal correction applied")
-	notdo       = flag.Bool("notdo", false, "If specified, no time dependent offset correction applied")
-	noen        = flag.Bool("noen", false, "If specified, no energy calibration applied.")
-	rfcutmean   = flag.Float64("rfcutmean", 7, "Mean used to apply RF selection cut.")
-	rfcutwidth  = flag.Float64("rfcutwidth", 5, "Width used to apply RF selection cut.")
-	nopanic     = flag.Bool("nopanic", false, "If set, the program won't panic when errors are not nil")
+	refplots   = flag.String("ref", "", "Name of the file containing reference plots. If empty, no reference plots are overlayed")
+	comment    = flag.String("c", "None", "Comment to be put in runs csv file")
+	distr      = flag.String("distr", "ampl", "Possible values: ampl (default), charge, energy")
+	calib      = flag.String("calib", "", "String indicating which calib to use (e.g. A1 for period A, version 1)")
+	noped      = flag.Bool("noped", false, "If specified, no pedestal correction applied")
+	notdo      = flag.Bool("notdo", false, "If specified, no time dependent offset correction applied")
+	noen       = flag.Bool("noen", false, "If specified, no energy calibration applied.")
+	rfcutmean  = flag.Float64("rfcutmean", 7, "Mean used to apply RF selection cut.")
+	rfcutwidth = flag.Float64("rfcutwidth", 5, "Width used to apply RF selection cut.")
+	nopanic    = flag.Bool("nopanic", false, "If set, the program won't panic when errors are not nil")
 )
 
 // XY is a struct used to store a couple of values
@@ -306,8 +305,8 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 		if i%sampFreq == 0 {
 			samp := &pulse.Samples[i]
 			var x float64
-			x = float64(samp.Index)
-			//x = float64(samp.Capacitor.ID())
+			//x = float64(samp.Index)
+			x = float64(samp.Capacitor.ID())
 
 			// 			fmt.Println("i=", i, x, samp.Amplitude, counter)
 			data[counter] = XY{X: x, Y: samp.Amplitude}

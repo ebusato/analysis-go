@@ -494,7 +494,7 @@ func (e *Event) IntegrityFirstASMBoard() error {
 	if len(NoFrameAsmVec) != 6 {
 		fmt.Println("  -> len(NoFrameAsmVec) != 6")
 	}
-	// 	fmt.Println(NoFrameAsmVec)
+// 	fmt.Println(NoFrameAsmVec)
 	// Check that NoFrameAsm always increments by +1
 	if len(NoFrameAsmVec) >= 2 {
 		prevVal := NoFrameAsmVec[0]
@@ -569,8 +569,8 @@ func (e *Event) IntegrityFirstASMBoard() error {
 		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 	if !passTimeStampAsmTest {
-		// 		fmt.Printf("%s -> TimeStamp problem: %v %v %v %v %v %v\n%s", utils.CLR_R, e.Clusters[0].TimeStampAsm, e.Clusters[1].TimeStampAsm, e.Clusters[2].TimeStampAsm,
-		// 			e.Clusters[3].TimeStampAsm, e.Clusters[4].TimeStampAsm, e.ClustersWoData[0].TimeStampAsm, utils.CLR_def)
+// 		fmt.Printf("%s -> TimeStamp problem: %v %v %v %v %v %v\n%s", utils.CLR_R, e.Clusters[0].TimeStampAsm, e.Clusters[1].TimeStampAsm, e.Clusters[2].TimeStampAsm,
+// 			e.Clusters[3].TimeStampAsm, e.Clusters[4].TimeStampAsm, e.ClustersWoData[0].TimeStampAsm, utils.CLR_def)
 		//err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 	////////////////////////////////////////////////////////////////////////////////
