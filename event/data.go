@@ -170,9 +170,9 @@ func (d *Data) PlotAmplitudeCorrelationWithinCluster() {
 }
 */
 
-func (d *Data) PlotPulses(xaxis pulse.XaxisType, onlyClustersWithSig bool, yrange pulse.YRange, xRangeZoomAround500 bool) {
+func (d *Data) PlotPulses(xaxis pulse.XaxisType, onlyClustersWithSig bool, yrange pulse.YRange, xrange pulse.XRange) {
 	for i := range d.Events {
-		d.Events[i].PlotPulses(xaxis, onlyClustersWithSig, yrange, xRangeZoomAround500)
+		d.Events[i].PlotPulses(xaxis, onlyClustersWithSig, yrange, xrange)
 		if i >= 40 {
 			break
 		}

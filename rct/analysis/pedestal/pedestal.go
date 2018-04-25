@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/rct/rw"
+	"gitlab.in2p3.fr/avirm/analysis-go/rct/trees"
 )
 
 var (
-	inFile   = flag.String("i", "", "Name of input file")
-	outFile  = flag.String("o", "", "Name of the output csv file")
-	noEvents = flag.Uint("n", 100000, "Number of events")
-	evtFreq  = flag.Uint("ef", 100, "Event printing frequency")
-	vme      = flag.Bool("vme", false, "If set, uses VME reader")
+	inFile       = flag.String("i", "", "Name of input file")
+	noEvents     = flag.Uint("n", 100000, "Number of events")
+	evtFreq      = flag.Uint("ef", 100, "Event printing frequency")
+	treeFileName = flag.String("ot", "", "Name of the TFile containing the output tree")
 )
 
 func main() {
@@ -35,6 +36,15 @@ func main() {
 	}*/
 	var r *rw.Reader
 	r, _ = rw.NewReader(bufio.NewReader(f))
+	r.SetSigThreshold(1)
+
+	outRootFileName := strings.Replace(*inFile, ".bin", ".root", 1)
+	var tree *trees.Tree
+	if *treeFileName != "" {
+		tree = trees.NewTree(*treeFileName)
+	} else {
+		tree = trees.NewTree(outRootFileName)
+	}
 
 	var iEvent uint
 
@@ -46,7 +56,14 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		event.PlotPulses(pulse.XaxisCapacitor, false, pulse.YRangePedestal, false)
+		event.PlotPulses(pulse.XaxisCapacitor, false, pulse.YRangeAuto, pulse.XRangeFull)
+
+		if tree != nil {
+			tree.Fill(0, event)
+		}
 		iEvent++
+	}
+	if tree != nil {
+		tree.Close()
 	}
 }

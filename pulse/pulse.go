@@ -491,7 +491,7 @@ type Cluster struct {
 	SRout         uint16
 	CptTriggerAsm uint32
 	NoFrameAsm    uint64
-	TimeStampAsm     uint64
+	TimeStampAsm  uint64
 	Quartet       *detector.Quartet
 }
 
@@ -663,8 +663,16 @@ const (
 	YRangeFullDynamics
 )
 
+type XRange byte
+
+const (
+	XRangeAuto XRange = iota
+	XRangeFull
+	XRangeAround500
+)
+
 // PlotPulses plots the four pulses of the cluster in one canvas
-func (c *Cluster) PlotPulses(evtID uint, x XaxisType, yrange YRange, xRangeZoomAround500 bool) string {
+func (c *Cluster) PlotPulses(evtID uint, x XaxisType, yrange YRange, xrange XRange) string {
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
@@ -709,7 +717,11 @@ func (c *Cluster) PlotPulses(evtID uint, x XaxisType, yrange YRange, xRangeZoomA
 		// do nothing, automatic range
 	}
 
-	if xRangeZoomAround500 {
+	switch xrange {
+	case XRangeFull:
+		p.X.Min = 0
+		p.X.Max = 1024
+	case XRangeAround500:
 		p.X.Min = 400
 		p.X.Max = 600
 	}

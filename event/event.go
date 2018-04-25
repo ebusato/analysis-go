@@ -201,7 +201,8 @@ func (e *Event) Print(printClusters bool, printClusterDetails bool) {
 
 // idxFirstPulseLeftSide is the index within the []*pulse.Pulse slice of the
 // first pulse on the left side of the DPGA
-func (e *Event) Multiplicity() (uint8, []*pulse.Pulse, int) {
+func (e *Event) Multiplicity() (uint8, []*pulse.Pulse, int, uint8, []*pulse.Pulse, int) {
+	// Process clusters with data
 	var mult uint8 = 0
 	var pulsesWSig []*pulse.Pulse
 	var idxFirstPulseLeftSide int
@@ -213,14 +214,28 @@ func (e *Event) Multiplicity() (uint8, []*pulse.Pulse, int) {
 		pulsesWSig = append(pulsesWSig, pulsesWSigInCluster...)
 		mult += uint8(len(pulsesWSigInCluster))
 	}
-	return mult, pulsesWSig, idxFirstPulseLeftSide
+
+	// Process clusters w/o data
+	var multWoData uint8 = 0
+	var pulsesWoDataWSig []*pulse.Pulse
+	var idxFirstPulseWoDataLeftSide int
+	for i := range e.ClustersWoData {
+		pulsesWoDataWSigInCluster := e.ClustersWoData[i].PulsesWithSignal()
+		if i == 6 { // start processing clusters on left side of DPGA
+			idxFirstPulseWoDataLeftSide = len(pulsesWoDataWSig)
+		}
+		pulsesWoDataWSig = append(pulsesWoDataWSig, pulsesWoDataWSigInCluster...)
+		multWoData += uint8(len(pulsesWoDataWSigInCluster))
+	}
+
+	return mult, pulsesWSig, idxFirstPulseLeftSide, multWoData, pulsesWoDataWSig, idxFirstPulseWoDataLeftSide
 }
 
-func (e *Event) PlotPulses(x pulse.XaxisType, onlyClustersWithSig bool, yrange pulse.YRange, xRangeZoomAround500 bool) {
+func (e *Event) PlotPulses(x pulse.XaxisType, onlyClustersWithSig bool, yrange pulse.YRange, xrange pulse.XRange) {
 	for i := range e.Clusters {
 		cluster := &e.Clusters[i]
 		if (onlyClustersWithSig == true && len(cluster.PulsesWithSignal()) > 0) || !onlyClustersWithSig {
-			cluster.PlotPulses(e.ID, x, yrange, xRangeZoomAround500)
+			cluster.PlotPulses(e.ID, x, yrange, xrange)
 		}
 	}
 }
@@ -346,7 +361,7 @@ func (e *Event) FindLORs(xbeam, ybeam, RmarMax, DeltaTMax, Emin, Emax float64, e
 		e.LORs = nil
 	}
 
-	mult, pulses, idxFirstLeft := e.Multiplicity()
+	mult, pulses, idxFirstLeft, _, _, _ := e.Multiplicity()
 	// 	fmt.Println("idxFirstLeft = ", idxFirstLeft)
 	for i := 0; i < idxFirstLeft; i++ {
 		pulseRight := pulses[i]
@@ -494,7 +509,7 @@ func (e *Event) IntegrityFirstASMBoard() error {
 	if len(NoFrameAsmVec) != 6 {
 		fmt.Println("  -> len(NoFrameAsmVec) != 6")
 	}
-// 	fmt.Println(NoFrameAsmVec)
+	// 	fmt.Println(NoFrameAsmVec)
 	// Check that NoFrameAsm always increments by +1
 	if len(NoFrameAsmVec) >= 2 {
 		prevVal := NoFrameAsmVec[0]
@@ -569,8 +584,8 @@ func (e *Event) IntegrityFirstASMBoard() error {
 		err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 	if !passTimeStampAsmTest {
-// 		fmt.Printf("%s -> TimeStamp problem: %v %v %v %v %v %v\n%s", utils.CLR_R, e.Clusters[0].TimeStampAsm, e.Clusters[1].TimeStampAsm, e.Clusters[2].TimeStampAsm,
-// 			e.Clusters[3].TimeStampAsm, e.Clusters[4].TimeStampAsm, e.ClustersWoData[0].TimeStampAsm, utils.CLR_def)
+		// 		fmt.Printf("%s -> TimeStamp problem: %v %v %v %v %v %v\n%s", utils.CLR_R, e.Clusters[0].TimeStampAsm, e.Clusters[1].TimeStampAsm, e.Clusters[2].TimeStampAsm,
+		// 			e.Clusters[3].TimeStampAsm, e.Clusters[4].TimeStampAsm, e.ClustersWoData[0].TimeStampAsm, utils.CLR_def)
 		//err = errors.New(" -> Event integrity test failed ==> Investigate !!")
 	}
 	////////////////////////////////////////////////////////////////////////////////

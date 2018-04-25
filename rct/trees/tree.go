@@ -1,17 +1,16 @@
 package trees
 
 import (
-	"fmt"
-
 	"github.com/go-hep/croot"
 	//"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/dpga/dpgadetector"
 	"gitlab.in2p3.fr/avirm/analysis-go/event"
+	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/utils"
 )
 
-const NoPulsesMax = 240
-const NoSamplesMax = 1024
+const NoPulsesMax = 24
+const NoSamplesMax = 500
 
 type ROOTData struct {
 	Run uint32
@@ -101,15 +100,22 @@ func (t *Tree) Fill(run uint32, event *event.Event) {
 	t.data.Evt = uint32(event.ID)
 	t.data.T0 = 0
 
-	noPulses, pulses, _ := event.Multiplicity()
-	t.data.NoPulses = int32(noPulses)
-	fmt.Println("noPulses=", t.data.NoPulses)
+	noPulses, pulses, _, noPulsesWoData, pulsesWoData, _ := event.Multiplicity()
+	t.data.NoPulses = int32(noPulses + noPulsesWoData)
+	// 	fmt.Println("noPulses=", t.data.NoPulses)
 	if noPulses > 0 {
 		t.data.NoSamples = int32(len(pulses[0].Samples))
-		fmt.Println("NoSamples=", t.data.NoSamples)
+		// 		fmt.Println("NoSamples=", t.data.NoSamples)
 	}
-	for i := range pulses {
-		pulse := pulses[i]
+
+	pulsesFull := make([]*pulse.Pulse, 0)
+	pulsesFull = append(pulsesFull, pulses...)
+	pulsesFull = append(pulsesFull, pulsesWoData...)
+
+	// 	fmt.Println("debugging: ", len(pulses), len(pulsesWoData), len(pulsesFull))
+
+	for i := range pulsesFull {
+		pulse := pulsesFull[i]
 		pulse.CalcRisingFront(true)
 		pulse.CalcFallingFront(false)
 		// 		fmt.Println("i=", i)
