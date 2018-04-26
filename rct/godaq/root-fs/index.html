@@ -139,6 +139,7 @@
 			//p6.innerHTML = deltat30plot;
 			for (var i = 0; i < Nquartets; i++) {
 				opts = new options('#E0F2F7') // blue
+				opts.xaxis = {min:0, max:1024}
 				//opts.zoom = {interactive: true}
 				//opts.pan = {interactive: true}
 				var p = $.plot("#my-q"+i+"-plot", quartetplots[i], opts); 

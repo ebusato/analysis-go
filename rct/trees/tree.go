@@ -101,7 +101,7 @@ func NewTree(outrootfileName string) *Tree {
 
 func (t *Tree) Fill(run uint32, event *event.Event) {
 	t.data.Run = run
-	fmt.Println("ID = ", event.ID)
+	// 	fmt.Println("ID = ", event.ID)
 	t.data.Evt = uint32(event.ID)
 	t.data.T0 = 0
 

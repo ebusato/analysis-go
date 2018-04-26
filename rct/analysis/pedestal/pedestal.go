@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"gitlab.in2p3.fr/avirm/analysis-go/pulse"
 	"gitlab.in2p3.fr/avirm/analysis-go/rct/rw"
 	"gitlab.in2p3.fr/avirm/analysis-go/rct/trees"
 )
@@ -61,7 +60,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		event.PlotPulses(pulse.XaxisCapacitor, false, pulse.YRangeAuto, pulse.XRangeFull)
+		//event.PlotPulses(pulse.XaxisCapacitor, false, pulse.YRangeAuto, pulse.XRangeFull)
 
 		if tree != nil {
 			tree.Fill(0, event)
