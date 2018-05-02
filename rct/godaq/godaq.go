@@ -67,6 +67,7 @@ var (
 	nopanic                   = flag.Bool("nopanic", false, "If set, the program won't panic when errors are not nil")
 	printWarningMonBufferSize = flag.Bool("nowarning", false, "If set, the program won't print the warning related to the size of the monitoring buffer")
 	xaxis                     = flag.String("xaxis", "SampleIdx", "Sets what is represented on xaxis on pulse plots (possible values: SampleIdx, SampleTime, CapaId")
+	skip                      = flag.Uint("skip", 0, "Set number of events to skip")
 )
 
 // XY is a struct used to store a couple of values
@@ -376,13 +377,10 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 		default:
 			switch *iEvent < *noEvents {
 			case true:
-				if *iEvent%*evtFreq == 0 {
-					fmt.Printf("event %v\n", *iEvent)
-				}
 				event, err := r.ReadNextEvent()
-				// 				if *iEvent%*evtFreq == 0 {
-				// 					fmt.Printf(" -> event.ID=%v\n", event.ID)
-				// 				}
+				if *iEvent%*evtFreq == 0 {
+					fmt.Printf("iEvent=%v; event.ID=%v\n", *iEvent, event.ID)
+				}
 				if err != nil {
 					// 					panic(err)
 					fmt.Println(err)
@@ -392,11 +390,8 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 					return
 				}
 
-				if event.ID%1 == 0 {
-					//fmt.Println("before")
-					//event.PlotPulses(pulse.XaxisCapacitor, true, pulse.YRangeAuto, false)
-					// 					event.PlotPulses(pulse.XaxisIndex, true, pulse.YRangeAuto, false)
-					//fmt.Println("after")
+				if event.ID < *skip {
+					continue
 				}
 
 				// 					event.Print(true, false)
