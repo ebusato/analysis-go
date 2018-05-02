@@ -66,6 +66,7 @@ var (
 	rfcutwidth                = flag.Float64("rfcutwidth", 5, "Width used to apply RF selection cut.")
 	nopanic                   = flag.Bool("nopanic", false, "If set, the program won't panic when errors are not nil")
 	printWarningMonBufferSize = flag.Bool("nowarning", false, "If set, the program won't print the warning related to the size of the monitoring buffer")
+	xaxis                     = flag.String("xaxis", "SampleIdx", "Sets what is represented on xaxis on pulse plots (possible values: SampleIdx, SampleTime, CapaId")
 )
 
 // XY is a struct used to store a couple of values
@@ -112,6 +113,7 @@ type Data struct {
 	RFplotALaArnaud       string         `json:"rfplotalaarnaud"`       // 2D RF plot "a la Arnaud"
 	SRoutTiled            string         `json:"srouttiled"`            // SRout distributions for the 36 DRS's
 	LORMult               string         `json:"lormult"`               // LOR multiplicity
+	SRout                 [6]uint16      `json:"srout"`                 // SRout of quartets
 }
 
 func (d *Data) Print() {
@@ -305,9 +307,14 @@ func GetMonData(sampFreq int, pulse pulse.Pulse) []XY {
 		if i%sampFreq == 0 {
 			samp := &pulse.Samples[i]
 			var x float64
-			//x = float64(samp.Index)
-			x = float64(samp.Capacitor.ID())
-
+			switch *xaxis {
+			case "SampleIdx":
+				x = float64(samp.Index)
+			case "CapaId":
+				x = float64(samp.Capacitor.ID())
+			case "SampleTime":
+				x = float64(samp.Time)
+			}
 			// 			fmt.Println("i=", i, x, samp.Amplitude, counter)
 			data[counter] = XY{X: x, Y: samp.Amplitude}
 			// 			data[x] = XY{X: x, Y: samp.Amplitude}
@@ -560,6 +567,14 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 							RFplotALaArnaud:       RFplotALaArnaudsvg,
 							LORMult:               LORMultsvg,
 							SRoutTiled:            SRoutsvg,
+							SRout: [6]uint16{
+								event.Clusters[0].SRout,
+								event.Clusters[1].SRout,
+								event.Clusters[2].SRout,
+								event.Clusters[3].SRout,
+								event.Clusters[4].SRout,
+								event.ClustersWoData[0].SRout,
+							},
 						}
 						//dataToMonitor.Print()
 						datac <- dataToMonitor

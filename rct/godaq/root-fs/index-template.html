@@ -43,6 +43,8 @@
 		var deltat30plot = ""
 		var chargeCorrelationplot = ""
 		
+		var srout
+		
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
 		
@@ -137,18 +139,24 @@
 			p4.innerHTML = sroutplot;
 			//var p6 = document.getElementById("my-deltat30-plot");
 			//p6.innerHTML = deltat30plot;
-			opts = new options('#E0F2F7') // blue
-			opts.xaxis = {min:0, max:1024}
-			opts.yaxis = {min:0, max:300}
+			optsloc = new options('#E0F2F7') // blue
+			optsloc.xaxis = {min:0, max:1024}
+			optsloc.yaxis = {min:0, max:300}
 			for (var i = 0; i < Nquartets; i++) {
+				optsloc.grid = {
+					markings: [
+						{xaxis: {from:  0, to: srout[i]}, yaxis: {from: 0, to: 300}, color: '#E0F2F7'},
+						{xaxis: {from: srout[i], to: 1024}, yaxis: {from: 0, to: 300}, color: "#ffcc66"},
+					]
+				}
 				//opts.zoom = {interactive: true}
 				//opts.pan = {interactive: true}
-				var p = $.plot("#my-q"+i+"-plot", quartetplots[i], opts); 
+				var p = $.plot("#my-q"+i+"-plot", quartetplots[i], optsloc); 
 				p.setupGrid();
 				p.draw();
 			}
 			for (var i = 0; i < NquartetsWoData; i++) {
-				var p = $.plot("#my-qWoData"+i+"-plot", quartetWoDataplots[i], opts);
+				var p = $.plot("#my-qWoData"+i+"-plot", quartetWoDataplots[i], optsloc);
 				p.setupGrid();
 				p.draw();
 			}
@@ -166,6 +174,7 @@
 					monbufsizeplot.data.push([data.evt, data.monbufsize])
 					nopacketspereventplot.data.push([data.evt, data.nopacketsperevent])
 				}
+				srout = data.srout
 				freqhplot = data.freqh;
 				chargehplot = data.charge;
 				pulsemulthplot = data.pulsemult;
