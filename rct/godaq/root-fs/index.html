@@ -142,14 +142,14 @@
 			//p6.innerHTML = deltat30plot;
 			optsloc = new options('#E0F2F7') // blue
 			optsloc.xaxis = {min:0, max:1024}
-			optsloc.yaxis = {min:0, max:300}
+			optsloc.yaxis = {min:0, max:350}
 			for (var i = 0; i < Nquartets; i++) {
 				if (xaxistype == "CapaId") {
 					optsloc.grid = {
 						markings: [
-							{xaxis: {from:  0, to: srout[i]}, yaxis: {from: 0, to: 300}, color: '#c2f0c2'},
-							{xaxis: {from: srout[i], to: 1024}, yaxis: {from: 0, to: 300}, color: "#ffe6ff"},
-							{color: "#000", lineWidth: 1, xaxis: { from: 500, to: 500} },
+							{xaxis: {from:  0, to: srout[i]}, yaxis: {from: 0, to: 400}, color: '#c2f0c2'},
+							{xaxis: {from: srout[i], to: 1024}, yaxis: {from: 0, to: 400}, color: "#ffe6ff"},
+							{color: "#000", lineWidth: 2, xaxis: { from: 500, to: 500} },
 						]
 					}
 				}
