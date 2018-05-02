@@ -83,10 +83,10 @@
 				if (ip == 0) {
 					// hack, 0 not printing if not a string
 					if (iq == 0) {
-						legend = "board 0"
+						legend = "20->23"
 					}
 					else {
-						legend = "board "+iq 
+						legend = "error "+iq 
 					}
 				}
 				pulseplots.push(new plot(legend, [], colors[ip]))
@@ -137,9 +137,10 @@
 			p4.innerHTML = sroutplot;
 			//var p6 = document.getElementById("my-deltat30-plot");
 			//p6.innerHTML = deltat30plot;
+			opts = new options('#E0F2F7') // blue
+			opts.xaxis = {min:0, max:1024}
+			opts.yaxis = {min:0, max:300}
 			for (var i = 0; i < Nquartets; i++) {
-				opts = new options('#E0F2F7') // blue
-				opts.xaxis = {min:0, max:1024}
 				//opts.zoom = {interactive: true}
 				//opts.pan = {interactive: true}
 				var p = $.plot("#my-q"+i+"-plot", quartetplots[i], opts); 
@@ -147,7 +148,7 @@
 				p.draw();
 			}
 			for (var i = 0; i < NquartetsWoData; i++) {
-				var p = $.plot("#my-qWoData"+i+"-plot", quartetWoDataplots[i]);
+				var p = $.plot("#my-qWoData"+i+"-plot", quartetWoDataplots[i], opts);
 				p.setupGrid();
 				p.draw();
 			}

@@ -2,7 +2,6 @@ package main // package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -51,21 +50,22 @@ var (
 	debug        = flag.Bool("d", false, "If set, debugging informations are printed")
 	webad        = flag.String("webad", ":5555", "server address:port")
 	bro          = flag.Bool("bro", false, "If set, webbrowser is open (if not, it's up to the user to open it with the right address)")
-	sleep        = flag.Bool("s", false, "If set, sleep a bit between events")
+	sleep        = flag.Int64("s", 0, "If set, sleeps for the time given as argument (in milliseconds) between two events")
 	sigthres     = flag.Uint("sigthres", 800, "Value above which a pulse is considered to have signal")
 	notree       = flag.Bool("notree", false, "If set, no root tree is produced")
 	test         = flag.Bool("test", false,
 		"If set, update runs_test.csv rather than the \"official\" runs.csv file and name by default the output binary file using the following scheme: runXXX_test.bin")
-	refplots   = flag.String("ref", "", "Name of the file containing reference plots. If empty, no reference plots are overlayed")
-	comment    = flag.String("c", "None", "Comment to be put in runs csv file")
-	distr      = flag.String("distr", "ampl", "Possible values: ampl (default), charge, energy")
-	calib      = flag.String("calib", "", "String indicating which calib to use (e.g. A1 for period A, version 1)")
-	noped      = flag.Bool("noped", false, "If specified, no pedestal correction applied")
-	notdo      = flag.Bool("notdo", false, "If specified, no time dependent offset correction applied")
-	noen       = flag.Bool("noen", false, "If specified, no energy calibration applied.")
-	rfcutmean  = flag.Float64("rfcutmean", 7, "Mean used to apply RF selection cut.")
-	rfcutwidth = flag.Float64("rfcutwidth", 5, "Width used to apply RF selection cut.")
-	nopanic    = flag.Bool("nopanic", false, "If set, the program won't panic when errors are not nil")
+	refplots                  = flag.String("ref", "", "Name of the file containing reference plots. If empty, no reference plots are overlayed")
+	comment                   = flag.String("c", "None", "Comment to be put in runs csv file")
+	distr                     = flag.String("distr", "ampl", "Possible values: ampl (default), charge, energy")
+	calib                     = flag.String("calib", "", "String indicating which calib to use (e.g. A1 for period A, version 1)")
+	noped                     = flag.Bool("noped", false, "If specified, no pedestal correction applied")
+	notdo                     = flag.Bool("notdo", false, "If specified, no time dependent offset correction applied")
+	noen                      = flag.Bool("noen", false, "If specified, no energy calibration applied.")
+	rfcutmean                 = flag.Float64("rfcutmean", 7, "Mean used to apply RF selection cut.")
+	rfcutwidth                = flag.Float64("rfcutwidth", 5, "Width used to apply RF selection cut.")
+	nopanic                   = flag.Bool("nopanic", false, "If set, the program won't panic when errors are not nil")
+	printWarningMonBufferSize = flag.Bool("nowarning", false, "If set, the program won't print the warning related to the size of the monitoring buffer")
 )
 
 // XY is a struct used to store a couple of values
@@ -519,7 +519,7 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 						}
 
 						// send to channel
-						if float64(len(datac)) >= 0.6*float64(datacsize) {
+						if !*printWarningMonBufferSize && float64(len(datac)) >= 0.6*float64(datacsize) {
 							fmt.Printf("Warning: monitoring buffer filled at more than 60 percent (len(datac) = %v, datacsize = %v)\n", len(datac), datacsize)
 						}
 
@@ -570,9 +570,10 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 				////////////////////////////////////////////////////////////////////////////////////////////
 				*iEvent++
 				//noEventsForMon++
-				if *sleep {
-					fmt.Println("Warning: sleeping for 1 second")
-					time.Sleep(1 * time.Second)
+				if *sleep != 0 {
+					sleepingTime := time.Duration(*sleep) * time.Millisecond
+					fmt.Printf("Warning: sleeping for %v\n", sleepingTime)
+					time.Sleep(sleepingTime)
 				}
 			case false:
 				fmt.Println("reached specified number of events, stopping.")
@@ -591,14 +592,14 @@ func dataHandler(ws *websocket.Conn) {
 		// uncomment to have an estimation of the total
 		// amount of data that passes through the websocket
 
-		sb, err := json.Marshal(data)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("len(marshaled data) = %v bytes = %v Mbits\n", len(sb), len(sb)*8/1.e6)
+		// 		sb, err := json.Marshal(data)
+		// 		if err != nil {
+		// 			panic(err)
+		// 		}
+		//fmt.Printf("len(marshaled data) = %v bytes = %v Mbits\n", len(sb), len(sb)*8/1.e6)
 
 		/////////////////////////////////////////////////
-		err = websocket.JSON.Send(ws, data)
+		err := websocket.JSON.Send(ws, data)
 		if err != nil {
 			log.Printf("error sending data: %v\n", err)
 			return
