@@ -44,6 +44,7 @@
 		var chargeCorrelationplot = ""
 		
 		var srout
+		var xaxistype = ""
 		
 		// colors are red, green, blue, pink
 		var colors = ['red', '#01DF01', 'blue', '#FA58F4']
@@ -143,11 +144,13 @@
 			optsloc.xaxis = {min:0, max:1024}
 			optsloc.yaxis = {min:0, max:300}
 			for (var i = 0; i < Nquartets; i++) {
-				optsloc.grid = {
-					markings: [
-						{xaxis: {from:  0, to: srout[i]}, yaxis: {from: 0, to: 300}, color: '#c2f0c2'},
-						{xaxis: {from: srout[i], to: 1024}, yaxis: {from: 0, to: 300}, color: "#ffe6ff"},
-					]
+				if (xaxistype == "CapaId") {
+					optsloc.grid = {
+						markings: [
+							{xaxis: {from:  0, to: srout[i]}, yaxis: {from: 0, to: 300}, color: '#c2f0c2'},
+							{xaxis: {from: srout[i], to: 1024}, yaxis: {from: 0, to: 300}, color: "#ffe6ff"},
+						]
+					}
 				}
 				//opts.zoom = {interactive: true}
 				//opts.pan = {interactive: true}
@@ -174,12 +177,13 @@
 					monbufsizeplot.data.push([data.evt, data.monbufsize])
 					nopacketspereventplot.data.push([data.evt, data.nopacketsperevent])
 				}
-				srout = data.srout
+				srout = data.srout;
+				xaxistype = data.xaxis;
 				freqhplot = data.freqh;
 				chargehplot = data.charge;
 				pulsemulthplot = data.pulsemult;
 				sroutplot = data.srouttiled;
-				deltat30plot = data.deltat30
+				deltat30plot = data.deltat30;
 				for (var iq = 0; iq < Nquartets; iq += 1) {
 					for (var ip = 0; ip < Nplots; ip += 1) {
 						for (var is = 0; is < data.quartets[iq][ip].length; is += 1) {

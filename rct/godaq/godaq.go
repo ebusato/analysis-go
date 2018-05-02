@@ -114,6 +114,7 @@ type Data struct {
 	SRoutTiled            string         `json:"srouttiled"`            // SRout distributions for the 36 DRS's
 	LORMult               string         `json:"lormult"`               // LOR multiplicity
 	SRout                 [6]uint16      `json:"srout"`                 // SRout of quartets
+	Xaxis                 string         `json:"xaxis"`                 // xaxis type (see input flags)
 }
 
 func (d *Data) Print() {
@@ -575,6 +576,7 @@ func stream(run uint32, r *rw.Reader, iEvent *uint, wg *sync.WaitGroup) {
 								event.Clusters[4].SRout,
 								event.ClustersWoData[0].SRout,
 							},
+							Xaxis: *xaxis,
 						}
 						//dataToMonitor.Print()
 						datac <- dataToMonitor
